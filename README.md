@@ -1,6 +1,6 @@
 # Ottili ONE Skills
 
-Agent Skills for **Claude Code**, **Codex**, **Cursor**, **OpenClaw**, and **Ottili AI** — maintained by [Ottili ONE](https://ottili.one).
+Agent Skills for **Claude Code**, **Codex**, **Cursor**, **OpenClaw**, **Ottili AI** and **Ottili Coder** — maintained by [Ottili ONE](https://ottili.one).
 
 Skills are folders of instructions, scripts, and resources that AI agents discover and apply to specific tasks. Write once, use everywhere.
 
