@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "Ottili-ONE/skills",
+  "updated_at": "2026-06-16",
+  "packages": {
+    "core": {
+      "label": "Core",
+      "description": "Official Ottili ONE skills maintained by the Ottili team.",
+      "path": "skills/core"
+    },
+    "curated": {
+      "label": "Curated",
+      "description": "Vetted third-party and general-purpose skills ready for production use.",
+      "path": "skills/curated"
+    },
+    "community": {
+      "label": "Community",
+      "description": "Community-contributed skills. Review before use in production.",
+      "path": "skills/community"
+    },
+    "ottili-ai": {
+      "label": "Ottili AI",
+      "description": "Skills for Ottili AI runtime and Ottili Velo agents.",
+      "path": "skills/ottili-ai"
+    }
+  },
+  "skills": [
+    {
+      "id": "work-untill-i-die",
+      "name": "work-untill-i-die",
+      "title": "Work Untill I Die",
+      "version": "1.4.0",
+      "package": "core",
+      "path": "skills/core/work-untill-i-die",
+      "category": "execution-mode",
+      "license": "MIT",
+      "compatibility": [
+        "Claude Code",
+        "Codex",
+        "Cursor",
+        "Windsurf",
+        "Devin Desktop",
+        "OpenCode CLI",
+        "OpenClaw",
+        "Ottili AI",
+        "Ottili Coder"
+      ],
+      "description": "Long-horizon, checkpointed, self-correcting execution mode for engineering agents."
+    },
+    {
+      "id": "cursor-cli",
+      "name": "cursor-cli",
+      "title": "Cursor CLI Agent",
+      "version": "2.1.0",
+      "package": "curated",
+      "path": "skills/curated/cursor-cli",
+      "category": "dev-tools",
+      "license": "MIT",
+      "author": "Pushpinder Pal Singh",
+      "compatibility": [
+        "Claude Code",
+        "Codex",
+        "Cursor",
+        "OpenClaw",
+        "Ottili AI"
+      ],
+      "description": "Guide for Cursor CLI (Agent) installation, commands, CI mode, and automation."
+    }
+  ]
+}

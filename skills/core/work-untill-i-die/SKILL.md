@@ -1,6 +1,8 @@
 ---
 name: work-untill-i-die
+version: "1.4.0"
 description: Force a long-horizon, checkpointed, self-correcting execution loop that keeps building, testing, fixing, reviewing, and continuing until the task is genuinely complete or a real hard blocker exists.
+license: MIT
 ---
 
 # Work untill I die

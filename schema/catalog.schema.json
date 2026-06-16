@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ottili-ONE/skills/schema/catalog.schema.json",
+  "title": "Ottili ONE Skills Catalog",
+  "type": "object",
+  "required": ["schema_version", "repository", "packages", "skills"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "repository": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "packages": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label", "description", "path"],
+        "properties": {
+          "label": { "type": "string" },
+          "description": { "type": "string" },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "title", "package", "path", "description"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "title": { "type": "string" },
+          "version": { "type": "string" },
+          "package": { "type": "string" },
+          "path": { "type": "string" },
+          "category": { "type": "string" },
+          "license": { "type": "string" },
+          "author": { "type": "string" },
+          "compatibility": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}
