@@ -1,0 +1,35 @@
+{
+ "round": 3,
+ "repo": "skills",
+ "rule": "most specific glob wins; mailbox globs (docs/lane-requests/*, docs/requests/*, docs/issues/*) may be created by any job",
+ "shared_owners": "",
+ "jobs": {
+  "skills-engineering-r3": {
+   "kind": "skills",
+   "host": "A",
+   "owns": [
+    "skills/engineering/**",
+    "README.md",
+    "scripts/**",
+    ".github/**",
+    "AGENTS.md",
+    "index/**",
+    ".gitignore"
+   ]
+  },
+  "skills-business-de-r3": {
+   "kind": "skills",
+   "host": "A",
+   "owns": [
+    "skills/business-de/**"
+   ]
+  },
+  "skills-agentic-data-r3": {
+   "kind": "skills",
+   "host": "A",
+   "owns": [
+    "skills/agentic-data/**"
+   ]
+  }
+ }
+}
