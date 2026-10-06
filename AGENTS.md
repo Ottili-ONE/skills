@@ -14,3 +14,19 @@
 - LANGUAGE: English for code, docs, commits, issues; i18n catalogues carry DE and EN.
 - NO BACKGROUND PROCESSES: anything started with `&`, `nohup` or `setsid` is killed when your command returns and its log never appears. Run tests and builds in the FOREGROUND: `timeout 900 /usr/local/bin/heavy <cmd> > <log> 2>&1; tail -40 <log>`. Wherever a task says 'in the background', do this instead. Do not retry background variants.
 - Operator notes: all jobs run on one host (Biest); no soft or hard stop; web research via curl is allowed; SEARCH_ENDPOINT none.
+
+## Ownership
+
+Path ownership is defined in `docs/R3_OWNERS.json` (most specific glob wins).
+This job (`skills-engineering-r3`) owns:
+
+- `skills/engineering/**` — the ten engineering playbook skills and their references/scripts.
+- `README.md` — repository root documentation.
+- `scripts/**` — `validate.py`, `install.sh`, `build-index.py` and helpers.
+- `.github/**` — CI workflows.
+- `AGENTS.md` — this file (live directives + ownership).
+- `index/**` — generated `INDEX.md` and `skills.json`.
+- `.gitignore`.
+
+Mailbox globs (`docs/lane-requests/*`, `docs/requests/*`, `docs/issues/*`) may be created
+by any job. Never edit paths you do not own, and never touch secrets or `.env` files.
