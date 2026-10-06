@@ -12,4 +12,5 @@
 - FREEZE: @ottili versions stay unchanged unless the integrator announces the Freeze 4 bump in docs/STATUS_ALL.md. DEV_FIXTURE_ALIAS stays 1 until the Platform lane p1-registration-r3 reports green.
 - RESEARCH: curl is allowed for research tasks; record URL + retrieval date in the SOURCES.md of your area; never fetch private/link-local addresses.
 - LANGUAGE: English for code, docs, commits, issues; i18n catalogues carry DE and EN.
+- NO BACKGROUND PROCESSES: anything started with `&`, `nohup` or `setsid` is killed when your command returns and its log never appears. Run tests and builds in the FOREGROUND: `timeout 900 /usr/local/bin/heavy <cmd> > <log> 2>&1; tail -40 <log>`. Wherever a task says 'in the background', do this instead. Do not retry background variants.
 - Operator notes: all jobs run on one host (Biest); no soft or hard stop; web research via curl is allowed; SEARCH_ENDPOINT none.
