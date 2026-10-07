@@ -1,8 +1,74 @@
 # Module Contract First — Full Procedure (retrieved 2026-10-07, host Biest)
 
-## Step 1 — Enumerate public surface
-Run `python3 scripts/check_contract_drift.py --enumerate <module-dir> > module-contracts/<module>.json`. This walks `__init__.py` / `index.ts` exports, public routes, DB tables, message types and writes them as JSON snapshot keys: `{"symbols": [...], "routes": [...], "tables": [...], "messages": [...]}`. Commit this snapshot as the contract source of truth. Every consumer pins to this snapshot; changes require a PR against it. Regenerate on every PR touching public API surface — stale snapshots are the #1 cause of silent breakage across Ottili modules. Threshold: enumeration must complete in <2s for modules under 500 symbols; slower = investigate circular imports or generated code in tree. Worked example (good): `$ python3 scripts/check_contract_drift.py --enumerate src/payments` produces `module-contracts/payments.json` with 42 symbols, 8 routes, 3 tables listed deterministically sorted alphabetically by key name so diffs are human-readable in PR review. Worked example (bad): developer edits snapshot by hand to hide a new exported symbol; next `--check` run shows full-add drift for that symbol → CI red → reviewer catches the mismatch and rejects until snapshot regenerated honestly alongside the code change in same PR (never separate commits). Detection pattern for hand-edited snapshots: diff spans >5 lines with no corresponding code change in same PR = probable manual edit; block merge and ask developer to regenerate via `--enumerate`. Near-miss trigger prompt: "I added an export but forgot to update the snapshot" — run `--check` immediately before committing; if drift detected, regenerate then commit both files together in one PR description explaining why drift occurred and what consumer impact exists [TypeScript structural typing](references/SOURCES.md#primary-sources).
-## Step 2 — Freeze & version the contract
-Tag the snapshot commit with semver per breaking-change classification below (see decision table). Never hand-edit a committed snapshot without regenerating via `--enumerate`; if you must hand-edit (rare), run `--check` immediately after to detect drift and fail CI if mismatch. Snapshot staleness is #1 cause of silent breakage across Ottili modules — treat regeneration as non-optional on every PR touching public API surface [semver spec](references/SOURCES.md#primary-sources).
-## Step 3 — Write drift test (CI gate)
-`scripts/check_contract_drift.py --check <module-dir>` compares live surface to committed snapshot: exits 0 when identical, exits 1 on any addition/removal/signature change and prints unified diff to stderr so reviewers see exactly what drifted. Run in CI on every PR; a breaking change without major semver bump blocks merge (see pitfalls). Script is fully offline-deterministic: no network calls, no subprocesses beyond stdlib imports, deterministic JSON key ordering (`sort_keys=True`). Small (<200 LOC), runs in <1s on typical Ottili modules. Edge cases handled: empty module (snapshot must be empty too), missing snapshot file (treated as full-add drift), binary files in tree (skipped with warning). Tests live at `scripts/check_contract_drift_test.py`; run with `python3 -m pytest scripts/check_contract_drift_test.py`. Thresholds: >5s runtime or >5MB memory = suspect; investigate before merge. Diff-size threshold: if diff spans >50 lines auto-fail CI regardless of content — signals wholesale rewrite needing explicit approval comment from module owner before merge proceeds [semantic versioning guidance](references/SOURCES.md#primary-sources). Common trap #1: developers add exported symbol but forget to regenerate snapshot; drift test catches automatically because live != snapshot → CI red → developer must bump major OR regenerate + commit both together same PR never separate commits [Node.js Breaking Changes policy](references/SOURCES.md#primary-sources). Common trap #2: cycle detection between modules; boundary doc must state allowed import direction; cycle = automatic fail even if snapshots match because cycles break static analysis tooling downstream ([TypeScript structural typing](references/SOURCES.md#primary-sources)). Detection heuristic for cycles: run `scripts/check_contract_drift.py --cycles <root>` which does BFS over import graph; any back-edge = fail with cycle path printed to stderr so developer can break it by extracting shared types into internal-only utility module that neither side exports publicly ([internal-only boundary pattern](references/SOURCES.md#primary-sources)).
+## Verified tool versions
+- `scripts/check_contract_drift.py` (this repo): v1, offline deterministic, verified on Biest 2026-10-07. Snapshot format: `{"symbols": [...]}` under `module-contracts/<module>.json`.
+- OpenAPI v3.1.0: https://spec.openapis.org/oas/v3.1.0 — retrieved 2026-10-07.
+- JSON Schema Draft 2020-12: https://json-schema.org/draft/2020-12/json-schema-release-notes.html — retrieved 2026-10-07.
+- SemVer 2.0.0: https://semver.org/spec/v2.0.0.html — retrieved 2026-10-07.
+
+## Preconditions
+- The module has a `module-contracts/` directory; if missing, create it before enumerating.
+- No hand-edited snapshots: any snapshot not produced by `--enumerate` is treated as suspect.
+
+## Step 1 — Enumerate the public surface
+```bash
+python3 scripts/check_contract_drift.py --enumerate <module-dir>
+```
+This writes `module-contracts/<module>.json` with the sorted list of top-level exported symbols. Commit the snapshot in the same PR as the code that defines those symbols.
+
+### Worked example — good
+```bash
+$ python3 scripts/check_contract_drift.py --enumerate src/payments
+ok: enumerated 4 symbols -> src/payments/module-contracts/payments.json
+$ cat src/payments/module-contracts/payments.json
+{
+  "symbols": [
+    "Charge",
+    "Refund",
+    "PaymentError",
+    "process_payment"
+  ]
+}
+```
+
+### Worked example — bad
+A developer hand-edits `payments.json` to add `new_func` but forgets to commit the code change. `--check` then reports full-add drift:
+```
+DRIFT DETECTED
+@@ symbols @@
+- old: ['Charge', 'Refund', 'PaymentError', 'process_payment']
++ new: ['Charge', 'Refund', 'PaymentError', 'new_func', 'process_payment']
+BLOCKED: merge until snapshot regenerated or reverted
+```
+Fix: regenerate via `--enumerate` and commit both files together.
+
+## Step 2 — Classify the change and bump semver
+| Change | Semver | Action |
+|--------|--------|--------|
+| Add new export, route, table, or message | minor | regenerate snapshot, commit both together |
+| Rename export, change signature, remove export | major | bump major, notify all consumers, regenerate snapshot |
+| Add optional field to a request object | patch | regenerate snapshot only |
+| Change field type or required->optional | major | bump major, regenerate snapshot, update consumers |
+
+## Step 3 — Write the drift test
+`python3 scripts/check_contract_drift.py --check <module-dir>` must run in CI on every PR. Exit 1 on any drift. The snapshot is never hand-edited.
+
+## Step 4 — Enforce boundaries
+```bash
+python3 scripts/check_contract_drift.py --cycles <root>
+```
+Any back-edge is an automatic fail. Extract shared types into an internal-only module.
+
+### Worked example — cycle detected
+```bash
+$ python3 scripts/check_contract_drift.py --cycles src
+CYCLE DETECTED
+a -> b -> c -> a
+Break cycle by extracting shared types into an internal-only module
+```
+
+## Step 5 — Document the boundary
+Write a boundary doc listing allowed importers and forbidden import directions.
+
+## Schema nullability (conflict recorded)
+Sources disagree on whether optional fields should be nullable or omitted entirely. JSON Schema Draft 2020-12 says use `type: ["string", "null"]`; OpenAPI v3.1 moved to `oneOf` with a null type and deprecated `nullable: true`. Resolution: use `oneOf` with a null type in new contracts; never `nullable: true` in v3.x. This affects snapshot content and drift detection thresholds.
