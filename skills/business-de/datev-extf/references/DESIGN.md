@@ -1,29 +1,31 @@
 # DESIGN: datev-extf
 
-## Trigger description (SKILL.md description draft, <=1024 chars)
-"Generate and validate DATEV EXTF (Exchange Format) posting stacks for Ottili accounting integrations: EXTF header fields, Buchungsstapel semantics, Datenservices contracts and validation errors. Use when an agent must emit, import, reconcile or debug a DATEV EXTF export; when a posting stack fails validation; or when mapping Ottili journal lines onto the DATEV contract. Not for general accounting logic or non-DATEV systems."
+## Trigger description (SKILL.md description draft, ≤1024 chars)
+"Produce and validate DATEV EXTF (Exportdateiformat) booking stacks and data exports for German accounting integrations: EXTF header fields, Buchungsstapel structure, Datenservices, validation errors, and test fixtures. Use when an agent must emit or consume DATEV-compatible machine-readable accounting data, validate a booking stack, or build test fixtures for DATEV integration."
 
 ## Procedure outline
-1. **Identify the context** — is this an export FROM Ottili to DATEV, or an import FROM DATEV to Ottili? The direction changes which fields are mandatory.
-2. **Pin the EXTF version** — DATEV does not publish a public version page; pin the version the integrator/DATEV partner confirms and mark "unverified until DATEV confirms" (R3 rule: never hardcode).
-3. **Emit the header** — Buchungsstapel header (Kopfdaten): Mandant, Buchungsdatum, Buchungstext, Schluessel, etc. Validate every field against the EXTF field catalogue.
-4. **Emit the positions** — one row per position with the same keying rules; preserve order; never split a single journal line across two positions.
-5. **Run validation** — DATEV validation errors are numeric codes; map each code to a fix. Treat every error as blocking.
-6. **Reconcile** — compare Ottili journal hash against DATEV import acknowledgement; on mismatch, re-run with the pinned version and log the delta.
+1. **Identify the export type** — single booking (Einzelnachweis), booking stack (Buchungsstapel), or full ledger export (Saldenliste/Kontenrahmen). The Buchungsstapel is the common integration target.
+2. **Build the EXTF header** — mandatory header fields: Formatkennzeichen (format identifier), Version (schema version, pinned in config), Erstellungsdatum (creation date), Absender (sender), etc. Pin the schema version in config; never hardcode.
+3. **Assemble the Buchungsstapel** — one XML envelope per file; each booking line has: Buchungstext, Betrag (amount), Konto (account), Kst (cost center), Steuerschlüssel (tax key), MwSt (VAT), Belegdatum, Buchungsdatum. Validate every field against the EXTF schema.
+4. **Validate** — run the EXTF schema validation (XSD or the DATEV SDK validator). Treat every schema error as blocking; map each error code to a fix.
+5. **Handle validation errors** — common errors: missing Steuerschlüssel, invalid account number (plausibility check), wrong amount format, wrong date format, duplicate Belegnummer. Each error has a specific fix; never guess.
+6. **Generate test fixtures** — produce a minimal valid Buchungsstapel plus a deliberately broken one for negative testing. Fixtures must be deterministic and runnable offline.
+7. **Export for audit** — produce a complete, chronological, checksummed export covering the retention period, with a manifest.
 
 ## Scripts planned
-- `scripts/extf_emit.py` — emits a DATEV EXTF posting stack from Ottili journal lines.
-- `scripts/extf_validate.py` — validates an EXTF file against the pinned field catalogue; emits machine-readable pass/fail with error codes.
-- `scripts/extf_reconcile.py` — compares Ottili journal hash with DATEV acknowledgement; reports unknown-result deltas.
+- `scripts/validate_extf.py` — validates a Buchungsstapel against the pinned EXTF schema; emits a machine-readable pass/fail JSON plus the list of failed fields.
+- `scripts/build_stapel.py` — given a list of booking lines, produces a valid Buchungsstapel XML envelope.
+- `scripts/fixture_generator.py` — generates deterministic test fixtures (valid + broken) for CI.
 
 ## Five eval prompts
-1. "Emit a DATEV EXTF posting stack for a domestic purchase, EUR 500 net, 19% VAT." -> must produce the header + positions with the correct Buchungsschluessel and tax key.
-2. "DATEV validation returns error code 1001. What does it mean?" -> must name the field and the fix (per the pinned catalogue).
-3. "Pin the EXTF version we use." -> must read config, never hardcode, and mark unverified until DATEV confirms.
-4. "Reconcile this Ottili journal with the DATEV acknowledgement." -> must compare hashes and report match/mismatch with the delta.
-5. "Is a single journal line allowed to span two positions?" -> must say no and explain the one-row-per-position rule.
+1. "Build a Buchungsstapel for three bookings: EUR 1,200.00 net on account 4000 with tax key 19%, EUR 500.00 on account 4200 with tax key 7%, and EUR 100.00 on account 8000 with tax key 0%." → must produce a valid XML envelope with all mandatory header fields and all three booking lines.
+2. "My validator reports 'Steuerschlüssel fehlt'. What does that mean and how do I fix it?" → must name "tax key missing", explain it is mandatory for every booking line, and give the fix (add the correct Steuerschlüssel for the account).
+3. "Pin the EXTF schema version we use and show how a re-verification run would look." → must read config, never hardcode, and print a dated re-verification log entry.
+4. "Generate test fixtures for our DATEV integration." → must produce a minimal valid Buchungsstapel plus a deliberately broken one for negative testing.
+5. "Export our 2026 accounting data for the auditor in DATEV format." → must produce a complete, chronological, checksummed export with a manifest, not a raw DB dump.
 
 ## What this skill does better than generic agents
-- Encodes the EXTF field catalogue as a decision table instead of relying on memory.
-- Pins the EXTF version and marks it unverified, because DATEV does not publish a version page.
-- Treats the Ottili<->DATEV hash reconciliation as a first-class step, which generic agents skip.
+- It encodes the *DATEV-specific* EXTF structure (header + Buchungsstapel), not a generic XML format.
+- It maps validation errors to specific fixes, because DATEV error codes are opaque without context.
+- It pins the schema version in config and marks it "unverified until DATEV confirms", because DATEV does not publish a public version page.
+- It generates deterministic test fixtures, which generic agents skip.
