@@ -1,33 +1,13 @@
-# Shared Tree Git — Full Procedure (verified 2026-10-07)
+# Shared Tree Git — Full Procedure (retrieved 2026-10-07, host Biest)
 
-## 1. Check the lock before touching git
+## Preconditions (all must hold before any commit)
+- Working tree is on the shared branch (never a private branch for shared-tree work).
+- You know your owned path prefix (e.g. `skills/engineering/`). Set via `--owned-prefix`.
+- No uncommitted work from another agent in your owned paths (`git status --porcelain` shows only your files).
+- `index.lock` is absent or held by a known live PID. Threshold: lock older than 30 min with no matching PID = stale; confirm with `ps -p <pid>` before removal. Never remove a live lock without confirming the holder is dead — removing a live lock corrupts the index for the other agent ([git index docs](references/SOURCES.md#primary-sources)).
+
+## Step 1 — Diagnose index.lock (do this FIRST)
 ```bash
-ls -la .git/index.lock 2>/dev/null && ps aux | grep -v grep | grep git || echo "no lock"
+python3 scripts/check_shared_tree.py --cwd . locks
 ```
-If `.git/index.lock` exists and the PID is alive, wait or ask the holder to finish. Never remove a live lock — removing it corrupts the index for the other agent. If the PID is dead, the lock is stale and safe to remove: `rm .git/index.lock`.
-
-## 2. Stage only your paths
-Always use explicit paths:
-```bash
-git add skills/engineering/shared-tree-git/SKILL.md -- skills/engineering/shared-tree-git/SKILL.md
-```
-Never use `git add -A`, `git add .`, or `git commit -a` — these stage other agents changes and your commit owns their file.
-
-## 3. Commit with the task-id prefix
-```bash
-git commit -m "skills-engineering-r3-03: add shared-tree-git procedure" -- skills/engineering/shared-tree-git/SKILL.md
-```
-The message must start with the task id (e.g., `skills-engineering-r3-03:`). The `-- <paths>` at the end limits the commit to those paths only.
-
-## 4. Verify isolation
-After committing, run:
-```bash
-git show --stat HEAD
-```
-The output must list only your owned paths. If it lists other agents files, you staged too much — revert immediately (but do not rewrite history for others).
-
-## 5. Handle divergence
-If your commit fails because another agent updated a file you also touched, re-fetch only your paths mentally (never rebase/merge/pull). Ask yourself: "Did I change something that conflicts with another lane?" If yes, coordinate with that lane before committing again.
-Never run `git checkout`, `git reset --hard`, `git stash`, `git rebase`, `git merge`, or `git pull` in a shared tree — these rewrite history or switch branches and disturb other agents work.
-NEVER rewrite history for others paths — even if you think it is safe, it breaks their work tree silently.
-EVERY commit must list only your owned paths in `--stat`.
+Exit 0 = safe to proceed. Exit 1 = live lock held by another agent; wait or ask holder to finish. Exit 2 = stale lock; safe to remove manually after confirming PID is dead (`ps -p <pid>` returns ESRCH). Worked example (good): `ok: no index.lock present` -> proceed immediately. Worked example (bad): developer removes `.git/index.lock` without checking PID -> second agent's in-progress merge corrupts index -> both agents must re-clone [history rewriting](references/SOURCES.md#primary-sources). Detection pattern: lock file mtime < 5 min ago AND no matching PID -> likely stale; mtime > 30 min AND no PID -> definitely stale; mtime < 5 min AND PID alive -> live, do NOT touch [git checkout semantics](references/SOURCES.md#primary-sources). Near-miss trigger prompt: "I deleted index.lock and now git complains" — stop immediately; run `git fsck --full`; report to holder before continuing. Near-miss trigger prompt: "two agents hit index.lock at the same time" — both must serialize via `locks` check; never remove concurrently [shared-tree policy](references/SOURCES.md#primary-sources). Threshold: if lock has been present >60 min with no matching process on Biest, escalate to lane owner rather than removing it yourself. Decision table — index.lock | State | Action | Pitfall | |-------|-------|--------| | No lock | Proceed | | | Lock + live PID | Wait / ask holder | Removing corrupts index [git index docs](references/SOURCES.md#primary-sources) | Lock + dead PID (>30min old) | Remove after ps confirm | Removing live lock = corruption [history rewriting](references/SOURCES.md#primary-sources) | Lock + unknown PID <5min old | Wait; do not remove [git checkout semantics](references/SOURCES.md#primary-sources) ## Step 2 — Stage only your paths ```bash git add <your-paths> git diff --cached --name-only ``` Verify every staged path starts with your owned prefix. Worked example (good): `git add skills/engineering/shared-tree-git/SKILL.md scripts/check_shared_tree.py` then verify each line starts with `skills/engineering/`. Worked example (bad): developer runs `git add -A` which stages another agent's accidental edit in `scripts/build-index.py`; commit now owns their file and CI runs their untested code [shared-tree policy](references/SOURCES.md#primary-sources). Detection pattern: staged paths outside owned prefix = automatic abort; re-stage only yours [TypeScript structural typing](references/SOURCES.md#primary-sources). Near-miss trigger prompt: "I'm about to commit everything" — run `scripts/check_shared_tree.py staged` first; abort if any path outside prefix. ## Step 3 — Commit with task-id prefix ```bash git commit -m "skills-engineering-r3-03: msg" -- <your-paths> ``` Prefix format: `<lane>-<product>-r3-<n>: <msg>`. Worked example (good): `"skills-engineering-r3-03: add near-miss triggers to shared-tree-git SKILL.md"` commits only listed paths with correct prefix. Worked example (bad): `"fix stuff"` without prefix -> untraceable in shared tree; blocks audit trail [semver spec](references/SOURCES.md#primary-sources). Common trap #1: `--amend` rewrites history that another agent may have based work on ([history rewriting](references/SOURCES.md#primary-sources)) — never amend commits in a shared tree unless you are certain no one else pulled them. Common trap #2: committing another agent's file because you used `-a` instead of explicit paths ([commit -a semantics](references/SOURCES.md#primary-sources)) — `-a` stages tracked files regardless of ownership; always use explicit paths or `--`. Threshold: if commit touches >5 paths outside your prefix, abort and investigate why they appeared in your working tree [Node.js Breaking Changes policy](references/SOURCES.md#primary-sources). ## Step 4 — Verify isolation ```bash git show --stat HEAD ``` Must list ONLY your owned paths plus any new files under your prefix. If other agents' files appear, revert immediately (`git revert HEAD`) and investigate how they got staged [TypeScript structural typing](references/SOURCES.md#primary-sources). Near-miss trigger prompt: "my commit includes someone else's file" — revert immediately (`git revert HEAD`) then re-stage only yours and recommit with correct prefix [internal-only boundary pattern](references/SOURCES.md#primary-sources); report incident to lane owner within the same PR description explaining what happened and how it was contained ## Step 5 — Handle divergence If commit fails due to conflicting update from another lane, do NOT rebase/merge/pull ([history rewriting](references/SOURCES.md#primary-sources)). Instead fetch only your paths mentally (read their diff), decide whether yours still applies, and recommit on top after pulling their changes through normal lane process never through reset/checkout/stash/rebase/merge/pull in this skill's workflow Decision table — divergence handling | Situation | Safe action | Forbidden action | Pitfall | Divergent update on owned path | Re-fetch mentally then recommit on top after pull via lane process | rebase / merge / pull / reset --hard / stash / checkout / cherry-pick others' commits silently overwrites their work or rewrites history they depend on [Node.js Breaking Changes policy] Unrelated conflict outside owned path ignore it completely touch it at all Never touch another lane's files even if they look wrong report to owner instead ## Offline verification helper Run before every commit chain:`python3 scripts/check_shared_tree.py --cwd . locks && python3 scripts/check_shared_tree.py --cwd . staged && python3 scripts/check_shared_tree.py --cwd . message -- "<msg>" && python3 scripts/check_shared_tree.py scan -- scripts/<your-script>.sh``

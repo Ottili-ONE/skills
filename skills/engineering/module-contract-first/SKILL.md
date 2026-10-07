@@ -7,4 +7,50 @@ metadata: {}
 allowed-tools: []
 ---
 # Module Contract First Skill — Quick Reference (body <500 lines; full procedure in references/module-contract-procedure.md)
-## When to use this skill (trigger) - any of these fires it: - You are adding a new module to a multi-module repository (Ottili platform, console-v2, alran-core). - A PR touches a module's public API and you need to check whether it breaks consumers. - An incident says "module B stopped working after module A's deploy" with no test coverage. - Code review mentions a shared type, a public function signature, or an exported schema changing without a version bump. - You need to split a monolith into modules and want the boundary rules up front. ## When NOT to use this skill - Single-file scripts with no consumers. - Internal helpers that are not exported and have no external callers. - Prototypes where the API surface is deliberately unstable (mark the module `unstable` and skip drift tests). ## Decision table — contract strategy | Pattern | When to pick | Pitfall | |---------|-------------|---------| | Versioned public schema (semver) | Modules consumed by other teams; breaking change requires major bump | Forgetting to bump the version on every breaking change | | Snapshot drift test (reference copy) | Fast feedback in CI; catches accidental edits | Reference copy goes stale unless regenerated on purpose | | Contract-as-code (JSON Schema / OpenAPI) | HTTP/JSON APIs; tooling generates clients and validators | Schema drifts from the implementation if not generated from source | | Internal-only boundary (no public export) | Utility modules; boundary is the file tree | Nothing enforces it; add a lint rule | ## Numbered procedure (summary; full recipe in references/module-contract-procedure.md) 1. **Enumerate the public surface** — list every exported symbol, route, table, and message type; write it to `module-contracts/<module>.json`. 2. **Freeze the contract** — commit the snapshot; treat it as the source of truth for consumers. 3. **Write the drift test** — `scripts/check_contract_drift.py` compares the live surface to the snapshot and fails on any addition/removal/signature change. 4. **Classify every change** — additive (minor), breaking (major), internal (no bump). 5. **Document boundaries** — for each sibling module that imports you, record allowed imports and forbidden ones in `module-contracts/boundaries/<module>.md`. 6. **Run in CI** — the drift test runs on every PR; a breaking change without a major bump blocks merge. ## Pitfalls from research (real incidents) - "Optional" fields become de-facto required when clients stop handling null ([Postel's law violations](references/SOURCES.md#primary-sources)). - Shared types edited in place break every consumer at runtime, not at build time ([TypeScript structural typing](references/SOURCES.md#primary-sources)). - Contract snapshots left in the repo are edited by hand and silently diverge from the implementation ([semantic versioning guidance](references/SOURCES.md#primary-sources)). - Modules import each other in a cycle; the boundary checker must detect the cycle and the contract must state the allowed direction ([dependency analysis](references/SOURCES.md#primary-sources)). - A breaking change shipped as a minor bump because the version was bumped by hand and nobody checked the diff ([semver spec](references/SOURCES.md#primary-sources)). ## Verification checklist (all must pass before merge) [ ] Public surface enumerated and snapshot committed [ ] Drift test exists and runs green on the current code [ ] Every breaking change is a major bump [ ] Boundary doc lists allowed and forbidden importers [ ] No import cycles between modules [ ] CI runs the drift test on every PR
+
+## When to use this skill (trigger)
+- You are starting a new module or adding public exports to an existing one.
+- A consumer imports a symbol that is not in the committed contract snapshot.
+- You need to decide whether a change is breaking (major bump) or non-breaking (minor/patch).
+- Sibling modules import each other and you must enforce a boundary (no cycles).
+- CI is red with "DRIFT DETECTED" or "CYCLE DETECTED".
+
+## When NOT to use this skill
+- Private/internal helpers that no consumer imports (they are not part of the public surface).
+- Single-file scripts with no consumers and no planned exports.
+- Fully greenfield work where no other module depends on the output yet.
+
+## Decision table — change classification
+| Change | Semver | Action |
+|--------|--------|--------|
+| Add new export, route, table, or message | minor | regenerate snapshot, commit both together |
+| Rename export, change signature, remove export | major | bump major, notify all consumers, regenerate snapshot |
+| Add optional field to a request object | patch | regenerate snapshot only |
+| Change field type or required->optional | major | bump major, regenerate snapshot, update consumers |
+
+## Numbered procedure (summary; full recipe in references/module-contract-procedure.md)
+1. **Enumerate the public surface** — run `python3 scripts/check_contract_drift.py --enumerate <module-dir>` and commit the generated snapshot as the source of truth.
+2. **Freeze and version** — tag the snapshot commit with semver per the decision table; never hand-edit a committed snapshot.
+3. **Write the drift test** — `python3 scripts/check_contract_drift.py --check <module-dir>` must run in CI on every PR; exit 1 on any drift.
+4. **Enforce boundaries** — run `python3 scripts/check_contract_drift.py --cycles <root>`; any back-edge is an automatic fail.
+5. **Document the boundary** — write a boundary doc listing allowed importers and forbidden import directions.
+
+## Pitfalls from research (real incidents)
+- Hand-edited snapshots hide new exports; the next `--check` shows full-add drift and CI goes red until regenerated honestly alongside the code change in the same PR.
+- A snapshot that is not regenerated on every PR touching public API surface is the #1 cause of silent breakage across Ottili modules.
+- Import cycles break static analysis tooling downstream even when snapshots match; cycle detection is an automatic fail regardless of snapshot state.
+- An empty module must have an empty snapshot; a missing snapshot file is treated as full-add drift, not an error.
+
+## Near-miss trigger prompts (act on these immediately)
+- "I added an export but forgot to update the snapshot" — run `--check` before committing; if drift, regenerate then commit both files together.
+- "Module A imports B and B imports A" — run `--cycles` immediately; extract shared types into an internal-only module.
+- "The snapshot looks right but CI is red" — diff spans >5 lines with no corresponding code change = probable manual edit; block merge.
+
+## Verification checklist (all must pass before you finish)
+- [ ] Snapshot regenerated via `--enumerate`, never hand-edited
+- [ ] `--check` exits 0 against the committed snapshot
+- [ ] `--cycles` reports no back-edges
+- [ ] Semver bump matches the change classification in the decision table
+- [ ] Boundary doc lists allowed importers and forbidden directions
+- [ ] Drift test is wired into CI config
+- [ ] Enumeration completes in <2s for modules under 500 symbols
