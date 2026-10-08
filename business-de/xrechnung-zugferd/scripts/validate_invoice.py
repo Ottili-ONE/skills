@@ -29,7 +29,7 @@ def load_config(path: Path) -> dict:
     p = Path(path)
     if not p.is_absolute() and not p.exists():
         root = find_repo_root(Path(__file__).resolve().parent)
-        alt = root / path
+        alt = root / "business-de" / path
         if alt.exists():
             p = alt
     return json.loads(p.read_text(encoding="utf-8"))
