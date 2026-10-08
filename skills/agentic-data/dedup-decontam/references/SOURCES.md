@@ -14,16 +14,17 @@ All URLs retrieved 2026-10-08 unless marked otherwise.
 - URL: https://www.cs.princeton.edu/~chazelle/pubs/approximate-nearest-neighbors.pdf
 - Retrieved: 2026-10-08
 - Used: the banding scheme (b bands of r rows), the threshold formula
-  t ~= (1/b)^(1/r), and the guarantee that bucket-mate pairs are candidate
-  pairs.
+  t ~= (1/b)^(1/r), and the guarantee that bucket-mate pairs are candidate pairs.
 - Version note: 2000 STOC paper, stable.
 
 ## 3. datasketch — Python MinHash/LSH library
-- URL: https://github.com/datasketch/datasketch
-- Retrieved: 2026-10-08
+- URL: https://github.com/ekzhu/datasketch
+- Retrieved: 2026-10-08 (repo verified live; canonical URL is ekzhu/datasketch,
+  NOT datasketch/datasketch which 404s)
 - Used: reference implementation of MinHash and LSH Index; confirms k=128 as
   the common default and the band/row tuning procedure.
-- Version note: checked against the repo as rendered 2026-10-08.
+- Version note: checked against the repo as rendered 2026-10-08. Re-check on
+  library update. Note: the README is README.rst, not README.md.
 
 ## 4. n-gram decontamination — Carpuat et al. (2022), "Leakage Report"
 - URL: https://github.com/carpuat/leakage_report
@@ -41,7 +42,7 @@ All URLs retrieved 2026-10-08 unless marked otherwise.
 
 ## 6. MMLU contamination — Harvard DATASETSLab (2023)
 - URL: https://github.com/hendrycks/test
-- Retrieved: 2026-10-08
+- Retrieved: 2026-10-08 (default branch = master, verified live)
 - Used: the recommended n=13 n-gram window for MMLU-style benchmarks.
 - Version note: MMLU benchmark, stable; re-check if the benchmark is updated.
 
