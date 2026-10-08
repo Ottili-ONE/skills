@@ -104,6 +104,18 @@ def run(out_dir: Path, seed: int) -> tuple[int, int, int]:
     return exact_found, near_found, len(pairs)
 
 
+
+def main_args(argv=None) -> int:
+    """Programmatic entry point: parse argv (or sys.argv[1:]) and run."""
+    import sys as _sys
+    old = _sys.argv
+    _sys.argv = [old[0]] + list(argv if argv is not None else old[1:])
+    try:
+        return main()
+    finally:
+        _sys.argv = old
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True)
