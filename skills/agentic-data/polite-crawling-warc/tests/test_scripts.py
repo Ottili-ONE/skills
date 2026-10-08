@@ -67,6 +67,7 @@ def test_warc_writer_revisit_no_block():
         p = run(WRITER, ["--file", f, "--type", "revisit",
                          "--target-uri", "http://example.com/x",
                          "--payload", "",
+                         "--payload-digest", "sha256:abc123",
                          "--profile", "http://netpreserve.org/warc/0.18/revisit/identical-payload-digest",
                          "--refers-target", "http://example.com/x"])
         assert p.returncode == 0, p.stderr
@@ -166,3 +167,16 @@ def test_resume_state_roundtrip():
         p4 = run(Path(ROOT, "scripts", "resume_state.py"), ["--state", st, "--load"])
         assert p4.returncode == 0, p4.stderr
         assert '"queue": []' in p4.stdout
+
+
+def test_warc_writer_revisit_requires_digest():
+    """A revisit record without --payload-digest must fail: the empty-block
+    digest is not the original record's digest, so emitting it would be
+    non-conformant (IIPC dedup 1.0 identical-payload-digest profile)."""
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        f = os.path.join(d, "out.warc.gz")
+        p = run(WRITER, ["--file", f, "--type", "revisit",
+                         "--target-uri", "http://example.com/x", "--payload", ""])
+        assert p.returncode == 1, p.stderr
+        assert "payload-digest" in p.stderr

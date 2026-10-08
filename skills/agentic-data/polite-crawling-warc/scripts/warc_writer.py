@@ -119,6 +119,18 @@ def main() -> int:
             block = fh.read()
     else:
         block = args.payload.encode("utf-8")
+
+    # A 'revisit' record carries no payload of its own: its
+    # WARC-Payload-Digest MUST be the digest of the *original* record's payload
+    # (the identical-payload-digest profile, IIPC dedup 1.0). Defaulting it to
+    # the digest of the (empty) block would silently emit a non-conformant
+    # record whose digest matches nothing. Force the caller to pass it.
+    if args.type == "revisit" and not args.payload_digest:
+        print("FAIL: revisit records require --payload-digest (the original "
+              "record's digest); the empty block digest is not valid",
+              file=sys.stderr)
+        return 1
+
     offset = append_record(
         args.file,
         warc_type=args.type,

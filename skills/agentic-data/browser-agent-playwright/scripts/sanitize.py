@@ -49,12 +49,17 @@ def _damerau_levenshtein(a: str, b: str, limit: int = 1) -> int:
     edit. The bound lets us short-circuit: most word pairs are far apart and we
     never build the full matrix. Verified against the OWASP typoglycemia example
     on 2026-10-08 (the example word `systme` is an adjacent-transposition of
-    `system`, which a plain Levenshtein or anagram-only detector both miss).
+    `system`, which a plain Levenshtein or an anagram-only detector both miss).
+
+    Note on the transposition row: the standard recurrence reads d[i-2][j-2],
+    i.e. the row *two* iterations back. Reading the previous row (d[i-1][j-2])
+    instead makes `systme`/`system` cost 2 -- the bug caught by the new test.
     """
     if a == b:
         return 0
     if abs(len(a) - len(b)) > limit:
         return limit + 1
+    prev2 = None
     prev = list(range(len(b) + 1))
     for i, ca in enumerate(a, 1):
         cur = [i] + [0] * len(b)
@@ -68,14 +73,15 @@ def _damerau_levenshtein(a: str, b: str, limit: int = 1) -> int:
             if (
                 i > 1
                 and j > 1
+                and prev2 is not None
                 and ca == b[j - 2]
                 and a[i - 2] == cb
-                and cur[j] > prev[j - 2] + 1
+                and cur[j] > prev2[j - 2] + 1
             ):
-                cur[j] = prev[j - 2] + 1  # adjacent transposition
+                cur[j] = prev2[j - 2] + 1  # adjacent transposition
         if min(cur) > limit:
             return limit + 1
-        prev = cur
+        prev2, prev = prev, cur
     return prev[len(b)] if prev[len(b)] <= limit else limit + 1
 
 
@@ -109,7 +115,12 @@ def is_typoglycemia(word: str, target: str) -> bool:
     return False
 
 
-TYPO_TARGETS = ["ignore", "instructions", "override", "bypass", "reveal", "prompt", "system"]
+# Targets are the words an attacker scrambles *into* an instruction. `previous` is
+# included because the OWASP cheat sheet's canonical example is
+# "ignroe all **prevoius** systme instructions ...", and missing it meant the
+# most-cited example string in the taxonomy produced only 3 of 4 flags.
+TYPO_TARGETS = ["ignore", "instructions", "previous", "override", "bypass",
+                "reveal", "prompt", "system"]
 
 
 def sanitize(text: str, max_chars: int = DEFAULT_MAX) -> dict:
