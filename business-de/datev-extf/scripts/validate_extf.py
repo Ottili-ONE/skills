@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Validate a DATEV EXTF Buchungsstapel (CSV, semicolon-delimited, Windows-1252).
+"""Validate a DATEV EXTF Buchungsstapel (CSV, semicolon, cp1252, Formatversion 13).
 
-Emits a machine-readable pass/fail JSON plus the list of failed fields.
-Reads the pinned Versionsnummer/Formatversion from config/versions.json and
-never hardcodes a version.
+Rules verified against seamless-engineering/datev-extf (src/extf.ts,
+src/columns.ts, src/messages.ts, EXTF_AS_OF 2026-09-25). Emits a machine-
+readable pass/fail JSON plus a list of findings with severity and code.
 
 Usage:
     python3 validate_extf.py Buchungsstapel.csv [--config config/versions.json]
@@ -12,16 +12,31 @@ import argparse
 import csv
 import io
 import json
+import re
 import sys
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
 from common import load_config  # noqa: E402
 
 DELIMITER = ";"
-EXPECTED_HEADER_COUNT = 31
-EXPECTED_FORMAT_NAME = "Buchungsstapel"
-EXPECTED_CATEGORY = "21"
+EXPECTED_HEADER_FIELDS = 31
+EXPECTED_COLUMNS = 125
+FORMAT_VERSION = "13"
+CATEGORY = "21"
+FORMAT_NAME = "Buchungsstapel"
+
+# Automatikkonten (AM-Konten) per SKR, Gültig 2026. A BU-Schlüssel other than
+# "40" on these is rejected or double-counted by DATEV.
+AUTOMATIC_ACCOUNTS = {
+    "03": {"8120", "8125", "8300", "8310", "8315", "8336", "8338", "8400", "8449"},
+    "04": {"4120", "4125", "4300", "4310", "4315", "4336", "4338", "4400", "4449"},
+}
+
+# 1-based field numbers that DATEV writes as quoted text.
+HEADER_TEXT_FIELDS = [1, 4, 8, 9, 10, 17, 18, 22, 27, 31]
+BOOKING_TEXT_FIELDS = [2, 3, 9, 11, 12, 14, 37, 38, 40, 120]
 
 
 def decode_bytes(raw: bytes) -> str:
@@ -33,81 +48,37 @@ def decode_bytes(raw: bytes) -> str:
     return raw.decode("cp1252", errors="replace")
 
 
-def read_rows(path: Path):
+def parse_rows(path: Path):
+    """Return (rows, unclosed_quote_line). rows: list of [line_no, [cells]]."""
     text = decode_bytes(path.read_bytes())
     reader = csv.reader(io.StringIO(text), delimiter=DELIMITER)
-    return [r for r in reader if any(c.strip() for c in r)]
+    rows, unclosed = [], None
+    for i, cells in enumerate(reader, start=1):
+        if not any(c.strip() for c in cells):
+            continue
+        rows.append([i, cells])
+    return rows, unclosed
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("file", help="EXTF CSV file")
-    ap.add_argument("--config", default="config/versions.json")
-    args = ap.parse_args()
-
-    path = Path(args.file)
-    if not path.exists():
-        print(json.dumps({"ok": False, "error": "file not found: " + str(path)}))
-        return 2
-
-    pinned = load_config(args.config)["datev-extf"]
-    rows = read_rows(path)
-    errors = []
-    warnings = []
-
-    if not rows:
-        errors.append("file is empty")
-    else:
-        header = rows[0]
-        if len(header) < EXPECTED_HEADER_COUNT:
-            errors.append("header has %d fields, expected %d" %
-                          (len(header), EXPECTED_HEADER_COUNT))
-        if header and header[0].strip() != "EXTF":
-            errors.append("field 1 Kennzeichen must be 'EXTF', got '%s'" % header[0])
-        if len(header) > 1 and header[1].strip() != pinned["extf_schema"]["version"].split("/")[0].strip():
-            errors.append("field 2 Versionsnummer must be %s" %
-                          pinned["extf_schema"]["version"].split("/")[0].strip())
-        if len(header) > 2 and header[2].strip() != EXPECTED_CATEGORY:
-            errors.append("field 3 Formatkategorie must be '%s'" % EXPECTED_CATEGORY)
-        if len(header) > 3 and header[3].strip() != EXPECTED_FORMAT_NAME:
-            errors.append("field 4 Formatname must be '%s'" % EXPECTED_FORMAT_NAME)
-        if len(header) > 4 and header[4].strip() != "13":
-            errors.append("field 5 Formatversion must be '13'")
-
-        for i, row in enumerate(rows[1:], start=2):
-            if len(row) < 8:
-                errors.append("line %d: row has %d fields, expected >= 8" % (i, len(row)))
-                continue
-            amount = row[0].strip()
-            side = row[1].strip()
-            konto = row[6].strip()
-            beleg = row[9].strip()
-            if side not in ("S", "H"):
-                errors.append("line %d: field 2 Soll/Haben must be 'S' or 'H'" % i)
-            if "," in amount and "." in amount:
-                errors.append("line %d: amount '%s' has both separators" % (i, amount))
-            elif "." in amount:
-                errors.append("line %d: amount '%s' uses a dot; DATEV expects a comma" % (i, amount))
-            if beleg and len(beleg) < 8:
-                warnings.append("line %d: Belegdatum '%s' looks too short" % (i, beleg))
-            if beleg and not (beleg.isdigit() and len(beleg) == 8):
-                errors.append("line %d: Belegdatum must be YYYYMMDD, got '%s'" % (i, beleg))
-            if konto and len(konto) > 4:
-                warnings.append("line %d: Konto '%s' exceeds the default Sachkontenlaenge of 4" % (i, konto))
-
-    ok = not errors
-    print(json.dumps({
-        "ok": ok,
-        "pinned_versionsnummer": pinned["extf_schema"]["version"].split("/")[0].strip(),
-        "pinned_formatversion": "13",
-        "file": str(path),
-        "rows": len(rows),
-        "errors": errors,
-        "warnings": warnings,
-        "next": ("fix the listed errors and re-run" if errors else "validated"),
-    }, indent=2, ensure_ascii=False))
-    return 0 if ok else 1
+def is_real_day(y, m, d):
+    if not (1 <= m <= 12) or not (1 <= d <= 31):
+        return False
+    try:
+        date(y, m, d)
+        return True
+    except ValueError:
+        return False
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+def parse_ymd(s):
+    if re.fullmatch(r"\d{8}", s):
+        return date(int(s[:4]), int(s[4:6]), int(s[6:8]))
+    return None
+
+
+def add(findings, code, severity, line, field, value, params=None):
+    f = {"code": code, "severity": severity, "line": line,
+         "field": field, "value": value}
+    if params:
+        f["params"] = params
+    findings.append(f)
