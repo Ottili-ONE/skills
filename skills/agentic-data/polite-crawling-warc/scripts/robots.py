@@ -18,9 +18,20 @@ DEFAULT_USER_AGENT = "*"
 
 
 def parse_robots(text: str) -> dict:
-    """Return {group: [rules]} where rules are (action, pattern, length)."""
+    """Return {group: [rules]} where rules are (action, pattern, length).
+
+    RFC 9309 §2.5: the parsing limit MUST be at least 500 KiB, and §2.3.1.5 says
+    "Crawlers MUST try to parse each line ... Crawlers MUST use the parseable
+    rules." So an oversized robots.txt is *truncated* to MAX_BYTES and the
+    complete lines inside the window are parsed normally -- the file is not
+    rejected wholesale. Rejecting it (returning {}) would default-deny a site
+    whose real rules sit in the first 500 KiB, which the RFC forbids.
+    """
     if len(text.encode("utf-8", "replace")) > MAX_BYTES:
-        return {}  # too large -> default-deny handled by caller
+        print(f"WARN: robots.txt {len(text.encode('utf-8','replace'))} bytes > "
+              f"{MAX_BYTES} cap; parsing the first {MAX_BYTES} bytes only",
+              file=sys.stderr)
+        text = text.encode("utf-8", "replace")[:MAX_BYTES].decode("utf-8", "replace")
     groups = {}
     current = None
     for raw in text.splitlines():
