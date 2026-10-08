@@ -57,4 +57,6 @@ remove duplicates and prevent test-set leakage.
 
 ## References
 - procedures: references/procedures.md
-- scripts: scripts/minhash_lsh.py, scripts/ngram_decontam.py
+- EVALS: references/EVALS.md
+- SOURCES: references/SOURCES.md
+- scripts: scripts/minhash_lsh.py, scripts/ngram_decontam.py, scripts/plant_test.py, scripts/validate_skill.py
