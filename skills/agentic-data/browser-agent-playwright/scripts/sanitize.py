@@ -42,14 +42,71 @@ ENCODING_PATTERNS = [
 ]
 
 
+def _damerau_levenshtein(a: str, b: str, limit: int = 1) -> int:
+    """Bounded Damerau-Levenshtein distance; returns > `limit` if it exceeds it.
+
+    Counts substitution, insertion, deletion *and adjacent transposition* as one
+    edit. The bound lets us short-circuit: most word pairs are far apart and we
+    never build the full matrix. Verified against the OWASP typoglycemia example
+    on 2026-10-08 (the example word `systme` is an adjacent-transposition of
+    `system`, which a plain Levenshtein or anagram-only detector both miss).
+    """
+    if a == b:
+        return 0
+    if abs(len(a) - len(b)) > limit:
+        return limit + 1
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i] + [0] * len(b)
+        for j, cb in enumerate(b, 1):
+            cost = 0 if ca == cb else 1
+            cur[j] = min(
+                prev[j] + 1,          # deletion
+                cur[j - 1] + 1,       # insertion
+                prev[j - 1] + cost,   # substitution
+            )
+            if (
+                i > 1
+                and j > 1
+                and ca == b[j - 2]
+                and a[i - 2] == cb
+                and cur[j] > prev[j - 2] + 1
+            ):
+                cur[j] = prev[j - 2] + 1  # adjacent transposition
+        if min(cur) > limit:
+            return limit + 1
+        prev = cur
+    return prev[len(b)] if prev[len(b)] <= limit else limit + 1
+
+
 def is_typoglycemia(word: str, target: str) -> bool:
-    """True if `word` is an anagram-style scramble of `target` (first/last letter fixed)."""
+    """True if `word` is a typoglycemia-style scramble of `target`.
+
+    Two routes, both from the OWASP LLM Prompt Injection Prevention Cheat Sheet
+    (retrieved 2026-10-08):
+
+    1. Anagram scramble with the first and last letter fixed (the classic
+       `ignroe` -> `ignore` form).
+    2. A single Damerau-Levenshtein edit with the first letter fixed, which also
+       catches adjacent transpositions such as `systme` -> `system` and single
+       substitutions such as `bpyass`-style slips.
+
+    The first letter gate is what stops ordinary English words from colliding
+    with the small target vocabulary.
+    """
     word, target = word.lower(), target.lower()
-    if len(word) != len(target) or len(word) < 4:
+    if len(word) < 4 or not target:
         return False
-    if word[0] != target[0] or word[-1] != target[-1]:
+    if word == target:
         return False
-    return sorted(word[1:-1]) == sorted(target[1:-1])
+    if word[0] != target[0]:
+        return False
+    if len(word) == len(target) and len(word) >= 4:
+        if word[-1] == target[-1] and sorted(word[1:-1]) == sorted(target[1:-1]):
+            return True
+    if abs(len(word) - len(target)) <= 1 and _damerau_levenshtein(word, target, 1) <= 1:
+        return True
+    return False
 
 
 TYPO_TARGETS = ["ignore", "instructions", "override", "bypass", "reveal", "prompt", "system"]
