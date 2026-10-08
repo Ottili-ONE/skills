@@ -56,3 +56,4 @@ All URLs retrieved 2026-10-08 unless marked otherwise.
 | Typoglycemia example string | OWASP cheat sheet, 2026-10-08 | when updated |
 | Base64/hex obfuscation examples | OWASP cheat sheet, 2026-10-08 | when updated |
 | OWASP LLM Top 10 | 2025 v1.0 | next revision |
+| `systme`/`system` is an adjacent transposition, not an anagram | OWASP cheat sheet line 67, 2026-10-08 | when updated |
