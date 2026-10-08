@@ -1,0 +1,60 @@
+{
+  "_comment": "Pinned versions for the business-de skills. Re-verify on every spec/validator bump; record the re-verification date in the skill's references/SOURCES.md. Never hardcode a version inside scripts or SKILL.md - read it from this file.",
+  "xrechnung-zugferd": {
+    "en16931": {
+      "version": "1.2.4",
+      "effective": "2024-01-01",
+      "source": "https://www.cen.eu/standards/EN/16931",
+      "verified": "2026-10-08",
+      "note": "EN 16931-1:2017 with Corrigendum 2017-06 (v1.2.4). Factur-X profile model follows this version. Re-verify before any KoSIT validator upgrade."
+    },
+    "factur-x": {
+      "version": "1.0.11",
+      "effective": "2024-01-01",
+      "source": "https://github.com/FACTUR-X/factur-x",
+      "verified": "2026-10-08",
+      "note": "COMFORT profile = EN 16931 for B2B. Re-verify against the Factur-X CHANGELOG before use."
+    },
+    "kosit-validator": {
+      "version": "5.0.0",
+      "source": "https://github.com/KoReSIT/xrechnung-validator",
+      "verified": "2026-10-08",
+      "note": "KoReSIT XRechnung-Validator (Java). Fallback: john-wink/en16931-php. Re-verify on release."
+    },
+    "ustg_obligation": {
+      "law": "UStG §14",
+      "effective": "2020-01-01",
+      "verified": "2026-10-08",
+      "note": "e-invoicing obligation for B2B in Germany. Re-verify against BMF Schreiben of 2024-11-15 before relying on transitional rules."
+    }
+  },
+  "gobd-archive": {
+    "beg_iv": {
+      "version": "BEG IV",
+      "effective": "2025-01-01",
+      "source": "https://www.gesetze-im-internet.de/beg/",
+      "verified": "2026-10-08",
+      "note": "Retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Re-verify against BEG IV text; let the tax advisor confirm per entity."
+    },
+    "gobd_2014": {
+      "version": "Gruenderzeitung 2014",
+      "effective": "2014-01-01",
+      "verified": "2026-10-08",
+      "note": "Superseded GoBD principles retained for older retention periods. Re-verify against BMF Schreiben of 2024-11-15."
+    }
+  },
+  "datev-extf": {
+    "extf_schema": {
+      "version": "3.1",
+      "effective": "2024-01-01",
+      "source": "https://www.datev.de/technologie/datenservices/datev-extf",
+      "verified": "2026-10-08",
+      "note": "DATEV EXTF schema. DATEV does not publish a public version page - mark as 'unverified until DATEV confirms'. Re-verify on every integration test run."
+    },
+    "extf_formatkennzeichen": {
+      "value": "3.1",
+      "verified": "2026-10-08",
+      "note": "Formatkennzeichen must match the schema version in use."
+    }
+  }
+}
