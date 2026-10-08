@@ -13,36 +13,20 @@ allowed-tools: []
 
 Use this skill when an agent must create, validate, convert, archive or decide
 the validity of a German e-invoice (XRechnung / ZUGFeRD / Factur-X) under
-EN 16931 and UStG §14. It applies to B2B and B2G flows where a machine-readable
-invoice is required or expected. Do **not** use it for PDF-only invoices,
-non-German jurisdictions, or unstructured credit notes.
-
-## Quick reference
-
-| Item | Value |
-|---|---|
-| Spec (pinned) | EN 16931-1:2017+Corr2017-06 v1.2.4, effective 2024-01-01 |
-| Factur-X library tag | 7.4 (spec 1.0.11 separately) |
-| KoSIT validator | v2026-08-31 |
-| B2B obligation | UStG §14, effective 2020-01-01 |
-| Retention | 8 years from year-end (BEG IV, vouchers) |
-| Default profile | COMFORT (EN 16931) |
-
-Read every value above from `config/versions.json`; never hardcode.
+EN 16931 and UStG §14. It applies to B2B and B2G flows where a
+machine-readable invoice is required or expected. Do **not** use it for
+PDF-only invoices, non-German jurisdictions, or unstructured credit notes.
 
 ## Procedure
 
 1. **Classify the document** — XML-only (XRechnung), hybrid PDF/A-3 + XML
    (ZUGFeRD/Factur-X) or other. Reject paper/PDF-only as "sonstige Rechnung".
-   Run `python3 scripts/validate_invoice.py <file>` — its `classification`
-   field tells you which branch you are in.
 2. **Pin versions** — read pinned spec+validator versions from
    `config/versions.json` (never hardcode). Re-verify on a scheduled cadence;
-   record in SOURCES.md. The standard moves ~twice a year.
+   record in SOURCES.md.
 3. **Choose the profile** — MINIMUM / BASIC WL / BASIC / EN 16931 (COMFORT) /
    EXTENDED. Default for B2B: EN 16931/COMFORT. EXTENDED only when sector
-   extensions are required. Run `python3 scripts/profile_selector.py --context …`
-   to get the recommendation plus the missing fields.
+   extensions are required.
 4. **Validate** — run KoSIT validator (or the pure-PHP `john-wink/en16931-php`
    fallback) against the pinned configuration. Treat every error as blocking;
    warnings must be documented.
@@ -66,23 +50,12 @@ Read every value above from `config/versions.json`; never hardcode.
 | B2B cross-border | Full data | Factur-X capable | COMFORT |
 | B2C / private | Minimal data | Any | MINIMUM (rarely an e-invoice) |
 
-### BT-14 / BT-20 mandatory-in-every-profile
-
-| Rule | Meaning | Mandatory in |
-|---|---|---|
-| BT-10 | Buyer Leitweg-ID | COMFORT, EXTENDED |
-| BT-14 | Invoice issue date | **all profiles** |
-| BT-20 | Payment terms | **all profiles** |
-| BT-15 | Buyer postal code | BASIC WL only |
-| BT-17 | Payment due date | COMFORT, EXTENDED |
-| BT-18 | Payment terms text | COMFORT, EXTENDED |
-
 ## Pitfalls from research
 
 - A PDF/A-3 with an unstructured attachment is **not** a ZUGFeRD invoice; the
   XML must be a Factur-X/ZUGFeRD structured attachment.
-- KoSIT validator 5.x treats missing BT-14 (invoice issue date) as a hard error
-  in every profile; do not suppress it.
+- KoSIT validator 5.x treats missing BT-14 (invoice issue date) as a hard
+  error in every profile; do not suppress it.
 - The 2025-2028 transitional period allows paper-to-PDF migration, but the
   e-invoicing obligation for B2B still applies from 2020-01-01.
 - Version pinning matters: the standard moves twice a year; always read
