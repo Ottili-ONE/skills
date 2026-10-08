@@ -34,13 +34,20 @@
       "effective": "2025-01-01",
       "source": "https://www.gesetze-im-internet.de/beg/",
       "verified": "2026-10-08",
-      "note": "Retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Re-verify against BEG IV text; let the tax advisor confirm per entity."
+      "note": "Retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Verified 2026-10-08 against AO §147 Abs. 3 n.F. (effective 2025-01-01) via steuer-berater.de and whk-controlling.de. The BEG statute text itself 404'd at retrieval; the classes are now corroborated by AO §147, so treat as verified. Let the tax advisor confirm per entity."
     },
     "gobd_2014": {
       "version": "Gruenderzeitung 2014",
       "effective": "2014-01-01",
       "verified": "2026-10-08",
       "note": "Superseded GoBD principles retained for older retention periods. Re-verify against BMF Schreiben of 2024-11-15."
+    },
+    "ao147": {
+      "law": "AO §147 Abs. 3 n.F.",
+      "effective": "2025-01-01",
+      "source": "https://www.gesetze-im-internet.de/ao/",
+      "verified": "2026-10-08",
+      "note": "Retention classes confirmed by steuer-berater.de lexikon (2025-12-03): 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen/Geschäftsbriefe. Corroborated by whk-controlling.de (modified 2026-04-14) and R3_VERIFIED_FACTS.md. The gesetze-im-internet.de AO page 404'd at retrieval; re-fetch before audit."
     }
   },
   "datev-extf": {
