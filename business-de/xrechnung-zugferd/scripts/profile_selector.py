@@ -25,11 +25,11 @@ PROFILES = {
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--context", required=True,
-                    choices=["b2b", "b2g", "b2c"])
+                    choices=["b2b","b2g","b2c"], type=str.lower)
     ap.add_argument("--data", required=True,
-                    choices=["full", "basic", "minimal"])
+                    choices=["full","basic","minimal"], type=str.lower)
     ap.add_argument("--recipient", required=True,
-                    choices=["factur-x", "zugferd-basic", "xrechnung", "extended", "any"])
+                    choices=["factur-x","zugferd-basic","xrechnung","extended","any"], type=str.lower)
     ap.add_argument("--config", default="config/versions.json")
     args = ap.parse_args()
 
