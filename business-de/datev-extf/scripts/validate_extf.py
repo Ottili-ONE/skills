@@ -64,9 +64,9 @@ def main() -> int:
                           (len(header), EXPECTED_HEADER_COUNT))
         if header and header[0].strip() != "EXTF":
             errors.append("field 1 Kennzeichen must be 'EXTF', got '%s'" % header[0])
-        if len(header) > 1 and header[1].strip() != pinned["extf_schema"]["version"].split("/")[0]:
+        if len(header) > 1 and header[1].strip() != pinned["extf_schema"]["version"].split("/")[0].strip():
             errors.append("field 2 Versionsnummer must be %s" %
-                          pinned["extf_schema"]["version"].split("/")[0])
+                          pinned["extf_schema"]["version"].split("/")[0].strip())
         if len(header) > 2 and header[2].strip() != EXPECTED_CATEGORY:
             errors.append("field 3 Formatkategorie must be '%s'" % EXPECTED_CATEGORY)
         if len(header) > 3 and header[3].strip() != EXPECTED_FORMAT_NAME:
@@ -98,7 +98,7 @@ def main() -> int:
     ok = not errors
     print(json.dumps({
         "ok": ok,
-        "pinned_versionsnummer": pinned["extf_schema"]["version"].split("/")[0],
+        "pinned_versionsnummer": pinned["extf_schema"]["version"].split("/")[0].strip(),
         "pinned_formatversion": "13",
         "file": str(path),
         "rows": len(rows),

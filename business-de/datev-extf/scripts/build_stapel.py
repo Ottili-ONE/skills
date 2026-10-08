@@ -31,7 +31,7 @@ def build_header(args, pinned):
     today = date.today().strftime("%Y%m%d")
     row = [""] * HEADER_FIELDS
     row[0] = "EXTF"
-    row[1] = pinned["extf_schema"]["version"].split("/")[0]
+    row[1] = pinned["extf_schema"]["version"].split("/")[0].strip()
     row[2] = CATEGORY
     row[3] = FORMAT_NAME
     row[4] = FORMAT_VERSION
@@ -63,7 +63,7 @@ def build_booking(parts):
     row[1] = side                        # col 2 Soll/Haben
     row[6] = account                     # col 7 Konto
     row[9] = beleg                       # col 10 Belegdatum
-    row[13] = '"%s"' % text              # col 14 Buchungstext
+    row[13] = text                   # col 14 Buchungstext (csv writer quotes it)
     row[124] = taxkey                    # col 125 USt-Schlüssel
     return row
 
@@ -103,7 +103,7 @@ def main() -> int:
             w.writerow(r)
 
     print(json.dumps({"ok": True, "output": str(out), "rows": len(rows),
-                      "pinned_versionsnummer": pinned["extf_schema"]["version"].split("/")[0]},
+                      "pinned_versionsnummer": pinned["extf_schema"]["version"].split("/")[0].strip()},
                      indent=2, ensure_ascii=False))
     return 0
 
