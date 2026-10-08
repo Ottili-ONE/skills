@@ -42,9 +42,17 @@ def parse_robots(text: str) -> dict:
 
 
 def _match_length(pattern: str, path: str) -> int:
-    """Longest prefix of `pattern` (with wildcards) that matches `path`; 0 if no match."""
-    # Build a regex: escape, replace '*' with '.*', end-anchor.
-    regex = "^" + re.escape(pattern).replace(r"\*", ".*") + "$"
+    """Longest prefix of `pattern` (with wildcards) that matches `path`; 0 if no match.
+
+    RFC 9309 §2.2.2: the path-part is matched as a *prefix* of the request path,
+    with '*' matching any sequence. A trailing '$' in the pattern anchors the
+    match to the end of the path.
+    """
+    anchored = pattern.endswith("$")
+    pat = pattern[:-1] if anchored else pattern
+    regex = "^" + re.escape(pat).replace(r"\*", ".*")
+    if anchored:
+        regex += "$"
     m = re.match(regex, path)
     if not m:
         return 0
