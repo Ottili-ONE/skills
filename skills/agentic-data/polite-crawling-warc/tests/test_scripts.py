@@ -97,3 +97,28 @@ def test_robots_most_specific_wins():
     assert p.returncode == 0, p.stderr
     p2 = run(ROBOTS, ["--path", "/private/page"], stdin=text)
     assert p2.returncode == 1, p2.stderr
+
+
+def test_validate_warc_ok_and_bad():
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        f = os.path.join(d, "ok.warc.gz")
+        run(WRITER, ["--file", f, "--type", "response",
+                     "--target-uri", "http://example.com/", "--payload", "body"])
+        p = run(Path(ROOT, "scripts", "validate_warc.py"), [f])
+        assert p.returncode == 0, p.stderr
+        assert "records=1 valid=1" in p.stdout
+        # Bad: missing WARC-Payload-Digest on a revisit record.
+        bad = os.path.join(d, "bad.warc.gz")
+        run(WRITER, ["--file", bad, "--type", "revisit",
+                     "--target-uri", "http://example.com/x", "--payload", ""])
+        # remove the digest line by writing a hand-crafted bad file instead
+        import gzip as gz
+        raw = (b"WARC/1.1\r\nWARC-Type: response\r\nWARC-Record-ID: <urn:uuid:x>\r\n"
+               b"WARC-Date: 2026-10-08T12:00:00Z\r\nWARC-Target-URI: http://e/\r\n"
+               b"Content-Length: 0\r\n\r\n\r\n\r\n")
+        with gz.open(bad, "wb") as fh:
+            fh.write(raw)
+        p2 = run(Path(ROOT, "scripts", "validate_warc.py"), [bad])
+        assert p2.returncode == 1, p2.stderr
+        assert "missing/empty WARC-Payload-Digest" in p2.stderr
