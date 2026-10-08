@@ -3,6 +3,17 @@
 Verified 2026-10-08. Version-sensitive: MinHash/LSH math is stable (Broder 1997,
 Charikar 2000); embedding thresholds are model-dependent and must be re-tuned.
 
+## 0. Shared normalizer
+`scripts/normalize.py` defines the ONE normalization function every comparison
+runs on. Two documents that differ only in BOM, zero-width chars, `\r`, case, or
+whitespace collapse to the same SHA-256 and are exact duplicates.
+- Strip BOM (`\ufeff`), zero-width chars (`\u200b`, `\u200c`, `\u200d`).
+- Drop `\r`; drop control chars except `\n` and `\t`.
+- Lowercase (skip with `--no-lowercase` for code).
+- Collapse runs of whitespace to a single space.
+- Canonicalize URLs: lowercase scheme/host, drop default ports, sort query params.
+- Hash the normalized bytes with SHA-256 for exact dedup.
+
 ## 1. Normalization (do this before every comparison)
 1. Strip BOM, zero-width characters, and control chars except `\n` and `\t`.
 2. Lowercase (for text corpora; skip for code).
@@ -12,7 +23,7 @@ Charikar 2000); embedding thresholds are model-dependent and must be re-tuned.
 
 ## 2. MinHash/LSH near-dedup
 - **Shingling**: tokenize into shingles of size `w` (default 5 for prose, 8 for code).
-  Use word-level or char-level shingles; char-level is more robust to minor edits.
+  Use char-level shingles; they are robust to minor edits.
 - **MinHash**: for each document, compute `k` independent min-hash values. Each
   value is `min(h_i(token) for token in set)` over `k` hash functions. `k=128` is
   the common default; never below 64.
@@ -56,6 +67,7 @@ mh = MinHash(num_perm=8)  # unstable estimate, not reproducible
   all-MiniLM-L6-v2; re-tune per model).
 - Embedding similarity is **model-dependent**: a threshold tuned on one model
   does not transfer. Always calibrate on a held-out clean set.
+- The threshold is a CLI argument, never baked into logic.
 
 ## 5. Planted-item test (run before shipping)
 - Plant 5 exact duplicates (copy of an existing document) and 5 near-duplicates
