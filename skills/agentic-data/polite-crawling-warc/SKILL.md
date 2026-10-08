@@ -41,4 +41,6 @@ Trigger: crawl a site and archive it to WARC.
 ## References
 - procedures: references/procedures.md
 - policy: references/crawl-policy.md
-- scripts: scripts/robots.py, scripts/warc_writer.py
+- EVALS: references/EVALS.md
+- SOURCES: references/SOURCES.md
+- scripts: scripts/robots.py, scripts/warc_writer.py, scripts/validate_warc.py

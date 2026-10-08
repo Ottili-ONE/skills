@@ -39,4 +39,7 @@ Trigger: scraping, testing, or automating a site with a real browser.
 ## References
 - procedures: references/procedures.md
 - injection defense: references/injection-defense.md
+- injection decision: references/injection-decision.md
+- EVALS: references/EVALS.md
+- SOURCES: references/SOURCES.md
 - scripts: scripts/sanitize.py
