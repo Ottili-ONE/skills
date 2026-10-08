@@ -181,6 +181,12 @@ def main() -> int:
         if not allow:
             print(f"FAIL: {reason}", file=sys.stderr)
             return 1
+        # RFC 9309 §2.3.1.3: robots.txt unavailable (4xx) -> the crawler MAY access
+        # ANY resource on the server. The rules below do not apply; exit allowed now.
+        print(f"path={args.path} groups={len(groups)} allowed=true")
+        print("PASS: robots.txt unavailable (4xx) -> may crawl per RFC 9309 §2.3.1.3",
+              file=sys.stderr)
+        return 0
 
     allowed = is_allowed(groups, args.path, args.ua)
     print(f"path={args.path} groups={len(groups)} allowed={str(allowed).lower()}")

@@ -134,7 +134,7 @@ def test_normalize_strips_zero_width_and_bom():
     import tempfile
     from pathlib import Path
     d = Path(tempfile.mkdtemp())
-    (d / "a.txt").write_text("\ufeffhello\u200bworld\n")
+    (d / "a.txt").write_text("\ufeffhello\u200b\u200c world\n")
     (d / "b.txt").write_text("hello world\n")
     p = run([sys.executable, str(NORM), "--check", str(d / "a.txt"), str(d / "b.txt")])
     assert p.returncode == 0, p.stderr
@@ -161,7 +161,7 @@ def test_embed_decontam_clean_when_orthogonal():
     import tempfile
     d = Path(tempfile.mkdtemp())
     (d / "docs.json").write_text(json.dumps([[1.0, 0.0], [0.0, 1.0]]))
-    (d / "prompts.json").write_text(json.dumps([[0.0, 1.0]]))
+    (d / "prompts.json").write_text(json.dumps([[0.7071, 0.7071]]))
     (d / "doc_ids.json").write_text(json.dumps(["a", "b"]))
     (d / "prompt_ids.json").write_text(json.dumps(["p1"]))
     p = run([sys.executable, str(EMBED), "--docs", str(d / "docs.json"),
