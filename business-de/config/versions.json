@@ -52,16 +52,21 @@
   },
   "datev-extf": {
     "extf_schema": {
-      "version": "3.1",
-      "effective": "2024-01-01",
-      "source": "https://www.datev.de/technologie/datenservices/datev-extf",
+      "version": "700 / 13",
+      "effective": "2024 (verified 2026-10-08)",
+      "source": "https://github.com/seamless-engineering/datev-extf",
       "verified": "2026-10-08",
-      "note": "DATEV EXTF schema. DATEV does not publish a public version page - mark as 'unverified until DATEV confirms'. Re-verify on every integration test run."
+      "note": "EXTF Versionsnummer=700, Formatversion=13 for Buchungsstapel (125 columns). Formatversion 10-12 are warnings; 13 is the current. EXTF_AS_OF 2026-09-25 per the seamless-engineering validator. DATEV does not publish a public version page; mark as unverified until DATEV confirms via the Prüfprogramm. Re-verify on every integration test run."
     },
     "extf_formatkennzeichen": {
-      "value": "3.1",
+      "value": "EXTF",
       "verified": "2026-10-08",
-      "note": "Formatkennzeichen must match the schema version in use."
+      "note": "Field 1 of the header. DTVF is the legacy alternative."
+    },
+    "extf_category": {
+      "value": "21",
+      "verified": "2026-10-08",
+      "note": "Formatkategorie 21 = Buchungsstapel. 16 = Debitoren/Kreditoren."
     }
   }
 }
