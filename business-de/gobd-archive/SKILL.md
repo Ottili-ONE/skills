@@ -1,3 +1,12 @@
+---
+name: gobd-archive
+description: "Implement GoBD-compliant (Grundsätze ordnungsmäßiger Buchführung) data retention and audit export for German accounting data: immutability, retention classes, Verfahrensdokumentation, and audit-ready export. Use when an agent must store accounting documents, set up a retention policy, produce an audit export, or decide whether a document can be deleted."
+license: MIT-compat
+compatibility: "framework-agnostic; German GoBD / AO §147 retention; offline validation"
+metadata: {}
+allowed-tools: []
+---
+
 # gobd-archive
 
 ## When to use this skill

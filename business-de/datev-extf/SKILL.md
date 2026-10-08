@@ -1,3 +1,12 @@
+---
+name: datev-extf
+description: "Produce and validate DATEV EXTF (Exportdateiformat) booking stacks and data exports for German accounting integrations: EXTF header fields, Buchungsstapel structure, Datenservices, validation errors, and test fixtures. Use when an agent must emit or consume DATEV-compatible machine-readable accounting data, validate a booking stack, or build test fixtures for DATEV integration."
+license: MIT-compat
+compatibility: "framework-agnostic; DATEV EXTF 700/13; offline validation"
+metadata: {}
+allowed-tools: []
+---
+
 # datev-extf
 
 ## When to use this skill

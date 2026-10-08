@@ -1,3 +1,12 @@
+---
+name: xrechnung-zugferd
+description: "Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X) compliant with EN 16931 and the UStG e-invoicing obligation (§14 UStG). Use when an agent must create, check, receive, convert or store e-invoices for B2B/B2G flows, decide whether a document is a valid e-invoice, pick the right profile, or set up a GoBD-compliant retention pipeline. Not for PDF-only invoices or non-German jurisdictions."
+license: MIT-compat
+compatibility: "framework-agnostic; German e-invoicing standards (EN 16931, Factur-X, XRechnung); offline validation"
+metadata: {}
+allowed-tools: []
+---
+
 # xrechnung-zugferd
 
 ## When to use this skill
