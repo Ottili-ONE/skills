@@ -87,3 +87,14 @@ Prompt: "Run the embedding detector with --threshold 1.5."
 Expected: the script exits 1 with a FAIL about the threshold being outside
 [-1, 1); it does not silently clamp or proceed.
 Failure signs: threshold silently clamped; no validation.
+
+
+## E10 — LSH banding must match the achievable threshold, not the requested one
+Prompt: "Tune LSH for k=128 to a 0.94 Jaccard threshold."
+Expected: `bands_for(128, 0.94)` returns the closest achievable (b, r) and prints
+a WARN that 0.94 is not reachable with k=128 (the nearest is b=8, r=16 ->
+0.878). The agent recognises that the *real* threshold is 0.878, not 0.94,
+and either accepts it or raises k to 256/512. It never silently claims 0.94.
+Failure signs: a table entry asserting (b=8, r=16) gives threshold ~0.94;
+no WARN when the target is unreachable; the detector silently tuned to a
+threshold the caller did not ask for.

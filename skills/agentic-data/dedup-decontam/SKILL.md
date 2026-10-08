@@ -31,9 +31,14 @@ remove duplicates and prevent test-set leakage.
 
 ## Decision tables
 - **Jaccard threshold**: 0.95 -> near-identical; 0.8 -> loose; 0.5 -> LSH tuning.
-- **LSH bands/rows**: k=128 -> (b=32, r=4) gives threshold ~0.67; (b=16, r=8)
-  gives ~0.85; (b=8, r=16) gives ~0.94. Pick by the target threshold, not by speed.
-  Override with `--bands`/`--rows` (must multiply to k).
+- **LSH bands/rows**: the LSH threshold is t ~= (1/b)^(1/r) with b*r = k. For
+  k=128 the only *achievable* thresholds are (b=128,r=1)=0.008, (b=64,r=2)=0.125,
+  (b=32,r=4)=0.420, (b=16,r=8)=0.707, (b=8,r=16)=0.878. Values such as 0.85,
+  0.94 or 0.95 are **not reachable** with any factorisation of 128 -- the old
+  table claimed (b=8,r=16) gave 0.94, which is false (it gives 0.878). To hit
+  0.94 use k=256 (b=8, r=32 -> 0.937) or k=512 (b=8, r=64 -> 0.966). Pick by
+  the target threshold, not by speed; `bands_for()` WARNs when the target is
+  unreachable. Override with `--bands`/`--rows` (must multiply to k).
 - **n-gram size**: 13 for MMLU-style; 8 for code; 5 for prose.
 - **Embedding threshold**: 0.92 cosine for all-MiniLM-L6-v2; lower = noisier,
   higher = misses. Model-dependent — calibrate on a held-out clean set.

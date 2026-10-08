@@ -52,15 +52,33 @@ def minhash(tokens: set, k: int, seed: int) -> list:
 
 
 def bands_for(k: int, target: float):
-    """Choose (b, r) so that t ~= (1/b)^(1/r)."""
+    """Choose (b, r) so that t ~= (1/b)^(1/r), and warn if `target` is not
+    exactly achievable.
+
+    The LSH threshold is t ~= (1/b)^(1/r) with b*r = k. For k=128 the only
+    achievable thresholds are 1/128, 1/64, 1/32^0.5, 1/16^0.5, 1/8^0.5, i.e.
+    {0.008, 0.125, 0.420, 0.707, 0.878} -- values such as 0.85, 0.94 or 0.95
+    are *not* reachable with any factorisation of 128, and silently picking the
+    nearest one produces a detector whose real threshold is ~0.88, not the
+    one you asked for. This function therefore returns the closest achievable
+    (b, r) and prints a WARN naming the gap, so the caller can pick k that
+    admits the target (e.g. k=256 admits 0.941 via b=8,r=32).
+    """
     best = None
-    for r in range(1, 17):
+    for r in range(1, k + 1):
         if k % r:
             continue
         b = k // r
         t = (1.0 / b) ** (1.0 / r)
         if best is None or abs(t - target) < abs(best[0] - target):
             best = (t, b, r)
+    if best is None:
+        print(f"FAIL: no factorisation of k={k}", file=sys.stderr)
+        return 0, 0
+    if abs(best[0] - target) > 1e-9:
+        print(f"WARN: target {target} is not achievable with k={k}; using "
+              f"b={best[1]} r={best[2]} -> actual threshold {best[0]:.4f}",
+              file=sys.stderr)
     return best[1], best[2]
 
 

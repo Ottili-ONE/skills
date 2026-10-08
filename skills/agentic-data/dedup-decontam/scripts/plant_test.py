@@ -79,8 +79,12 @@ def run(out_dir: Path, seed: int) -> tuple[int, int, int]:
     sets = {n: shingles(t, W) for n, t in docs.items()}
     sigs = {n: minhash(s, K, SEED) for n, s in sets.items()}
 
-    # LSH tuned to ~0.7 so that planted near-duplicates at Jaccard 0.855 are
-    # reliably bucketed (bands=16, rows=8). Tuning to 0.8 misses them.
+    # LSH tuned to ~0.707 (b=16, r=8, the only factorisation of k=128 below
+    # the planted Jaccard of 0.855). Tuning to the nearest achievable value
+    # above 0.855, i.e. b=8/r=16 -> 0.878, buckets nothing at Jaccard 0.855,
+    # so the planted near-duplicates vanish from the candidate set and the
+    # test fails -- which is the detector proving it is not broken by a
+    # too-loose banding (see references/procedures.md §5).
     from minhash_lsh import lsh_candidates
     b, r, pairs = lsh_candidates(sigs, K, 0.7)
 
