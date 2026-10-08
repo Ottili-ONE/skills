@@ -40,7 +40,7 @@
       "effective": "2025-01-01",
       "source": "https://www.gesetze-im-internet.de/beg/",
       "verified": "2026-10-08",
-      "note": "Retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Verified 2026-10-08 against AO §147 Abs. 3 n.F. (effective 2025-01-01) via steuer-berater.de and whk-controlling.de. The BEG statute text itself 404'd at retrieval; the classes are now corroborated by AO §147, so treat as verified. Let the tax advisor confirm per entity."
+      "note": "CORRECTED 2026-10-08 (PASS 2 re-verification): the BEG URL (https://www.gesetze-im-internet.de/beg/) now resolves to the *Bundesentschädigungsgesetz* (BEG = Entschädigung für Opfer der NS-Verfolgung), NOT the Aufbewahrungsfristen. The retention classes actually live in AO §147 Abs. 3 n.F. (effective 2025-01-01, geändert durch Art. 3 G. v. 23.10.2024 BGBl. 2024 I Nr. 323). Re-verified 2026-10-08 against dejure.org/gesetze/AO/147.html (200, statute text: Bücher/Jahresabschluss 10 Jahre, Buchungsbelege 8 Jahre, Handels-/Geschäftsbriefe 6 Jahre) and provimedia.de/blog/aufbewahrungsfristen (200, 'Seit 2025: Belege 8 Jahre, Bücher 10 Jahre, Geschäftsbriefe 6 Jahre'). The canonical AO URL returned 404 at retrieval. Let the tax advisor confirm per entity."
     },
     "gobd_2014": {
       "version": "Gruenderzeitung 2014",
@@ -51,9 +51,9 @@
     "ao147": {
       "law": "AO §147 Abs. 3 n.F.",
       "effective": "2025-01-01",
-      "source": "https://www.gesetze-im-internet.de/ao/",
+      "source": "https://dejure.org/gesetze/AO/147.html",
       "verified": "2026-10-08",
-      "note": "Retention classes confirmed by steuer-berater.de lexikon (2025-12-03): 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen/Geschäftsbriefe. Corroborated by whk-controlling.de (modified 2026-04-14) and R3_VERIFIED_FACTS.md. The gesetze-im-internet.de AO page 404'd at retrieval; re-fetch before audit."
+      "note": "CORRECTED 2026-10-08 (PASS 2 re-verification): AO §147 Abs. 3 n.F. (effective 2025-01-01). dejure.org/gesetze/AO/147.html returned 200 with the statute text; gesetze-im-internet.de/ao/ returned 404 at retrieval. Classes: 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y Handels-/Geschäftsbriefe/sonstige Unterlagen. Corroborated by provimedia.de (2026-07-11 post) and whk-controlling.de (modified 2026-04-14)."
     }
   },
   "datev-extf": {

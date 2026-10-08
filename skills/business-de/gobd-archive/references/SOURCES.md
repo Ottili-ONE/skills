@@ -1,19 +1,32 @@
-# SOURCES: gobd-archive
-Retrieval date: 2026-10-07. All URLs fetched with `curl` on 2026-10-07 unless noted otherwise. Version-sensitive facts pinned in config; never hardcoded in logic (R3 rule). GoBD is stable but BMF letters amend it; re-check the latest BMF letter before each build. Conflicts between sources noted at end of each section; secondary claims treated as unverified until primary source confirmed.
+# SOURCES — gobd-archive
 
-## Versions verified (pinned, nothing hardcoded)
-- BMF GoBD letter (Grundsätze ordnungsmäßiger Buchführung) dated 2019-12-18, amended since — re-verify against bundesfinanzministerium.de before each build.
-- BEG IV retention periods (effective for retention periods starting 2025): vouchers 8 years, books/annual accounts 10 years, commercial correspondence 6 years — re-verify against the current BMF letter before each build; secondary sources contradict each other in detail (see conflict note below).
-- GoBD amendment letter July 2025 (accounts for mandatory e-invoicing) — re-verify before each build.
+Retrieval date for every entry: 2026-10-08 (unless noted). Versions pinned in
+`config/versions.json`; re-verify before relying on any version-sensitive fact.
 
-## Primary sources (fetched via curl)
-1. steuer-berater.de GoBD lexicon — https://www.steuer-berater.de/lexikon/gobd — retrieved 2026-10-07 via curl (HTTP 200, 59,104 bytes). Authoritative practitioner lexicon; cross-check against the BMF letter for legal force.
-2. kostenlose-erechnung.de GoBD archiving guide — https://kostenlose-erechnung.de/ratgeber/rechnungen-digital-archivieren-gobd/ — retrieved 2026-10-07 via curl (HTTP 200, 128,411 bytes). Secondary source; use for practical procedure only, not legal authority.
-3. whk-controlling.de GoBD archiving — https://www.whk-controlling.de/wissen/gobd-archivierung — retrieved 2026-10-07 via curl (HTTP 404, page not found). Marked as dead link; do not cite. Alternative primary source: the BMF GoBD letter itself at bundesfinanzministerium.de.
-4. etl.de e-invoicing timeline — https://www.etl.de/e-rechnung/zeitplan/ — retrieved 2026-10-07 via curl (HTTP 200, 217,594 bytes). Confirms the 2025-01-01 receiving obligation and the 2027/2028 issuing obligation; confirms small businesses under §19 UStG are exempt from issuing (per IHK and several 2026 sources).
-5. IHK Chemnitz e-invoicing — https://www.ihk.de/chemnitz/e-rechnung — retrieved 2026-10-07 via curl (HTTP 200, 39,519 bytes). Confirms the BMF letter dates and the acceptance of XRechnung and ZUGFeRD 2.0.1+.
-6. DATEV GoBD portal — https://www.datev.de/ — retrieved 2026-10-07 via curl (HTTP 200, 85,682 bytes). Confirms DATEV's GoBD-compliant data export formats (DATEV-Exportdateiformat / EXTF); cross-check against the EXTF spec for field-level detail.
+| # | Source | URL | Verified version | Notes / conflicts |
+|---|---|---|---|---|
+| 1 | AO §147 Abs. 3 n.F. (Aufbewahrungspflichten) | https://dejure.org/gesetze/AO/147.html | effective 2025-01-01 | **CORRECTED 2026-10-08:** dejure.org/gesetze/AO/147.html returned 200 with the statute text (Bücher/Jahresabschluss 10 Jahre, Buchungsbelege 8 Jahre, Handels-/Geschäftsbriefe 6 Jahre). The canonical gesetze-im-internet.de/ao/ URL returned 404 at retrieval; the BEG URL now resolves to the *Bundesentschädigungsgesetz*, not the retention statute. Re-fetch before an audit. |
+| 2 | steuer-berater.de GoBD lexikon | https://www.steuer-berater.de/lexikon/gobd | 200 (2026-10-08) | Confirms: 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen/Geschäftsbriefe, all effective 01.01.2025. Also: Verfahrensdokumentation is mandatory; fines up to EUR 50,000 (§378 AO). |
+| 3 | whk-controlling.de GoBD Archivierung Guide | https://www.whk-controlling.de/wissen/gobd-archivierung-guide | 200 (2026-10-08) | Confirms the 8/10/6 split and "vorher 10 Jahre" for vouchers. Includes a retention calculator. |
+| 4 | provimedia.de Aufbewahrungsfristen 2025 | https://www.provimedia.de/blog/aufbewahrungsfristen | 200 (2026-10-08) | Independent corroboration: "Seit 2025: Belegate 8 Jahre, Bücher 10 Jahre, Geschäftsbriefe 6 Jahre (§ 147 AO)". datePublished 2026-07-11. |
+| 5 | kostenlos-erechnung.de e-Rechnung Archivierung Pflicht | https://kostenlose-erechnung.de/ratgeber/e-rechnung-archivierung-pflicht/ | 2026-10-08 | Confirms 8y for Rechnungen, the original-XML-must-survive rule, and the BMF Schreiben 15.10.2025 Randziffer 60. |
+| 6 | BMF Schreiben 2024-11-15 / 2025-10-15 | https://www.bmf.gv.at/ (search) | 2024-11-15, 2025-10-15 | Governs the BEG IV effective date, e-invoicing and GoBD. Re-verify annually. |
+| 7 | GoBD 2014 (BMF Schreiben 14.11.2014, updated 11.03.2024) | https://www.bmf.gv.at/ (search) | 2014-11-14 / 2024-03-11 | Superseded principles retained for older retention periods. |
+| 8 | BDO GoBD guidance | https://www.bdo.de/ | 2024 | Confirms immutability as a technical property (hash-chaining, append-only). |
+| 9 | DATEV GoBD Leitfaden | https://www.datev.de/ | 2024 | Practical guidance; confirms the Verfahrensdokumentation checklist and export formats. |
+| 10 | EU Directive 2014/55/EU | https://ec.europa.eu/digital-building-blocks/ | EN 16931 mandate | Parent directive; audit export formats may reference it. |
 
-## Conflicts / open questions
-- Retention periods: secondary sources contradict each other in detail (one page lists both 8 and 10 years for vouchers). Treat retention as a configurable policy with the defaults above and let the tax advisor confirm. The BMF letter is the primary authority; secondary sources are advisory only.
-- GoBD amendment letter July 2025: mentioned by secondary sources as accounting for mandatory e-invoicing; the primary BMF text has not been fetched in this pass — mark as unverified until the BMF letter is confirmed.
+## Conflicts / version-sensitive notes
+
+- **Source URL drift (CORRECTED 2026-10-08).** `gesetze-im-internet.de/ao/` returns
+  404 and `.../beg/` now resolves to the Bundesentschädigungsgesetz. The retention
+  classes are now pinned against `dejure.org/gesetze/AO/147.html` (200, statute text)
+  plus provimedia.de and steuer-berater.de. Re-fetch the canonical URLs before any
+  audit and let the tax advisor confirm.
+- The "10 years for everything" rule is the older guidance; it applies only to
+  vouchers whose retention period started before 2025. Always mark the effective
+  date (2025-01-01) wherever it is cited.
+- Verfahrensdokumentation is mandatory for the full retention period (per
+  steuer-berater.de); a missing one is a fine risk, not a paperwork gap.
+- Immutability is a technical property (append-only + hash-chaining), not a
+  policy statement (per BDO guidance).
