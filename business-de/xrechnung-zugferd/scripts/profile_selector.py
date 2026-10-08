@@ -9,8 +9,8 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate_invoice import find_repo_root, load_config  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
 
 PROFILES = {
     ("b2b", "full", "factur-x"): ("COMFORT", "EN 16931 default for B2B"),

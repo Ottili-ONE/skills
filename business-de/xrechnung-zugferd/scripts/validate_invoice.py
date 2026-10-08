@@ -16,23 +16,8 @@ import sys
 from pathlib import Path
 
 
-def find_repo_root(start: Path) -> Path:
-    """Walk up until we find the repo root (has business-de/config/versions.json)."""
-    for cand in [start, *start.parents]:
-        if (cand / "business-de" / "config" / "versions.json").exists():
-            return cand
-    return start
-
-
-def load_config(path: Path) -> dict:
-    """Load the pinned versions config, resolving relative to the repo root."""
-    p = Path(path)
-    if not p.is_absolute() and not p.exists():
-        root = find_repo_root(Path(__file__).resolve().parent)
-        alt = root / "business-de" / path
-        if alt.exists():
-            p = alt
-    return json.loads(p.read_text(encoding="utf-8"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
 
 
 def classify(path: Path) -> str:
