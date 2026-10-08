@@ -10,8 +10,12 @@ Usage:
 """
 import argparse
 import hashlib
+import json
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from normalize import normalize, sha256_normalized  # noqa: E402
 
 DEFAULT_K = 128
 DEFAULT_W = 5  # shingle width
@@ -68,9 +72,16 @@ def jaccard(a: set, b: set) -> float:
     return inter / union if union else 0.0
 
 
-def lsh_candidates(sigs: dict, k: int, target: float):
+def lsh_candidates(sigs: dict, k: int, target: float, bands: int | None = None,
+                 rows: int | None = None):
     """Return (b, r, [(id_a, id_b)]) candidate pairs sharing an LSH bucket."""
-    b, r = bands_for(k, target)
+    if bands is not None and rows is not None:
+        if bands * rows != k:
+            print(f"FAIL: bands*rows={bands}*{rows}={bands*rows} != k={k}", file=sys.stderr)
+            return 0, 0, []
+        b, r = bands, rows
+    else:
+        b, r = bands_for(k, target)
     buckets = {}
     for doc_id, sig in sigs.items():
         for band in range(b):
@@ -97,6 +108,9 @@ def main() -> int:
     ap.add_argument("--k", type=int, default=DEFAULT_K)
     ap.add_argument("--w", type=int, default=DEFAULT_W)
     ap.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    ap.add_argument("--bands", type=int, default=None, help="override LSH bands b")
+    ap.add_argument("--rows", type=int, default=None, help="override LSH rows r")
+    ap.add_argument("--manifest", default=None, help="write JSON manifest here")
     args = ap.parse_args()
 
     if args.k < MIN_K:
@@ -116,20 +130,37 @@ def main() -> int:
 
     sets = {}
     sigs = {}
+    exact = {}
     for name, text in docs.items():
+        text = normalize(text)
+        exact[name] = sha256_normalized(text)
         s = shingles(text, args.w)
         sets[name] = s
         sigs[name] = minhash(s, args.k, args.seed)
 
-    b, r, pairs = lsh_candidates(sigs, args.k, args.threshold)
+    b, r, pairs = lsh_candidates(sigs, args.k, args.threshold, args.bands, args.rows)
+    if b == 0 and r == 0:
+        return 1
     print(f"INFO: k={args.k} w={args.w} bands={b} rows={r} target~{(1/b)**(1/r):.3f}")
     found = 0
+    results = []
     for a, b2 in pairs:
         j = jaccard(sets[a], sets[b2])
         if j >= args.threshold:
             found += 1
             print(f"NEARDUPE {a} {b2} jaccard={j:.3f}")
+            results.append({"a": a, "b": b2, "jaccard": round(j, 4)})
     print(f"pairs={len(pairs)} above_threshold={found}")
+    if args.manifest:
+        manifest = {
+            "k": args.k, "w": args.w, "bands": b, "rows": r,
+            "threshold": args.threshold, "seed": args.seed,
+            "exact_hashes": exact,
+            "near_duplicates": results,
+        }
+        with open(args.manifest, "w", encoding="utf-8") as fh:
+            json.dump(manifest, fh, indent=2, sort_keys=True)
+        print(f"INFO: manifest written to {args.manifest}", file=sys.stderr)
     if not pairs:
         print("PASS: no near-duplicates found", file=sys.stderr)
     else:

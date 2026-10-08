@@ -9,19 +9,33 @@ Usage:
       --prompts prompt1.txt prompt2.txt --n 13
 """
 import argparse
+import json
+import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from normalize import normalize  # noqa: E402
+
 DEFAULT_N = 13
+LEAK_SAMPLE_LEN = 60
+
+
+_GPT2_PAT = re.compile(
+    r"""'s|'t|'re|'ve|'m|'ll|'d| ?[A-Za-z]+| ?[0-9]+| ?[^\sA-Za-z0-9]+|\s+(?!\S)|\s+"""
+)
 
 
 def tokenize_gpt2(text: str) -> list:
-    """GPT-2 byte-level BPE-ish tokenization proxy (regex pre-tokenizer)."""
-    import re
-    pat = re.compile(
-        r"""'s|'t|'re|'ve|'m|'ll|'d| ?[A-Za-z]+| ?[0-9]+| ?[^\sA-Za-z0-9]+|\s+(?!\S)|\s+"""
-    )
-    return pat.findall(text)
+    """GPT-2 byte-level BPE-ish tokenization proxy (regex pre-tokenizer).
+
+    This is the same regex GPT-2 uses for pre-tokenization. It is a *proxy* for
+    the full BPE merge step: for decontamination what matters is that corpus and
+    prompts go through the same pre-tokenizer, so an n-gram that appears in both
+    is an n-gram that appears in both. If you have the real tokenizer, pass
+    `--tokenize raw` on already-tokenized input instead.
+    """
+    return _GPT2_PAT.findall(text)
 
 
 def ngrams(tokens: list, n: int) -> set:
@@ -63,6 +77,7 @@ def main() -> int:
     ap.add_argument("--prompts", nargs="+", required=True)
     ap.add_argument("--n", type=int, default=DEFAULT_N)
     ap.add_argument("--tokenize", choices=["gpt2", "raw"], default="gpt2")
+    ap.add_argument("--manifest", default=None, help="write JSON manifest here")
     args = ap.parse_args()
 
     if args.n < 2:
@@ -82,6 +97,7 @@ def main() -> int:
 
     hits = 0
     flagged = 0
+    per_doc = {}
     for c in args.corpus:
         try:
             text = Path(c).read_text(encoding="utf-8", errors="replace")
@@ -95,13 +111,25 @@ def main() -> int:
         if leaked:
             flagged += 1
             hits += len(leaked)
-            sample = " ".join(leaked.pop())
-            print(f"LEAK {Path(c).name}: {len(leaked)+1} n-gram(s), e.g. '{sample[:60]}'")
+            sample = " ".join(sorted(leaked)[0])
+            print(f"LEAK {Path(c).name}: {len(leaked)} n-gram(s), e.g. '{sample[:LEAK_SAMPLE_LEN]}'")
+            per_doc[Path(c).name] = {"action": "flagged", "reason": "ngram_leak",
+                                     "leaked_ngrams": len(leaked),
+                                     "sample": sample[:LEAK_SAMPLE_LEN]}
         else:
             print(f"OK {Path(c).name}")
+            per_doc[Path(c).name] = {"action": "kept", "reason": "clean", "leaked_ngrams": 0}
 
     print(f"corpus_docs={len(args.corpus)} prompt_ngrams={len(prompt_ngrams)} "
           f"flagged={flagged} leaked_ngrams={hits}")
+    if args.manifest:
+        manifest = {"n": args.n, "tokenize": args.tokenize,
+                    "prompt_files": args.prompts, "corpus_files": args.corpus,
+                    "prompt_ngrams": len(prompt_ngrams),
+                    "flagged": flagged, "leaked_ngrams": hits, "per_doc": per_doc}
+        with open(args.manifest, "w", encoding="utf-8") as fh:
+            json.dump(manifest, fh, indent=2, sort_keys=True)
+        print(f"INFO: manifest written to {args.manifest}", file=sys.stderr)
     if flagged:
         print(f"FAIL: {flagged} document(s) leak test-set n-grams", file=sys.stderr)
         return 1
