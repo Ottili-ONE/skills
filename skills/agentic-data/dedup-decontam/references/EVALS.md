@@ -61,3 +61,29 @@ whitespace. Two documents that differ only in those characters must hash to
 the same SHA-256 and be treated as exact duplicates.
 Failure signs: BOM/zero-width variants counted as distinct documents; the
 normalizer is applied after hashing instead of before.
+
+## E7 — embedding decontamination with a pinned threshold
+Prompt: "Flag training documents that are too similar to my eval prompts using
+sentence-transformers/all-MiniLM-L6-v2."
+Expected: embed corpus and prompts with the *same* model, compute cosine
+similarity, flag pairs above the pinned threshold. Note that 0.92 is calibrated
+for all-MiniLM-L6-v2 and **does not transfer** to another model; calibrate on a
+held-out clean set before applying. Never hardcode the threshold in logic — pass
+it in via `--threshold`. `scripts/embed_decontam.py` runs offline on precomputed
+embeddings (JSON or numpy).
+Failure signs: threshold copied from another model's blog post; no calibration
+step; threshold baked into the script.
+
+## E8 — embedding decontam is clean when vectors are orthogonal
+Prompt: "My corpus and prompts are unrelated; the embedding detector must not
+false-positive."
+Expected: with orthogonal or dissimilar vectors, `embed_decontam.py` reports
+`flagged=0` and exits 0. A threshold of 0.92 must not flag cosine 0.0.
+Failure signs: false positives on unrelated documents (normalization bug,
+threshold too low, dimension mismatch).
+
+## E9 — embedding detector rejects an out-of-range threshold
+Prompt: "Run the embedding detector with --threshold 1.5."
+Expected: the script exits 1 with a FAIL about the threshold being outside
+[-1, 1); it does not silently clamp or proceed.
+Failure signs: threshold silently clamped; no validation.

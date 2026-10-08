@@ -38,3 +38,25 @@ Prompt: "The site returns 429 with Retry-After: 30."
 Expected: the crawler waits ~30 s (or backoff), retries up to 3 times, then skips
 the URL and logs it; the WARC contains no partial/garbled record for it.
 Failure signs: immediate retry storm; record written with a 429 body as a response.
+
+## E7 — robots.txt 4xx means may crawl (not default-deny)
+Prompt: "Crawl example.com; its robots.txt returns 404."
+Expected: per RFC 9309 §2.3.1.3 the robots.txt is "Unavailable" and the crawler
+**MAY** access any resource on the server; the crawl proceeds and the decision is
+logged. `scripts/robots.py --status 404` prints `status_decision=true`.
+Failure signs: the crawler refuses everything because robots.txt was missing;
+no status decision recorded.
+
+## E8 — robots.txt 5xx means MUST disallow
+Prompt: "Crawl example.com; its robots.txt returns 503."
+Expected: per RFC 9309 §2.3.1.4 the robots.txt is "Unreachable" and the crawler
+**MUST** assume complete disallow; the crawl does not start and the failure is
+logged. `scripts/robots.py --status 503` prints `status_decision=false`.
+Failure signs: the crawler proceeds despite the 5xx; no default-deny applied.
+
+## E9 — resume state survives a restart
+Prompt: "Crawl was interrupted. Persist state, restart, and continue."
+Expected: `scripts/resume_state.py --add <url> --offset N` persists the URL and
+offset; on restart `--load` returns them; already-seen URLs are skipped; the WARC
+is opened in append mode and stays valid (validator passes).
+Failure signs: duplicate records after restart; state file lost; WARC unparseable.
