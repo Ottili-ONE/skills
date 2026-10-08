@@ -2,8 +2,107 @@
 name: xrechnung-zugferd
 description: "Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X) compliant with EN 16931 and the UStG e-invoicing obligation (§14 UStG). Use when an agent must create, check, receive, convert or store e-invoices for B2B/B2G flows, decide whether a document is a valid e-invoice, pick the right profile, or set up a GoBD-compliant retention pipeline. Not for PDF-only invoices or non-German jurisdictions."
 license: MIT-compat
-compatibility: "framework-agnostic; KoSIT validator; EN 16931"
+compatibility: "framework-agnostic; German e-invoicing standards (EN 16931, Factur-X, XRechnung); offline validation"
 metadata: {}
 allowed-tools: []
 ---
-# XRechnung / ZUGFeRD Skill — Quick Reference (body <500 lines; full procedure in references/DESIGN.md)## When to use this skill (trigger) - Agent must create an XRechnung or ZUGFeRD invoice for a German B2B/B2G recipient.- Recipient provides a Leitweg-ID or requests a specific profile.- Agent receives an e-invoice and must decide whether it is valid under §14 UStG.- Agent must archive an e-invoice in a GoBD-compliant way (checksum + retention).- Validator reports rule failures and agent needs to map rule IDs to BT-* fields.When NOT to use this skill - Paper/PDF-only invoices without XML → classify as "sonstige Rechnung".- Non-German jurisdictions → use local e-invoicing rules.- The agent needs to design new profiles → consult BMF letters directly; this skill covers standard profiles only.Decision table — document type | Operation | Safe? | When to pick | Pitfall | |-----------|-------|-------------|---------| | XML-only XRechnung | Always safe | Domestic B2B with Leitweg-ID | Must include BT-10 Leitweg-ID; missing = rejection | | ZUGFeRD/Factur-X hybrid PDF/A-3+XML | Safe if PDF/A-3 validated | Recipient requires PDF view + XML data | Embedded XML must be EN 16931 COMFORT level; print-to-PDF copies are not valid archives |Profile selection MINIMUM / BASIC WL / BASIC / EN 16931(COMFORT) / EXTENDED Default for B2B domestic: EN 16931/COMFORT EXTENDED only when sector extensions are required Numbered procedure 1 Classify document type (XML-only vs hybrid vs other). Reject paper/PDF-only as sonstige Rechnung 2 Pin versions from config/versions.json never hardcode Re-verify on scheduled cadence record in SOURCES.md 3 Choose profile using decision table above Default B2B = EN 16931/COMFORT EXTENDED only with sector requirement documented 4 Validate against KoSIT validator or john-wink/en16931-php fallback Treat every error as blocking warnings must be documented 5 Check business rules mandatory BT-* fields Leitweg-ID in BT-10 payment terms syntax in BT-20 tax split per rate Archive original file unchanged XML or PDF-with-embedded-XML 8-year retention from year-end record checksum retrieval path export test Re-validate whole archive sample on any spec/validator bump log the run Pitfalls from research real incidents - Missing BT-10 Leitweg-ID causes automatic rejection by fiscal authorities even when all other fields are correct - Print-to-PDF copies of ZUGFeRD invoices lose embedded XML invalidating GoBD archive requirements - Hardcoding validator versions means re-verification fails silently when KoSIT updates near-realtime trigger prompts act on these immediately - Validator reports rule BT-XX missing look up which field it maps to before fixing - Recipient asks for EXTENDED profile confirm sector extension exists before generating - Archive retention date computed wrong recompute from year-end not invoice date Verification checklist all must pass before you finish - [ ] Document classified correctly XML vs hybrid vs papier r Other - [ ] Profile selected per decision table not guessed - [ ] All mandatory BT-* fields present Leitweg-ID in BT-EOF EOF
+
+# xrechnung-zugferd
+
+## When to use this skill
+
+Use this skill when an agent must create, validate, convert, archive or decide
+the validity of a German e-invoice (XRechnung / ZUGFeRD / Factur-X) under
+EN 16931 and UStG §14. It applies to B2B and B2G flows where a machine-readable
+invoice is required or expected. Do **not** use it for PDF-only invoices,
+non-German jurisdictions, or unstructured credit notes.
+
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Spec (pinned) | EN 16931-1:2017+Corr2017-06 v1.2.4, effective 2024-01-01 |
+| Factur-X library tag | 7.4 (spec 1.0.11 separately) |
+| KoSIT validator | v2026-08-31 |
+| B2B obligation | UStG §14, effective 2020-01-01 |
+| Retention | 8 years from year-end (BEG IV, vouchers) |
+| Default profile | COMFORT (EN 16931) |
+
+Read every value above from `config/versions.json`; never hardcode.
+
+## Procedure
+
+1. **Classify the document** — XML-only (XRechnung), hybrid PDF/A-3 + XML
+   (ZUGFeRD/Factur-X) or other. Reject paper/PDF-only as "sonstige Rechnung".
+   Run `python3 scripts/validate_invoice.py <file>` — its `classification`
+   field tells you which branch you are in.
+2. **Pin versions** — read pinned spec+validator versions from
+   `config/versions.json` (never hardcode). Re-verify on a scheduled cadence;
+   record in SOURCES.md. The standard moves ~twice a year.
+3. **Choose the profile** — MINIMUM / BASIC WL / BASIC / EN 16931 (COMFORT) /
+   EXTENDED. Default for B2B: EN 16931/COMFORT. EXTENDED only when sector
+   extensions are required. Run `python3 scripts/profile_selector.py --context …`
+   to get the recommendation plus the missing fields.
+4. **Validate** — run KoSIT validator (or the pure-PHP `john-wink/en16931-php`
+   fallback) against the pinned configuration. Treat every error as blocking;
+   warnings must be documented.
+5. **Check business rules** — mandatory BT-* fields, Leitweg-ID in BT-10,
+   payment terms syntax in BT-20, tax split per rate.
+6. **Archive** — keep the original file (XML or PDF-with-embedded-XML)
+   unchanged; 8-year retention from year-end; record checksum, retrieval path
+   and export test in the retention log.
+7. **Re-verify** — on any spec/validator bump, re-validate the whole archive
+   sample; log the run.
+
+## Decision tables
+
+### Profile selection
+
+| Context | Data available | Recipient capability | Recommended profile |
+|---|---|---|---|
+| B2B domestic | Full EN 16931 data | Factur-X capable | COMFORT (EN 16931) |
+| B2B domestic | Basic data only | ZUGFeRD BASIC | BASIC |
+| B2G (Offentlicher Auftraggeber) | Full data | XRechnung required | COMFORT or EXTENDED |
+| B2B cross-border | Full data | Factur-X capable | COMFORT |
+| B2C / private | Minimal data | Any | MINIMUM (rarely an e-invoice) |
+
+### BT-14 / BT-20 mandatory-in-every-profile
+
+| Rule | Meaning | Mandatory in |
+|---|---|---|
+| BT-10 | Buyer Leitweg-ID | COMFORT, EXTENDED |
+| BT-14 | Invoice issue date | **all profiles** |
+| BT-20 | Payment terms | **all profiles** |
+| BT-15 | Buyer postal code | BASIC WL only |
+| BT-17 | Payment due date | COMFORT, EXTENDED |
+| BT-18 | Payment terms text | COMFORT, EXTENDED |
+
+## Pitfalls from research
+
+- A PDF/A-3 with an unstructured attachment is **not** a ZUGFeRD invoice; the
+  XML must be a Factur-X/ZUGFeRD structured attachment.
+- KoSIT validator 5.x treats missing BT-14 (invoice issue date) as a hard error
+  in every profile; do not suppress it.
+- The 2025-2028 transitional period allows paper-to-PDF migration, but the
+  e-invoicing obligation for B2B still applies from 2020-01-01.
+- Version pinning matters: the standard moves twice a year; always read
+  `config/versions.json`.
+
+## Verification checklist
+
+- [ ] Document classified correctly (XML / hybrid / other)
+- [ ] Profile selected per decision table
+- [ ] Versions pinned and re-verification date recorded
+- [ ] Validator run returns 0 errors (all errors blocking)
+- [ ] BT-10 Leitweg-ID present for B2B
+- [ ] BT-20 payment terms syntactically valid
+- [ ] Tax split per rate present
+- [ ] Original file archived unchanged; SHA-256 recorded
+- [ ] Retention end date computed (8 years from year-end)
+- [ ] Export test passed
+
+## References
+
+- [Procedures and worked examples](references/procedures.md)
+- [Standards and sources](references/SOURCES.md)
+- [EVALS](references/EVALS.md)

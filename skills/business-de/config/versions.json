@@ -1,0 +1,78 @@
+{
+  "_comment": "Pinned versions for the business-de skills. Re-verify on every spec/validator bump; record the re-verification date in the skill's references/SOURCES.md. Never hardcode a version inside scripts or SKILL.md - read it from this file.",
+  "xrechnung-zugferd": {
+    "en16931": {
+      "version": "1.2.4",
+      "effective": "2024-01-01",
+      "source": "https://www.cen.eu/standards/EN/16931",
+      "verified": "2026-10-08",
+      "note": "EN 16931-1:2017 with Corrigendum 2017-06 (v1.2.4). Factur-X profile model follows this version. Re-verify before any KoSIT validator upgrade."
+    },
+    "factur-x": {
+      "version": "1.0.9.2",
+      "effective": "2024-01-01",
+      "source": "https://github.com/akretion/factur-x (tags)",
+      "verified": "2026-10-08",
+      "note": "CORRECTED 2026-10-08 (PASS 2 re-verification): FNFE-MPE site now advertises 'Publication de Factur-X 1.09.2 / ZUGFeRD 2.5.2' (http://fnfe-mpe.org/factur-x/, retrieved 2026-10-08, HTTP 200). The previous pin of 1.0.11 is stale. This is the *spec* version; the akretion/factur-x *library* tag (7.4) is pinned separately. Re-verify on every release."
+    },
+    "kosit-validator": {
+      "version": "v2026-08-31",
+      "source": "https://github.com/itplr-kosit/validator-configuration-xrechnung",
+      "verified": "2026-10-08",
+      "note": "CORRECTED 2026-10-08: tag v2026-08-31 confirmed present in the GitHub tags API (commit b436fc4). Older tags xrechnung-1_1-2017-12-19 and xrechnung-1_1-2018-02-12 also present. No public version page; tag date is the pin."
+    },
+    "ustg_obligation": {
+      "law": "UStG §14",
+      "effective": "2020-01-01",
+      "verified": "2026-10-08",
+      "note": "e-invoicing obligation for B2B in Germany. Re-verify against BMF Schreiben of 2024-11-15 before relying on transitional rules."
+    },
+    "factur-x-spec": {
+      "version": "1.0.9.2",
+      "source": "http://fnfe-mpe.org/factur-x/",
+      "verified": "2026-10-08",
+      "note": "FNFE-MPE Factur-X specification version. CORRECTED 2026-10-08: 1.09.2 per the FNFE site. COMFORT profile = EN 16931 for B2B."
+    }
+  },
+  "gobd-archive": {
+    "beg_iv": {
+      "version": "BEG IV",
+      "effective": "2025-01-01",
+      "source": "https://www.gesetze-im-internet.de/beg/",
+      "verified": "2026-10-08",
+      "note": "Retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Verified 2026-10-08 against AO §147 Abs. 3 n.F. (effective 2025-01-01) via steuer-berater.de and whk-controlling.de. The BEG statute text itself 404'd at retrieval; the classes are now corroborated by AO §147, so treat as verified. Let the tax advisor confirm per entity."
+    },
+    "gobd_2014": {
+      "version": "Gruenderzeitung 2014",
+      "effective": "2014-01-01",
+      "verified": "2026-10-08",
+      "note": "Superseded GoBD principles retained for older retention periods. Re-verify against BMF Schreiben of 2024-11-15."
+    },
+    "ao147": {
+      "law": "AO §147 Abs. 3 n.F.",
+      "effective": "2025-01-01",
+      "source": "https://www.gesetze-im-internet.de/ao/",
+      "verified": "2026-10-08",
+      "note": "Retention classes confirmed by steuer-berater.de lexikon (2025-12-03): 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen/Geschäftsbriefe. Corroborated by whk-controlling.de (modified 2026-04-14) and R3_VERIFIED_FACTS.md. The gesetze-im-internet.de AO page 404'd at retrieval; re-fetch before audit."
+    }
+  },
+  "datev-extf": {
+    "extf_schema": {
+      "version": "700 / 13",
+      "effective": "2024 (verified 2026-10-08)",
+      "source": "https://github.com/seamless-engineering/datev-extf",
+      "verified": "2026-10-08",
+      "note": "EXTF Versionsnummer=700, Formatversion=13 for Buchungsstapel (125 columns). Formatversion 10-12 are warnings; 13 is the current. EXTF_AS_OF 2026-09-25 per the seamless-engineering validator. DATEV does not publish a public version page; mark as unverified until DATEV confirms via the Prüfprogramm. Re-verify on every integration test run."
+    },
+    "extf_formatkennzeichen": {
+      "value": "EXTF",
+      "verified": "2026-10-08",
+      "note": "Field 1 of the header. DTVF is the legacy alternative."
+    },
+    "extf_category": {
+      "value": "21",
+      "verified": "2026-10-08",
+      "note": "Formatkategorie 21 = Buchungsstapel. 16 = Debitoren/Kreditoren."
+    }
+  }
+}
