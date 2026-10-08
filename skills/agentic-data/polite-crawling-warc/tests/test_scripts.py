@@ -122,3 +122,47 @@ def test_validate_warc_ok_and_bad():
         p2 = run(Path(ROOT, "scripts", "validate_warc.py"), [bad])
         assert p2.returncode == 1, p2.stderr
         assert "missing/empty WARC-Payload-Digest" in p2.stderr
+
+
+def test_robots_status_4xx_allows():
+    text = "User-agent: *\nDisallow: /\n"
+    p = run(ROBOTS, ["--path", "/x", "--status", "404"], stdin=text)
+    assert p.returncode == 0, p.stderr
+    assert "status_decision=true" in p.stdout
+
+
+def test_robots_status_5xx_denies():
+    text = "User-agent: *\nDisallow: /\n"
+    p = run(ROBOTS, ["--path", "/x", "--status", "503"], stdin=text)
+    assert p.returncode == 1, p.stderr
+    assert "status_decision=false" in p.stdout
+    assert "default-deny" in p.stderr
+
+
+def test_robots_status_500_denies():
+    p = run(ROBOTS, ["--path", "/x", "--status", "500"], stdin="User-agent: *\nDisallow: /\n")
+    assert p.returncode == 1, p.stderr
+    assert "status_decision=false" in p.stdout
+
+
+def test_rate_limiter_runs():
+    p = run(Path(ROOT, "scripts", "rate_limit.py"), ["--crawl-delay", "0.05", "--once"])
+    assert p.returncode == 0, p.stderr
+    assert "rate=" in p.stdout
+
+
+def test_resume_state_roundtrip():
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        st = os.path.join(d, "s.json")
+        p = run(Path(ROOT, "scripts", "resume_state.py"), ["--state", st, "--add", "http://x", "--offset", "42"])
+        assert p.returncode == 0, p.stderr
+        p2 = run(Path(ROOT, "scripts", "resume_state.py"), ["--state", st, "--load"])
+        assert p2.returncode == 0, p2.stderr
+        assert "http://x" in p2.stdout
+        assert '"offset": 42' in p2.stdout
+        p3 = run(Path(ROOT, "scripts", "resume_state.py"), ["--state", st, "--skip", "http://x"])
+        assert p3.returncode == 0, p3.stderr
+        p4 = run(Path(ROOT, "scripts", "resume_state.py"), ["--state", st, "--load"])
+        assert p4.returncode == 0, p4.stderr
+        assert '"queue": []' in p4.stdout
