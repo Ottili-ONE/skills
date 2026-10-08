@@ -50,9 +50,28 @@ def parse_headers(rec: bytes) -> dict:
     return headers
 
 
+def _read_all_members(path: str) -> bytes:
+    """Concatenate the payload of every gzip member in the file.
+
+    A WARC written by appending one gzip member per record is N members, but
+    `gzip.open(...).read()` returns only the FIRST member's payload. Reading a
+    3-record WARC that way silently reports 1 record (verified live 2026-10-08),
+    which would make the validator PASS a corrupt file. Walk members until EOF.
+    """
+    out = bytearray()
+    with open(path, "rb") as fh:
+        while True:
+            with gzip.GzipFile(fileobj=fh, mode="rb") as gz:
+                out += gz.read()
+            peek = fh.read(2)
+            if peek != b"\x1f\x8b":
+                break
+            fh.seek(-2, 1)
+    return bytes(out)
+
+
 def validate(path: str) -> tuple[int, int, list[str]]:
-    with gzip.open(path, "rb") as fh:
-        data = fh.read()
+    data = _read_all_members(path)
     records = list(parse_records(data))
     fails = []
     for i, rec in enumerate(records):

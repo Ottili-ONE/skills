@@ -82,11 +82,25 @@ def append_record(path: str, **kwargs) -> int:
 
 
 def count_records(path: str) -> int:
+    """Count WARC/1.1 records across ALL gzip members.
+
+    `append_record` writes one gzip member per record, so a WARC with N records
+    is N concatenated gzip streams. `gzip.open(...).read()` returns only the
+    FIRST member's payload -- which silently reported 1 record for a 2-record
+    WARC (caught by the E3/E9 live run on 2026-10-08). Iterate members until EOF.
+    """
     n = 0
-    with gzip.open(path, "rb") as fh:
-        data = fh.read()
-    # Records are separated by "\r\n\r\n" after the block; count WARC/1.1 lines.
-    return data.count(b"WARC/1.1")
+    with open(path, "rb") as fh:
+        while True:
+            with gzip.GzipFile(fileobj=fh, mode="rb") as gz:
+                data = gz.read()
+            n += data.count(b"WARC/1.1")
+            # GzipFile leaves the file position at the start of the next member,
+            # or at EOF. Stop when the next byte is not a gzip magic header.
+            if fh.read(2) != b"\x1f\x8b":
+                break
+            fh.seek(-2, 1)
+    return n
 
 
 def main() -> int:

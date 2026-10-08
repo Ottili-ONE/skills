@@ -21,6 +21,7 @@ Trigger: crawl a site and archive it to WARC.
 - **Robots outcome**: allowed -> crawl; disallowed -> skip + log; 4xx -> may crawl (RFC 9309 §2.3.1.3); 5xx/error -> default-deny, retry once, then skip.
 - **Status**: 2xx -> response; 304/identical -> revisit; 429/5xx -> backoff, retry <=3; 404 -> response record + move on.
 - **Compression**: WARC file gzip as a whole; never per-record compression unless resuming is not needed.
+- **Record counting**: a WARC written by appending one gzip member per record is N members, but `gzip.open().read()` returns only the first member. The validator must walk all members or it reports 1 record for a multi-record file (verified live 2026-10-08).
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - robots.txt returns 4xx and the crawler still refuses everything -> too strict; RFC 9309 says may crawl.

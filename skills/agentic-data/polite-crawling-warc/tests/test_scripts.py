@@ -180,3 +180,43 @@ def test_warc_writer_revisit_requires_digest():
                          "--target-uri", "http://example.com/x", "--payload", ""])
         assert p.returncode == 1, p.stderr
         assert "payload-digest" in p.stderr
+
+
+def test_robots_oversize_truncates_not_denies():
+    """RFC 9309 §2.5/§2.3.1.5: an oversized robots.txt is truncated to the
+    500 KiB cap and the parseable rules inside the window are used. It must
+    NOT be rejected wholesale (which would default-deny a site whose rules
+    live in the first 500 KiB)."""
+    import tempfile, os
+    with tempfile.NamedTemporaryFile("wb", suffix=".txt", delete=False) as fh:
+        fh.write(b"User-agent: *\nDisallow: /secret/\n")
+        fh.write(b"# " + b"x" * (2 * 1024 * 1024))
+        path = fh.name
+    try:
+        p1 = run(ROBOTS, ["--file", path, "--path", "/secret/x"], stdin=None)
+        assert p1.returncode == 1, p1.stderr
+        assert "allowed=false" in p1.stdout
+        assert "cap" in p1.stderr.lower()
+        p2 = run(ROBOTS, ["--file", path, "--path", "/public/x"], stdin=None)
+        assert p2.returncode == 0, p2.stderr
+        assert "allowed=true" in p2.stdout
+    finally:
+        os.unlink(path)
+
+
+def test_warc_count_records_across_members():
+    """A WARC written by appending one gzip member per record is N members, but
+    gzip.open().read() returns only the first member. The counter must walk all
+    members or it reports 1 record for a 2-record file."""
+    import tempfile, os
+    with tempfile.TemporaryDirectory() as d:
+        f = os.path.join(d, "out.warc.gz")
+        run(WRITER, ["--file", f, "--type", "response",
+                     "--target-uri", "http://example.com/a", "--payload", "aaa"])
+        run(WRITER, ["--file", f, "--type", "response",
+                     "--target-uri", "http://example.com/b", "--payload", "bbb"])
+        run(WRITER, ["--file", f, "--type", "response",
+                     "--target-uri", "http://example.com/c", "--payload", "ccc"])
+        p = run(Path(ROOT, "scripts", "validate_warc.py"), [f])
+        assert p.returncode == 0, p.stderr
+        assert "records=3 valid=3" in p.stdout, p.stdout
