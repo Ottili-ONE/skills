@@ -121,21 +121,30 @@ def validate(path: Path, config: dict) -> dict:
         if header[4] != expected_formatver:
             add(findings, "formatversion", "error", rows[0][0], field=5,
                 value=header[4], params={"expected": expected_formatver})
-        if not re.fullmatch(r"\d{8}", header[5]):
+        if not re.fullmatch(r"\d{17}", header[5]):
             add(findings, "erzeugt-am-format", "error", rows[0][0], field=6, value=header[5])
         if header[20] not in ("", "0", "1"):
             add(findings, "festschreibung", "error", rows[0][0], field=21, value=header[20])
 
     # --- heading row (line 2, 125 columns) ---
+    # DATEV's importer reads columns by position, so a missing or mismatched
+    # heading row is only a warning (seamless-engineering/datev-extf: a differing
+    # heading is "headings-differ", never an error). A file that starts with the
+    # heading row is missing its first line ("headings-first") and is rejected.
     if booking_rows:
         heading = booking_rows[0][1]
         if len(heading) != EXPECTED_COLUMNS:
             add(findings, "heading-column-count", "warning", booking_rows[0][0],
                 field="heading", value=str(len(heading)),
                 params={"expected": EXPECTED_COLUMNS})
+        elif not any(c.strip() for c in heading):
+            add(findings, "no-headings", "warning", booking_rows[0][0])
+        else:
+            # heading row present -> bookings start on line 3
+            booking_rows = booking_rows[1:]
 
-    # --- booking rows (line 3+) ---
-    for line_no, cells in booking_rows[1:]:
+    # --- booking rows (line 3+, or line 2+ when no heading row) ---
+    for line_no, cells in booking_rows:
         if len(cells) != EXPECTED_COLUMNS:
             add(findings, "booking-column-count", "error", line_no,
                 field="row", value=str(len(cells)),
@@ -153,7 +162,7 @@ def validate(path: Path, config: dict) -> dict:
             add(findings, "side-invalid", "error", line_no, field=2, value=side)
         if not re.fullmatch(r"\d{4}", beleg):
             add(findings, "belegdatum-format", "error", line_no, field=10, value=beleg)
-        elif not is_real_day(int(beleg[2:4]), int(beleg[0:2]), 0):
+        elif not is_real_day(2026, int(beleg[2:4]), int(beleg[0:2])):
             add(findings, "belegdatum-impossible", "warning", line_no, field=10, value=beleg)
         if account and len(account) > 4:
             add(findings, "account-too-long", "warning", line_no, field=7, value=account)
