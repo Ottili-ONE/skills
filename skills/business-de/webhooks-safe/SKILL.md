@@ -27,12 +27,12 @@ providers whose signature scheme is unknown.
 2. **Dedupe.** Every webhook carries an event id; store it with a TTL; on a
    duplicate id, ack and skip. Never process twice. Check-and-set must be
    atomic.
-3. **Preserve order.** Within one delivery stream, process events in arrival
-   order; hold an out-of-sequence event until the missing one arrives or the
-   replay window expires. Ordering is per stream, never global.
-4. **Respect replay windows.** For Stripe the timestamp is part of the
-   signature — reject stale signatures before checking the HMAC. Hold
-   unprocessed events for the window before declaring them lost.
+3. **Preserve order.** Within one delivery stream, process events as they
+   arrive; an out-of-sequence event waits until the missing one shows up or
+   the replay window expires. Ordering is per stream, never global.
+4. **Respect replay windows.** Stripe bakes the timestamp into the
+   signature itself — stale signatures get rejected before the HMAC is even
+   checked. Hold unprocessed events for the window before declaring them lost.
 5. **Dead-letter.** After three failed attempts, park the event in the
    dead-letter queue together with the raw payload and the reason it failed;
    a webhook must never vanish without a trace.
@@ -83,13 +83,13 @@ providers whose signature scheme is unknown.
   changes byte order and every signature fails. Read the raw bytes.
 - **Stripe's timestamp is part of the signature.** A signature older than the
   replay window is a replay attack — reject it before checking the HMAC.
-- **GitHub's `X-Hub-Signature-256` is `sha256=<hex>`.** The older
-  `X-Hub-Signature` (SHA1) is deprecated; never fall back to it.
+- **GitHub's `X-Hub-Signature-256` carries the value `sha256=<hex>`.** The older
+  `X-Hub-Signature` (SHA1) has been deprecated; never fall back to it.
 - **Dedupe must be atomic.** Check-and-set on the event id must be one
   operation; a race that checks then sets processes the event twice.
-- **Never deliver to arbitrary hosts.** An attacker-controlled webhook payload
-  that triggers an outbound call is an SSRF. Validate the target against the
-  allow-list.
+- **Never deliver to arbitrary hosts.** A webhook payload that an attacker
+  controls can trigger an outbound call, which is an SSRF. Validate the target
+  against the allow-list before any delivery.
 - **Ordering is per delivery stream, not global.** Two independent providers
   can interleave; only enforce order within one stream.
 - **PayPal and Twilio schemes are unverified** until their docs are fetched

@@ -11,10 +11,10 @@ allowed-tools: []
 
 ## When to use this skill
 
-Use this skill when an agent must classify a data processing activity under
-GDPR, decide whether an AI system needs an EU AI Act Article 50 disclosure
-with human-review evidence, or maintain the GDPR processing register for
-Ottili flows. Do **not** use it for general privacy policy text, non-EU AI
+Use this skill when an agent must sort a data processing activity into its
+GDPR bucket, work out whether an AI system triggers an EU AI Act Article 50
+disclosure that needs human-review evidence, or keep the GDPR processing
+register up to date for Ottili flows. Do **not** use it for general privacy policy text, non-EU AI
 systems, or member-state-specific law beyond the EU baseline.
 
 ## Procedure
@@ -32,8 +32,9 @@ systems, or member-state-specific law beyond the EU baseline.
    (2) transparency-only (chatbot, emotion-recognition, deep-fake,
    biometric-categorization) → Art. 50(1)-(4) disclosure with human review;
    (3) high-risk / Annex III (Art. 6) → Art. 50(5), human review mandatory
-   with an evidence file the script hashes; (4) general AI → Art. 95, document
-   only. Unknown `ai_type` blocks rather than inventing a class.
+   together with an evidence file whose digest the script computes; (4)
+   general AI → Art. 95, document only. Unknown `ai_type` blocks rather than
+   inventing a class.
 4. **Human-review evidence.** Record `reviewer_id`, an ISO-8601 `reviewed_at`
    and `evidence_path`. For high-risk the file must exist when the label is
    produced and the label carries its `sha256` digest. A review has to name the
