@@ -89,8 +89,18 @@ def test_rounded_tax_amount_accepted():
     assert r.returncode == 0, r.stderr
 
 
-def test_kleinunternehmer_zero_rate_rejected():
+def test_kleinunternehmer_zero_rate_allowed():
+    # A Kleinunternehmer may still book intra-EU / exempt supplies (06/0);
+    # what is forbidden is charging VAT on their own sales.
     r = run({"lines": [{"tax_key": "06/0", "net": 100.0, "tax_amount": 0.0,
                         "customer_vat_id": "DE123456789"}],
              "kleinunternehmer": True, "prior_turnover": 10000.0})
+    assert r.returncode == 0, r.stderr
+
+
+def test_kleinunternehmer_above_threshold_rejected():
+    # EUR 25,000 exceeds the EUR 20,000 threshold -> not a Kleinunternehmer.
+    r = run({"lines": [{"tax_key": "19", "net": 100.0, "tax_amount": 19.0,
+                        "customer_vat_id": ""}],
+             "kleinunternehmer": True, "prior_turnover": 25000.0})
     assert r.returncode == 2

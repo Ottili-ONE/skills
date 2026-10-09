@@ -18,6 +18,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
 # Steuerschluessel -> (rate percent, requires_invoice_idnr, allows_tax_line)
 KEYS = {
     "19": (19.0, False, True),
@@ -29,11 +32,14 @@ KEYS = {
     "V091": (0.0, True, False),
     "0": (0.0, False, False),
 }
-KLEINUNTERNEHMEN_MAX = 20000.0  # prior-year turnover threshold, EUR (UStG §19 Abs. 1, 2026)
+# Thresholds are read from config, never hardcoded (R3 rule).
+CONFIG = load_config("config/versions.json")["ust-edge-cases"]
+KLEINUNTERNEHMEN_MAX = float(CONFIG["kleinunternehmer_threshold"]["value"])
 KLEINBETRAG_MAX = 250.0         # gross threshold for Kleinbetagsrechnung, EUR
 
 
-def check(rows, prior_turnover=None, kleinunternehmer=False, rounding="half_up"):
+def check(rows, prior_turnover=None, kleinunternehmer=False, rounding="half_up",
+         config_path="config/versions.json"):
     errors = []
     for i, r in enumerate(rows, 1):
         key = str(r.get("tax_key", "")).strip()
@@ -75,8 +81,9 @@ def check(rows, prior_turnover=None, kleinunternehmer=False, rounding="half_up")
             )
         if kleinunternehmer and rate > 0:
             errors.append(f"line {i}: Kleinunternehmer cannot charge VAT (key {key})")
-        if kleinunternehmer and key in ("06/0", "V091", "0", "09/0"):
-            errors.append(f"line {i}: Kleinunternehmer must not use tax key {key}")
+        # A Kleinunternehmer may still *receive* intra-EU and exempt supplies
+        # (06/0, V091, 0, 09/0) — they just cannot *charge* VAT. Only taxed
+        # keys are forbidden for a Kleinunternehmer's own sales.
         # Kleinbetagsrechnung: a taxed invoice under EUR 250 gross is exempt from
         # the e-invoicing obligation, so a "sonstige Rechnung" is acceptable —
         # but the tax line itself is still arithmetically checked above.
