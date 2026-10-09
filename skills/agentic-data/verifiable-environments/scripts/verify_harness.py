@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 MIN_POWER = 0.30
+MIN_GOOD_PASS_RATE = 0.80
 DEFAULT_CONTRACT = {
     "network": "deny",
     "filesystem": "scoped",
@@ -59,6 +60,37 @@ def load_checks(checks_path: Path) -> list[dict]:
     return checks
 
 
+def assert_checks_spec_ref(checks: list[dict], spec_path: Path | None) -> list[str]:
+    """Every check must reference a line in the spec it was derived from."""
+    failures: list[str] = []
+    if spec_path is None:
+        return failures
+    spec_text = spec_path.read_text(encoding="utf-8")
+    for c in checks:
+        ref = c.get("spec_ref")
+        if not ref:
+            failures.append(f"FAIL: check '{c.get('name', 'unnamed')}' has no spec_ref")
+            continue
+        if ref not in spec_text:
+            failures.append(
+                f"FAIL: check '{c.get('name', 'unnamed')}' spec_ref '{ref}' not found in {spec_path.name}"
+            )
+    return failures
+
+
+def assert_checks_bypass_register(checks: list[dict], register_path: Path | None) -> list[str]:
+    """Every check must have a written bypass entry in the register."""
+    failures: list[str] = []
+    if register_path is None:
+        return failures
+    text = register_path.read_text(encoding="utf-8")
+    for c in checks:
+        name = c.get("name", "unnamed")
+        if f"### {name}" not in text:
+            failures.append(f"FAIL: check '{name}' has no bypass-register entry")
+    return failures
+
+
 def run_checks(checks: list[dict], agent_dir: Path) -> tuple[int, int, list[str]]:
     """Return (passed, total, detail_lines)."""
     passed = 0
@@ -98,6 +130,12 @@ def main() -> int:
     ap.add_argument("--broken", type=Path, required=True, help="deliberately broken agent output dir")
     ap.add_argument("--lazy", type=Path, required=True, help="deliberately lazy agent output dir")
     ap.add_argument("--min-power", type=float, default=MIN_POWER)
+    ap.add_argument("--min-good-pass-rate", type=float, default=MIN_GOOD_PASS_RATE,
+                    help="known-good agent must pass at least this fraction")
+    ap.add_argument("--spec", type=Path, default=None,
+                    help="spec markdown; every check must carry a spec_ref found in it")
+    ap.add_argument("--bypass-register", type=Path, default=None,
+                    help="bypass register markdown; every check must have an entry")
     ap.add_argument("--json", type=Path, default=None, help="write machine-readable report here")
     args = ap.parse_args()
 
@@ -107,7 +145,15 @@ def main() -> int:
         print(line, file=sys.stderr)
 
     checks = load_checks(args.checks)
+    spec_failures = assert_checks_spec_ref(checks, args.spec)
+    for line in spec_failures:
+        print(line, file=sys.stderr)
+    register_failures = assert_checks_bypass_register(checks, args.bypass_register)
+    for line in register_failures:
+        print(line, file=sys.stderr)
+
     report: dict = {"contract": contract, "contract_ok": not contract_failures,
+                    "spec_ok": not spec_failures, "bypass_register_ok": not register_failures,
                     "checks": len(checks), "agents": {}}
 
     for label, d in (("good", args.good), ("broken", args.broken), ("lazy", args.lazy)):
@@ -127,7 +173,13 @@ def main() -> int:
     report["power_vs_lazy"] = power_vs_lazy
     report["min_power"] = args.min_power
 
-    ok = contract_failures == [] and power_vs_broken >= args.min_power and power_vs_lazy >= args.min_power
+    good_ok = good >= args.min_good_pass_rate
+    report["good_pass_rate"] = good
+    report["min_good_pass_rate"] = args.min_good_pass_rate
+    report["good_ok"] = good_ok
+    ok = (contract_failures == [] and spec_failures == [] and register_failures == []
+          and power_vs_broken >= args.min_power and power_vs_lazy >= args.min_power
+          and good_ok)
     report["ok"] = ok
     print(f"INFO: discriminating power vs broken = {power_vs_broken:.2f}, vs lazy = {power_vs_lazy:.2f} (min {args.min_power})", file=sys.stderr)
 
@@ -137,10 +189,16 @@ def main() -> int:
     if not ok:
         if contract_failures:
             print("FAIL: sandbox contract is not pinned", file=sys.stderr)
+        if spec_failures:
+            print(f"FAIL: {len(spec_failures)} check(s) lack a valid spec reference", file=sys.stderr)
+        if register_failures:
+            print(f"FAIL: {len(register_failures)} check(s) have no bypass-register entry", file=sys.stderr)
         if power_vs_broken < args.min_power:
             print(f"FAIL: harness does not separate good from broken (power {power_vs_broken:.2f} < {args.min_power})", file=sys.stderr)
         if power_vs_lazy < args.min_power:
             print(f"FAIL: harness does not separate good from lazy (power {power_vs_lazy:.2f} < {args.min_power})", file=sys.stderr)
+        if not good_ok:
+            print(f"FAIL: known-good agent passes only {good:.0%} (min {args.min_good_pass_rate:.0%}) — checks are too strict", file=sys.stderr)
         return 1
     print("PASS: harness discriminates good, broken and lazy agents", file=sys.stderr)
     return 0
