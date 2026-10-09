@@ -20,15 +20,12 @@ balance-sheet preparation (that is a separate skill).
 
 ## Procedure
 
-1. **Pick the account set** — SKR03 (small, 93 accounts, standard for
-   Kleinunternehmen / small GmbH) or SKR04 (large, ~260 accounts, standard for
-   larger GmbHs). Default to SKR04 unless the entity is known to run SKR03.
+1. **Pick the account set** — SKR03 (small, 93 accounts) or SKR04 (large,
+   ~260 accounts). Default to SKR04 unless the entity runs SKR03.
 2. **Classify the line** — asset / liability / income / expense / tax / equity
-   using the decision table in `references/procedures.md` §2.
-3. **Assign the tax key** — 19 (19% USt), 7 (7% USt), 16/1 (16% USt),
-   06/0 (Erwerb innergemeinschaftlich), 09/0 (Sonderposten/interne
-   Leistungen), 13/0 (Soll/IST bei Dauerleistungen). Never guess: the key
-   drives the USt-Anmeldung.
+   per the table in `references/procedures.md` §2.
+3. **Assign the tax key** — standard 19, reduced 7, legacy 16/1, intra-EU
+   06/0, internal service 09/0, installment 13/0. Never guess.
 4. **Generate the journal** — debit/credit side, account, tax key, amount,
    reference. Validate with `scripts/journal_check.py`.
 5. **Lock the period** — set the Monatsschluss flag, block further postings,
@@ -49,11 +46,13 @@ balance-sheet preparation (that is a separate skill).
 
 ## Pitfalls from research
 
-- SKR03 and SKR04 share account numbers 4xxx (income) and some 2xxx (liabilities)
-  but differ in the 1xxx (assets) range; a mixed SKR03/SKR04 journal is invalid.
+- SKR03 and SKR04 share the 4xxx income/expense range and parts of the 2xxx
+  liability range, but the 1xxx asset range differs between the two sets, so
+  a journal that mixes accounts from both sets is invalid.
 - The tax key **16/1** is legacy (pre-2020); do not use it for new postings.
-- A journal with a tax key but no amount on the tax account (account 1570/1571
-  in SKR04) fails the USt-Anmeldung plausibility check.
+- A journal that carries a taxed key but leaves the tax account
+  (1570/1571/1572) without an amount fails the USt-Anmeldung plausibility
+  check — the declaration and the ledger would disagree.
 
 ## Verification checklist
 
