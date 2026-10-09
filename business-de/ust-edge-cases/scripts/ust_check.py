@@ -8,7 +8,7 @@ interplay, and the reverse-charge-goods-only rule. Exits 0 on success, 2 on
 failure.
 
 Edge cases handled:
-  - reverse charge (06/0 / V091) on a service -> rejected (§13b is goods only)
+  - reverse charge (06/0 / V091) on goods -> rejected (§3g is services only)
   - Kleinunternehmer charging VAT -> rejected
   - Kleinbetagsrechnung (< EUR 250 gross) with a tax line -> flagged
   - unrounded tax amount -> rejected
@@ -29,7 +29,7 @@ KEYS = {
     "V091": (0.0, True, False),
     "0": (0.0, False, False),
 }
-KLEINUNTERNEHMEN_MAX = 22000.0  # prior-year turnover threshold, EUR (2026)
+KLEINUNTERNEHMEN_MAX = 20000.0  # prior-year turnover threshold, EUR (UStG §19 Abs. 1, 2026)
 KLEINBETRAG_MAX = 250.0         # gross threshold for Kleinbetagsrechnung, EUR
 
 
@@ -63,10 +63,15 @@ def check(rows, prior_turnover=None, kleinunternehmer=False, rounding="half_up")
             errors.append(f"line {i}: 0% rate key {key} must have tax amount 0.00, got {stated}")
         if not allows_tax_line and stated != 0.0:
             errors.append(f"line {i}: 0% rate key {key} must not carry a tax amount")
-        if key in ("06/0", "V091") and r.get("service") is True:
+        # Reverse charge (§3g UStG) applies to SERVICES only — IT, consulting,
+        # construction, and similar. A supply of *goods* with key 06/0 uses the
+        # general intra-EU rule (§4a) and must not be labelled reverse charge.
+        # The tax result is 0% either way; the trap is the *claim*, not the rate.
+        if r.get("reverse_charge") is True and r.get("supply_type") != "service":
             errors.append(
-                f"line {i}: reverse charge (§13b) applies to goods only — a service "
-                f"with key {key} uses the general place-of-performance rule"
+                f"line {i}: reverse charge (§3g) applies to services only — "
+                f"supply_type {r.get('supply_type')!r} cannot use reverse charge; "
+                f"the general intra-EU rule (§4a) applies"
             )
         if kleinunternehmer and rate > 0:
             errors.append(f"line {i}: Kleinunternehmer cannot charge VAT (key {key})")

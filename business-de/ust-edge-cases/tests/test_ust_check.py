@@ -38,16 +38,27 @@ def test_kleinunternehmer_charging_vat():
     assert r.returncode == 2
 
 
-def test_reverse_charge_on_service_rejected():
-    # §13b is goods only; a service with 06/0 must be rejected.
+def test_reverse_charge_on_goods_rejected():
+    # §3g is services only; claiming reverse charge on a goods supply is rejected.
     r = run([{"tax_key": "06/0", "net": 100.0, "tax_amount": 0.0,
-              "customer_vat_id": "DE123456789", "service": True}])
-    assert r.returncode == 2 and "goods only" in r.stderr
+              "customer_vat_id": "DE123456789",
+              "reverse_charge": True, "supply_type": "goods"}])
+    assert r.returncode == 2 and "services only" in r.stderr
 
 
-def test_reverse_charge_on_goods_accepted():
+def test_reverse_charge_on_service_accepted():
+    # §3g reverse charge on a service with a valid buyer USt-IdNr. is valid.
     r = run([{"tax_key": "06/0", "net": 100.0, "tax_amount": 0.0,
-              "customer_vat_id": "DE123456789", "service": False}])
+              "customer_vat_id": "DE123456789",
+              "reverse_charge": True, "supply_type": "service"}])
+    assert r.returncode == 0, r.stderr
+
+
+def test_intra_eu_goods_without_reverse_charge_claim_accepted():
+    # Intra-EU goods (§4a) use 06/0 without claiming reverse charge.
+    r = run([{"tax_key": "06/0", "net": 100.0, "tax_amount": 0.0,
+              "customer_vat_id": "DE123456789",
+              "reverse_charge": False, "supply_type": "goods"}])
     assert r.returncode == 0, r.stderr
 
 
