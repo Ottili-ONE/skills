@@ -58,3 +58,27 @@ before 2025. Let the tax advisor confirm per entity.
 **Failure signs:** Agreeing with the colleague unconditionally; citing the old
 guidance without the effective date; failing to mention the tax-advisor
 confirmation.
+
+
+## Near-miss triggers
+
+### N1. "Retention is 6 years for everything"
+**Trap:** the 6-year class is narrower than "all correspondence". Per
+whk-controlling.de (re-fetched 2026-10-09) it covers *empfangene* Handels- oder
+Geschäftsbriefe, **Wiedergaben der abgesandten Handelsbriefe** (copies of
+outgoing letters) and sonstige Unterlagen mit steuerlicher Bedeutung. An
+outgoing letter you cannot reproduce is a GoBD violation.
+
+### N2. "Deletion is automatic after the retention end"
+**Trap:** two independent blockers — the retention end must be reached **and**
+no audit may be open. Both are checked by `scripts/purge_decision.py`, which
+exits non-zero when blocked.
+
+### N3. "The purge record can be deleted with the documents"
+**Trap:** the purge record itself is a document — keep it for the full
+retention period of the documents it describes (a 2017 purge record is kept
+until 2025-12-31 for vouchers).
+
+### N4. "A raw DB dump is fine for the auditor"
+**Trap:** an audit export must be chronological, complete, checksummed and
+carry a manifest (MANIFEST.json). A raw DB dump is not an audit export.

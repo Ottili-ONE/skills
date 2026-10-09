@@ -68,3 +68,32 @@ manifest must record SHA-256 per file and the export date.
 
 **Failure signs:** Exporting a raw DB dump; omitting the manifest; exporting
 out of chronological order; emitting a file that fails EXTF validation.
+
+
+## Near-miss triggers
+
+Prompts that look fine at first glance but hide a trap. The agent must catch
+the trap and still produce a passing artefact.
+
+### N1. "Build a Buchungsstapel for the whole fiscal year"
+**Trap:** WJ-Beginn `20260101`, Datum vom `20260101`, Datum bis `20261231`.
+**Expected behaviour:** This is **correct** — the WJ ends 2026-12-31 (wjDate +
+1y − 1d). Do not flag it. The trap is the inverse: WJ `20260101` with Datum bis
+`20270630`, which the validator reports as `header-beyond-wj`.
+
+### N2. "Our booking date is 2026-06-02, put it in the Belegdatum column"
+**Trap:** the row expects **TTMM** (`0206`), not `20260602`. Writing the full
+date is a hard `belegdatum-format` error. The year comes from the header.
+
+### N3. "The account is 42000, it fits fine"
+**Trap:** account numbers must not exceed Sachkontenlaenge (field 14, default
+4). `42000` with Sachkontenlaenge 4 is `account-too-long`. Either widen
+Sachkontenlaenge (5-8) or shorten the account.
+
+### N4. "We changed the advisor number to 8 digits"
+**Trap:** Beraternummer must be 4-7 digits and >= 1001. An 8-digit value is
+`header-berater`. DATEV rejects it at import.
+
+### N5. "Generate a fixture with a dot decimal to test the validator"
+**Trap:** the broken fixture must *actually* fail — `12.50` produces
+`amount-dot-decimal`. A fixture that still validates is not a negative test.

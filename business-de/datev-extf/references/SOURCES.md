@@ -1,13 +1,13 @@
 # SOURCES — datev-extf
 
-Retrieval date for every entry: 2026-10-08 (re-verified 2026-10-09 for the
-column-index and Belegdatum facts). Versions pinned in `config/versions.json`;
+Retrieval date for every entry: 2026-10-08 (re-verified **2026-10-09** for the
+column-index, Belegdatum, Erzeugt am, WJ arithmetic and the full header-rule set). Versions pinned in `config/versions.json`;
 re-verify before relying on any version-sensitive fact.
 
 | # | Source | URL | Verified version | Notes / conflicts |
 |---|---|---|---|---|
 | 1 | DATEV EXTF Formatbeschreibung (developer.datev.de) | https://developer.datev.de/ | not fetched (200 but empty body at 2026-10-08) | **Retrieval note:** the developer portal returns an empty 200 body; the EXTF spec is gated behind partner registration. The field/column model is corroborated by the seamless-engineering validator, which states its rules come from DATEV's Formatbeschreibung and the DATEV-Format Prüfprogramm. |
-| 2 | seamless-engineering/datev-extf (TypeScript validator) | https://github.com/seamless-engineering/datev-extf | EXTF_AS_OF 2026-09-25 | Primary corroboration: 125-column Buchungsstapel heading row, header field model, and error codes. MIT licensed. **Re-fetched 2026-10-09:** `src/columns.ts` (125 headings) and `src/extf.ts` (rules) re-read; column indices for Umsatz/Soll-Haben/Konto/BU-Schlüssel/Belegdatum/Buchungstext/KOST1/USt-Schlüssel/Herkunft/Buchungs GUID/Festschreibung re-verified. |
+| 2 | seamless-engineering/datev-extf (TypeScript validator) | https://github.com/seamless-engineering/datev-extf | EXTF_AS_OF 2026-09-25 | Primary corroboration: 125-column Buchungsstapel heading row, header field model, and error codes. MIT licensed. **Re-fetched 2026-10-09 (full `src/extf.ts` read):** in addition to the column indices, re-verified (a) `Erzeugt am` regex `/^20\d{15}$/`; (b) **WJ end = wjDate + 1y - 1d** (so WJ 2026-01-01 ends 2026-12-31, NOT 2026-01-01); (c) header-date / header-dates-order / header-dates-year / header-before-wj / header-beyond-wj rules; (d) Beraternummer `/^\d{4,7}$/` >= 1001; (e) Mandantennummer `/^\d{1,5}$/` >= 1; (f) Sachkontenlaenge must be 4-8 (else `header-skl` error); (g) WKZ `/^[A-Z]{3}$/`; (h) Bezeichnung > 30 chars is a warning; (i) Sachkontenrahmen must be 2 digits (warning); (j) Automatikkonten list (SKR 03/04, Gueltig 2026, Art.-Nr. 11174/11175) with BU-Schluessel "40" allowed. |
 | 3 | DATEV-Format Prüfprogramm field definitions | shipped with the Prüfprogramm | Formatversion 13 | The validator's second source; confirms Formatversion 13 is current (10-12 are warnings). |
 | 4 | DATEV Hilfe-Center `#REW` import messages | https://hilfe.datev.de/ | 2026-10-08 | Third source for the validator; where the three disagree, the check is a warning, not an error. |
 | 5 | ameax/datev-extf (CSV writer) | https://github.com/ameax/datev-extf | 2026-10-08 | Corroboration of the CSV envelope shape and the comma-decimal convention. |
