@@ -9,20 +9,29 @@ license: MIT
 Trigger: answering a factual question from the open web where the answer must
 be auditable and the sources verifiable.
 
+## Core invariant
+Every claim in the answer traces to a scored, dated, primary-or-corroborated
+source. A claim without a source is not an answer, it is an assertion. A source
+without a retrieval date is not evidence, it is memory.
+
 ## Procedure (numbered — follow in order)
 1. **Decompose the question** — split it into sub-questions answerable by a
    single source. A question that needs ten sources is ten questions.
 2. **Score source quality before reading** — authority (domain, maintainer),
    recency (publication date vs the question's rate of change), corroboration
-   (independent sources agreeing). Score 0-10; keep only >=6.
+   (independent sources agreeing). Score 0-10; keep only >=6. Score before
+   reading: a good-looking page can be wrong.
 3. **Fetch primary sources first** — official docs, standards bodies, the
-   source repository. Secondary summaries are for confirmation only.
+   source repository. Secondary summaries are for confirmation only. A
+   secondary source used as the sole evidence is a FAIL.
 4. **Record retrieval date on every source** — the URL, the date fetched, the
-   version pinned. A source without a retrieval date is not evidence.
+   version pinned. A source without a retrieval date is not evidence. Facts
+   verified more than a year ago must be re-fetched for a current question.
 5. **Cite by paraphrase under 15 words** — quote only when the phrasing is the
-   evidence. Never copy long passages.
+   evidence. Never copy long passages. Record the URL next to every claim.
 6. **Handle contradictions explicitly** — list them, weight by source quality,
-   state the resolution. Never silently pick the majority view.
+   state the resolution. Never silently pick the majority view and never average
+   two views into a fake middle.
 7. **State confidence** — high (primary + corroboration), medium (primary
    only), low (secondary only). Never claim high without corroboration.
 
@@ -42,6 +51,7 @@ be auditable and the sources verifiable.
 - A contradiction resolved by majority vote -> re-weight by quality.
 - A fact stated without a source -> mark it as unverified.
 - A 2024 fact used for a 2026 question without re-checking -> re-fetch.
+- A kept source with score <6 -> it was never scored.
 
 ## Pitfalls from research
 - P1: Source quality is judged before reading; a good-looking page can be wrong.
@@ -49,6 +59,8 @@ be auditable and the sources verifiable.
 - P3: Contradictions must be surfaced, not averaged away.
 - P4: Secondary sources masquerading as primary are the common failure.
 - P5: Stale facts are reused because they were once verified.
+- P6: A source that scores 5 is not "close enough" — it is discarded, unless it
+  is the only source for a sub-question, in which case it is flagged low.
 
 ## Verification checklist
 - [ ] Question decomposed into sub-questions.
