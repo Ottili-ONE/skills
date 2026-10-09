@@ -108,6 +108,24 @@ def test_ordering_old_seq_skipped():
     assert json.loads(r.stdout)["action"] == "duplicate_or_old"
 
 
+
+
+def test_ordering_persists_state_on_hold():
+    """A held event must be saved, otherwise a restart loses the gap."""
+    import tempfile, os
+    store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+    store.write('{"last_seq": 0, "held": {}}'); store.close()
+    try:
+        r = run(ORDER, "--stream", "github:ottili", "--seq", "3",
+                "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+        assert r.returncode == 1, r.stderr
+        assert json.loads(r.stdout)["action"] == "hold"
+        # state must have been written despite the hold
+        state = json.loads(Path(store.name).read_text(encoding="utf-8"))
+        assert state.get("last_seq") == 0
+        assert "3" in state.get("held", {})
+    finally:
+        os.unlink(store.name)
 def test_ssrf_allows_allowed_host():
     r = run(SSRF, "--url", "https://ottili.example/webhooks/inbound",
             "--allow", "ottili.example")

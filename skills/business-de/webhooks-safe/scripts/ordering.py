@@ -49,15 +49,19 @@ def decide(stream: str, seq: int, now: int, replay_seconds: int,
         released = []
         next_seq = seq + 1
         while str(next_seq) in held:
-            released.append({"seq": next_seq, "payload": held.pop(str(next_seq))})
+            released.append({"seq": next_seq, "payload": held[str(next_seq)].get("payload")})
+            held.pop(str(next_seq))
             next_seq += 1
         state["last_seq"] = next_seq - 1
         return {"action": "process", "seq": seq, "released": released}
-    # out of order: hold until the gap fills or the replay window expires
-    held[str(seq)] = "held"
+    # out of order: hold until the gap fills or the replay window expires.
+    # The held set stores the arrival *timestamp* for every seq, never the
+    # seq itself: comparing a seq (e.g. 3) against `now` (1.7e9) always
+    # looks expired and silently drops the event.
+    held[str(seq)] = {"arrived": now, "payload": "held"}
     expired = []
-    for s in list(held):
-        if now - int(s) > replay_seconds:
+    for s, entry in list(held.items()):
+        if now - entry["arrived"] > replay_seconds:
             expired.append(int(s))
             held.pop(s)
     return {"action": "hold", "seq": seq, "held_count": len(held),
@@ -79,8 +83,9 @@ def main() -> int:
     now = args.now or int(time.time())
     state = load_state(args.store)
     result = decide(args.stream, args.seq, now, args.replay_seconds, state)
-    if result["action"] == "process":
-        save_state(args.store, state)
+    # Persist on every decision. A hold that is not saved is silently lost the
+    # next time the process restarts, and the gap never fills.
+    save_state(args.store, state)
     print(json.dumps({"stream": args.stream, **result}, indent=2, ensure_ascii=False))
     # process and duplicate_or_old are both "handled"; hold/expiry are not
     return 0 if result["action"] in ("process", "duplicate_or_old") else 1
