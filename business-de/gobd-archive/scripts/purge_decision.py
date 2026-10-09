@@ -64,7 +64,10 @@ def decide(doc_type: str, year: int, approver: str, reason: str,
         },
         "approver": approver.strip(),
         "reason": reason.strip(),
-        "record_retention_until": retention_end(today.year, years),
+        # The purge record is itself a document: keep it for the full retention
+        # period of the documents it describes (a 2017 voucher purge record is
+        # kept until 2025-12-31, NOT until today + years).
+        "record_retention_until": end,
         "note": ("Deletion before the retention end is never permitted. "
                  "After the end, delete only via this documented, auditable "
                  "purge. Keep this record for the full retention period."),
