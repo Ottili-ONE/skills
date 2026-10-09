@@ -15,23 +15,28 @@ Use this skill when an agent must publish content to WordPress or Meta for
 Ottili flows, or reconcile an unknown publish result. Do **not** use it for
 general CMS logic, non-WordPress platforms, or non-Meta social platforms.
 
-## Procedure
+## Procedure (numbered, in order)
 
 1. **Lookup first.** Ask the append-only idempotency store whether the
    client-generated key already maps to a post id. If yes, return it and
-   never create a second post.
+   never create a second post. A lookup miss is not a reason to publish —
+   it is the *only* state in which publishing is allowed.
 2. **Publish.** WordPress: `POST /wp/v2/posts` with Application Passwords or
    OAuth2 (Basic Auth is deprecated in WP 6.7+ core). Meta: `POST
-   /{page-id}/feed` on the pinned Graph API version.
+   /{page-id}/feed` on the pinned Graph API version. Send exactly one
+   request per key; the idempotency key is the same on every retry.
 3. **Record.** On success, append the key → post id mapping to the store.
-   Never mutate an entry in place.
+   Never mutate an entry in place — the store is append-only JSONL and an
+   in-place edit breaks the audit trail.
 4. **Handle errors.** 4xx blocks, except 409 (conflict → re-query by key).
-   5xx retries with bounded exponential backoff. Auth errors never retry
-   with the same token.
+   5xx retries with bounded exponential backoff (base 500 ms, factor 2,
+   max 3 attempts, cap 30 s). Auth errors never retry with the same token.
 5. **Reconcile unknowns.** On a timeout or partial success, re-query both
    platforms by idempotency key, compare state, log the delta. Persistent
    mismatch → human review, never silent overwrite.
-6. **SSRF-safe.** Publish only to the configured WP/Meta endpoints.
+6. **SSRF-safe.** Publish only to the configured WP/Meta endpoints. Check
+   every outbound target against the allow-list; throw out IP literals and
+   `localhost`, and never try to resolve them first.
 
 ## Decision tables
 
@@ -56,8 +61,8 @@ general CMS logic, non-WordPress platforms, or non-Meta social platforms.
 
 ## Pitfalls from research
 
-- **POST is not idempotent by HTTP semantics.** Neither WP nor Meta natively
-  supports idempotency keys, so the skill implements idempotency in the
+- **POST is not idempotent by HTTP semantics.** Neither platform provides
+  native idempotency keys, so the skill constructs idempotency on top of the
   reconciliation layer.
 - **WordPress Basic Auth is deprecated** as of WP 6.7+ (core). The separate
   plugin is unmaintained; use Application Passwords or OAuth2 instead.

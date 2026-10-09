@@ -31,7 +31,8 @@ def load(path: str) -> dict:
 
 def reconcile(key: str, wp: dict, meta: dict, strict: bool = False) -> dict:
     deltas = []
-    for platform, state in (("wordpress", wp), ("meta", meta)):
+    platforms = {"wordpress": wp, "meta": meta}
+    for platform, state in platforms.items():
         if not state:
             deltas.append({"platform": platform, "found": False,
                            "match": False, "reason": "no record"})
@@ -41,14 +42,25 @@ def reconcile(key: str, wp: dict, meta: dict, strict: bool = False) -> dict:
                            "idempotency_key": state.get("idempotency_key"),
                            "match": False, "reason": "key mismatch"})
             continue
-        # compare post id and status if both present
         for field in ("id", "status"):
-            a, b = state.get(field), state.get(field)
-            if a is None:
+            if state.get(field) is None:
                 if strict:
                     deltas.append({"platform": platform, "field": field,
                                    "match": False, "reason": "missing field"})
                 continue
+    # Cross-platform comparison: the old code read the same state twice
+    # (`state.get(field), state.get(field)`) and never compared WordPress
+    # against Meta at all. Compare the two platforms field by field.
+    for field in ("id", "status"):
+        wv, mv = wp.get(field), meta.get(field)
+        if wv is None or mv is None:
+            if strict and (wv is None or mv is None):
+                deltas.append({"field": field, "wordpress": wv, "meta": mv,
+                               "match": False, "reason": "missing field"})
+            continue
+        if wv != mv:
+            deltas.append({"field": field, "wordpress": wv, "meta": mv,
+                           "match": False, "reason": "state differs between platforms"})
     if not deltas:
         return {"ok": True, "key": key, "deltas": []}
     return {"ok": False, "key": key, "deltas": deltas, "strict": strict}
