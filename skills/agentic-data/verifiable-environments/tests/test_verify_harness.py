@@ -78,3 +78,46 @@ def test_json_report_written() -> None:
     assert data["ok"] is True
     assert data["agents"]["good"]["pass_rate"] == 1.0
     assert data["agents"]["broken"]["pass_rate"] < 1.0
+
+
+def test_spec_ref_missing_fails() -> None:
+    bad = FIX / "checks_noref.json"
+    bad.write_text(json.dumps({"checks": [
+        {"name": "x", "path": "output.json", "exists": True}]}))
+    r = run(
+        "--checks", str(bad),
+        "--contract", str(FIX / "contract.json"),
+        "--spec", str(FIX / "SPEC.md"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 1
+    assert "spec_ref" in r.stderr
+
+
+def test_bypass_register_missing_fails() -> None:
+    r = run(
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--bypass-register", str(FIX / "SPEC.md"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 1
+    assert "bypass-register entry" in r.stderr
+
+
+def test_full_pipeline_with_spec_and_register() -> None:
+    r = run(
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--spec", str(FIX / "SPEC.md"),
+        "--bypass-register", str(ROOT / "references" / "bypass-register.md"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 0, r.stderr
+    assert "PASS: harness discriminates" in r.stderr
