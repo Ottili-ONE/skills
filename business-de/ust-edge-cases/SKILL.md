@@ -58,8 +58,11 @@ interplay) with worked examples and legal sources are in
 
 ## Pitfalls from research
 
-- Reverse charge for **services** is not §13b; it is §13b only for **goods**
-  (resale of goods). Services use the general place-of-performance rule.
+Five traps recur; the full list with sources is in
+`references/procedures.md` §1-§6:
+
+- Reverse charge (§13b) is **goods** only — services use the general
+  place-of-performance rule.
 - Kleinunternehmer cannot reclaim input VAT and must not issue an e-invoice
   with a tax line; their invoices are "sonstige Rechnung" (§19 UStG).
 - OSS requires the home-state registration; a German business using OSS must

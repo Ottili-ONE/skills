@@ -40,13 +40,14 @@ live in `references/procedures.md` §3.
 
 ## Pitfalls from research
 
-- SKR03 and SKR04 share the 4xxx income/expense range and parts of the 2xxx
-  liability range, but the 1xxx asset range differs between the two sets, so
-  a journal that mixes accounts from both sets is invalid.
-- The tax key **16/1** is legacy (pre-2020); do not use it for new postings.
-- A journal that carries a taxed key but leaves the tax account
-  (1570/1571/1572) without an amount fails the USt-Anmeldung plausibility
-  check — the declaration and the ledger would disagree.
+Three traps recur; the full list with sources is in
+`references/procedures.md` §3 and §5:
+
+- SKR03 and SKR04 are not mixable — the 1xxx asset range differs between the
+  two sets.
+- The tax key **16/1** is legacy (pre-2020); do not apply it to new postings.
+- A taxed key without an amount on the tax account (1570/1571/1572) fails
+  the USt-Anmeldung plausibility check.
 
 ## Verification checklist
 
