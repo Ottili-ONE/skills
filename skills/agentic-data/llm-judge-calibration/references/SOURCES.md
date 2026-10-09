@@ -1,6 +1,6 @@
 # SOURCES — llm-judge-calibration
 
-Retrieval date 2026-10-09. Every URL below was fetched live on that date;
+Retrieval date 2026-10-09. Every URL below was fetched live on that date; all arXiv IDs re-verified HTTP 200 on 2026-10-09.
 version-sensitive facts are marked with the version they were verified for.
 
 | # | URL | What was used | Version / date verified | Conflict |
