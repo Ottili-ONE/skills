@@ -12,62 +12,58 @@ allowed-tools: []
 ## When to use this skill
 
 Use this skill when an agent must publish content to WordPress or Meta for
-Ottili flows: create or update a post, handle API errors, and reconcile when
-the result is unknown. Do **not** use it for general CMS logic, non-WordPress
-platforms, or non-Meta social platforms.
+Ottili flows, or reconcile an unknown publish result. Do **not** use it for
+general CMS logic, non-WordPress platforms, or non-Meta social platforms.
 
-## Procedure (numbered, in order)
+## Procedure
 
-1. **Check the idempotency store first.** Before every publish, look up the
-   client-generated key in the store. If it exists, return the stored post
-   id — never create a second post.
-2. **Publish to the platform.** WordPress via `/wp/v2/posts` (Application
-   Passwords or OAuth2; Basic Auth is deprecated in WP 6.7+). Meta via
-   `/{page-id}/feed` on the pinned Graph API version.
-3. **Store the mapping.** On success, append the key → post id mapping to the
-   append-only store. Never mutate an entry in place.
-4. **Handle errors.** Treat 4xx as blocking (except 409, which means
-   conflict/duplicate → re-query by key). Retry 5xx with exponential backoff
-   up to 3 attempts (base 500 ms, factor 2, cap 30 s).
-5. **Reconcile unknown results.** If the response is ambiguous (timeout,
-   partial success), re-query both APIs by idempotency key, compare state,
-   log the delta. Persistent mismatch → flag for human review, never silently
-   overwrite.
-6. **SSRF-safe delivery.** Publish only to the configured WP/Meta endpoints;
-   never publish to arbitrary hosts.
+1. **Lookup first.** Ask the append-only idempotency store whether the
+   client-generated key already maps to a post id. If yes, return it and
+   never create a second post.
+2. **Publish.** WordPress: `POST /wp/v2/posts` with Application Passwords or
+   OAuth2 (Basic Auth is deprecated in WP 6.7+ core). Meta: `POST
+   /{page-id}/feed` on the pinned Graph API version.
+3. **Record.** On success, append the key → post id mapping to the store.
+   Never mutate an entry in place.
+4. **Handle errors.** 4xx blocks, except 409 (conflict → re-query by key).
+   5xx retries with bounded exponential backoff. Auth errors never retry
+   with the same token.
+5. **Reconcile unknowns.** On a timeout or partial success, re-query both
+   platforms by idempotency key, compare state, log the delta. Persistent
+   mismatch → human review, never silent overwrite.
+6. **SSRF-safe.** Publish only to the configured WP/Meta endpoints.
 
 ## Decision tables
 
-### Error → fix
+### Error → fix (condensed)
 
-| HTTP status | Meaning | Fix |
+| Status | Meaning | Fix |
 |---|---|---|
-| 400 | Validation error | Fix the named field |
-| 401 / 403 | Auth | Re-issue credentials; never retry with the same token |
-| 409 | Conflict / duplicate | Re-query by idempotency key; never re-create |
+| 400 | Validation | Fix the named field |
+| 401/403 | Auth | Re-issue credentials; never retry same token |
+| 409 | Conflict / duplicate | Re-query by key; never re-create |
 | 429 | Rate limited | Exponential backoff, up to 3 attempts |
-| 5xx | Platform outage | Backoff; mark the post unknown |
+| 5xx | Outage | Backoff; mark the post unknown |
 
-### Reconcile outcome
+### Reconcile outcome (condensed)
 
 | Situation | Action |
 |---|---|
 | Both platforms match | Ok; log |
 | One platform newer | Re-query the older; log the delta |
-| Unknown result (timeout) | Re-query both by idempotency key; log the delta |
+| Unknown result (timeout) | Re-query both by key; log the delta |
 | Persistent mismatch | Flag for human review; never silently overwrite |
 
 ## Pitfalls from research
 
-- **POST is not idempotent by HTTP semantics.** Idempotency must be enforced
-  server-side via a client-provided key. Neither WP nor Meta natively
-  supports idempotency keys — the skill must implement it in the
-  reconciliation layer (the `idempotency_store.py` helper).
-- **WordPress Basic Auth is deprecated** in WP 6.7+ (core); the plugin ships
-  separately and is unmaintained. Prefer Application Passwords or OAuth2.
-- **Meta sunsets API versions silently.** v19.0 is pinned but v20.0 and v21.0
-  are already listed in the changelog (re-verified 2026-10-09) — do not assume
-  v19.0 is the newest. Re-verify quarterly.
+- **POST is not idempotent by HTTP semantics.** Neither WP nor Meta natively
+  supports idempotency keys, so the skill implements idempotency in the
+  reconciliation layer.
+- **WordPress Basic Auth is deprecated** as of WP 6.7+ (core). The separate
+  plugin is unmaintained; use Application Passwords or OAuth2 instead.
+- **Meta's pinned version is not the newest.** v19.0 is pinned, yet v20.0
+  and v21.0 already appear in the changelog (re-verified 2026-10-09). Meta
+  sunsets versions without notice; re-verify quarterly.
 - **Never assume the first response is authoritative.** Neither API
   guarantees exactly-once delivery; re-query both platforms by the client
   idempotency key and compare state.
