@@ -19,21 +19,27 @@ systems, or member-state-specific law beyond the EU baseline.
 
 ## Procedure
 
-1. **Classify the processing activity.** Identify the data subject, purpose,
-   legal basis (Art. 6 GDPR) and whether personal data is involved. If no
-   personal data => skip the GDPR gate; if personal data => continue.
-2. **Register in the processing register.** Record controller, purpose,
-   categories of data subjects/data, recipients, retention period and
-   security measures (Art. 30 GDPR). Append-only; never edit in place.
-3. **Check AI Act scope.** Does the system use AI? Is it high-risk? If yes =>
-   Article 50 disclosure with human-review evidence required before
-   deployment. If no => no Article 50 label needed (but still document).
-4. **Human-review evidence.** Record who reviewed what and when. Review must
-   be meaningful, not a checkbox. Missing evidence for a high-risk system is
-   BLOCKING.
-5. **Label.** Emit a machine-readable label with system name, risk class,
-   Article 50 paragraph, human-review status, date of last review. Re-verify
-   on every release cycle; never reuse a stale label across versions.
+1. **GDPR gate.** Identify controller, purpose, data subjects and categories,
+   recipients, retention and security measures (Art. 30(1)). If the activity
+   involves no personal data, record it anyway with `personal_data: false` for
+   traceability. Exactly one Art. 6(1) legal basis per activity; the script
+   rejects unknown bases.
+2. **Register.** Append the entry to the JSONL register. Never edit an entry in
+   place — that breaks GoBD immutability. On a change, append a new entry with
+   a new `recorded_at` and a note pointing at the superseded entry id.
+3. **AI Act gate.** Run four gates in order: (1) no AI → not-ai, no Art. 50;
+   (2) transparency-only (chatbot, emotion-recognition, deep-fake,
+   biometric-categorization) → Art. 50(1)-(4) disclosure with human review;
+   (3) high-risk / Annex III (Art. 6) → Art. 50(5), human review mandatory
+   with an evidence file the script hashes; (4) general AI → Art. 95, document
+   only. Unknown `ai_type` blocks rather than inventing a class.
+4. **Human-review evidence.** Record `reviewer_id`, ISO-8601 `reviewed_at` and
+   `evidence_path`. For high-risk the file must exist at label time and the
+   label carries its `sha256` digest. A review must name the system, the risk
+   class and the mitigations checked — a checkbox with no content is missing.
+5. **Label and store.** Emit the machine-readable label next to the system
+   artefact. Re-run classification on every material change and every release
+   cycle; a label emitted for v1 is not valid for v2.
 
 ## Decision tables
 
