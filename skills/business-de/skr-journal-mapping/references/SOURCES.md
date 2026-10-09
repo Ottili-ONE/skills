@@ -42,3 +42,7 @@ noted at end of each section; secondary claims treated as unverified until prima
 - **SKR03 vs SKR04 account overlap**: accounts 4000/4100 exist in both frameworks with different
   semantics (SKR03 4000 = sales, SKR04 4000 = sales to domestic customers). The skill pins the
   Kontenrahmen in config and refuses to guess.
+- **UStG retrieval 2026-10-09**: https://www.gesetze-im-internet.de/uStg/ returned HTTP 404 (236 B)
+  and dejure.org/gesetze/UStG.html returned the error page (HTTP 404). The rates in config are
+  therefore carried from the 2026-10-07/08 verification passes; re-verify before any rate-sensitive
+  build. https://www.datev.de/ returned HTTP 200 (85,682 B) on 2026-10-09.
