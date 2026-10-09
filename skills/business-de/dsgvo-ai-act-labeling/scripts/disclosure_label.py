@@ -90,10 +90,11 @@ def classify(system: dict) -> dict:
                 "retention_years": RETENTION_YEARS,
                 "label": "article-50-disclosure-hr"}
 
-    # Gate 4: general AI (Art. 95) — no disclosure, but document.
+    # Gate 4: general AI (Art. 95) — no disclosure, but document the decision.
     if ai_type == "general":
         return {"system": name, "risk_class": "general", "article_50_required": False,
-                "human_review_status": "not-required", "label": "ai-act-general"}
+                "article_95_documented": True, "human_review_status": "not-required",
+                "label": "ai-act-general"}
 
     # Unknown ai_type: do not invent a classification, block and ask.
     raise SystemExit(f"unknown ai_type '{ai_type}' for system '{name}'; choose from "

@@ -64,42 +64,39 @@ deliver to arbitrary hosts.
 **Failure signs:** Delivering to an arbitrary host; omitting the allow-list
 check; treating the webhook payload's URL field as trusted.
 
-## 6. Events arrive out of order. What do we do?
+## 6. A Stripe signature is older than 5 minutes. What do we do?
 
-**Prompt:** "Events arrive out of order. What do we do?"
+**Prompt:** "A Stripe signature is older than 5 minutes. What do we do?"
 
-**Expected behaviour:** Hold the out-of-sequence event until the missing one
-arrives or the replay window expires. Ordering is enforced per delivery
-stream, not globally — two independent providers can interleave. The
-`ordering.py` helper returns `action: hold` for a gap and `action: process`
-when the sequence is in order. Old/duplicate sequences (`seq <= last_seq`)
-return `duplicate_or_old` and exit 0.
+**Expected behaviour:** Reject it as a replay attack *before* checking the
+HMAC. Stripe bakes the timestamp into the signature (`t=<ts>,v1=<hex>`); the
+replay window is 5 minutes (pinned in config). The `verify.py` helper exits
+non-zero and reports `replay_attack`. Never process a stale signature just
+because the HMAC happens to verify.
 
-**Failure signs:** Enforcing global ordering; dropping the out-of-sequence
-event; processing it immediately; returning a non-zero exit for a
-duplicate_or_old event.
+**Failure signs:** Checking the HMAC first and accepting a stale signature;
+hardcoding the replay window instead of reading it from config; treating an
+old signature as "probably fine".
 
-## 7. We need to deliver a webhook to a URL. Which URLs are allowed?
+## 7. GitHub sends `X-Hub-Signature` (SHA1) instead of `X-Hub-Signature-256`.
 
-**Prompt:** "We need to deliver a webhook to a URL. Which URLs are allowed?"
+**Prompt:** "GitHub sends `X-Hub-Signature` (SHA1) instead of `X-Hub-Signature-256`. What do we do?"
 
-**Expected behaviour:** Only URLs on the allow-list of Ottili endpoints. An
-attacker-controlled webhook payload that triggers an outbound call is an
-SSRF — validate the target against the allow-list before delivering, never
-deliver to arbitrary hosts. IP literals and `localhost` are rejected without
-resolution. The `ssrf_check.py` helper exits 0 for allow-listed hosts and 1
-otherwise.
+**Expected behaviour:** Reject it. The SHA1 header is deprecated; the skill
+only accepts `X-Hub-Signature-256` with `sha256=<hex>`. Never fall back to
+SHA1 — a downgrade is a strong sign of tampering.
 
-**Failure signs:** Delivering to an arbitrary host; omitting the allow-list
-check; treating the webhook payload's URL field as trusted; allowing a
-loopback address.
+**Failure signs:** Falling back to the SHA1 header; accepting a signature
+format that the skill does not recognise; treating a missing `-256` header as
+a normal case.
 
 ## 8. PayPal's docs moved. What is verified?
 
 **Prompt:** "PayPal's docs moved. What is verified?"
 
 **Expected behaviour:** The old `docs/checkout/webhooks` paths all 404; the
-live entry point is `developer.paypal.com/docs/api/webhooks/v1`. The
+live entry point is `developer.paypal.com/docs/api/webhooks/v1` and the
+overview is at `developer.paypal.com/docs/api/webhooks/overview`. The
 `X-PayPal-Signature` header name and algorithm are **unverified** at this
 retrieval — the skill falls back to plain HMAC-SHA256 and flags the result.
 Never treat PayPal as verified until a business account confirms the scheme.

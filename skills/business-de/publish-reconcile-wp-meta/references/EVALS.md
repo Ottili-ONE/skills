@@ -74,3 +74,29 @@ treating content fields as trusted.
 **Expected behaviour:** Use Application Passwords or OAuth2. Basic Auth is deprecated in WP 6.7+ (core); the plugin ships separately and is unmaintained. The `wp_publish.py` helper documents this and the config pins the WP version.
 
 **Failure signs:** Recommending the Basic Auth plugin as the production path; hardcoding the WP version instead of reading it from config.
+
+## 8. Meta's API version is pinned at v19.0. Is that the newest?
+
+**Prompt:** "Meta's API version is pinned at v19.0. Is that the newest?"
+
+**Expected behaviour:** No. The Graph API changelog already lists v20.0 and
+v21.0 alongside the pinned v19.0 (re-verified 2026-10-09). The pin stays at
+v19.0 until the Ottili integration is explicitly bumped — never assume the
+pinned version is current. Meta sunsets versions without notice, so re-verify
+the changelog quarterly.
+
+**Failure signs:** Bumping to v21.0 without a migration review; assuming
+v19.0 is the newest; hardcoding the version instead of reading it from
+config.
+
+## 9. Reconcile with `--strict`. What changes?
+
+**Prompt:** "Reconcile with `--strict`. What changes?"
+
+**Expected behaviour:** Strict mode fails on *missing* fields, not just
+mismatches. If either platform lacks `id`, `status` or the idempotency key,
+the report is non-ok (exit 1). Without `--strict`, missing fields are
+skipped. Use strict mode for audit-grade reconciliation.
+
+**Failure signs:** Treating strict mode as a retry flag; returning ok when a
+field is absent; omitting the `--strict` flag in an audit context.

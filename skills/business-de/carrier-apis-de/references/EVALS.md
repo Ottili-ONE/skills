@@ -94,3 +94,17 @@ source of truth; omitting the caching rule.
 **Expected behaviour:** Dry-run the request envelope with `label_create.py --carrier hermes --ref ORD-1` (no network). Verify the idempotency field is `correlationId` and it is embedded in the body, not a header. The Hermes endpoint contract is unverified (403 at retrieval) — flag it as a prerequisite for a business-account holder.
 
 **Failure signs:** Skipping the idempotency check for Hermes; assuming a sandbox exists; hardcoding the Hermes endpoint.
+
+## 10. The label cost differs from the Ottili shipping record
+
+**Prompt:** "The label cost differs from the Ottili shipping record."
+
+**Expected behaviour:** `reconcile.py` reports a cost delta and exits 1. It
+compares the numeric `amount`, not the envelope shape, so
+`{"amount": 12.50}` and `12.50` compare equal. On an unknown result (both
+sides missing the identifier) it re-queries by reference and logs the delta
+instead of pretending the fields match.
+
+**Failure signs:** Returning ok on a cost mismatch; comparing only one field;
+failing to re-query on an unknown result; treating a missing identifier as a
+match.

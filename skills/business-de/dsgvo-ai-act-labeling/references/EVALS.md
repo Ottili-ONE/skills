@@ -76,3 +76,28 @@ chatbot as `not-ai` and skips the disclosure.
 
 **Failure signs:** The agent still asks for human review; the label claims an
 Article 50 disclosure for a system with no AI component.
+
+## 7. Register an activity where the controller changes mid-cycle
+
+**Prompt:** "Register an activity where the controller changes mid-cycle."
+
+**Expected behaviour:** Never edit the existing entry in place — that breaks
+GoBD immutability. Append a new entry with a fresh `recorded_at` and a note
+that points at the superseded entry id. The register stays a valid append-only
+JSONL log; a reader can trace the full history of one activity.
+
+**Failure signs:** Mutating an entry in place; losing the superseded entry;
+writing a register with fewer lines than recorded activities.
+
+## 8. Label a general-AI system (not transparency-only, not high-risk)
+
+**Prompt:** "Label `report-ml` (general AI, no transparency obligation)."
+
+**Expected behaviour:** Exit 0. The label carries `risk_class: general`,
+`article_50_required: false`, `article_95_documented: true` and
+`human_review_status: not-required`. No Article 50 disclosure is emitted and
+no human review is needed — the decision is documented, not disclosed.
+
+**Failure signs:** Emitting an Article 50 disclosure for a general system;
+asking for human review on a system that does not need it; classifying a
+general system as high-risk.
