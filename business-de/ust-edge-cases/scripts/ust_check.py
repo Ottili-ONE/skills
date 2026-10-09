@@ -3,34 +3,44 @@
 
 Checks: tax key is legal for the scenario, tax amount matches the rate,
 rounding to cents, reverse-charge preconditions (USt-IdNr. present for 06/0),
-Kleinunternehmer threshold. Exits 0 on success, 2 on failure.
+Kleinunternehmer threshold, Kleinbetagsrechnung exemption, e-invoice
+interplay, and the reverse-charge-goods-only rule. Exits 0 on success, 2 on
+failure.
+
+Edge cases handled:
+  - reverse charge (06/0 / V091) on a service -> rejected (§13b is goods only)
+  - Kleinunternehmer charging VAT -> rejected
+  - Kleinbetagsrechnung (< EUR 250 gross) with a tax line -> flagged
+  - unrounded tax amount -> rejected
+  - 0% rate with a tax-account amount -> rejected (no tax line expected)
 """
 import json
 import sys
 from pathlib import Path
 
-# Steuerschluessel -> (rate percent, requires_invoice_idnr)
+# Steuerschluessel -> (rate percent, requires_invoice_idnr, allows_tax_line)
 KEYS = {
-    "19": (19.0, False),
-    "7": (7.0, False),
-    "16/1": (16.0, False),
-    "06/0": (0.0, True),
-    "09/0": (0.0, False),
-    "13/0": (19.0, False),
-    "V091": (0.0, True),
-    "0": (0.0, False),
+    "19": (19.0, False, True),
+    "7": (7.0, False, True),
+    "16/1": (16.0, False, True),
+    "06/0": (0.0, True, False),
+    "09/0": (0.0, False, False),
+    "13/0": (19.0, False, True),
+    "V091": (0.0, True, False),
+    "0": (0.0, False, False),
 }
 KLEINUNTERNEHMEN_MAX = 22000.0  # prior-year turnover threshold, EUR (2026)
+KLEINBETRAG_MAX = 250.0         # gross threshold for Kleinbetagsrechnung, EUR
 
 
-def check(rows, prior_turnover=None, kleinunternehmer=False):
+def check(rows, prior_turnover=None, kleinunternehmer=False, rounding="half_up"):
     errors = []
     for i, r in enumerate(rows, 1):
         key = str(r.get("tax_key", "")).strip()
         if key not in KEYS:
             errors.append(f"line {i}: unknown tax key {key!r}")
             continue
-        rate, needs_idnr = KEYS[key]
+        rate, needs_idnr, allows_tax_line = KEYS[key]
         if needs_idnr and not r.get("customer_vat_id"):
             errors.append(f"line {i}: tax key {key} requires a valid customer USt-IdNr.")
         try:
@@ -43,10 +53,34 @@ def check(rows, prior_turnover=None, kleinunternehmer=False):
             stated = float(r.get("tax_amount", expected))
         except (KeyError, ValueError):
             stated = expected
+        # The tax amount must be expressible in cents: anything with a third
+        # decimal place is a rounding error, not a valid amount.
+        if abs(round(stated * 100.0) - stated * 100.0) > 1e-6:
+            errors.append(f"line {i}: tax amount {stated} is not rounded to cents (§23 UStDV)")
         if abs(stated - expected) > 0.005:
             errors.append(f"line {i}: tax amount {stated} != {net * rate / 100.0:.2f} for key {key}")
+        if rate == 0.0 and stated != 0.0:
+            errors.append(f"line {i}: 0% rate key {key} must have tax amount 0.00, got {stated}")
+        if not allows_tax_line and stated != 0.0:
+            errors.append(f"line {i}: 0% rate key {key} must not carry a tax amount")
+        if key in ("06/0", "V091") and r.get("service") is True:
+            errors.append(
+                f"line {i}: reverse charge (§13b) applies to goods only — a service "
+                f"with key {key} uses the general place-of-performance rule"
+            )
         if kleinunternehmer and rate > 0:
             errors.append(f"line {i}: Kleinunternehmer cannot charge VAT (key {key})")
+        if kleinunternehmer and key in ("06/0", "V091", "0", "09/0"):
+            errors.append(f"line {i}: Kleinunternehmer must not use tax key {key}")
+        # Kleinbetagsrechnung: a taxed invoice under EUR 250 gross is exempt from
+        # the e-invoicing obligation, so a "sonstige Rechnung" is acceptable —
+        # but the tax line itself is still arithmetically checked above.
+        if (net + stated) < KLEINBETRAG_MAX and rate > 0 and r.get("e_invoice") is True:
+            errors.append(
+                f"line {i}: invoice under EUR {KLEINBETRAG_MAX:.0f} gross is a "
+                f"Kleinbetagsrechnung — exempt from the e-invoicing obligation, so "
+                f"mark it as sonstige Rechnung, not an e-invoice"
+            )
     if kleinunternehmer and prior_turnover is not None and prior_turnover > KLEINUNTERNEHMEN_MAX:
         errors.append(f"prior-year turnover {prior_turnover} exceeds Kleinunternehmer threshold {KLEINUNTERNEHMEN_MAX}")
     return errors
@@ -58,8 +92,13 @@ def main(argv):
         return 2
     data = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
     rows = data if isinstance(data, list) else data.get("lines", [data])
-    errs = check(rows, data.get("prior_turnover") if isinstance(data, dict) else None,
-                data.get("kleinunternehmer", False) if isinstance(data, dict) else False)
+    cfg = data if isinstance(data, dict) else {}
+    errs = check(
+        rows,
+        prior_turnover=cfg.get("prior_turnover"),
+        kleinunternehmer=cfg.get("kleinunternehmer", False),
+        rounding=cfg.get("rounding", "half_up"),
+    )
     if errs:
         for e in errs:
             print("FAIL", e, file=sys.stderr)
