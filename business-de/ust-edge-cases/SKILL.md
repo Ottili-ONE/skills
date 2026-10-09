@@ -44,7 +44,9 @@ service sold to a customer that supplies a USt-IdNr. is still taxed by the
 general place-of-performance rule. A small business under the
 Kleinunternehmer rule charges no VAT on its sales and issues a "sonstige
 Rechnung", but remains able to receive e-invoices. Invoices under EUR 250
-gross are exempt from the issuing obligation.
+gross are exempt from the issuing obligation. The full tables (edge-case selection, goods-vs-services split, e-invoice
+interplay) with worked examples and legal sources are in
+`references/procedures.md` §1-§6.
 
 The full tables (edge-case selection, goods-vs-services split, e-invoice
 interplay) with worked examples and legal sources are in

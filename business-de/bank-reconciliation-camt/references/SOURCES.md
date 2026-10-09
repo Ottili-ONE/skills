@@ -10,7 +10,8 @@ the HTTP status is recorded per row.
 | 3 | ISO 20022 — camt.053 | https://www.iso20022.org/camt.053 | 2026-10-09 | — | **403 (access-restricted)**. The message definition is cited from the de.wikipedia Camt-Format article and the DFÜ-Abkommen. |
 | 4 | SWIFT — standards | https://www.swift.com/standards | 2026-10-09 | — | **403 (access-restricted)**. |
 | 5 | Bundesbank — MT940 | https://www.bundesbank.de/en/service/mt940 | 2026-10-09 | — | **404 at retrieval (re-confirmed)**. |
-| 6 | R3_VERIFIED_FACTS.md | ../ottili-planning/inputs/R3_VERIFIED_FACTS.md | 2026-10-06 | — | starting point, re-verified 2026-10-09. |
+| 6 | Wikipedia — EBICS (de) | https://de.wikipedia.org/wiki/EBICS | 2026-10-09 | last edited 2025 | **200 OK**. Confirms EBICS is the German standard for encrypted file transfer to banks and that the DFÜ-Abkommen Anlage 3 defines the message set — the legal basis for transmitting camt.053/MT940 over EBICS. |
+| 7 | R3_VERIFIED_FACTS.md | ../ottili-planning/inputs/R3_VERIFIED_FACTS.md | 2026-10-06 | — | starting point, re-verified 2026-10-09. |
 
 **Re-verification note (2026-10-09):** the camt.053 namespace was
 re-verified against the de.wikipedia article, which lists `camt.053.001.08`
