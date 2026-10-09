@@ -16,7 +16,7 @@ noted at the end.
 | 4 | Twilio — webhooks docs | https://www.twilio.com/docs/usage/webhooks | 200 | Webhook delivery contract. Retrieved 2026-10-09. |
 | 5 | Twilio — security (signature header) | https://www.twilio.com/docs/usage/security | 200 | Confirms the `X-Twilio-Signature` header exists. The exact HMAC input (URL + body + params) is **unverified** at this retrieval — the docs page did not expose the algorithm text to a plain-text crawl. Treat Twilio as unverified. Retrieved 2026-10-09. |
 | 6 | PayPal — API webhooks v1 | https://developer.paypal.com/docs/api/webhooks/v1 | 200 | Webhook API entry point. Retrieved 2026-10-09. |
-| 7 | PayPal — webhook event types | https://developer.paypal.com/docs/api/webhooks/v1/webhooks | 404 | The event-types page 404s; the v1 root (row 6) is live. The `X-PayPal-Signature` header name is documented from memory and marked **unverified**. Retrieved 2026-10-09. |
+| 7 | PayPal — webhook overview | https://developer.paypal.com/docs/api/webhooks/overview | 200 | Live overview page; confirms the webhook API family exists. The `X-PayPal-Signature` header name and algorithm are **unverified** at this retrieval — the overview page does not expose the signature scheme to a plain-text crawl. Retrieved 2026-10-09. |
 | 8 | OWASP — SSRF prevention cheat sheet | https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html | 200 | Allow-list based outbound URL validation. Retrieved 2026-10-09. |
 | 9 | OWASP — web security testing guide (SSRF) | https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-04-Test_for_Server_Side_Request_Forgery | 200 | SSRF test procedures. Retrieved 2026-10-09. |
 
@@ -26,7 +26,7 @@ noted at the end.
 |---|---|---|
 | `developer.paypal.com/docs/checkout/webhooks` | 404 | `developer.paypal.com/docs/api/webhooks/v1` (200) |
 | `developer.paypal.com/docs/checkout/webhooks/webhooks-overview` | 404 | unverified — see row 7 |
-| `developer.paypal.com/docs/api/webhooks/v1/webhooks` | 404 | unverified — see row 7 |
+| `developer.paypal.com/docs/api/webhooks/v1/webhooks` | 404 | `developer.paypal.com/docs/api/webhooks/overview` (200) |
 | OWASP `www-community/attacks/Webhook_Security` | 404 | cheat sheet + testing guide (rows 8-9) |
 
 ## Version-sensitive notes
@@ -37,16 +37,17 @@ noted at the end.
   PayPal and Twilio are **unverified** at this retrieval. The scripts fall
   back to plain HMAC-SHA256 and the skill flags the result.
 - **PayPal's docs restructured.** The old `docs/checkout/webhooks` paths all
-  404; the live entry point is `docs/api/webhooks/v1`. The signature header
-  name is unverified until a PayPal business account confirms it.
+  404; the live entry point is `docs/api/webhooks/v1` and the overview is at
+  `docs/api/webhooks/overview`. The signature header name and algorithm are
+  unverified until a PayPal business account confirms them.
 - **Idempotency TTL** is configurable per provider; default 24h. Pin in config.
 
 ## Conflicts / open questions
 
 - **PayPal signature scheme is unverified.** The `X-PayPal-Signature` header
-  name and algorithm are documented from memory; the live docs page does not
-  expose them to a plain-text crawl. Flag in the skill and re-fetch at build
-  time with a browser user agent.
+  name and algorithm are documented from memory; the live overview page does
+  not expose them to a plain-text crawl. Flag in the skill and re-fetch at
+  build time with a browser user agent.
 - **Twilio signature input is unverified.** `X-Twilio-Signature` exists (row 5)
   but the exact HMAC input (URL + body + params) is not confirmed. Treat as
   unverified; the script uses plain HMAC over the raw body as a fallback.

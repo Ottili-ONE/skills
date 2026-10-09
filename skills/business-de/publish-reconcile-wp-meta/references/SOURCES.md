@@ -44,8 +44,8 @@ between sources are noted at the end.
   against) until the integration is bumped; do not assume v19.0 is current.
 - **WordPress Basic Auth is deprecated in WP 6.7+ (core).** The plugin ships
   separately and is unmaintained. Prefer Application Passwords or OAuth2.
-- **POST is not idempotent by HTTP semantics** (RFC 9110). Neither WP nor Meta
-  natively supports idempotency keys, so the skill implements idempotency in
+- **POST is not idempotent by HTTP semantics** (RFC 9110). Neither platform
+  offers built-in idempotency keys, so the skill layers idempotency on top of
   the reconciliation layer (`scripts/idempotency_store.py`).
 - **Never assume the first response is authoritative.** Neither API
   guarantees exactly-once delivery; re-query both platforms by the client
