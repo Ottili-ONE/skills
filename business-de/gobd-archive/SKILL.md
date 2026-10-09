@@ -96,8 +96,8 @@ is **not** a valid substitute for the retained document.
 - **Three blockers, not one.** A purge is blocked if (a) the retention end has
   not been reached, OR (b) an audit is currently open. Both are checked by
   `scripts/purge_decision.py` before any deletion.
-- The purge record itself is a document: keep it for the full retention period
-  of the documents it describes (a 2017 purge record is kept until 2025-12-31
+- The purge record is itself a document: retain it for the full retention period
+  of the documents it covers (a 2017 purge record is retained until 2025-12-31
   for vouchers).
 
 ## Purge decision
