@@ -48,7 +48,7 @@ Each booking row has 125 columns. Mandatory columns:
 | 2 | Soll/Haben-Kennzeichen | `S` or `H` |
 | 7 | Konto | must fit Sachkontenlaenge |
 | 9 | BU-Schlüssel | **forbidden on Automatikkonten** (1000-1999 in SKR 03) |
-| 10 | Belegdatum | YYYYMMDD with leading zeros |
+| 10 | Belegdatum | **TTMM** (day+month, 4 digits, e.g. `0206`); the year comes from the header |
 | 14 | Buchungstext | quoted text |
 | 125 | USt-Schlüssel | tax key per rate |
 
@@ -62,7 +62,8 @@ to a fix — never guess. The validator checks:
 - Formatkategorie is `21` and Formatname is `Buchungsstapel`
 - Formatversion is `13`
 - Amounts use a comma decimal separator
-- Belegdatum is exactly 8 digits YYYYMMDD
+- Belegdatum is exactly 4 digits TTMM (day+month, zero-padded); the year comes from the header (WJ-Beginn / Datum vom/bis), not from the row.
+- Erzeugt am (header field 6) is exactly 17 digits YYYYMMDDHHMMSS000.
 - Soll/Haben is `S` or `H`
 
 ## 5. Handle validation errors
@@ -70,7 +71,7 @@ to a fix — never guess. The validator checks:
 | Error | Cause | Fix |
 |---|---|---|
 | amount uses a dot | `12.50` instead of `12,50` | replace `.` with `,` |
-| Belegdatum must be YYYYMMDD | missing leading zero or wrong format | zero-pad to 8 digits |
+| Belegdatum must be TTMM | wrong length or swapped day/month | use 4 digits DDMM, e.g. `0206` for 2 June |
 | Soll/Haben invalid | not `S` or `H` | use `S` for debit, `H` for credit |
 | header too short | fewer than 31 fields | pad to 31 fields |
 | BU-Schlüssel on Automatikkonto | col 9 populated on a ledger account | remove the BU-Schlüssel |

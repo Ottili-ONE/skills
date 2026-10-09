@@ -23,7 +23,7 @@ from heading_row import HEADING_ROW  # noqa: E402
 
 def header(label):
     return [
-        "EXTF", "700", "21", "Buchungsstapel", "13", "20261008",
+        "EXTF", "700", "21", "Buchungsstapel", "13", "20261008000000000",
         "", "", "", "", "29098", "55003", "20260101", "4",
         "20260601", "20260630", label, "", "1", "EUR", "", "", "",
         "03", "", "", "", "", "", "", "",

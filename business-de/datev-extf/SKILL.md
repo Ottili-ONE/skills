@@ -87,7 +87,7 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | 7 | Konto | account number | must fit Sachkontenlaenge |
 | 8 | Gegenkonto | contra account | omit BU-Schlüssel here |
 | 9 | BU-Schlüssel | business unit key | **forbidden on Automatikkonten** |
-| 10 | Belegdatum | voucher date | YYYYMMDD with leading zeros |
+| 10 | Belegdatum | voucher date | **TTMM** (day+month, 4 digits, e.g. `0206` for 2 June); the year comes from the header, not the row |
 | 14 | Buchungstext | booking text | quoted |
 | 35 | KOST1 - Kostenstelle | cost center | optional |
 | 125 | Buchungs GUID | booking GUID | optional |
@@ -98,7 +98,7 @@ Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 
 - Amounts use a **comma** decimal separator (12,50); a dot (12.50) is a hard
   error in DATEV's Prüfprogramm.
-- Belegdatum must be YYYYMMDD **with leading zeros** (02.06.2026, not 2.6.26).
+- Belegdatum is **TTMM** (day+month, 4 digits, zero-padded, e.g. `0206` for 2 June). The year is taken from the header (WJ-Beginn / Datum vom), never from the row. A 5+ digit value or a swapped day/month is a hard error. Verified 2026-10-09 against seamless-engineering/datev-extf (Belegdatum as day and month).
 - Automatikkonten (ledger accounts 1000-1999 in SKR 03) do not accept a
   BU-Schlüssel (business unit key) — adding one is a hard error.
 - Account numbers must not exceed Sachkontenlaenge; too-long account numbers
@@ -113,7 +113,8 @@ Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 - [ ] Export type identified (Buchungsstapel / Debitoren / Kreditoren)
 - [ ] Header fields complete and version pinned from config
 - [ ] Amounts use comma decimal separator
-- [ ] Dates are YYYYMMDD with leading zeros
+- [ ] Belegdatum is 4-digit TTMM (day+month) with leading zeros
+- [ ] Erzeugt am is 17 digits (YYYYMMDDHHMMSS000)
 - [ ] No BU-Schlüssel on Automatikkonten
 - [ ] Account numbers fit Sachkontenlaenge
 - [ ] Validator returns 0 errors (all errors blocking)
