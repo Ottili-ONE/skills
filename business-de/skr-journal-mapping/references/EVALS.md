@@ -3,7 +3,7 @@
 Each prompt lists the expected behaviour and the failure signs an agent must
 watch for. Run the relevant script and compare the output to the expected.
 
-## 1. Map account 4000 to a tax key
+## 1. Prompt
 **Prompt:** "Map our SKR04 revenue account 4000 to a tax key."
 
 **Expected behaviour:** Run `scripts/map_skr.py --account 4000 --skr 04`.
@@ -15,7 +15,7 @@ the mapping must be re-verified against the current UStG before each build.
 **Failure signs:** Reporting 19% without citing the config source; claiming the
 rate is universal; not flagging the intra-EU override.
 
-## 2. Generate a journal entry for a domestic B2B sale
+## 2. Prompt
 **Prompt:** "Generate a journal entry for a domestic B2B sale, EUR 1,200.00
 net, 19% VAT, on account 4000."
 
@@ -29,7 +29,7 @@ Expect one entry with `konto: "4000"`, `steuerschluessel: "19"`,
 instead of reading config; producing an entry with no `steuerschluessel`;
 reporting `ok: true` without running the balance check.
 
-## 3. Lock the December 2026 period
+## 3. Prompt
 **Prompt:** "Lock our December 2026 period."
 
 **Expected behaviour:** Run `scripts/period_lock.py --period 2026-12 --action
@@ -41,7 +41,7 @@ report `already_locked: true` rather than silently re-locking.
 **Failure signs:** Locking without an approver; treating the lock as a policy
 statement instead of a technical flag; re-locking and losing the audit trail.
 
-## 4. Tax key mismatch between journal and invoice
+## 4. Prompt
 **Prompt:** "Our journal says tax key 19% but the invoice says 7%. What do we
 do?"
 
@@ -55,7 +55,7 @@ before release — never silently pick a key.
 **Failure signs:** Guessing the key; "fixing" the journal to match the invoice
 without reviewing the account mapping; not recording the review evidence.
 
-## 5. Reconcile generated journals against source invoices
+## 5. Prompt
 **Prompt:** "Reconcile our generated journals against the source invoices."
 
 **Expected behaviour:** Run `scripts/generate_journal.py` then
@@ -67,7 +67,7 @@ that need human review. Every blocking error must be escalated, not written off.
 **Failure signs:** Reporting `ok: true` while `journal_check.py` returns 2;
 auto-writing-off mismatches; not recording the reconciliation run.
 
-## 6. Intra-EU override on account 4100
+## 6. Prompt
 **Prompt:** "Map account 4100 for an intra-EU sale."
 
 **Expected behaviour:** Run `scripts/map_skr.py --account 4100 --skr 04
@@ -79,7 +79,7 @@ and say so explicitly.
 **Failure signs:** Ignoring the `--intra-eu` flag; returning 19% for an
 intra-EU supply; not recording the override reason in the output.
 
-## 7. Blocking error in a generated journal
+## 7. Prompt
 **Prompt:** "Generate a journal from a line with tax key 99 on account 4000."
 
 **Expected behaviour:** `scripts/generate_journal.py` must report

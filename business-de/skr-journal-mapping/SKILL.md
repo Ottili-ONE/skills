@@ -35,8 +35,45 @@ balance-sheet preparation (that is a separate skill).
 
 ## Decision tables
 
-The full tax-key table (scenario, key, rate, legal source) and worked examples
-live in `references/procedures.md` §3.
+### Tax keys (Steuerschluessel)
+
+Six keys are in use; the rate column is read from config, never typed into a
+script. The full table with legal sources and worked examples is in
+`references/procedures.md` §3.
+
+| Key | Rate | Use |
+|---|---|---|
+| 19 | 19% | domestic standard-rate sales |
+| 7 | 7% | reduced-rate items |
+| 16/1 | 16%/1% | legacy split from the pre-2020 rates — **do not apply to new postings** |
+| 06/0 | 0% | intra-EU B2B supply; the buyer may self-assess |
+| 09/0 | 0% | internal / intercompany service |
+| 13/0 | 19% split | installment booking (Soll/IST) |
+
+### Account-to-tax-key mapping (SKR04, default)
+
+| Account | Meaning | Default tax key | When it changes |
+|---|---|---|---|
+| 4000 | Sales — domestic | 19% | intra-EU customer => 0% |
+| 4100 | Sales — intra-EU | 0% | domestic customer => 19% |
+| 4200 | Sales — exports (non-EU) | 0% | domestic customer => 19% |
+| 4300 | Sales — reduced rate | 7% | standard-rate item => 19% |
+| 8000 | Other income | 19% | exempt services => 0% |
+
+### Account-to-tax-key mapping (SKR03, alternative)
+
+| Account | Meaning | Default tax key |
+|---|---|---|
+| 4000 | Sales (all) | 19% |
+| 4100 | Sales — intra-EU | 0% |
+| 4200 | Sales — exports | 0% |
+| 4300 | Sales — reduced rate | 7% |
+| 8000 | Other income | 19% |
+
+Accounts 4000/4100 exist in **both** frameworks with different semantics
+(SKR03 4000 = all sales, SKR04 4000 = domestic sales). The skill pins the
+Kontenrahmen in config and refuses to guess. Worked examples are in
+`references/procedures.md` §3-§4.
 
 ### Period lock states
 
