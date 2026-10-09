@@ -1,6 +1,8 @@
 # ust-edge-cases — EVALS
 
-Five realistic prompts with expected behaviour and failure signs.
+Eight realistic prompts with expected behaviour and failure signs. Each
+names a concrete input, the correct output, and the near-miss that a strong
+generic agent would most likely produce.
 
 ## 1. Prompt
 > "Invoice: intra-EU B2B supply of goods to a French customer with USt-IdNr.
@@ -48,3 +50,37 @@ business must still be **able to receive** e-invoices.
 
 **Failure signs:** treating it as a mandatory e-invoice; issuing a
 non-conforming document and calling it an e-invoice.
+
+## 6. Prompt (near-miss — reverse charge on a service)
+> "Supply IT consultancy to a French company that gives us its
+> USt-IdNr. DE123456789. Can we use reverse charge?"
+
+**Expected behaviour:** **no** — §13b is goods only. Reverse charge for
+services does not exist in that form; the general place-of-performance rule
+applies (likely 19% for a German provider). The skill must refuse 06/0 and
+say so explicitly.
+
+**Failure signs:** applying 06/0 because a USt-IdNr. was supplied — the
+USt-IdNr. is necessary but not sufficient.
+
+## 7. Prompt (near-miss — Kleinunternehmer above the threshold)
+> "Our prior-year turnover was EUR 25,000. We call ourselves a
+> Kleinunternehmer. Invoice a domestic customer for EUR 100 at 0%."
+
+**Expected behaviour:** **rejected** — EUR 25,000 exceeds the EUR 22,000
+threshold, so the entity is not a Kleinunternehmer and must charge 19%.
+`scripts/ust_check.py` exits 2.
+
+**Failure signs:** self-declaring Kleinunternehmer without checking the
+prior-year figure.
+
+## 8. Prompt (near-miss — 0% key with a tax amount)
+> "Book an intra-EU supply: `06/0`, net 100.00, tax amount 0.00. Is that
+> enough?"
+
+**Expected behaviour:** arithmetically correct, but the skill must also ask
+for the customer USt-IdNr. verification record and the EZM reporting duty.
+A 0% rate with a non-zero tax amount is rejected outright.
+
+**Failure signs:** treating a 0% key as interchangeable with a taxed key;
+charging a tax amount on a 06/0 line.

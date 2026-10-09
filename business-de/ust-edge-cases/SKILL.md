@@ -1,6 +1,6 @@
 ---
 name: ust-edge-cases
-description: "Apply German VAT edge cases correctly: reverse charge (§13b UStG) for supplies of goods, Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales."
+description: "Apply German VAT edge cases correctly: reverse charge (§13b UStG) for goods only, Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales."
 license: MIT-compat
 compatibility: "framework-agnostic; German UStG, EU VAT rules, offline"
 metadata: {}
@@ -26,8 +26,8 @@ beyond what the sources below support.
    OSS, rounding, or e-invoice interplay (see decision table).
 2. **Apply the rule** — pick the Steuerschlüssel and the tax amount.
 3. **Check the precondition** — reverse charge requires the customer's
-   USt-IdNr. and the goods category; Kleinunternehmer requires the prior-year
-   turnover ≤ EUR 22,000 (2026).
+   USt-IdNr. **and** that the supply is of goods (§13b is goods only);
+   Kleinunternehmer requires the prior-year turnover ≤ EUR 22,000 (2026).
 4. **Generate the journal** — use `skr-journal-mapping` for the accounts and
    `scripts/ust_check.py` for the arithmetic.
 5. **Verify** — run `scripts/ust_check.py` and the verification checklist.
@@ -40,11 +40,29 @@ beyond what the sources below support.
 |---|---|---|---|
 | Domestic standard | 19 | 19% of net | none |
 | Domestic reduced | 7 | 7% of net | none |
-| Reverse charge (§13b) — goods | 06/0 (or V091) | 0% | buyer USt-IdNr. valid, goods in §13b list |
+| Reverse charge (§13b) — **goods** | 06/0 (or V091) | 0% | buyer USt-IdNr. valid, goods in §13b list |
 | Intra-EU B2B supply | 06/0 | 0% | buyer USt-IdNr. valid, goods leave DE |
 | Kleinunternehmer §19 | none (0) | 0% on sales | prior-year turnover ≤ EUR 22,000 |
 | OSS (EU-wide) | V091 | 0% in DE, declared in home state | home state OSS registration |
 | Rounding | — | 2 decimals (cents) | per §23 UStDV |
+
+### Reverse charge — goods vs services
+
+| Supply | §13b applies | Tax key |
+|---|---|---|
+| Goods (resale/processing), intra-EU | **yes** | 06/0 |
+| Services (IT, consultancy, construction) | **no** | general place-of-performance rule (often 19) |
+
+A valid USt-IdNr. is **necessary but not sufficient** for reverse charge.
+
+### E-invoice interplay
+
+| Invoice type | Issuing obligation | Document |
+|---|---|---|
+| Standard B2B | mandatory | e-invoice (EN 16931) |
+| Reverse charge (§13b) | mandatory | e-invoice with tax amount 0.00, key 06/0 |
+| Kleinunternehmer §19 | exempt | "sonstige Rechnung" (but must still **receive** e-invoices) |
+| Kleinbetagsrechnung (< EUR 250 gross) | exempt | "sonstige Rechnung" |
 
 ## Pitfalls from research
 
@@ -57,6 +75,8 @@ beyond what the sources below support.
 - Rounding: per §23 UStDV, tax amounts are rounded to cents (2 decimals);
   half-up is the convention, but the tax authority accepts banker's rounding in
   practice — record the convention.
+- A 0% tax key (06/0, 09/0, V091, 0) must not carry a tax amount; a
+  reverse-charge line with a non-zero tax amount is a filing error.
 
 ## Verification checklist
 
