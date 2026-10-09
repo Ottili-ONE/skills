@@ -25,9 +25,10 @@ beyond what the sources below support.
 1. **Identify the edge case** — reverse charge, small business, intra-EU,
    OSS, rounding, or e-invoice interplay (see decision table).
 2. **Apply the rule** — pick the Steuerschlüssel and the tax amount.
-3. **Check the precondition** — reverse charge requires the customer's
-   USt-IdNr. **and** that the supply is of goods (§13b is goods only);
+3. **Check the precondition** — reverse charge needs both a valid customer
+   USt-IdNr. **and** a supply of goods (§13b covers goods, not services);
    Kleinunternehmer requires the prior-year turnover ≤ EUR 22,000 (2026).
+   A USt-IdNr. alone is not enough to trigger reverse charge.
 4. **Generate the journal** — use `skr-journal-mapping` for the accounts and
    `scripts/ust_check.py` for the arithmetic.
 5. **Verify** — run `scripts/ust_check.py` and the verification checklist.
@@ -40,8 +41,8 @@ beyond what the sources below support.
 |---|---|---|---|
 | Domestic standard | 19 | 19% of net | none |
 | Domestic reduced | 7 | 7% of net | none |
-| Reverse charge (§13b) — **goods** | 06/0 (or V091) | 0% | buyer USt-IdNr. valid, goods in §13b list |
-| Intra-EU B2B supply | 06/0 | 0% | buyer USt-IdNr. valid, goods leave DE |
+| Reverse charge (§13b) — **goods** | 06/0 or V091 | 0% | valid buyer USt-IdNr., supply is goods |
+| Intra-EU B2B supply | 06/0 | 0% | valid buyer USt-IdNr., goods leave DE |
 | Kleinunternehmer §19 | none (0) | 0% on sales | prior-year turnover ≤ EUR 22,000 |
 | OSS (EU-wide) | V091 | 0% in DE, declared in home state | home state OSS registration |
 | Rounding | — | 2 decimals (cents) | per §23 UStDV |
@@ -53,7 +54,8 @@ beyond what the sources below support.
 | Goods (resale/processing), intra-EU | **yes** | 06/0 |
 | Services (IT, consultancy, construction) | **no** | general place-of-performance rule (often 19) |
 
-A valid USt-IdNr. is **necessary but not sufficient** for reverse charge.
+A valid USt-IdNr. is **necessary but not sufficient** — §13b also requires
+that the supply is of goods, not services.
 
 ### E-invoice interplay
 
