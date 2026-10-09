@@ -63,7 +63,7 @@ The clock starts at the **end of the calendar year** in which the document was
 created (not on the document's own date). Let the tax advisor confirm per
 entity.
 
-### The 6-year class is narrower than "all correspondence"
+### The 6-year class is not as broad as "all correspondence"
 
 Per whk-controlling.de (re-fetched 2026-10-09, last modified 2026-04-14)
 the 6-year class covers exactly three sub-types:
@@ -71,7 +71,7 @@ the 6-year class covers exactly three sub-types:
 | Sub-type | What it means | Trap |
 |---|---|---|
 | Empfangene Handels- oder Geschäftsbriefe | incoming commercial/business letters | an email you only "printed" counts as a letter only if you can reproduce it |
-| Wiedergaben der abgesandten Handelsbriefe | copies of **outgoing** letters | an outgoing letter you cannot reproduce is a GoBD violation |
+| Wiedergaben der abgesandten Handelsbriefe | copies of **outgoing** letters | a sent letter you cannot reproduce is a GoBD violation |
 | Sonstige Unterlagen mit steuerlicher Bedeutung | other tax-relevant documents | "tax-relevant" is not "accounting-related" — decide per document |
 
 A draft, a working file, or a deleted chat message that no system can reproduce
@@ -88,11 +88,11 @@ is **not** a valid substitute for the retained document.
   record itself must be kept for the full retention period.
 - A raw DB dump is **not** an audit export — it must be chronological, complete
   and checksummed with a manifest.
-- **The 6-year class is narrower than "all correspondence".** Per whk-controlling.de
-  (re-fetched 2026-10-09) it covers *empfangene* Handels- oder Geschäftsbriefe,
-  **Wiedergaben der abgesandten Handelsbriefe** (copies of outgoing letters) and
-  sonstige Unterlagen mit steuerlicher Bedeutung. An outgoing letter you cannot
-  reproduce is a GoBD violation, not a filing shortcut.
+- **The 6-year class is not as broad as "all correspondence".** Per whk-controlling.de
+  (re-fetched 2026-10-09) the 6-year class covers *empfangene* Handels- oder
+  Geschäftsbriefe, **Wiedergaben der abgesandten Handelsbriefe** (outgoing-letter
+  copies) und sonstige Unterlagen mit steuerlicher Bedeutung. A sent letter you
+  cannot reproduce is a GoBD violation, not a filing shortcut.
 - **Three blockers, not one.** A purge is blocked if (a) the retention end has
   not been reached, OR (b) an audit is currently open. Both are checked by
   `scripts/purge_decision.py` before any deletion.
