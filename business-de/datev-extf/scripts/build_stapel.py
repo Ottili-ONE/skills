@@ -40,7 +40,7 @@ AUTOMATIC_ACCOUNTS = {
 
 
 def build_header(args, pinned) -> list:
-    today = datetime.now().strftime("%Y%m%d%H%M%S000")  # 17-digit Erzeugt am
+    today = datetime.now().strftime("%Y%m%d%H%M%S000")  # 17-digit Erzeugt am (YYYYMMDDHHMMSS000)
     row = [""] * HEADER_FIELDS
     row[0] = "EXTF"
     row[1] = pinned["extf_schema"]["version"].split("/")[0].strip()
