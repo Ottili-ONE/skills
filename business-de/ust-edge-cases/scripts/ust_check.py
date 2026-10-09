@@ -8,7 +8,7 @@ interplay, and the reverse-charge-goods-only rule. Exits 0 on success, 2 on
 failure.
 
 Edge cases handled:
-  - reverse charge (06/0 / V091) on goods -> rejected (§3g is services only)
+  - reverse charge (06/0 / V091) claimed on a goods supply -> rejected (§3g is services only)
   - Kleinunternehmer charging VAT -> rejected
   - Kleinbetagsrechnung (< EUR 250 gross) with a tax line -> flagged
   - unrounded tax amount -> rejected

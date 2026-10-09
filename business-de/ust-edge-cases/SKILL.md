@@ -42,15 +42,13 @@ All three tables below — edge-case selection, the goods-vs-services split,
 and the e-invoice interplay — are expanded with worked examples and legal
 sources in `references/procedures.md` §1-§6. The condensed rules:
 
-Condensed rules: the reverse-charge regime (§3g) covers **services**
-only — a service sold to a customer that supplies a USt-IdNr. is reverse
-charged; a *goods* supply to a customer with a USt-IdNr. is taxed at 0% under
-the general intra-EU rule (§4a) and must not be labelled reverse charge. A
-small business under the Kleinunternehmer rule charges no VAT on its sales
-and issues a "sonstige Rechnung" under §19. Invoices under EUR 250 gross are
-exempt from the issuing obligation. The full tables (edge-case selection,
-goods-vs-services split, e-invoice interplay) with worked examples and legal
-sources are in `references/procedures.md` §1–§6.
+Condensed rules: reverse charge (§3g) shifts the VAT debt to the buyer
+for intra-community **services** only; a goods supply to a customer with a
+USt-IdNr. is 0% under the general intra-EU rule (§4a) and is not reverse
+charge. Kleinunternehmer (§19, turnover under EUR 20,000) charge no VAT and
+issue a sonstige Rechnung; invoices under EUR 250 gross are exempt from the
+issuing obligation. Worked examples and legal sources are in
+`references/procedures.md` §1–§6.
 
 
 ## Pitfalls from research
