@@ -13,7 +13,7 @@
       "effective": "2024-01-01",
       "source": "https://github.com/akretion/factur-x",
       "verified": "2026-10-09",
-      "note": "CORRECTED 2026-10-09 (PASS 5 re-verification): the FNFE-MPE page (http://fnfe-mpe.org/factur-x/, re-fetched 2026-10-09, HTTP 200) advertises Factur-X 1.09.2 / ZUGFeRD 2.5.2 in its meta title and description. The pin is bumped from 1.0.11 to 1.09.2 to match the live spec. The akretion/factur-x *library* tag is still dynamic (hatch-vcs) and is pinned separately as unverified. Re-verify on every release."
+      "note": "Factur-X 1.09.2 / ZUGFeRD 2.5.2 (FNFE-MPE page, re-fetched 2026-10-09, HTTP 200). Pin bumped from 1.0.11 to match the live spec. The akretion/factur-x library tag is still dynamic (hatch-vcs) and is pinned separately as unverified. Re-verify on every release."
     },
     "kosit-validator": {
       "version": "v2026-08-31",

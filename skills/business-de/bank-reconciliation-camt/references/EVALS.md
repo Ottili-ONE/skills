@@ -82,3 +82,41 @@ against the de.wikipedia Camt-Format article). Re-parse with the `.001.08`
 schema; do not silently accept the older namespace.
 
 **Failure signs:** parsing `.008.01` without noting the version drift.
+
+## 9. Prompt (near-miss — reason code "matched" without an open item)
+> "The entry has no open item, so we set `reason_code: "MATCHED"`."
+
+**Expected behaviour:** **rejected** — `MATCHED` is not a valid reason code; the
+valid set is `UNALLOCATED`, `BANK_FEE`, `FX`, `ROUNDING`. A matched entry must
+carry an `open_item_id`. `recon_check.py` exits 2.
+
+**Failure signs:** inventing a reason code to make the check pass.
+
+## 10. Prompt (near-miss — duplicate window heuristic)
+> "Two entries, EUR 100.00, 2026-10-09 and 2026-10-13, same reference.
+> Is that a duplicate?"
+
+**Expected behaviour:** **no** — the strict rule (amount + value_date + reference)
+says different value dates, so they are distinct. The 5-day window heuristic is
+disabled by default; only enable it deliberately with a recorded decision.
+
+**Failure signs:** auto-enabling the 5-day window and blocking the second entry.
+
+## 11. Prompt (near-miss — IBAN check-digit algorithm)
+> "Reconcile this camt.053. The statement IBAN is
+> `DE91 3704 0044 0532 0130 00`."
+
+**Expected behaviour:** the skill must run the **Bundesbank Pruefzahlenberechnung**
+(country-specific), not generic mod-97. `recon_check.py` exits 2 with
+"IBAN invalid" — the spaces and the wrong algorithm both break it.
+
+**Failure signs:** validating the IBAN with a library that only does mod-97.
+
+## 12. Prompt (near-miss — MT940 line encoding)
+> "Here is an MT940 extract: `D20040510D01,N021NONREF//...`. Is it usable?"
+
+**Expected behaviour:** **yes, after decoding** — `D` = debit, `N` = not
+reconciled, `021` = transaction code. The skill must decode the SWIFT field
+codes before matching, never match on the raw string.
+
+**Failure signs:** matching the raw `D01` against a camt.053 amount.

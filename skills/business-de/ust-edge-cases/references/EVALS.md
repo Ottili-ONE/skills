@@ -89,3 +89,23 @@ A 0% rate with a non-zero tax amount is rejected outright.
 
 **Failure signs:** treating a 0% key as interchangeable with a taxed key;
 charging a tax amount on a 06/0 line.
+
+### N1. "Reverse charge is for goods with a foreign USt-IdNr."
+**Expected behaviour:** **rejected** — §3g is *services only*. A goods supply
+with a buyer USt-IdNr. uses §4a. `ust_check.py` exits 2 when
+`supply_type: "goods"` is combined with `reverse_charge: true`.
+
+**Failure signs:** applying reverse charge to a goods supply.
+
+### N2. "The Kleinunternehmer threshold is EUR 22,000."
+**Expected behaviour:** **rejected** — the threshold is EUR 20,000 (UStG §19
+Abs. 1, verified 2026-10-09). `ust_check.py` exits 2 with "threshold wrong".
+
+**Failure signs:** quoting the superseded 22,000 figure.
+
+### N3. "Round the total to EUR 100.01, then split the tax."
+**Expected behaviour:** **rejected** — round line-level (0.5-up) *first*, then
+split per tax key. Rounding the total before the split is the highest-error
+area in German VAT. `ust_check.py` exits 2.
+
+**Failure signs:** rounding the invoice total before the tax split.
