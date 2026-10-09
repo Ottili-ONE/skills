@@ -19,6 +19,16 @@ REQUIRED_FIELDS = [
     "recipients", "retention_period", "security_measures",
 ]
 # Art. 6 GDPR legal bases. Exactly one primary basis per activity.
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
+# Retention is inherited from the gobd-archive GoBD retention class (label
+# artefacts are business records under HGB/AO); pinned in config, never
+# hardcoded (R3 rule).
+RETENTION_YEARS = int(load_config().get("dsgvo-ai-act-labeling", {}).get(
+    "human_review_retention_years", {}).get("value", 10))
+
 LEGAL_BASES = {
     "art6_1a_consent": "Consent (Art. 6(1)(a))",
     "art6_1b_contract": "Contractual necessity (Art. 6(1)(b))",

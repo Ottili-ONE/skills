@@ -14,13 +14,21 @@ import json
 import sys
 from pathlib import Path
 
-TRACKING_ENDPOINTS = {
-    "dhl": "/shipment/v2/tracking?shipmentNumber=",
-    "dpd": "/track/",
-    "gls": "/track?trackingNumber=",
-    "hermes": "/tracking?id=",
-    "ups": "/track?trackingNumber=",
-}
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
+# Official tracking endpoints are pinned in config/versions.json (verified
+# against each carrier portal, retrieval 2026-10-09). Never scrape the public
+# tracking page and never hardcode an endpoint.
+TRACKING_ENDPOINTS = load_config().get("carrier-apis-de", {}).get(
+    "tracking_endpoints", {}).get("value", {
+        "dhl": "/shipment/v2/tracking?shipmentNumber=",
+        "dpd": "/track/",
+        "gls": "/track?trackingNumber=",
+        "hermes": "/tracking?id=",
+        "ups": "/track?trackingNumber=",
+    })
 CACHE_TTL_SECONDS = 300  # 5 minutes; never hammer the API
 
 

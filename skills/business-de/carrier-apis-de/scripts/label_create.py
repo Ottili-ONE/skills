@@ -16,14 +16,21 @@ import json
 import sys
 from pathlib import Path
 
-# Per-carrier idempotency field name (verified against each carrier portal,
-# retrieval 2026-10-09; see references/SOURCES.md). Never assume one header.
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
+# Per-carrier idempotency field name is pinned in config/versions.json
+# (verified against each carrier portal, retrieval 2026-10-09; see
+# references/SOURCES.md). Never assume one header; never hardcode.
+_IDEMPOTENCY_FIELD = load_config().get("carrier-apis-de", {}).get(
+    "idempotency_header", {}).get("value", {})
 IDEMPOTENCY_FIELD = {
-    "dhl": "X-Request-ID",
-    "dpd": "shipmentReferenceNumber",
-    "gls": "labelId",
-    "hermes": "correlationId",
-    "ups": "X-Inbound-Idempotency-Key",
+    "dhl": _IDEMPOTENCY_FIELD.get("dhl", "X-Request-ID"),
+    "dpd": _IDEMPOTENCY_FIELD.get("dpd", "shipmentReferenceNumber"),
+    "gls": _IDEMPOTENCY_FIELD.get("gls", "labelId"),
+    "hermes": _IDEMPOTENCY_FIELD.get("hermes", "correlationId"),
+    "ups": _IDEMPOTENCY_FIELD.get("ups", "X-Inbound-Idempotency-Key"),
 }
 IDEMPOTENCY_IN_BODY = {"dpd", "gls", "hermes"}
 REQUIRED_LABEL_FIELDS = ["recipient", "address", "parcel", "service"]

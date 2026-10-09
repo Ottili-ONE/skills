@@ -18,8 +18,17 @@ from pathlib import Path
 # Meta Graph API contract (verified 2026-10-07 against developers.facebook.com).
 # Meta sunsets API versions silently; the version is pinned in config and
 # re-verified quarterly. Never hardcode a version in logic.
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
+# Meta Graph API version is pinned in config/versions.json (verified 2026-10-09
+# against developers.facebook.com). Meta sunsets versions silently; never
+# hardcode a version in logic.
 GRAPH_BASE = "https://graph.facebook.com"
 FEED_ENDPOINT = "/{page-id}/feed"
+DEFAULT_VERSION = load_config().get("publish-reconcile-wp-meta", {}).get(
+    "meta_graph_api_version", {}).get("value", "v19.0")
 
 
 def build_request(key: str, payload: dict, page_id: str, version: str) -> dict:
@@ -44,7 +53,7 @@ def main() -> int:
     ap.add_argument("--execute", action="store_true", help="send the request")
     ap.add_argument("--page-id", required=True, help="Meta page id")
     ap.add_argument("--token", help="page access token (only with --execute)")
-    ap.add_argument("--version", default="v19.0", help="Graph API version (pinned)")
+    ap.add_argument("--version", default=DEFAULT_VERSION, help="Graph API version (pinned)")
     args = ap.parse_args()
 
     payload = json.loads(Path(args.payload).read_text()) if args.payload else {"message": "Hello from Ottili."}

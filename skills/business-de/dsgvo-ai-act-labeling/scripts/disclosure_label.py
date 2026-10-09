@@ -18,6 +18,16 @@ from pathlib import Path
 # Article 50 EU AI Act (Regulation (EU) 2024/1689) — verified 2026-10-09.
 # Transparency obligations for certain AI systems; high-risk systems
 # additionally require human oversight under Art. 5(4).
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
+# Human-review evidence retention is inherited from the gobd-archive GoBD
+# retention class (label artefacts are business records under HGB/AO); the
+# number is pinned in config, never hardcoded (R3 rule).
+RETENTION_YEARS = int(load_config().get("dsgvo-ai-act-labeling", {}).get(
+    "human_review_retention_years", {}).get("value", 10))
+
 TRANSPARENCY_ONLY = {"chatbot", "emotion-recognition", "deep-fake", "biometric-categorization"}
 HIGH_RISK_ARTICLE_6 = "Annex III high-risk (Art. 6)"
 

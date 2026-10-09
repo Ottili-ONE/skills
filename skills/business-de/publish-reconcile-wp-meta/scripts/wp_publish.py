@@ -15,11 +15,18 @@ import json
 import sys
 from pathlib import Path
 
-# WP REST API contract (verified 2026-10-07 against developer.wordpress.org).
-# Basic Auth is DEPRECATED in WP 6.7+ (core); the plugin ships separately and
-# is unmaintained. Prefer Application Passwords or OAuth2.
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
+# WP REST API contract is pinned in config/versions.json (verified 2026-10-09
+# against developer.wordpress.org). Basic Auth is DEPRECATED in WP 6.7+
+# (core); the plugin ships separately and is unmaintained. Prefer Application
+# Passwords or OAuth2.
 POST_ENDPOINT = "/wp/v2/posts"
 AUTH_METHODS = ("app-password", "oauth2")
+WP_VERSION = load_config().get("publish-reconcile-wp-meta", {}).get(
+    "wordpress_rest_api", {}).get("version", "WP 6.7+")
 
 
 def build_request(key: str, payload: dict, base_url: str) -> dict:
