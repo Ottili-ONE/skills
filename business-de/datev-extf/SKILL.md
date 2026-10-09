@@ -34,7 +34,7 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
    fields. Key fields: Kennzeichen (must be `EXTF`), Versionsnummer (must be
    `700`), Formatkategorie (must be `21` for Buchungsstapel), Formatname
    (must be `Buchungsstapel`), Formatversion (must be `13`), Erzeugt am
-   (Erstellungsdatum YYYYMMDD), Herkunft, Exportiert von, Importiert von,
+   Erzeugt am (17 digits YYYYMMDDHHMMSS000), Herkunft, Exportiert von, Importiert von,
    Beraternummer, Mandantennummer, WJ-Beginn, Sachkontenlaenge, Datum vom,
    Datum bis, Bezeichnung, Diktatkuerzel, Festschreibung, WKZ,
    Sachkontenrahmen, Anwendungsinformation. Pin the schema version in config;
@@ -66,7 +66,7 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | Formatkategorie (field 3) | "21" = Buchungsstapel | yes |
 | Formatname (field 4) | "Buchungsstapel" | yes |
 | Formatversion (field 5) | "13" | yes |
-| Erzeugt am (field 6) | YYYYMMDD | yes |
+| Erzeugt am (field 6) | 17 digits YYYYMMDDHHMMSS000 | yes |
 | Herkunft (field 8) | sender id | yes |
 | Beraternummer (field 11) | advisor number | yes |
 | Mandantennummer (field 12) | client number | yes |
