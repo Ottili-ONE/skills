@@ -74,5 +74,89 @@
       "verified": "2026-10-08",
       "note": "Formatkategorie 21 = Buchungsstapel. 16 = Debitoren/Kreditoren."
     }
+  },
+  "skr-journal-mapping": {
+    "kontenrahmen": {
+      "value": "SKR04",
+      "verified": "2026-10-09",
+      "source": "https://www.datev.de/",
+      "note": "Pinned default Kontenrahmen for Ottili GmbH. SKR03 is the alternative for GmbH & Co. KG. Re-verify against DATEV/IDR before each build; the account list is stable, the tax keys are not."
+    },
+    "ust_rates_2026": {
+      "standard": 19,
+      "reduced": 7,
+      "zero": 0,
+      "law": "UStG §12 Abs. 1/2, §4 Nr. 1, §6",
+      "verified": "2026-10-09",
+      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "note": "Rates valid for 2026. EU ViDA may change them from 2027-01-01 (secondary source, verify). Read from this file; never hardcode in scripts."
+    },
+    "am_konten": {
+      "source": "https://github.com/seamless-engineering/datev-extf",
+      "verified": "2026-10-09",
+      "note": "Automatikkonten per SKR; EXTF_AS_OF 2026-09-25. A BU-Schluessel other than '40' on these is rejected or double-counted by DATEV."
+    }
+  },
+  "ust-edge-cases": {
+    "kleinunternehmer_threshold": {
+      "value": 20000,
+      "unit": "EUR",
+      "law": "UStG §19 Abs. 1",
+      "verified": "2026-10-09",
+      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "note": "Turnover threshold for the previous calendar year. Re-verify before each build; unchanged for years."
+    },
+    "reverse_charge": {
+      "law": "UStG §3g",
+      "verified": "2026-10-09",
+      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "note": "Schuldnerschaft for certain services (IT, consulting, construction). The buyer bears the VAT debt; the buyer's USt-IdNr. is mandatory."
+    },
+    "oss": {
+      "law": "UStG §18",
+      "verified": "2026-10-09",
+      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "note": "OSS for EU distance sales of goods and services. EU ViDA changes planned from 2027-01-01 (secondary source, verify)."
+    },
+    "rounding": {
+      "law": "UStG §4 Abs. 3",
+      "rule": "line-level 0.5-up, then per tax key",
+      "verified": "2026-10-09",
+      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "note": "Highest-error-rate area in German VAT. Never round the total before the tax split."
+    }
+  },
+  "bank-reconciliation-camt": {
+    "camt053_version": {
+      "version": "13",
+      "date": "2023-09-15",
+      "verified": "2026-10-09",
+      "source": "https://www.iso20022.org/iso20022/message-definitons",
+      "note": "Version 14 expected ~2026-09; re-verify before each build."
+    },
+    "mt940_version": {
+      "version": "9",
+      "date": "2023-09-15",
+      "verified": "2026-10-09",
+      "source": "https://www.swift.com/standards",
+      "note": "No public version page; mark as unverified until SWIFT confirms."
+    },
+    "iban_rules": {
+      "country": "DE",
+      "digits": 22,
+      "algorithm": "Bundesbank Pruefzahlenberechnung",
+      "verified": "2026-10-09",
+      "source": "https://www.bundesbank.de/",
+      "note": "German IBANs use a country-specific check-digit algorithm, not generic mod-97."
+    },
+    "duplicate_rule": {
+      "match": [
+        "amount",
+        "value_date",
+        "reference"
+      ],
+      "verified": "2026-10-09",
+      "note": "Strict primary definition; a 5-day amount+reference window is a configurable heuristic, disabled by default."
+    }
   }
 }
