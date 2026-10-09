@@ -16,27 +16,23 @@ flows: verify its signature over the raw body, dedupe it by event id,
 preserve delivery order within a stream, respect the provider's replay
 window, route persistent failures to a dead-letter queue, and — if the
 skill ever needs to deliver outbound — do so only against an allow-listed
-Ottili endpoint. Do **not** use it for outbound retry engineering (that
-lives in the engineering playbooks) or for providers whose signature scheme
-is unknown.
+Ottili endpoint. Do **not** use it for outbound retry engineering or for
+providers whose signature scheme is unknown.
 
 ## Procedure (numbered, in order)
 
 1. **Verify the signature over the raw body.** Recompute the HMAC with the
-   provider's secret. Reject if it does not match. Never trust headers alone,
-   never parse-then-re-encode the body, and always use
-   `hmac.compare_digest` (a plain `==` is a timing attack).
-2. **Dedupe.** Every webhook carries an event id; store the id with a TTL; on
-   a duplicate id, ack and skip. Never process twice. Check-and-set must be
+   provider's secret. Reject on mismatch. Never trust headers alone, never
+   parse-then-re-encode the body, and always use `hmac.compare_digest`.
+2. **Dedupe.** Every webhook carries an event id; store it with a TTL; on a
+   duplicate id, ack and skip. Never process twice. Check-and-set must be
    atomic.
-3. **Preserve order.** Within a single delivery stream, process events in
-   arrival order; if an event is out of sequence, hold it until the missing
-   event arrives or the replay window expires. Ordering is per stream, never
-   global.
-4. **Respect replay windows.** If a provider guarantees delivery within N
-   minutes, hold unprocessed events for that window before declaring them
-   lost. For Stripe the timestamp is part of the signature — reject stale
-   signatures before checking the HMAC.
+3. **Preserve order.** Within one delivery stream, process events in arrival
+   order; hold an out-of-sequence event until the missing one arrives or the
+   replay window expires. Ordering is per stream, never global.
+4. **Respect replay windows.** For Stripe the timestamp is part of the
+   signature — reject stale signatures before checking the HMAC. Hold
+   unprocessed events for the window before declaring them lost.
 5. **Dead-letter.** On persistent failure (3 attempts), move the event to the
    dead-letter queue with the raw payload and the failure reason; never
    silently drop.
@@ -115,6 +111,7 @@ is unknown.
 - "The signature is old, but it's probably fine" → replay window first.
 - "I'll just deliver to whatever URL is in the payload" → SSRF; allow-list it.
 - "PayPal/Twilio use the same scheme as GitHub" → unverified; flag it.
+- "I'll skip the atomic check for speed" → a race processes the event twice.
 
 ## References
 

@@ -24,18 +24,20 @@ scrapers — every carrier here has an official API and a contract.
    different auth and API shape; never assume one fits another. Read the
    per-carrier row from the contract table in `references/procedures.md`.
 2. **Authenticate with the carrier's documented flow** (OAuth2 client
-   credentials or token exchange). Cache the token, refresh before
-   expiry, never hardcode credentials and never log the token.
+   credentials or token exchange). Cache the token, refresh at least 60 s
+   before expiry, never hardcode credentials and never log the token.
 3. **Create an idempotent label.** Every label request carries a
-   client-generated idempotency key (your stable order/shipment
-   reference). On a duplicate key the carrier returns the existing label
-   — never create a second. The key field name differs per carrier; read
-   it from `config/versions.json`, never hardcode.
+   client-generated idempotency key (your stable order/shipment reference).
+   On a duplicate key the carrier returns the existing label — never create
+   a second. The key field name differs per carrier; read it from
+   `config/versions.json`, never hardcode.
 4. **Track via the official API only.** Poll the carrier's tracking
-   endpoint, cache results for 5 minutes, never scrape the public page.
+   endpoint, cache results for 5 minutes (pinned), never scrape the public
+   page.
 5. **Reconcile.** Compare label cost, status and tracking number against
-   the Ottili shipping record. On a mismatch or unknown result re-query
-   by tracking number, log the delta, flag for review.
+   the Ottili shipping record. On a mismatch or unknown result re-query by
+   tracking number, log the delta, flag for review. Exit 0 = match,
+   1 = mismatch/unknown, 2 = malformed input.
 6. **Handle errors via the fix table.** Map carrier status codes to a
    concrete fix. Auth errors (401/403) are never retried with the same
    token; 409 means re-query, never re-create; 429/5xx use bounded
@@ -66,21 +68,22 @@ scrapers — every carrier here has an official API and a contract.
 ## Pitfalls from research
 
 - **Idempotency key names differ per carrier.** DHL uses `X-Request-ID`,
-  UPS uses `X-Inbound-Idempotency-Key`, DPD/GLS/Hermes use a reference
-  field in the body. Abstract the key behind a per-carrier adapter; never
-  assume one header name.
-- **A duplicate key does not always mean "return existing".** Some
-  carriers return 409 and you must re-query by the reference number to
-  find the existing label. Treat 409 as "re-query, never re-create".
-- **Never scrape the tracking page.** Every carrier has an official
-  tracking API; scraping breaks on layout changes and violates the
-  carrier's terms. Use the API and cache results.
-- **Sandbox availability varies.** DHL, DPD and UPS offer sandboxes;
-  GLS and Hermes do not (Hermes requires a business account). Treat
-  sandbox tests as optional and document which carriers support them.
-- **Label cost reconciliation is not optional.** A label that was
-  created but never reconciled silently diverges from the Ottili
-  shipping record. Reconcile on every label, not after the fact.
+  UPS uses `X-Inbound-Idempotency-Key`, DPD/GLS/Hermes use a body reference
+  field. Abstract the key behind a per-carrier adapter; never assume one
+  header name.
+- **A duplicate key does not always mean "return existing".** Some carriers
+  return 409 and you must re-query by the reference number to find the
+  existing label. Treat 409 as "re-query, never re-create".
+- **Never scrape the tracking page.** Every carrier has an official tracking
+  API; scraping breaks on layout changes and violates the carrier's terms.
+- **Sandbox availability varies.** DHL, DPD and UPS offer sandboxes; GLS and
+  Hermes do not (Hermes requires a business account). Treat sandbox tests as
+  optional; dry-run the request envelope instead.
+- **Label cost reconciliation is not optional.** A label that was created but
+  never reconciled silently diverges from the Ottili shipping record.
+- **DPD and GLS portals are SPAs.** Deeper paths (`/track`, `/api`,
+  `developer-portal`) 404 while the root 200s; the real contracts live behind
+  login. Mark those endpoint paths as unverified.
 
 ## Verification checklist
 
@@ -98,8 +101,8 @@ scrapers — every carrier here has an official API and a contract.
 - "I'll just retry the label request" → check the idempotency key first.
 - "The tracking page shows..." → that is not a data source; use the API.
 - "It worked once, so the key doesn't matter" → it matters on every retry.
-- "GLS/Hermes have no sandbox, skip testing" → dry-run the request envelope
-  instead; do not skip the idempotency check.
+- "GLS/Hermes have no sandbox, skip testing" → dry-run the envelope instead.
+- "The tracking number looks odd" → reject non-numeric before any request.
 
 ## References
 
