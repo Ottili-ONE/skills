@@ -14,10 +14,13 @@ legal basis contractual necessity, purpose order fulfillment."
 **Expected behaviour:** `process_register.py` exits non-zero and reports the
 missing Art. 30 fields (`data_subject_categories`, `data_categories`,
 `recipients`, `retention_period`, `security_measures`). No entry is written.
+A complete entry always carries a `recorded_at` timestamp (the script sets
+it from the current date, never from the caller) so the register is valid
+GoBD evidence.
 
 **Failure signs:** The script accepts the entry; the register gains a line
 with empty required fields; the agent invents the missing fields instead of
-asking the operator.
+asking the operator; an entry with `recorded_at: null`.
 
 ## 2. Register an activity with an unknown legal basis
 

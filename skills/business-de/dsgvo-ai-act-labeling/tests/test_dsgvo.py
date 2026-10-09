@@ -14,6 +14,39 @@ def run(script, *args):
                           capture_output=True, text=True)
 
 
+
+def test_register_entry_carries_recorded_at():
+    """A GoBD register entry must record when it was written; the old
+    script copied the caller's field and wrote `recorded_at: null`."""
+    import tempfile, os
+    act = {"controller": "Ottili GmbH", "purpose": "order fulfillment",
+           "legal_basis": "art6_1b_contract",
+           "data_subject_categories": ["customers"], "data_categories": ["name"],
+           "recipients": ["carrier"], "retention_period": "10y",
+           "security_measures": "TLS 1.3"}
+    act_path = Path("/tmp/_dsgvo_act.json"); act_path.write_text(json.dumps(act))
+    store = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
+    store.close()
+    r = run(REG, "--activity", str(act_path), "--register", store.name)
+    assert r.returncode == 0, r.stderr
+    line = json.loads(Path(store.name).read_text(encoding="utf-8").strip())
+    assert line.get("recorded_at"), "recorded_at must not be null"
+    os.unlink(store.name)
+
+
+def test_label_general_ai_has_article_95_flag():
+    """General AI (Art. 95) is documented, not disclosed."""
+    import tempfile, os
+    sys_path = Path("/tmp/_dsgvo_sys.json")
+    sys_path.write_text(json.dumps({"name": "report-ml", "ai_type": "general"}))
+    r = run(LABEL, "--system", str(sys_path))
+    assert r.returncode == 0, r.stderr
+    data = json.loads(r.stdout)
+    assert data["risk_class"] == "general"
+    assert data["article_50_required"] is False
+    assert data["article_95_documented"] is True
+    assert data["human_review_status"] == "not-required"
+
 def test_register_requires_art30_fields():
     act = {"controller": "Ottili GmbH", "legal_basis": "art6_1b_contract",
            "purpose": "x"}

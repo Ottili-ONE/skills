@@ -11,6 +11,7 @@ Usage:
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Art. 30(1) GDPR mandatory fields. Missing fields block the entry.
@@ -39,7 +40,7 @@ LEGAL_BASES = {
 }
 
 
-def classify(activity: dict) -> dict:
+def classify(activity: dict, now: str | None = None) -> dict:
     """Return the Art. 30 entry or raise SystemExit on invalid input."""
     missing = [f for f in REQUIRED_FIELDS if f not in activity]
     if missing:
@@ -47,6 +48,10 @@ def classify(activity: dict) -> dict:
     basis = activity.get("legal_basis", "")
     if basis not in LEGAL_BASES:
         raise SystemExit(f"unknown legal basis '{basis}'; choose from {sorted(LEGAL_BASES)}")
+    # The register is append-only GoBD evidence: every entry must carry the
+    # moment it was recorded. Never trust the caller for this timestamp.
+    if not now:
+        now = datetime.now(timezone.utc).date().isoformat()
     has_personal = activity.get("personal_data", True)
     entry = {
         "personal_data": has_personal,
@@ -59,7 +64,7 @@ def classify(activity: dict) -> dict:
         "recipients": activity["recipients"],
         "retention_period": activity["retention_period"],
         "security_measures": activity["security_measures"],
-        "recorded_at": activity.get("recorded_at"),
+        "recorded_at": now,
         "ai_act_gate": activity.get("ai_act_gate", "pending"),
     }
     if not has_personal:
