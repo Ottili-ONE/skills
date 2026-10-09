@@ -1,6 +1,6 @@
 ---
 name: ust-edge-cases
-description: "Apply German VAT edge cases correctly: reverse charge (§13b UStG) for goods only, Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales."
+description: "Apply German VAT edge cases correctly: reverse charge (§3g UStG, services only), Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales."
 license: MIT-compat
 compatibility: "framework-agnostic; German UStG, EU VAT rules, offline"
 metadata: {}
@@ -25,10 +25,13 @@ beyond what the sources below support.
 1. **Identify the edge case** — reverse charge, small business, intra-EU,
    OSS, rounding, or e-invoice interplay (see decision table).
 2. **Apply the rule** — pick the Steuerschlüssel and the tax amount.
-3. **Check the precondition** — reverse charge needs both a valid customer
-   USt-IdNr. **and** a supply of goods (§13b covers goods, not services);
-   Kleinunternehmer requires the prior-year turnover ≤ EUR 22,000 (2026).
-   A USt-IdNr. alone is not enough to trigger reverse charge.
+3. **Check the precondition** — reverse charge (§3g) needs both a valid
+   customer USt-IdNr. **and** a supply of **services** (IT, consulting,
+   construction). §3g covers services, not goods; a goods supply with a buyer
+   USt-IdNr. uses the general intra-EU rule (§4a) at 0% without reverse charge.
+   Kleinunternehmer requires the prior-year turnover ≤ EUR 20,000 (UStG §19
+   Abs. 1, read from config). A USt-IdNr. alone is not enough to trigger
+   reverse charge.
 4. **Generate the journal** — use `skr-journal-mapping` for the accounts and
    `scripts/ust_check.py` for the arithmetic.
 5. **Verify** — run `scripts/ust_check.py` and the verification checklist.
@@ -39,34 +42,29 @@ All three tables below — edge-case selection, the goods-vs-services split,
 and the e-invoice interplay — are expanded with worked examples and legal
 sources in `references/procedures.md` §1-§6. The condensed rules:
 
-Condensed rules: the reverse-charge regime (§13b) covers goods only — a
-service sold to a customer that supplies a USt-IdNr. is still taxed by the
-general place-of-performance rule. A small business under the
-Kleinunternehmer rule charges no VAT on its sales and issues a "sonstige
-Rechnung", but remains able to receive e-invoices. Invoices under EUR 250
-gross are exempt from the issuing obligation. The full tables (edge-case selection, goods-vs-services split, e-invoice
-interplay) with worked examples and legal sources are in
-`references/procedures.md` §1-§6.
+Condensed rules: the reverse-charge regime (§3g) covers **services**
+only — a service sold to a customer that supplies a USt-IdNr. is reverse
+charged; a *goods* supply to a customer with a USt-IdNr. is taxed at 0% under
+the general intra-EU rule (§4a) and must not be labelled reverse charge. A
+small business under the Kleinunternehmer rule charges no VAT on its sales
+and issues a "sonstige Rechnung" under §19. Invoices under EUR 250 gross are
+exempt from the issuing obligation. The full tables (edge-case selection,
+goods-vs-services split, e-invoice interplay) with worked examples and legal
+sources are in `references/procedures.md` §1–§6.
 
-The full tables (edge-case selection, goods-vs-services split, e-invoice
-interplay) with worked examples and legal sources are in
-`references/procedures.md` §1-§6.
-
-The full tables (edge-case selection, goods-vs-services split, e-invoice
-interplay) with worked examples and legal sources are in
-`references/procedures.md` §1-§6.
 
 ## Pitfalls from research
 
-The single trap that catches most agents: **reverse charge (§13b) is goods
-only** — a service sold to a customer that supplies a USt-IdNr. is still
-taxed by the general place-of-performance rule. The full list of five traps,
-with sources, is in `references/procedures.md` §1-§6.
+The single trap that catches most agents: **reverse charge (§3g) is services
+only** — a goods supply to a customer that supplies a USt-IdNr. is taxed at
+0% under the general intra-EU rule (§4a), not reverse charge. The full list of
+five traps, with sources, is in `references/procedures.md` §1–§6.
+
 
 ## Verification checklist
 
 - [ ] Edge case identified per decision table
-- [ ] Precondition checked (USt-IdNr., turnover threshold, goods category)
+- [ ] Precondition checked (USt-IdNr., turnover threshold, services category)
 - [ ] Tax key matches the legal rate
 - [ ] Tax amount computed and rounded to cents
 - [ ] `scripts/ust_check.py` exits 0
