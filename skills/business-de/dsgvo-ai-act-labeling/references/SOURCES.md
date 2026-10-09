@@ -18,8 +18,8 @@ the end.
 
 | # | Source | URL | HTTP | Notes |
 |---|---|---|---|---|
-| 1 | EUR-Lex GDPR — ELI page | https://eur-lex.europa.eu/eli/reg/2016/679/oj | 200 | Authoritative entry point. The old `legal-content/EN/TXT/?uri=CELEX:32016R679` path returned 404 at re-verification; use the ELI page. Retrieved 2026-10-09. |
-| 2 | EUR-Lex EU AI Act — ELI page | https://eur-lex.europa.eu/eli/reg/2024/1689/oj | 200 | CELEX 32024R1689 via ELI. Pin the ELI number; implementing acts are still being adopted. Retrieved 2026-10-09. |
+| 1 | EUR-Lex GDPR — ELI page | https://eur-lex.europa.eu/eli/reg/2016/679/oj | 200 | Authoritative entry point (1 MB OJ PDF/HTML). The old `legal-content/EN/TXT/?uri=CELEX:32016R679` path returned **404** at re-verification; use the ELI page. Retrieved 2026-10-09. |
+| 2 | EUR-Lex EU AI Act — ELI page | https://eur-lex.europa.eu/eli/reg/2024/1689/oj | 200 | CELEX 32024R1689 via ELI (1.5 MB). The direct `legal-content/EN/TXT/?uri=CELEX:32024R1689` path also returned 200. Pin the ELI number; implementing acts are still being adopted. Retrieved 2026-10-09. |
 | 3 | European Commission — AI Act implementation | https://digital-strategy.ec.europa.eu/en/policies/eu-ai-act | 200 | Phased entry into force; used to pin disclosure obligation dates. Dates treated as unverified until the EUR-Lex text is re-checked at build time. Retrieved 2026-10-09. |
 | 4 | BfDI (German DPA) | https://www.bfdi.bund.de/EN/ | 200 | German DPA interpretation of GDPR and AI Act; cross-check only, never as EU-level authority. Retrieved 2026-10-09. |
 | 5 | EDPB | https://edpb.europa.eu/edpb_en | 200 | EDPB homepage; the direct guidelines path (`our-work-guidelines_en`) returned 404 at re-verification. EDPB AI guidelines are therefore **unverified** at this retrieval and must be re-fetched at build time. Retrieved 2026-10-09. |
@@ -39,6 +39,9 @@ the end.
   `edpb.europa.eu/en/publications-and-documents/guidelines/artificial-intelligence_en`
   returns 404 (2026-10-09). The EDPB homepage (`edpb_en`) is live. Re-fetch the
   AI guidelines at build time; do not cite the dead path.
+- **GDPR CELEX path is stale.** `legal-content/EN/TXT/?uri=CELEX:32016R679`
+  returns 404 (2026-10-09) while the AI Act CELEX path is live. Always use the
+  ELI page for GDPR.
 - **ISO/IEC TR 5498 is behind a 403.** Treated as unverified background; the
   processing register design rests on Art. 30 GDPR, not on ISO.
 - **Article 50(2) machine-readable marking duty start date (2026-12-02 per

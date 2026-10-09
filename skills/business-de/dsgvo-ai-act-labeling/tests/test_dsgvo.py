@@ -89,3 +89,53 @@ def test_label_not_ai():
     out = json.loads(r.stdout)
     assert out["risk_class"] == "not-ai"
     assert out["article_50_required"] is False
+
+
+def test_label_high_risk_writes_out_file():
+    ev = Path("/tmp/_ev_out.txt"); ev.write_text("evidence")
+    sys_def = {"name": "recruiter-ai", "ai_type": "high-risk",
+               "human_review": {"reviewer_id": "lawyer-1", "reviewed_at": "2026-10-09",
+                                "evidence_path": str(ev)}}
+    p = Path("/tmp/_sys_out.json"); p.write_text(json.dumps(sys_def))
+    out = Path("/tmp/_label_out.json"); out.unlink(missing_ok=True)
+    r = run(LABEL, "--system", str(p), "--out", str(out))
+    assert r.returncode == 0, r.stderr
+    assert out.exists()
+    written = json.loads(out.read_text())
+    assert written["label"] == "article-50-disclosure-hr"
+    assert written["retention_years"] == 10
+
+
+def test_label_rejects_bad_reviewed_at():
+    sys_def = {"name": "support-bot", "ai_type": "chatbot",
+               "human_review": {"reviewer_id": "ops-1", "reviewed_at": "09/10/2026"}}
+    p = Path("/tmp/_sys_bad_date.json"); p.write_text(json.dumps(sys_def))
+    r = run(LABEL, "--system", str(p))
+    assert r.returncode != 0
+    assert "ISO-8601" in r.stderr
+
+
+def test_label_transparency_missing_reviewer_blocks():
+    sys_def = {"name": "support-bot", "ai_type": "chatbot", "human_review": {}}
+    p = Path("/tmp/_sys_noreview.json"); p.write_text(json.dumps(sys_def))
+    r = run(LABEL, "--system", str(p))
+    assert r.returncode != 0
+    assert "human-review evidence" in r.stderr
+
+
+def test_label_general_ai_no_disclosure():
+    sys_def = {"name": "embeddings", "ai_type": "general"}
+    p = Path("/tmp/_sys_gen.json"); p.write_text(json.dumps(sys_def))
+    r = run(LABEL, "--system", str(p))
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["risk_class"] == "general"
+    assert out["article_50_required"] is False
+    assert out["human_review_status"] == "not-required"
+
+
+def test_label_unknown_ai_type_blocks():
+    sys_def = {"name": "x", "ai_type": "magic-ai"}
+    p = Path("/tmp/_sys_unknown.json"); p.write_text(json.dumps(sys_def))
+    r = run(LABEL, "--system", str(p))
+    assert r.returncode != 0
