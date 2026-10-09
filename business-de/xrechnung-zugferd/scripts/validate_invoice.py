@@ -22,12 +22,19 @@ from common import load_config  # noqa: E402
 # EN 16931-1:2017+Corr2017-06 (v1.2.4) business rules, keyed by rule ID.
 # Each entry: (element names to look for, content regex, mandatory-in-COMFORT).
 # BT-14 and BT-20 are mandatory in *every* profile; the rest only in COMFORT/EXTENDED.
+#
+# Element names verified 2026-10-09 against the KoSIT
+# validator-configuration-xrechnung guidelines.json (rule IDs + cbc: element names).
+# BT-18 is PaymentAllowedAccountID (the bank account), NOT PaymentTerms — earlier
+# drafts wrongly grouped it with BT-20.
 BT_RULES = {
     "BT-10": (["cbc:EndpointID", "EndpointID", "LeitwegID"], r"[0-9A-Fa-f]{2,16}", True),
     "BT-14": (["cbc:IssueDate", "IssueDate"], r"(?:\d{8}|\d{4}-\d{2}-\d{2})", True),
     "BT-20": (["cbc:PaymentTerms", "PaymentTerms"], r"\d", True),
     "BT-17": (["cbc:PaymentDueDate", "PaymentDueDate"], r"\d{8}", False),
-    "BT-18": (["cbc:PaymentTerms", "PaymentTerms"], r"\S", False),
+    "BT-18": (["cbc:PaymentAllowedAccountID", "PaymentAllowedAccountID",
+              "cbc:AccountID", "AccountID"], r"[A-Z]{2}[0-9A-Z]{11,}", False),
+    "BT-19": (["cbc:TaxAmount", "TaxAmount"], r"\S", False),
     "BT-15": (["cbc:IssueDate", "IssueDate"], r"(?:\d{8}|\d{4}-\d{2}-\d{2})", False),
 }
 
@@ -75,6 +82,25 @@ def extract_xml_text(pdf: Path) -> str:
     return ""
 
 
+def _element_text(xml_text: str, names) -> str:
+    """Return the concatenated text content of the first matching element.
+
+    Scoping matters: BT-18 (PaymentAllowedAccountID, an IBAN) and BT-20
+    (PaymentTerms, free text) share the local name ``PaymentTerms`` in some
+    UBL exports, and BT-10 (Leitweg-ID ``DE...``) matches an IBAN regex.
+    Searching the *whole* document for a content regex therefore produces
+    false passes. Verified 2026-10-09 against the KoSIT guidelines.json.
+    """
+    for name in names:
+        pat = re.compile(
+            r"<" + re.escape(name) + r"[^>]*>(.*?)</" + re.escape(name) + r">",
+            re.S | re.I)
+        m = pat.search(xml_text)
+        if m:
+            return m.group(1).strip()
+    return ""
+
+
 def bt_checks(xml_text: str, profile: str) -> list:
     """Run the offline EN 16931 business-rule subset on the XML text."""
     failures = []
@@ -86,13 +112,14 @@ def bt_checks(xml_text: str, profile: str) -> list:
             continue
         if not mandatory and profile not in ("COMFORT", "EXTENDED"):
             continue
-        present = any(n in xml_text for n in names)
-        if not present:
+        text = _element_text(xml_text, names)
+        if not text:
             failures.append(f"{rule_id} missing ({names[0]})")
             continue
         # Element present: its text content must satisfy the content regex.
-        if not re.search(regex, xml_text):
-            failures.append(f"{rule_id} content invalid (regex {regex})")
+        if not re.search(regex, text):
+            failures.append(f"{rule_id} content invalid "
+                            f"(value={text[:40]!r} regex {regex})")
     return failures
 
 

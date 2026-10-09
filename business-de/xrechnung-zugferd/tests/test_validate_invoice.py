@@ -13,6 +13,8 @@ XML_OK = b"""<?xml version="1.0" encoding="UTF-8"?>
   <LeitwegID>DE12345678901234</LeitwegID>
   <PaymentTerms>net 30</PaymentTerms>
   <PaymentDueDate>20260702</PaymentDueDate>
+  <AccountID>DE89370400440532013000</AccountID>
+  <TaxAmount>228.00</TaxAmount>
 </CrossIndustryInvoice>"""
 
 XML_MISSING = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -69,3 +71,23 @@ def test_missing_file():
     code, out = run(["/nonexistent/invoice.xml"])
     assert code == 2
     assert "file not found" in out["error"]
+
+
+def test_bt18_and_bt19_present(tmp_path):
+    """BT-18 (PaymentAllowedAccountID) and BT-19 (TaxAmount) are distinct from
+    BT-20 (PaymentTerms). Verified 2026-10-09 against the KoSIT guidelines.json."""
+    f = tmp_path / "inv.xml"
+    f.write_bytes(XML_OK)
+    code, out = run([str(f), "--profile", "COMFORT"])
+    assert code == 0
+    assert out["errors"] == []
+
+
+def test_bt18_missing_in_comfort(tmp_path):
+    """Without the bank account (BT-18) the COMFORT profile must fail."""
+    xml = XML_OK.replace(b"<AccountID>DE89370400440532013000</AccountID>", b"")
+    f = tmp_path / "inv.xml"
+    f.write_bytes(xml)
+    code, out = run([str(f), "--profile", "COMFORT"])
+    assert code == 1
+    assert any("BT-18" in e for e in out["errors"])
