@@ -136,8 +136,7 @@ Formatkategorie/Formatname/Formatversion and a different column count:
 |---|---|---|---|---|
 | 21 | Buchungsstapel | 13 | booking rows | 125 |
 | 16 | Debitoren/Kreditoren | 5 | customer/supplier master data | per DEBKRED spec |
-| 20 | Saldenliste / Kontenrahmen | 1 | ledger balances / account master | per spec |
-| 21 | Einzelnachweis | 13 | single booking | 125 |
+| 20 | Kontenbeschriftungen | 1 | account labels | per spec |
 
 The shared header checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
 Sachkontenlaenge, Berater, Mandant) apply to every category. The

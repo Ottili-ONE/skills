@@ -11,8 +11,9 @@ DATEV does not publish a public version page.
 |---|---|---|
 | Buchungsstapel | 21 | common integration target |
 | Debitoren/Kreditoren | 16 | customer/supplier master data |
-| Einzelnachweis | 21 | single booking |
-| Saldenliste / Kontenrahmen | 20 | ledger balances |
+| Buchungsstapel | 21 | booking rows |
+| Debitoren/Kreditoren | 16 | customer/supplier master data |
+| Kontenbeschriftungen | 20 | account labels |
 
 ## 2. Build the EXTF header (line 1, 31 fields)
 
@@ -115,14 +116,9 @@ count. Verified 2026-10-09 against seamless-engineering/datev-extf
 |---|---|---|---|---|
 | 21 | Buchungsstapel | 13 | booking rows | 125 |
 | 16 | Debitoren/Kreditoren | 5 | customer/supplier master data | per DEBKRED spec |
-| 20 | Saldenliste / Kontenrahmen | 1 | ledger balances / account master | per spec |
-| 21 | Einzelnachweis | 13 | single booking | 125 |
+| 20 | Kontenbeschriftungen | 1 | account labels | per spec |
 
-The shared header checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
-Sachkontenlaenge, Berater, Mandant) apply to every category. The
-category-specific checks (Formatkategorie/Formatname/Formatversion, column
-count, row rules) do not. When a file is not a Buchungsstapel, say so
-explicitly instead of running Buchungsstapel rules against it.
+
 
 ## 5. Handle validation errors
 

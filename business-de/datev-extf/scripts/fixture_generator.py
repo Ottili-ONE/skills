@@ -37,7 +37,13 @@ def booking(amount, side, account, beleg, text):
     row[6] = account
     row[9] = beleg
     row[13] = text
-    row[124] = "19"
+    # col 97 (index 96) = "USt-Schlüssel (Anzahlungen)" — the tax key.
+    # Verified 2026-10-09 against seamless-engineering/datev-extf
+    # src/columns.ts BUCHUNGSSTAPEL_COLUMNS (EXTF_AS_OF 2026-09-25).
+    # col 125 is "Abw. Skontokonto", NOT the tax key — an earlier draft
+    # put the Steuerschlüssel at index 124, which DATEV would read as
+    # "Abw. Skontokonto" and silently drop the real tax key.
+    row[96] = "19"
     return row
 
 

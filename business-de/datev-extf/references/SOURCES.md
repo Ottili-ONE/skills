@@ -1,7 +1,9 @@
 # SOURCES — datev-extf
 
 Retrieval date for every entry: 2026-10-08 (re-verified **2026-10-09** for the
-column-index, Belegdatum, Erzeugt am, WJ arithmetic and the full header-rule set). Versions pinned in `config/versions.json`;
+column-index, Belegdatum, Erzeugt am, WJ arithmetic and the full header-rule set;
+**re-verified again 2026-10-09** for the Datenservices table and the column-97
+tax-key fix). Versions pinned in `config/versions.json`;
 re-verify before relying on any version-sensitive fact.
 
 | # | Source | URL | Verified version | Notes / conflicts |
@@ -16,6 +18,7 @@ re-verify before relying on any version-sensitive fact.
 | 8 | DATEV Buchungsdatenservice | https://www.datev.de/web/de/marktplatz/marahplus/ | 2026-10-08 | Confirms EXTF is the file-based basis and a REST variant exists (accounting:extf-files). |
 | 9 | DATEV Rechnungsdatenservice 1.0 | https://www.datev.de/web/de/marktplatz/marahplus/ | 2026-10-08 | Confirms the XML-Schnittstelle online basis and the booking-suggestion flow. |
 | 10 | sc-umsatzsteuerberatung/datev-extf (Dart) | https://github.com/sc-umsatzsteuerberatung/datev-extf | 2026-10-08 | Corroboration of the parser/serializer shape and the Steuerschlüssel field. |
+| 11 | seamless-engineering/datev-extf `src/columns.ts` (raw) | https://raw.githubusercontent.com/seamless-engineering/datev-extf/main/src/columns.ts | EXTF_AS_OF 2026-09-25 | **Re-fetched 2026-10-09 (full read).** This is the source that settled the column-index question. `BUCHUNGSSTAPEL_COLUMNS` (125 entries) gives: col 1 = "Umsatz (ohne Soll/Haben-Kz)", col 2 = "Soll/Haben-Kennzeichen", col 7 = "Konto", col 8 = "Gegenkonto (ohne BU-Schlüssel)", col 9 = "BU-Schlüssel", col 10 = "Belegdatum", col 14 = "Buchungstext", col 37 = "KOST1 - Kostenstelle", **col 97 = "USt-Schlüssel (Anzahlungen)"** (the tax key), col 103 = "Buchungs GUID", col 125 = "Abw. Skontokonto". `BUCHUNGSSTAPEL_COLUMN_COUNT = {10:120, 11:122, 12:124, 13:125}`. `DEBKRED_COLUMNS` (254 entries) = Debitoren/Kreditoren Formatversion 5. `FORMAT_NAMES = {"21":"Buchungsstapel","16":"Debitoren/Kreditoren","20":"Kontenbeschriftungen"}` — **category 20 is "Kontenbeschriftungen" (account labels), not "Saldenliste/Kontenrahmen", and there is no "Einzelnachweis" category**; both were corrected 2026-10-09. |
 
 ## Conflicts / version-sensitive notes
 
@@ -24,6 +27,11 @@ re-verify before relying on any version-sensitive fact.
   exporter. DATEV itself does not publish a public version page; the version is
   marked **unverified until DATEV confirms** via the Prüfprogramm. Re-verify on
   every integration test run.
+- **The tax key is column 97, not column 125.** Verified 2026-10-09 against
+  `src/columns.ts` (col 97 = "USt-Schlüssel (Anzahlungen)", col 125 = "Abw. Skontokonto").
+  `fixture_generator.py` and `build_stapel.py` previously wrote the key at index
+  124, which DATEV reads as "Abw. Skontokonto" and drops the real tax key
+  silently. Corrected 2026-10-09.
 - The 125-column Buchungsstapel heading row is copied verbatim from DATEV's
   Musterdaten as of 2024 per the seamless-engineering source. If DATEV changes
   the heading row, the validator warns rather than errors.

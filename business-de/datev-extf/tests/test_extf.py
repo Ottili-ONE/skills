@@ -75,6 +75,24 @@ def test_missing_file_returns_2(tmp_path):
     assert "file not found" in out + err
 
 
+def test_tax_key_lands_at_column_97(tmp_path):
+    """The Steuerschlüssel must sit at column 97 (index 96), not column 125.
+
+    Verified 2026-10-09 against seamless-engineering/datev-extf
+    src/columns.ts BUCHUNGSSTAPEL_COLUMNS: col 97 = "USt-Schlüssel
+    (Anzahlungen)", col 125 = "Abw. Skontokonto". Writing the key at
+    index 124 makes DATEV read it as "Abw. Skontokonto" and drop the tax
+    key silently.
+    """
+    import sys
+    sys.path.insert(0, str(SCRIPTS))
+    from fixture_generator import booking
+    row = booking("1200", "S", "4000", "0206", "Netto+19%")
+    assert len(row) == 125
+    assert row[96] == "19", f"tax key at col 97: {row[96]!r}"
+    assert row[124] == "", f"col 125 must be empty, got {row[124]!r}"
+
+
 def test_pinned_version_not_hardcoded():
     import re
     src = (SCRIPTS / "validate_extf.py").read_text(encoding="utf-8")
