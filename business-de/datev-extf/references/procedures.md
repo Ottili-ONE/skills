@@ -59,7 +59,8 @@ Each booking row has 125 columns. Mandatory columns:
 | 9 | BU-Schlüssel | **forbidden on Automatikkonten** (1000-1999 in SKR 03) |
 | 10 | Belegdatum | **TTMM** (day+month, 4 digits, e.g. `0206`); the year comes from the header |
 | 14 | Buchungstext | quoted text |
-| 125 | USt-Schlüssel | tax key per rate |
+| 97 | USt-Schlüssel (Anzahlungen) | tax key per rate | mandatory |
+| 103 | Buchungs GUID | booking GUID | optional |
 
 ## 4. Validate
 
@@ -129,6 +130,7 @@ count. Verified 2026-10-09 against seamless-engineering/datev-extf
 | Soll/Haben invalid | not `S` or `H` | use `S` for debit, `H` for credit |
 | header too short | fewer than 31 fields | pad to 31 fields |
 | BU-Schlüssel on Automatikkonto | col 9 populated on a ledger account | remove the BU-Schlüssel |
+| Steuerschlüssel at the wrong column | key written at col 125 instead of col 97 | write it at index 96 (column 97) |
 
 ## 6. Generate test fixtures
 

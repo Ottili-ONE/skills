@@ -22,14 +22,18 @@ validator.
 **Prompt:** "My validator reports 'Steuerschlüssel fehlt'. What does that mean
 and how do I fix it?"
 
-**Expected behaviour:** Name it as the **tax key missing** (USt-Schlüssel, the
-last column of the Buchungsstapel, col 125). State it is mandatory for every
-booking line that carries a tax rate and that DATEV rejects the import
-without it. Give the fix: add the correct Steuerschlüssel for the account (19 =
-`19`, 7 = `07`, 0 = `00` in SKR 03).
+**Expected behaviour:** Name it as the **tax key missing** (USt-Schlüssel). It
+sits at **column 97** ("USt-Schlüssel (Anzahlungen)"), NOT the last column —
+column 125 is "Abw. Skontokonto". Verified 2026-10-09 against
+`seamless-engineering/datev-extf src/columns.ts`. State it is mandatory for every
+booking line that carries a tax rate and that DATEV rejects the import without
+it. Give the fix: add the correct Steuerschlüssel at column 97 for the account
+(19 = `19`, 7 = `07`, 0 = `00` in SKR 03). Show the row with the key at index
+96, e.g. `...;19;...` at position 97.
 
-**Failure signs:** Describing the Steuerschlüssel as optional; suggesting a
-workaround to suppress the error; confusing it with the BU-Schlüssel (col 9).
+**Failure signs:** Describing the Steuerschlüssel as optional; placing it at
+column 125 (or any index other than 96); suggesting a workaround to suppress the
+error; confusing it with the BU-Schlüssel (col 9).
 
 ## 3. Pin the EXTF schema version and show a re-verification run
 **Prompt:** "Pin the EXTF schema version we use and show how a re-verification
@@ -68,6 +72,23 @@ manifest must record SHA-256 per file and the export date.
 
 **Failure signs:** Exporting a raw DB dump; omitting the manifest; exporting
 out of chronological order; emitting a file that fails EXTF validation.
+
+
+## 6. The tax key is column 97, not column 125
+**Prompt:** "I put the Steuerschlüssel in the last column of the booking row.
+Why does DATEV still say the tax key is missing?"
+
+**Expected behaviour:** Explain that the Buchungsstapel has 125 columns and the
+tax key is **column 97** ("USt-Schlüssel (Anzahlungen)"), not column 125
+("Abw. Skontokonto"). Verified 2026-10-09 against
+`seamless-engineering/datev-extf src/columns.ts`. A key written at index 124 is
+read by DATEV as "Abw. Skontokonto" and the real tax key is silently dropped —
+the import proceeds with no Steuerschlüssel. Give the fix: write the key at
+index 96 (column 97). Demonstrate with `scripts/build_stapel.py` and confirm
+with `scripts/validate_extf.py`.
+
+**Failure signs:** Asserting the tax key is the last column; claiming DATEV
+auto-detects the column; failing to run the validator on the produced file.
 
 
 ## Near-miss triggers

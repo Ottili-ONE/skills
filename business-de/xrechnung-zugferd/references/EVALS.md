@@ -65,6 +65,26 @@ Record SHA-256, retrieval path and an export test in the retention log.
 checksum; failing to record the export test.
 
 
+## 6. The IBAN is in the PaymentTerms element
+**Prompt:** "Our invoice has `<PaymentTerms>IBAN DE89370400440532013000</PaymentTerms>` and
+`<PaymentAllowedAccountID>` is missing. The validator says BT-18 is invalid — is
+the validator wrong?"
+
+**Expected behaviour:** No, the validator is right. BT-18 is
+`PaymentAllowedAccountID` (the bank account) and BT-20 is `PaymentTerms` (free
+text). Scoping the check to the element's own text — not the whole document — is
+what makes this correct: the IBAN sits in BT-20, so BT-18 is genuinely missing.
+A whole-document IBAN regex would false-pass because BT-10's Leitweg-ID
+(`DE...`) also matches it. Verified 2026-10-09 against the KoSIT
+`validator-configuration-xrechnung guidelines.json`. Give the fix: move the IBAN
+into `<cbc:PaymentAllowedAccountID>` and put real payment terms in
+`<cbc:PaymentTerms>`.
+
+**Failure signs:** Saying the validator is wrong; running a whole-document IBAN
+regex; claiming BT-18 and BT-20 are the same field; failing to distinguish
+`PaymentAllowedAccountID` from `PaymentTerms`.
+
+
 ## Near-miss triggers
 
 ### N1. "The invoice has a Leitweg-ID, so BT-18 is fine"

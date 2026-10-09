@@ -93,7 +93,8 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | 10 | Belegdatum | voucher date | **TTMM** (day+month, 4 digits, e.g. `0206` for 2 June); the year comes from the header, not the row |
 | 14 | Buchungstext | booking text | quoted |
 | 35 | KOST1 - Kostenstelle | cost center | optional |
-| 125 | Buchungs GUID | booking GUID | optional |
+| 97 | USt-Schlüssel (Anzahlungen) | tax key per rate | mandatory |
+| 103 | Buchungs GUID | booking GUID | optional |
 
 Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 
@@ -110,6 +111,13 @@ Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
   (Versionsnummer 700 / Formatversion 13) is marked "unverified until DATEV
   confirms" via the Prüfprogramm and must be re-verified on every integration
   test run.
+- **The Steuerschlüssel is column 97, not column 125.** Verified 2026-10-09
+  against `seamless-engineering/datev-extf src/columns.ts`: col 97 =
+  "USt-Schlüssel (Anzahlungen)" (the tax key), col 125 = "Abw. Skontokonto".
+  Writing the key at index 124 makes DATEV read it as "Abw. Skontokonto" and
+  silently drop the real tax key — the import proceeds with no Steuerschlüssel.
+  `fixture_generator.py` and `build_stapel.py` previously wrote it at index 124;
+  corrected 2026-10-09.
 
 ## Verification checklist
 
