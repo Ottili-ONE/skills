@@ -29,24 +29,16 @@ balance-sheet preparation (that is a separate skill).
    it feeds the USt-Anmeldung directly.
 4. **Generate the journal** — debit/credit side, account, tax key, amount,
    reference. Validate with `scripts/journal_check.py`.
-5. **Lock the period** — set the Monatsschluss flag, block further postings,
-   run `scripts/period_lock_check.py`, then close.
+5. **Lock the period** — mark the month as closed, block new postings for
+   it, run `scripts/period_lock_check.py`, then close. See
+   `references/procedures.md` §5 for the full Monatsschluss sequence.
 
 ## Decision tables
 
-### Tax key selection
-
-| Scenario | Tax key | Umsatzsteuersatz |
-|---|---|---|
-| Standard rate domestic | 19 | 19% |
-| Reduced rate domestic | 7 | 7% |
-| Standard rate (old) | 16/1 | 16% / 1% |
-| Intra-EU supply (B2B) | 06/0 | 0% (Steuerverrechnung) |
-| Internal service | 09/0 | 0% |
-| Installment (Soll/IST) | 13/0 | 19% split |
-
-The worked examples and the legal sources for each key are in
-`references/procedures.md` §3.
+The full tax-key table (scenario, key, rate, legal source) and worked examples
+live in `references/procedures.md` §3. Quick reference for the keys: 19 for
+standard, 7 for reduced, 16/1 legacy, 06/0 intra-EU, 09/0 internal service,
+13/0 installment.
 
 ## Pitfalls from research
 
