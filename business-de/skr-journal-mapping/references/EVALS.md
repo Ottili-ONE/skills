@@ -1,80 +1,91 @@
-# skr-journal-mapping — EVALS
+# EVALS — skr-journal-mapping
 
-Eight realistic prompts with expected behaviour and failure signs. Each
-names a concrete input, the correct output, and the near-miss that a strong
-generic agent would most likely produce.
+Each prompt lists the expected behaviour and the failure signs an agent must
+watch for. Run the relevant script and compare the output to the expected.
 
-## 1. Prompt
-> "Book this line: sale of goods, domestic, 19% VAT, EUR 100 net. Buyer pays EUR 119."
+## 1. Map account 4000 to a tax key
+**Prompt:** "Map our SKR04 revenue account 4000 to a tax key."
 
-**Expected behaviour:** journal
-```
-S 1200 Bank 119.00 19
-H 8000 Revenue 100.00 19
-H 1570 USt 19.00 19
-```
-`scripts/journal_check.py` exits 0.
+**Expected behaviour:** Run `scripts/map_skr.py --account 4000 --skr 04`.
+Expect `ok: true`, `default_tax_key: "19"`, `rate_percent: 19`, and
+`rates_from_config` read from `config/versions.json` (never a hardcoded 19).
+The agent must also state the caveat: intra-EU supplies on 4000 use 0%, and
+the mapping must be re-verified against the current UStG before each build.
 
-**Failure signs:** tax line missing (unbalanced or no tax account amount);
-tax key 16/1 used instead of 19; debit ≠ credit.
+**Failure signs:** Reporting 19% without citing the config source; claiming the
+rate is universal; not flagging the intra-EU override.
 
-## 2. Prompt
-> "Is this journal valid? `[{account:1200,side:S,amount:100,tax_key:19},{account:8000,side:H,amount:100,tax_key:19}]`"
+## 2. Generate a journal entry for a domestic B2B sale
+**Prompt:** "Generate a journal entry for a domestic B2B sale, EUR 1,200.00
+net, 19% VAT, on account 4000."
 
-**Expected behaviour:** exit 0, "OK journal balanced, 2 lines".
+**Expected behaviour:** Run `scripts/generate_journal.py` with the line
+`{"account":"4000","side":"S","amount":1200,"tax_key":"19","belegdatum":"20260601"}`.
+Expect one entry with `konto: "4000"`, `steuerschluessel: "19"`,
+`rate_percent: 19`. Then run `scripts/journal_check.py` on a complete journal
+(sales leg + bank leg + tax account 1570); it must report `OK journal balanced`.
 
-**Failure signs:** exit 2 with "journal does not balance" or "unknown tax key".
+**Failure signs:** Emitting a dot decimal; writing the rate into the script
+instead of reading config; producing an entry with no `steuerschluessel`;
+reporting `ok: true` without running the balance check.
 
-## 3. Prompt
-> "Map an intra-EU B2B supply (customer in France, 0% VAT)."
+## 3. Lock the December 2026 period
+**Prompt:** "Lock our December 2026 period."
 
-**Expected behaviour:** tax key **06/0**, account 4xxx revenue, no 1570 tax
-line (0% rate). Reference the UStG §4a rule.
+**Expected behaviour:** Run `scripts/period_lock.py --period 2026-12 --action
+lock --approver "Tax Advisor"`. Expect `ok: true, locked: true` and a state
+file recording `locked_at`, `locked_by`, and `lock_reason`. A subsequent
+`--action status` must show `locked: true`. A further `--action lock` must
+report `already_locked: true` rather than silently re-locking.
 
-**Failure signs:** tax key 19 applied; a 1570 line with a 19% amount.
+**Failure signs:** Locking without an approver; treating the lock as a policy
+statement instead of a technical flag; re-locking and losing the audit trail.
 
-## 4. Prompt
-> "Our ledger uses SKR03. Is account 1570 correct for the VAT line?"
+## 4. Tax key mismatch between journal and invoice
+**Prompt:** "Our journal says tax key 19% but the invoice says 7%. What do we
+do?"
 
-**Expected behaviour:** SKR03 uses **1571** for USt (Soll), not 1570 (SKR04).
-Flag the mismatch.
+**Expected behaviour:** The agent must flag this as a **blocking mismatch** and
+list the possible causes: a reduced-rate item mapped to a standard-rate
+account; a wrong account mapping (SKR03 vs SKR04 overlap, e.g. 4000 vs 4100);
+a wrong Steuerschluessel on the source invoice; or an intra-EU transaction
+charged at 19%. The agent must require human review with documented evidence
+before release — never silently pick a key.
 
-**Failure signs:** 1570 used in an SKR03 journal without noting the difference.
+**Failure signs:** Guessing the key; "fixing" the journal to match the invoice
+without reviewing the account mapping; not recording the review evidence.
 
-## 5. Prompt
-> "A corrective entry was posted after the Monatsschluss. What do I do?"
+## 5. Reconcile generated journals against source invoices
+**Prompt:** "Reconcile our generated journals against the source invoices."
 
-**Expected behaviour:** refuse to close; require explicit unlock + re-lock cycle
-and a documented reason; then re-run `scripts/period_lock_check.py`.
+**Expected behaviour:** Run `scripts/generate_journal.py` then
+`scripts/journal_check.py`. The report must list matched lines, blocking
+errors (unbalanced journal, tax key outside the valid set, account outside SKR
+ranges, tax key present without a tax-account line), and the count of lines
+that need human review. Every blocking error must be escalated, not written off.
 
-**Failure signs:** closing without the unlock cycle; no audit trail entry.
+**Failure signs:** Reporting `ok: true` while `journal_check.py` returns 2;
+auto-writing-off mismatches; not recording the reconciliation run.
 
-## 6. Prompt (near-miss — legacy key)
-> "I found an old journal from 2019: `S 1200 116.00 16/1 / H 8000 100.00 16/1 / H 1570 16.00 16/1`. Is it still valid?"
+## 6. Intra-EU override on account 4100
+**Prompt:** "Map account 4100 for an intra-EU sale."
 
-**Expected behaviour:** the journal is internally valid and `journal_check.py`
-exits 0, but the skill must flag **16/1 as legacy** — the standard rate was
-cut from 16% to 19% in 2020. Do not re-issue this key for new postings; if the
-entity still files under 16/1, ask the tax advisor.
+**Expected behaviour:** Run `scripts/map_skr.py --account 4100 --skr 04
+--intra-eu`. Expect `default_tax_key: "00"`, `rate_percent: 0`, and
+`override: "already 0% (intra-EU/export) - no override needed"`. If the same
+account were 4000 with `--intra-eu`, the override must flip the key to `00`
+and say so explicitly.
 
-**Failure signs:** silently accepting 16/1 as current; or rejecting a
-historically correct entry that is merely old.
+**Failure signs:** Ignoring the `--intra-eu` flag; returning 19% for an
+intra-EU supply; not recording the override reason in the output.
 
-## 7. Prompt (near-miss — mixed account sets)
-> "Book: `S 1200 Bank 119.00 19 / H 1570 USt 19.00 19`. Is that enough?"
+## 7. Blocking error in a generated journal
+**Prompt:** "Generate a journal from a line with tax key 99 on account 4000."
 
-**Expected behaviour:** no — there is no revenue line, so the journal does not
-record a sale. A two-line journal of bank + tax is a **payment-side stub**,
-not a complete booking. The skill must ask what the revenue leg is.
+**Expected behaviour:** `scripts/generate_journal.py` must report
+`ok: false`, `blocking: 1`, and list `tax_key must be 19/07/00, got '99'` in
+`blocking_errors`. The output file must still be written so the error is
+auditable.
 
-**Failure signs:** calling a 2-line bank+tax stub a complete journal.
-
-## 8. Prompt (near-miss — empty close)
-> "Run the close for period 2026-12. There are no new postings this month."
-
-**Expected behaviour:** `journal_check.py` rejects an empty journal with
-"journal is empty — a close needs at least one posting line". A close with
-zero activity is still a close, but it needs an explicit zero-activity
-record, not an empty file.
-
-**Failure signs:** treating an empty file as a valid closed period.
+**Failure signs:** Crashing instead of reporting; writing `ok: true` for an
+invalid line.
