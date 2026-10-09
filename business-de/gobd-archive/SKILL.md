@@ -43,7 +43,10 @@ policy, produce an audit export, or decide whether a document can be deleted.
    (DATEV EXTF or CSV+XML) covering the retention period, with a manifest.
 6. **Verify on retention end** — at the end of each retention period, confirm
    the purge is permitted, document the decision, and keep the approval record
-   for the full retention of the purge record itself.
+   for the full retention of the purge record itself. Two independent
+   blockers: the retention end must be reached **and** no audit may be open.
+   Produce the record with `scripts/purge_decision.py` (it exits non-zero
+   when the purge is blocked, so it is safe to wire into a CI gate).
 
 ## Decision tables
 
@@ -69,6 +72,17 @@ created. Let the tax advisor confirm per entity.
   record itself must be kept for the full retention period.
 - A raw DB dump is **not** an audit export — it must be chronological, complete
   and checksummed with a manifest.
+- **The 6-year class is narrower than "all correspondence".** Per whk-controlling.de
+  (re-fetched 2026-10-09) it covers *empfangene* Handels- oder Geschäftsbriefe,
+  **Wiedergaben der abgesandten Handelsbriefe** (copies of outgoing letters) and
+  sonstige Unterlagen mit steuerlicher Bedeutung. An outgoing letter you cannot
+  reproduce is a GoBD violation, not a filing shortcut.
+- **Three blockers, not one.** A purge is blocked if (a) the retention end has
+  not been reached, OR (b) an audit is currently open. Both are checked by
+  `scripts/purge_decision.py` before any deletion.
+- The purge record itself is a document: keep it for the full retention period
+  of the documents it describes (a 2017 purge record is kept until 2025-12-31
+  for vouchers).
 
 ## Verification checklist
 
@@ -77,7 +91,9 @@ created. Let the tax advisor confirm per entity.
 - [ ] Immutability enforced (append-only, hash-chained, no in-place update)
 - [ ] Verfahrensdokumentation written (system, medium, periods, export, access, backup)
 - [ ] Audit export is chronological, complete, checksummed, with a manifest
-- [ ] Purge decision documented and approval record retained
+- [ ] Purge decision documented and approval record retained (retention end
+      reached AND no open audit)
+- [ ] Purge record itself retained for the full retention period
 - [ ] Re-verification run logged
 
 ## References
