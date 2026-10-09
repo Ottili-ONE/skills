@@ -1,23 +1,36 @@
-# SOURCES: webhooks-safe
-Retrieval date: 2026-10-07. All URLs fetched with `curl` on 2026-10-07 unless noted otherwise. Version-sensitive facts pinned in config; never hardcoded in logic (R3 rule).
+# SOURCES — webhooks-safe
 
-## Versions verified
-- HMAC-SHA256 — NIST SP 800-38B; stable, no version pin needed. Secret key length: >= 256 bits; rotate on compromise.
-- Webhook signature conventions — GitHub (X-Hub-Signature-256), Stripe (Stripe-Signature), PayPal, Twilio; each has its own format. Re-verify against the provider's docs before each use.
-- Idempotency TTL — configurable per provider; default 24h. Pin in config.
+Retrieval date: 2026-10-09 (all URLs fetched with `curl` on that date unless
+noted). Version-sensitive facts are pinned in `config/versions.json` and
+never hardcoded in logic. Re-verify each provider's signature scheme before
+every build and record the retrieval date here. Conflicts between sources are
+noted at the end.
 
-## Primary sources
-1. GitHub webhooks: signature verification — https://docs.github.com/webhooks — retrieved 2026-10-07. HMAC-SHA256 over the raw body; X-Hub-Signature-256 header format.
-2. Stripe webhooks: signature verification — https://stripe.com/docs/webhooks — retrieved 2026-10-07. Stripe-Signature header with timestamp and HMAC; replay-window enforcement (5 minutes).
-3. OWASP: webhook security — https://owasp.org/www-community/attacks/Webhook_Security — retrieved 2026-10-07. Signature verification, replay protection, SSRF.
-4. NIST SP 800-38B: HMAC — https://csrc.nist.gov/publications/detail/sp/800-38b/rev/2/final — retrieved 2026-10-07. Cryptographic specification for HMAC.
-5. RFC 9110: HTTP Semantics — https://www.rfc-editor.org/rfc/rfc9110 — retrieved 2026-10-07. Idempotency semantics for HTTP methods.
-6. OWASP API Security Top 10 — https://owasp.org/www-project-api-security/ — retrieved 2026-10-07. SSRF protection, token handling.
-7. Cloudflare: webhook delivery guarantees — https://developers.cloudflare.com/ — retrieved 2026-10-07. At-least-once delivery, ordering guarantees, dead-letter patterns.
-8. AWS SQS / dead-letter queues — https://docs.aws.amazon.com/ — retrieved 2026-10-07. Dead-letter queue patterns for webhook processing.
+## Primary sources (verified 2026-10-09)
+
+| # | Source | URL | HTTP | Notes |
+|---|---|---|---|---|
+| 1 | GitHub — webhooks docs | https://docs.github.com/webhooks | 200 | Authoritative signature scheme: `X-Hub-Signature-256`, HMAC-SHA256 over the raw body. Retrieved 2026-10-09. |
+| 2 | GitHub — webhook events and payloads | https://docs.github.com/webhooks/webhook-events-and-payloads | 200 | Delivery id and event id contract. Retrieved 2026-10-09. |
+| 3 | Stripe — webhooks docs | https://stripe.com/docs/webhooks | 200 | `Stripe-Signature` header with `t=<ts>,v1=<hex>`; 5-minute replay window. Retrieved 2026-10-09. |
+| 4 | OWASP — SSRF prevention cheat sheet | https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html | 200 | Allow-list based outbound URL validation. Retrieved 2026-10-09. |
+| 5 | OWASP — web security testing guide (SSRF) | https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-04-Test_for_Server_Side_Request_Forgery | 200 | SSRF test procedures. Retrieved 2026-10-09. |
+
+## Version-sensitive notes
+
+- **HMAC-SHA256 is stable** (NIST SP 800-38B); no version pin needed. Secret
+  key length must be >= 256 bits; rotate on compromise.
+- **Provider signature schemes change.** GitHub, Stripe, PayPal and Twilio
+  each have their own header format and replay window. Re-verify against the
+  provider's docs before each use; pin the confirmed values in config.
+- **Idempotency TTL** is configurable per provider; default 24h. Pin in config.
 
 ## Conflicts / open questions
-- Ordering: most webhook providers (GitHub, Stripe) guarantee in-order delivery per event stream but not globally. The skill must not assume global ordering; implement out-of-order tolerance with a replay window.
-- Replay window: Stripe enforces 5 minutes; GitHub has no documented window. Pin the window per provider in config; never hardcode a single value.
-- Dead-letter: moving an event to a dead-letter queue is a design decision, not a provider requirement. The skill enforces it on persistent failure (>= 3 retries) and requires manual reprocessing — never auto-retry forever.
-- SSRF-safe delivery: if the skill ever delivers webhooks (not just ingests), it must validate the target URL against an allow-list of Ottili endpoints. This skill is scoped to inbound ingestion; delivery SSRF protection lives in the engineering playbooks.
+
+- The older OWASP `www-community/attacks/Webhook_Security` URL returns 404
+  (2026-10-09); the cheat sheet and the testing guide are the authoritative
+  OWASP references and are used instead.
+- PayPal and Twilio signature schemes are listed from memory and marked
+  **unverified** until their docs are fetched at build time.
+- No provider publishes a stable "version" for webhook schemes; the retrieval
+  date is the pin.
