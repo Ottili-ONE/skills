@@ -12,9 +12,10 @@ allowed-tools: []
 ## When to use this skill
 
 Use this skill when an agent must reconcile a bank account from a
-**CAMT.053** (ISO 20022) or **MT940** (SWIFT) statement: parse the file,
-match postings to open items (customers, suppliers, refunds), detect
-duplicates and unallocated differences, and produce a reconciled statement.
+**CAMT.053** (ISO 20022) or **MT940** (SWIFT) statement — parse the file,
+assign each posting to an open item (customer, supplier or refund), spot
+duplicate bookings and unexplained differences, and produce a reconciled
+Kontoauszug.
 
 Do **not** use it for card acquirer (card scheme) statements, non-SEPA
 currencies, or cash-counting tasks.

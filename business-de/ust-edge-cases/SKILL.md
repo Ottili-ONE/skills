@@ -12,9 +12,9 @@ allowed-tools: []
 ## When to use this skill
 
 Use this skill when an agent must decide the VAT treatment of a German invoice
-that is **not** a plain domestic 19%/7% B2C sale: reverse charge, small
-business (Kleinunternehmer), intra-EU B2B, OSS/IOSS, rounding, or the
-interaction with e-invoicing.
+that is **not** a plain domestic 19%/7% B2C sale — i.e. cross-border supplies,
+small-business invoicing, installment payments, cent-level rounding, or the
+interaction with e-invoicing rules.
 
 Do **not** use it for domestic standard-rate B2C sales (covered by
 `skr-journal-mapping`), for non-EU third-country supplies, or for tax advice
