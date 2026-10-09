@@ -59,7 +59,7 @@ interplay) with worked examples and legal sources are in
 ## Pitfalls from research
 
 Five traps recur; the full list with sources is in
-`references/procedures.md` §1-§6:
+`references/procedures.md` §1-§6. Condensed:
 
 - Reverse charge (§13b) is **goods** only — services use the general
   place-of-performance rule.

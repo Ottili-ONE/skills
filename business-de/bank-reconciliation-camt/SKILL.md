@@ -37,7 +37,7 @@ currencies, or cash-counting tasks.
 
 ### Match priority
 
-Match in this order; stop at the first rule that fires:
+Apply these four rules in order and stop at the first one that fires:
 
 | Step | Signal | Wins when |
 |---|---|---|
@@ -68,6 +68,10 @@ full cascade with worked examples is in `references/procedures.md` §3.
 | UNALLOCATED | entry with no open item, documented |
 
 ## Pitfalls from research
+
+Five traps recur; the full list with sources is in
+`references/procedures.md` (format selection, duplicates, differences).
+Condensed:
 
 - camt.053 is mandatory in SEPA since 2014; MT940 has **no fixed
   deprecation date** for reporting messages (SWIFT, Nov 2025). Both remain in
