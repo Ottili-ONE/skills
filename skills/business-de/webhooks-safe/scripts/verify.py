@@ -15,7 +15,25 @@ import json
 import sys
 from pathlib import Path
 
-REPLAY_WINDOW_SECONDS = {"stripe": 300, "github": 86400, "paypal": 300, "twilio": 300}
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
+from common import load_config  # noqa: E402
+
+
+def _replay_window(provider: str) -> int:
+    """Replay window in seconds, pinned in config (never hardcoded)."""
+    cfg = load_config().get("webhooks-safe", {})
+    key = f"{provider}_replay_window_minutes"
+    mins = cfg.get(key, {}).get("value", 5)
+    return int(mins) * 60
+
+
+REPLAY_WINDOW_SECONDS = {
+    "stripe": _replay_window("stripe"),
+    "github": _replay_window("github"),
+    "paypal": _replay_window("paypal"),
+    "twilio": _replay_window("twilio"),
+}
 
 
 def verify_github(secret: str, body: bytes, sig: str) -> bool:
