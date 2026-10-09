@@ -81,3 +81,40 @@ def test_pinned_version_not_hardcoded():
     assert "config/versions.json" in src
     # the module-level FORMAT_VERSION constant is the *fallback*, not a pin
     assert re.search(r'FORMAT_VERSION\s*=\s*"13"', src)
+
+def _pad(n):
+    return b";" * (n - 1)
+
+
+def test_header_checks_catch_bad_values(tmp_path):
+    """Header field checks (Berater/Mandant/WKZ/Sachkontenlaenge) verified
+    2026-10-09 against seamless-engineering/datev-extf src/extf.ts."""
+    f = tmp_path / "bad.csv"
+    f.write_bytes(
+        b"EXTF;700;21;Buchungsstapel;13;20261009105214000" + _pad(6) +
+        b"99;0;20260101;9;20260601;20260630;Label" + _pad(15) +
+        b"EUR" + _pad(6) + b"03" + _pad(5) + b"\r\n"
+        b"Umsatz (ohne Soll/Haben-Kz)" + _pad(125) + b"\r\n"
+        + b"12,50;S" + _pad(125) + b"\r\n")
+    code, out, _ = run("validate_extf.py", str(f))
+    assert code == 1
+    data = json.loads(out)
+    codes = {e["code"] for e in data["errors"]}
+    assert "header-berater" in codes
+    assert "header-mandant" in codes
+    assert "header-skl" in codes
+
+
+def test_header_dates_out_of_wj(tmp_path):
+    """Datum vom/bis outside the WJ is an error, not a warning."""
+    f = tmp_path / "bad.csv"
+    f.write_bytes(
+        b"EXTF;700;21;Buchungsstapel;13;20261009105214000" + _pad(6) +
+        b"29098;55003;20260101;4;20270601;20270630;Label" + _pad(15) +
+        b"EUR" + _pad(6) + b"03" + _pad(5) + b"\r\n"
+        b"Umsatz (ohne Soll/Haben-Kz)" + _pad(125) + b"\r\n"
+        + b"12,50;S" + _pad(125) + b"\r\n")
+    code, out, _ = run("validate_extf.py", str(f))
+    assert code == 1
+    data = json.loads(out)
+    assert any(e["code"] == "header-beyond-wj" for e in data["errors"])
