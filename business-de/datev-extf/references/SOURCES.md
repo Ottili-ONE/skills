@@ -1,12 +1,13 @@
 # SOURCES — datev-extf
 
-Retrieval date for every entry: 2026-10-08 (unless noted). Versions pinned in
-`config/versions.json`; re-verify before relying on any version-sensitive fact.
+Retrieval date for every entry: 2026-10-08 (re-verified 2026-10-09 for the
+column-index and Belegdatum facts). Versions pinned in `config/versions.json`;
+re-verify before relying on any version-sensitive fact.
 
 | # | Source | URL | Verified version | Notes / conflicts |
 |---|---|---|---|---|
 | 1 | DATEV EXTF Formatbeschreibung (developer.datev.de) | https://developer.datev.de/ | not fetched (200 but empty body at 2026-10-08) | **Retrieval note:** the developer portal returns an empty 200 body; the EXTF spec is gated behind partner registration. The field/column model is corroborated by the seamless-engineering validator, which states its rules come from DATEV's Formatbeschreibung and the DATEV-Format Prüfprogramm. |
-| 2 | seamless-engineering/datev-extf (TypeScript validator) | https://github.com/seamless-engineering/datev-extf | EXTF_AS_OF 2026-09-25 | Primary corroboration: 125-column Buchungsstapel heading row, header field model, and error codes. MIT licensed. |
+| 2 | seamless-engineering/datev-extf (TypeScript validator) | https://github.com/seamless-engineering/datev-extf | EXTF_AS_OF 2026-09-25 | Primary corroboration: 125-column Buchungsstapel heading row, header field model, and error codes. MIT licensed. **Re-fetched 2026-10-09:** `src/columns.ts` (125 headings) and `src/extf.ts` (rules) re-read; column indices for Umsatz/Soll-Haben/Konto/BU-Schlüssel/Belegdatum/Buchungstext/KOST1/USt-Schlüssel/Herkunft/Buchungs GUID/Festschreibung re-verified. |
 | 3 | DATEV-Format Prüfprogramm field definitions | shipped with the Prüfprogramm | Formatversion 13 | The validator's second source; confirms Formatversion 13 is current (10-12 are warnings). |
 | 4 | DATEV Hilfe-Center `#REW` import messages | https://hilfe.datev.de/ | 2026-10-08 | Third source for the validator; where the three disagree, the check is a warning, not an error. |
 | 5 | ameax/datev-extf (CSV writer) | https://github.com/ameax/datev-extf | 2026-10-08 | Corroboration of the CSV envelope shape and the comma-decimal convention. |
@@ -31,3 +32,10 @@ Retrieval date for every entry: 2026-10-08 (unless noted). Versions pinned in
 - Amounts use a comma decimal separator; the dot-vs-comma error is the most
   common import rejection and is verified against the validator's `#REW`
   messages.
+- **Belegdatum is TTMM (day+month, 4 digits), not YYYYMMDD.** Verified
+  2026-10-09 against `src/extf.ts` line 692 ("Belegdatum as day and month") and
+  the writer at line 760 (`fields[10]`). The year is taken from the header, so
+  `0206` means 2 June of the header's fiscal year. Earlier drafts of this skill
+  (and the `build_stapel.py` example) wrongly used YYYYMMDD; corrected 2026-10-09.
+- **Erzeugt am is 17 digits** (YYYYMMDDHHMMSS000), per `src/extf.ts` line 305
+  (`/^20\d{15}$/`), not 8. Corrected 2026-10-09.
