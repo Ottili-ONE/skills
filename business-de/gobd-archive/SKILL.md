@@ -43,8 +43,9 @@ policy, produce an audit export, or decide whether a document can be deleted.
    (DATEV EXTF or CSV+XML) covering the retention period, with a manifest.
 6. **Verify on retention end** — at the end of each retention period, confirm
    the purge is permitted, document the decision, and keep the approval record
-   for the full retention of the purge record itself. Two independent
-   blockers: the retention end must be reached **and** no audit may be open.
+   for the full retention of the purge record itself. Purge is blocked unless
+   **both** conditions hold: the retention end has been reached **and** no audit
+   is currently open.
    Produce the record with `scripts/purge_decision.py` (it exits non-zero
    when the purge is blocked, so it is safe to wire into a CI gate).
 
@@ -64,8 +65,8 @@ entity.
 
 ### The 6-year class is narrower than "all correspondence"
 
-Per whk-controlling.de (re-fetched 2026-10-09, last modified 2026-04-14) the
-6-year class covers exactly three sub-types:
+Per whk-controlling.de (re-fetched 2026-10-09, last modified 2026-04-14)
+the 6-year class covers exactly three sub-types:
 
 | Sub-type | What it means | Trap |
 |---|---|---|
@@ -111,9 +112,9 @@ wire into a CI gate.
 | No open audit | no audit is currently in progress | `no_open_audit` |
 
 **Worked example — purge record retention.** A 2017 invoice (8-year class) is
-purged on 2026-10-09. The purge decision record itself is a document: keep it
+purged on 2026-10-09. The purge decision record is itself a document: keep it
 until the retention end of the documents it describes, i.e. **2025-12-31** —
-not "today + 8 years". `scripts/purge_decision.py` computes
+not "today + 8 years". `scripts/purge_decision.py` derives
 `record_retention_until` from the *document* year, so a 2017 record reads
 `2025-12-31` and a 2020 record reads `2028-12-31`.
 
