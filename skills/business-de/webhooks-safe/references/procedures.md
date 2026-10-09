@@ -23,72 +23,114 @@ deprecated — never fall back to it.
 ```python
 ts, v1 = header.split(",")[0].split("=")[1], header.split(",")[1].split("=")[1]
 if abs(now - int(ts)) > REPLAY_WINDOW_SECONDS:
-    reject("replay")          # check timestamp BEFORE the HMAC
-expected = hmac.new(secret, f"{ts}.{body}".encode(), hashlib.sha256).hexdigest()
+    reject()  # replay attack — check BEFORE the HMAC
+expected = hmac.new(secret, f"{ts}.".encode() + body, hashlib.sha256).hexdigest()
 if not hmac.compare_digest(expected, v1):
     reject()
 ```
-Stripe's timestamp is part of the signed material. A signature older than
-the replay window is a replay attack — reject it before checking the HMAC.
+Stripe's timestamp is part of the signature: reject stale signatures *before*
+the HMAC check. Window: 5 minutes (pinned in config).
 
-**Always use `hmac.compare_digest`** — a plain `==` is vulnerable to timing
-attacks.
+**PayPal / Twilio:** plain HMAC-SHA256 over the raw body, hex digest. Both
+schemes are **unverified** at this retrieval — see SOURCES.md. The scripts
+fall back to plain HMAC and the skill flags the result.
 
-## 2. Dedupe
+**Thresholds:** replay window 5 min (Stripe), 24h dedupe TTL; 3 dead-letter
+attempts before moving to the queue.
 
-Every webhook carries an event id (GitHub `X-GitHub-Event` + delivery id,
-Stripe `id`). Store the id with a TTL in an atomic check-and-set:
+## 2. Dedupe by event id with a TTL
 
-| Situation | Action |
-|---|---|
-| Event id seen, within TTL | Ack and skip; never process twice |
-| Event id seen, TTL expired | Re-process (idempotency must still hold) |
-| Event id new | Process and store with TTL |
+Every webhook carries an event id. Store the id with a TTL; on a duplicate
+id, ack and skip. Check-and-set must be atomic — a race that checks then
+sets processes the event twice.
 
-Dedupe must be atomic — a race between check and set processes the event
-twice. Use a database `INSERT ... ON CONFLICT DO NOTHING` or a lock.
+```bash
+python3 dedupe.py --event-id abc123 --ttl 86400 --store /tmp/events.jsonl
+```
+Output on duplicate: `{"event_id": "abc123", "duplicate": true, "action": "ack_and_skip"}`.
+Output on new: `{"event_id": "abc123", "duplicate": false, "action": "process"}`.
 
-## 3. Preserve order
+**Good output** (first delivery):
+```json
+{"event_id": "evt_1", "duplicate": false, "action": "process"}
+```
+**Bad output** — processing the same id twice:
+```json
+[{"event_id": "evt_1", "action": "process"}, {"event_id": "evt_1", "action": "process"}]
+```
+Detect it: two `process` actions for one event id. The dedupe store must show
+`duplicate: true` on the second call.
 
-Ordering is **per delivery stream, not global**. Two independent providers
-can interleave; only enforce order within one stream.
+## 3. Preserve per-stream order
 
-If an event arrives out of sequence, hold it until the missing event arrives
-or the replay window expires. Track the highest processed sequence number per
-stream. If `seq != last + 1`, buffer.
+Ordering is enforced *within a single delivery stream* (one provider +
+one account), never globally. Two independent providers may interleave.
+
+```bash
+python3 ordering.py --stream github:ottili --seq 3 --payload body.json --store /tmp/order.jsonl
+```
+- In order (`seq == last + 1`): process and release any held events that now
+  chain.
+- Out of order: hold until the gap fills or the replay window expires.
+- Old/duplicate (`seq <= last`): ack and skip.
+
+**Good output** (in order):
+```json
+{"stream": "github:ottili", "action": "process", "seq": 3}
+```
+**Bad output** — processing seq 5 before seq 4:
+```json
+{"stream": "github:ottili", "action": "process", "seq": 5}
+```
+Detect it: `action: process` for a seq that skips the previous one. The state
+file must show `last_seq` advancing monotonically.
 
 ## 4. Respect replay windows
 
 If a provider guarantees delivery within N minutes, hold unprocessed events
-for that window before declaring them lost. Stripe: 5 minutes. GitHub: TTL on
-the delivery id (24h default).
+for that window before declaring them lost. For Stripe the timestamp is part
+of the signature — reject stale signatures before checking the HMAC.
 
 ## 5. Dead-letter
 
-| Trigger | Action |
-|---|---|
-| Signature invalid | Reject immediately; do not dead-letter (it is not our event) |
-| Processing throws 3 times | Move to dead-letter with raw payload + reason |
-| Replay window expired | Move to dead-letter marked "lost" |
+On persistent failure (3 attempts), move the event to the dead-letter queue
+with the raw payload, the event id, the failure reason and the timestamp.
+Never silently drop a webhook.
 
-Never silently drop a webhook. The dead-letter record must contain the raw
-payload, the event id, the failure reason and the timestamp.
+```bash
+python3 deadletter.py --event-id abc --reason 'timeout' --payload body.json --queue /tmp/dl.jsonl
+```
+**Good output:**
+```json
+{"event_id": "abc", "queued": "/tmp/dl.jsonl", "reason": "timeout"}
+```
+**Bad output** — dropping the event:
+```json
+{"event_id": "abc", "dropped": true}
+```
+Detect it: no dead-letter record exists for the failed event id, or the
+record lacks the raw payload.
 
 ## 6. SSRF-safe delivery
 
-If the skill ever needs to deliver outbound, validate the target URL against
-an allow-list of Ottili endpoints. Never deliver to arbitrary hosts. An
-attacker-controlled webhook payload that triggers an outbound call is an
-SSRF.
+Publish only to the configured Ottili endpoints. Never publish to arbitrary
+hosts — an attacker-controlled content field that triggers a publish to an
+arbitrary host is an SSRF. Validate the target against the allow-list.
 
-## 7. Log
+```bash
+python3 ssrf_check.py --url https://ottili.example/webhooks/inbound --allow ottili.example
+```
+- Allow-listed host + path: deliver.
+- Allow-listed host, different path: reject.
+- Any other host: reject immediately.
+- IP literal or `localhost`: reject (never resolve).
 
-Record every verify/dedupe/delivery decision with the event id. The log must
-answer: was the signature valid, was this a duplicate, was it delivered.
+## 7. Offline helper scripts
 
-## 8. Offline helper scripts
-
-- `scripts/verify.py` — verifies a webhook signature against the raw body
-  (dry-run by default; `--execute` sends).
-- `scripts/dedupe.py` — checks and records an event id with a TTL.
+- `scripts/verify.py` — verifies GitHub/Stripe/PayPal/Twilio signatures over
+  the raw body (dry-run; reads the body file, never sends).
+- `scripts/dedupe.py` — atomic check-and-set on the event id with a TTL.
+- `scripts/ordering.py` — per-stream sequence enforcement with a held set and
+  replay-window expiry.
 - `scripts/deadletter.py` — moves a failed event to the dead-letter queue.
+- `scripts/ssrf_check.py` — allow-list validation of outbound delivery targets.

@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 VERIFY = ROOT / "scripts" / "verify.py"
 DEDUPE = ROOT / "scripts" / "dedupe.py"
 DEADLETTER = ROOT / "scripts" / "deadletter.py"
+ORDER = ROOT / "scripts" / "ordering.py"
+SSRF = ROOT / "scripts" / "ssrf_check.py"
 
 
 def run(script, *args):
@@ -71,3 +73,64 @@ def test_deadletter_writes_record():
     rec = json.loads(q.read_text().splitlines()[0])
     assert rec["event_id"] == "evt-9" and rec["reason"] == "timeout"
     assert rec["payload"] == '{"id": "x"}'
+
+
+def test_ordering_in_order():
+    import tempfile, os
+    store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+    store.write("{}"); store.close()
+    r = run(ORDER, "--stream", "github:ottili", "--seq", "1",
+            "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+    os.unlink(store.name)
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout)["action"] == "process"
+
+
+def test_ordering_out_of_order_is_held():
+    import tempfile, os
+    store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+    store.write('{"last_seq": 0, "held": {}}'); store.close()
+    r = run(ORDER, "--stream", "github:ottili", "--seq", "3",
+            "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+    os.unlink(store.name)
+    assert r.returncode == 1, r.stderr
+    assert json.loads(r.stdout)["action"] == "hold"
+
+
+def test_ordering_old_seq_skipped():
+    import tempfile, os
+    store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+    store.write('{"last_seq": 5, "held": {}}'); store.close()
+    r = run(ORDER, "--stream", "github:ottili", "--seq", "3",
+            "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+    os.unlink(store.name)
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout)["action"] == "duplicate_or_old"
+
+
+def test_ssrf_allows_allowed_host():
+    r = run(SSRF, "--url", "https://ottili.example/webhooks/inbound",
+            "--allow", "ottili.example")
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout)["ok"] is True
+
+
+def test_ssrf_rejects_other_host():
+    r = run(SSRF, "--url", "https://evil.example/x",
+            "--allow", "ottili.example")
+    assert r.returncode == 1, r.stderr
+    assert json.loads(r.stdout)["ok"] is False
+
+
+def test_ssrf_rejects_loopback():
+    r = run(SSRF, "--url", "http://127.0.0.1/admin",
+            "--allow", "ottili.example")
+    assert r.returncode == 1, r.stderr
+    assert "loopback" in json.loads(r.stdout)["reason"]
+
+
+def test_ssrf_rejects_ip_literal():
+    r = run(SSRF, "--url", "https://1.2.3.4/x",
+            "--allow", "ottili.example")
+    assert r.returncode == 1, r.stderr
+    assert json.loads(r.stdout)["ok"] is False

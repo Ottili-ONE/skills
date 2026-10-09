@@ -20,26 +20,28 @@ Ottili endpoint. Do **not** use it for outbound retry engineering (that
 lives in the engineering playbooks) or for providers whose signature scheme
 is unknown.
 
-## Procedure
+## Procedure (numbered, in order)
 
 1. **Verify the signature over the raw body.** Recompute the HMAC with the
    provider's secret. Reject if it does not match. Never trust headers alone,
-   and never parse-then-re-encode the body.
+   never parse-then-re-encode the body, and always use
+   `hmac.compare_digest` (a plain `==` is a timing attack).
 2. **Dedupe.** Every webhook carries an event id; store the id with a TTL; on
    a duplicate id, ack and skip. Never process twice. Check-and-set must be
    atomic.
 3. **Preserve order.** Within a single delivery stream, process events in
    arrival order; if an event is out of sequence, hold it until the missing
-   event arrives or the replay window expires.
+   event arrives or the replay window expires. Ordering is per stream, never
+   global.
 4. **Respect replay windows.** If a provider guarantees delivery within N
    minutes, hold unprocessed events for that window before declaring them
    lost. For Stripe the timestamp is part of the signature — reject stale
    signatures before checking the HMAC.
-5. **Dead-letter.** On persistent failure, move the event to the dead-letter
-   queue with the raw payload and the failure reason; never silently drop.
-6. **SSRF-safe delivery.** If the skill ever needs to deliver, validate the
-   target URL against an allow-list of Ottili endpoints; never deliver to
-   arbitrary hosts.
+5. **Dead-letter.** On persistent failure (3 attempts), move the event to the
+   dead-letter queue with the raw payload and the failure reason; never
+   silently drop.
+6. **SSRF-safe delivery.** Validate the target URL against the allow-list of
+   Ottili endpoints; reject IP literals and `localhost` (never resolve them).
 7. **Log.** Record every verify/dedupe/delivery decision with the event id.
 
 ## Decision tables
@@ -106,6 +108,13 @@ is unknown.
 - [ ] Persistent failures moved to dead-letter with raw payload and reason
 - [ ] Outbound delivery target validated against the allow-list
 - [ ] Every decision logged with the event id
+
+## Near-miss triggers (stop and re-read)
+
+- "I'll parse the JSON and verify against that" → raw bytes only.
+- "The signature is old, but it's probably fine" → replay window first.
+- "I'll just deliver to whatever URL is in the payload" → SSRF; allow-list it.
+- "PayPal/Twilio use the same scheme as GitHub" → unverified; flag it.
 
 ## References
 
