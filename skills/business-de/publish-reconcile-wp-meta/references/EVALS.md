@@ -100,3 +100,34 @@ skipped. Use strict mode for audit-grade reconciliation.
 
 **Failure signs:** Treating strict mode as a retry flag; returning ok when a
 field is absent; omitting the `--strict` flag in an audit context.
+
+## Near-miss triggers
+
+Prompts that look fine at first glance but hide a trap. The agent must catch
+the trap and still produce a passing artefact.
+
+### N1. "Publish to WordPress, the URL is ours"
+**Trap:** outbound publish is allow-listed. An arbitrary URL — even one that
+belongs to Ottili — is rejected unless it is in the allow-list. The check is
+on the target, not the content.
+
+### N2. "The idempotency store is just a cache, delete the key on success"
+**Trap:** the store is append-only and part of the audit trail. Deleting a
+key hides the fact that the post was published twice. Keep every key for the
+GoBD retention period.
+
+### N3. "Meta returned 409, so retry with a new key"
+**Trap:** 409 on Meta is the idempotency conflict — the post exists. A new
+key makes it a *new* post and duplicates content. Reconcile by reference
+first; only a genuinely new reference may be retried.
+
+### N4. "Reconcile WP and Meta, they should match"
+**Trap:** the two platforms have different field sets (WP has `slug`,
+Meta has `id`/`link`). Compare only the shared fields
+(`id`, `status`, idempotency key); report platform-specific fields as
+informational, not as deltas.
+
+### N5. "WP Basic Auth still works, use it"
+**Trap:** Basic Auth is deprecated in WP 6.7+ core and the replacement plugin
+is unmaintained. The config pins the WP version; the helper must read it and
+warn. A green run that uses Basic Auth on WP 6.7+ is a failure sign.

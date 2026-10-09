@@ -3,7 +3,7 @@
 Each prompt lists the expected behaviour and the failure signs an agent must
 watch for. Run the relevant script and compare the output to the expected.
 
-## 1. Map account 4000 to a tax key
+## 1. Prompt
 **Prompt:** "Map our SKR04 revenue account 4000 to a tax key."
 
 **Expected behaviour:** Run `scripts/map_skr.py --account 4000 --skr 04`.
@@ -15,34 +15,33 @@ the mapping must be re-verified against the current UStG before each build.
 **Failure signs:** Reporting 19% without citing the config source; claiming the
 rate is universal; not flagging the intra-EU override.
 
-## 2. Generate a journal entry for a domestic B2B sale
+## 2. Prompt
 **Prompt:** "Generate a journal entry for a domestic B2B sale, EUR 1,200.00
 net, 19% VAT, on account 4000."
 
 **Expected behaviour:** Run `scripts/generate_journal.py` with the line
 `{"account":"4000","side":"S","amount":1200,"tax_key":"19","belegdatum":"20260601"}`.
 Expect one entry with `konto: "4000"`, `steuerschluessel: "19"`,
-`rate_percent: 19`, and the amount split. Then run
-`scripts/journal_check.py` on the output; a complete journal (sales leg +
-bank leg + tax account 1570) must report `OK journal balanced`.
+`rate_percent: 19`. Then run `scripts/journal_check.py` on a complete journal
+(sales leg + bank leg + tax account 1570); it must report `OK journal balanced`.
 
 **Failure signs:** Emitting a dot decimal; writing the rate into the script
 instead of reading config; producing an entry with no `steuerschluessel`;
 reporting `ok: true` without running the balance check.
 
-## 3. Lock the December 2026 period
+## 3. Prompt
 **Prompt:** "Lock our December 2026 period."
 
 **Expected behaviour:** Run `scripts/period_lock.py --period 2026-12 --action
 lock --approver "Tax Advisor"`. Expect `ok: true, locked: true` and a state
 file recording `locked_at`, `locked_by`, and `lock_reason`. A subsequent
-`--action status` must show `locked: true`. A further `--action lock` without
-`--force` must report `already_locked: true` rather than silently re-locking.
+`--action status` must show `locked: true`. A further `--action lock` must
+report `already_locked: true` rather than silently re-locking.
 
 **Failure signs:** Locking without an approver; treating the lock as a policy
 statement instead of a technical flag; re-locking and losing the audit trail.
 
-## 4. Tax key mismatch between journal and invoice
+## 4. Prompt
 **Prompt:** "Our journal says tax key 19% but the invoice says 7%. What do we
 do?"
 
@@ -56,7 +55,7 @@ before release — never silently pick a key.
 **Failure signs:** Guessing the key; "fixing" the journal to match the invoice
 without reviewing the account mapping; not recording the review evidence.
 
-## 5. Reconcile generated journals against source invoices
+## 5. Prompt
 **Prompt:** "Reconcile our generated journals against the source invoices."
 
 **Expected behaviour:** Run `scripts/generate_journal.py` then
@@ -68,14 +67,55 @@ that need human review. Every blocking error must be escalated, not written off.
 **Failure signs:** Reporting `ok: true` while `journal_check.py` returns 2;
 auto-writing-off mismatches; not recording the reconciliation run.
 
-## 6. Intra-EU override on account 4100
+## 6. Prompt
 **Prompt:** "Map account 4100 for an intra-EU sale."
 
 **Expected behaviour:** Run `scripts/map_skr.py --account 4100 --skr 04
 --intra-eu`. Expect `default_tax_key: "00"`, `rate_percent: 0`, and
-`override: "already 0% (intra-EU/export) — no override needed"`. If the same
+`override: "already 0% (intra-EU/export) - no override needed"`. If the same
 account were 4000 with `--intra-eu`, the override must flip the key to `00`
 and say so explicitly.
 
 **Failure signs:** Ignoring the `--intra-eu` flag; returning 19% for an
 intra-EU supply; not recording the override reason in the output.
+
+## 7. Prompt
+**Prompt:** "Generate a journal from a line with tax key 99 on account 4000."
+
+**Expected behaviour:** `scripts/generate_journal.py` must report
+`ok: false`, `blocking: 1`, and list `tax_key must be 19/07/00, got '99'` in
+`blocking_errors`. The output file must still be written so the error is
+auditable.
+
+**Failure signs:** Crashing instead of reporting; writing `ok: true` for an
+invalid line.
+
+## Near-miss triggers
+
+Prompts that look fine at first glance but hide a trap. The agent must catch
+the trap and still produce a passing artefact.
+
+### N1. "Map account 4000, it is always 19%"
+**Trap:** the tax key depends on the transaction, not the account. An
+intra-EU supply on 4000 flips the key to `00` via the `--intra-eu` flag.
+Ignoring the flag is a silent wrong journal.
+
+### N2. "Lock the period, it is done"
+**Trap:** locking is idempotent but not reversible. A double lock or a lock
+of an already-posted period must be reported, not silently overwritten.
+`scripts/period_lock_check.py` exits non-zero on both.
+
+### N3. "The journal balances, so the tax key is fine"
+**Trap:** a balanced journal can still carry the wrong tax key. The checker
+validates the key against the account's allowed set independently of the
+balance. A balanced journal with key `99` on 4000 is a blocking error.
+
+### N4. "SKR 03 and SKR 04 share the same accounts"
+**Trap:** the account ranges differ between the charts (e.g. 4100 intra-EU
+exists in both but 4200 is SKR 04 only). Always pass `--skr 03` or
+`--skr 04`; the default is a failure sign.
+
+### N5. "Reconcile means the numbers add up"
+**Trap:** reconciliation also means the tax key on the journal matches the
+key on the source invoice and the period is locked. A journal that balances
+but carries key `19` where the invoice says `07` is a mismatch.

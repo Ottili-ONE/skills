@@ -104,3 +104,35 @@ no human review is needed — the decision is documented, not disclosed.
 **Failure signs:** Emitting an Article 50 disclosure for a general system;
 asking for human review on a system that does not need it; classifying a
 general system as high-risk.
+
+## Near-miss triggers
+
+Prompts that look fine at first glance but hide a trap. The agent must catch
+the trap and still produce a passing artefact.
+
+### N1. "We anonymised the data, so no legal basis is needed"
+**Trap:** anonymisation is itself a processing activity that needs a legal
+basis and a register entry. Anonymisation does not remove the original
+collection's basis either — it chains. Record the anonymisation as a new
+activity that points at the source entry.
+
+### N2. "The chatbot only answers FAQs, so it is transparency-only"
+**Trap:** a chatbot that generates text can be high-risk if it makes a
+decision affecting a person. The rule is not the *feature* (FAQ) but the
+*impact* (legal effect / significant decision). A general-AI system behind
+the chatbot also triggers Art. 95 documentation, which the
+transparency-only label omits.
+
+### N3. "Article 50 disclosure is a one-off"
+**Trap:** the disclosure is a living artefact. When the system changes, the
+label must be re-issued and the old one kept (GoBD). Never edit in place.
+
+### N4. "The human reviewer signed off, so the evidence is complete"
+**Trap:** the evidence record needs a date, a reviewer id, a scope and a
+re-review date. A bare signature is `human_review_incomplete` — the
+`disclosure_label.py` checker rejects it.
+
+### N5. "GDPR only applies to EU customers"
+**Trap:** Art. 3 GDPR applies to any offer of goods/services to people in
+the EU, not only customers. B2B newsletter recipients in the EU are still
+data subjects. The register entry must cover the offer, not the contract.

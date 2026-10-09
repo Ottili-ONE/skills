@@ -103,3 +103,32 @@ Never treat PayPal as verified until a business account confirms the scheme.
 
 **Failure signs:** Citing a 404'd PayPal path as authoritative; assuming the
 PayPal scheme matches GitHub; hardcoding the PayPal header name in logic.
+
+## Near-miss triggers
+
+Prompts that look fine at first glance but hide a trap. The agent must catch
+the trap and still produce a passing artefact.
+
+### N1. "The signature is valid, accept it"
+**Trap:** a valid HMAC only proves the body matches the secret. The
+timestamp is checked *before* the HMAC (Stripe's replay window). A valid
+signature on a 6-minute-old event is still rejected.
+
+### N2. "The event id is new, process it"
+**Trap:** dedupe is per-stream. The same event id from a *different* stream
+is not a duplicate. Conflating streams silently double-processes.
+
+### N3. "Out of order, just buffer everything"
+**Trap:** buffering grows without bound and masks a dead provider. The
+skill holds only within the replay window; older events go to the
+dead-letter queue with the reason, they are not silently dropped.
+
+### N4. "Deliver the webhook to our staging URL"
+**Trap:** the allow-list is checked on the target host, not the environment.
+A staging host that is not allow-listed is rejected even if it "belongs to
+us". SSRF prevention does not know ownership.
+
+### N5. "The handler failed once, retry immediately"
+**Trap:** a single failure routes to the dead-letter queue after the retry
+budget is exhausted, not on the first failure. Immediate retry without
+backoff is a thundering-herd risk on a failing upstream.
