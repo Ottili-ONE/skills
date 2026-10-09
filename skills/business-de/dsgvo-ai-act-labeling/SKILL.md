@@ -82,6 +82,14 @@ systems, or member-state-specific law beyond the EU baseline.
 - [ ] Label re-verified on release change; no stale reuse
 - [ ] Retention inherited from gobd-archive
 
+## Near-miss triggers (stop and re-read)
+
+- "I'll auto-approve this high-risk label" → BLOCKING; evidence file required.
+- "A chatbot doesn't need a reviewer" → transparency-only still requires one.
+- "The label from v1 is still valid" → re-run on every release cycle.
+- "BDSG doesn't apply to us" → member-state additions are unverified until
+  local counsel confirms.
+
 ## References
 
 - [Procedures, worked examples and AI Act summaries](references/procedures.md)
