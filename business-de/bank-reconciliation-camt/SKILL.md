@@ -28,9 +28,10 @@ currencies, or cash-counting tasks.
    mismatch is a hard stop.
 3. **Match postings** — run the heuristic cascade in
    `references/procedures.md` §3 (amount → reference → counterparty → date).
-4. **Flag duplicates** — same amount + same reference + same date = duplicate.
-5. **Allocate** — assign each matched entry to an open item; write off the
-   difference with a reason code.
+4. **Flag duplicates** — an entry whose amount, reference and value date all
+   match an earlier entry is a duplicate.
+5. **Allocate** — assign each matched entry to an open item; clear any
+   remaining difference with a reason code.
 6. **Verify** — run `scripts/recon_check.py`; the verification checklist.
 
 ## Decision tables
@@ -69,24 +70,11 @@ full cascade with worked examples is in `references/procedures.md` §3.
 
 ## Pitfalls from research
 
-Five traps recur; the full list with sources is in
+The single trap that catches most agents: **camt.053 files declaring the
+`.008.01` namespace are legacy drafts** — the current version is
+`camt.053.001.08`; re-parse with the newer schema rather than accepting the
+older namespace silently. The full list of five traps, with sources, is in
 `references/procedures.md` (format selection, duplicates, differences).
-Condensed:
-
-- camt.053 is mandatory in SEPA since 2014; MT940 has **no fixed
-  deprecation date** for reporting messages (SWIFT, Nov 2025). Both remain in
-  use; handle both.
-- The current camt.053 message version is **camt.053.001.08**
-  (namespace `urn:iso:std:iso:20022:tech:xsd:camt.053.001.08`). Files
-  declaring `.008.01` are legacy drafts — re-parse with the `.001.08` schema
-  rather than accepting the older namespace silently.
-- MT940 purpose lines are free text and often truncated; camt.053 structures
-  them in structured fields (Mandat-ID, EndToEndId). Prefer camt.053 for
-  matching.
-- A duplicate posting is **not** a rounding difference — block it and escalate
-  to the bank.
-- Unallocated differences under EUR 0.01 are rounding; above that they need a
-  reason code. Accepted codes: ROUNDING, BANK_FEE, FX, UNALLOCATED.
 
 ## Verification checklist
 

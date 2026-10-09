@@ -58,20 +58,10 @@ interplay) with worked examples and legal sources are in
 
 ## Pitfalls from research
 
-Five traps recur; the full list with sources is in
-`references/procedures.md` §1-§6. Condensed:
-
-- Reverse charge (§13b) is **goods** only — services use the general
-  place-of-performance rule.
-- Kleinunternehmer cannot reclaim input VAT and must not issue an e-invoice
-  with a tax line; their invoices are "sonstige Rechnung" (§19 UStG).
-- OSS requires the home-state registration; a German business using OSS must
-  still file the USt-Anmeldung for domestic sales.
-- Rounding: per §23 UStDV, tax amounts are rounded to cents (2 decimals);
-  half-up is the convention, but the tax authority accepts banker's rounding in
-  practice — record the convention.
-- A 0% tax key (06/0, 09/0, V091, 0) must not carry a tax amount; a
-  reverse-charge line with a non-zero tax amount is a filing error.
+The single trap that catches most agents: **reverse charge (§13b) is goods
+only** — a service sold to a customer that supplies a USt-IdNr. is still
+taxed by the general place-of-performance rule. The full list of five traps,
+with sources, is in `references/procedures.md` §1-§6.
 
 ## Verification checklist
 
