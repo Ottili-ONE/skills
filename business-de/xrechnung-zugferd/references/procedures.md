@@ -65,6 +65,23 @@ Typical hard errors:
 - BT-20 payment terms not parseable
 - Tax rate split missing for a rate present in the document
 
+## 4b. Element-scoped checks (BT-18 vs BT-20)
+
+Verified 2026-10-09 against the KoSIT `validator-configuration-xrechnung`
+`guidelines.json` (rule IDs + `cbc:` element names). The trap:
+
+- **BT-18** = `PaymentAllowedAccountID` — the bank account (IBAN, e.g.
+  `DE89370400440532013000`).
+- **BT-20** = `PaymentTerms` — free text with an amount and a due date, e.g.
+  `net 30, 2% discount within 10 days`.
+- Some UBL exports give both the same local name `PaymentTerms`. A naive
+  "does the document contain an IBAN?" check then passes BT-18 because BT-20's
+  text happens to contain digits, and a Leitweg-ID (`DE...`) passes BT-18's
+  IBAN-shaped regex.
+
+Fix: extract each rule's element text **by tag**, then test the regex on that
+text only. `scripts/validate_invoice.py` does this via `_element_text()`.
+
 ## 5. Business rules
 
 - BT-10 Leitweg-ID: required for B2B (format: 16 hex chars, optional prefix)
@@ -83,6 +100,37 @@ Record in the retention log:
 {"file": "...", "sha256": "...", "retention_end": "2034-12-31",
  "export_test": "passed", "validated": "2026-10-08"}
 ```
+
+## 6b. Worked examples
+
+### Good — COMFORT invoice
+
+```xml
+<CrossIndustryInvoice>
+  <cbc:IssueDate>2026-06-02</cbc:IssueDate>            <!-- BT-14 -->
+  <cbc:EndpointID schemeID="0154">DE12345678901234</cbc:EndpointID>  <!-- BT-10 -->
+  <cbc:PaymentTerms>net 30, 2% within 10 days</cbc:PaymentTerms>        <!-- BT-20 -->
+  <cbc:PaymentDueDate>20260702</cbc:PaymentDueDate>                    <!-- BT-17 -->
+  <cbc:PaymentAllowedAccountID>DE89370400440532013000</cbc:PaymentAllowedAccountID>  <!-- BT-18 -->
+  <cbc:TaxAmount currencyID="EUR">228.00</cbc:TaxAmount>               <!-- BT-19 -->
+</CrossIndustryInvoice>
+```
+
+`scripts/validate_invoice.py` reports `ok: true, errors: []`.
+
+### Bad — BT-18/BT-20 swapped
+
+```xml
+<CrossIndustryInvoice>
+  <cbc:IssueDate>2026-06-02</cbc:IssueDate>
+  <cbc:EndpointID schemeID="0154">DE12345678901234</cbc:EndpointID>
+  <cbc:PaymentTerms>IBAN DE89370400440532013000</cbc:PaymentTerms>  <!-- BT-20 holds an IBAN -->
+</CrossIndustryInvoice>
+```
+
+A whole-document regex passes BT-18 (IBAN found anywhere). Element-scoped
+checking correctly reports `BT-18 content invalid` because the
+`PaymentAllowedAccountID` element is missing.
 
 ## 7. Re-verification
 

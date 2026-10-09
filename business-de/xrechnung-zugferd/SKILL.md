@@ -45,6 +45,17 @@ Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X
 - KoSIT validator 5.x treats missing BT-14 (invoice issue date) as a hard error in every profile; do not suppress it.
 - The 2025-2028 transitional period allows paper-to-PDF migration, but the e-invoicing obligation for B2B still applies from 2020-01-01.
 - Version pinning matters: the standard moves twice a year; always read `config/versions.json`.
+- **BT-18 ≠ BT-20.** Both are "payment" rules and some UBL exports use the same
+  local name `PaymentTerms` for both. BT-18 is the **payment account (IBAN)**,
+  BT-20 is the **payment terms (free text)**. A whole-document content regex
+  therefore false-passes: an IBAN satisfies BT-20's "contains a digit" test and a
+  Leitweg-ID satisfies BT-18's IBAN-shaped test. Always scope the check to the
+  element's own text content (see `references/procedures.md` §5). Verified
+  2026-10-09 against the KoSIT `guidelines.json`.
+- BT-19 (tax amount per rate) is required in COMFORT/EXTENDED; a BG-19 tax split
+  whose per-rate amounts do not sum to the invoice total is a hard error.
+- A `print-to-PDF` of an e-invoice loses the structured XML attachment and is
+  **not** a valid archive artefact — keep the original.
 
 ## Verification checklist
 
@@ -54,7 +65,9 @@ Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X
 - [ ] Validator run returns 0 errors (all errors blocking)
 - [ ] BT-10 Leitweg-ID present for B2B
 - [ ] BT-20 payment terms syntactically valid
-- [ ] Tax split per rate present
+- [ ] BT-18 payment account (IBAN) present and distinct from BT-20
+- [ ] BT-19 tax amount per rate present; BG-19 sums to invoice total
+- [ ] Every BT-* check scoped to the element's own text, not the whole document
 - [ ] Original file archived unchanged; SHA-256 recorded
 - [ ] Retention end date computed (8 years from year-end)
 - [ ] Export test passed
