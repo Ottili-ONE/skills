@@ -14,28 +14,32 @@ allowed-tools: []
 Use this skill when an agent must talk to a German carrier API
 (DHL, DPD, GLS, Hermes, UPS) for Ottili flows: create a shipping
 label, track a shipment, or reconcile label cost and status against
-the Ottili shipping record. Do **not** use it for general shipping
-logic (packing, routing, address validation) or for unofficial
-tracking scrapers — every carrier here has an official API and a
-contract; use it.
+the Ottili shipping record. Do **not** use it for general shipping logic
+(packing, routing, address validation) or for unofficial tracking
+scrapers — every carrier here has an official API and a contract.
 
-## Procedure
+## Procedure (numbered, in order)
 
 1. **Identify the carrier and its contract model.** Each carrier has a
-   different auth and API shape; never assume one fits another.
+   different auth and API shape; never assume one fits another. Read the
+   per-carrier row from the contract table in `references/procedures.md`.
 2. **Authenticate with the carrier's documented flow** (OAuth2 client
-   credentials or token exchange); cache the token and refresh before
-   expiry; never hardcode credentials.
+   credentials or token exchange). Cache the token, refresh before
+   expiry, never hardcode credentials and never log the token.
 3. **Create an idempotent label.** Every label request carries a
-   client-generated `Idempotency-Key`. On a duplicate key the carrier
-   returns the existing label — never create a second.
+   client-generated idempotency key (your stable order/shipment
+   reference). On a duplicate key the carrier returns the existing label
+   — never create a second. The key field name differs per carrier; read
+   it from `config/versions.json`, never hardcode.
 4. **Track via the official API only.** Poll the carrier's tracking
-   endpoint; cache results; never scrape the public tracking page.
-5. **Reconcile.** Compare label cost and status against the Ottili
-   shipping record; on an unknown result re-query by tracking number
-   and log the reconciliation.
-6. **Handle errors via the fix table.** Map carrier error codes to a
-   concrete fix; never retry auth errors.
+   endpoint, cache results for 5 minutes, never scrape the public page.
+5. **Reconcile.** Compare label cost, status and tracking number against
+   the Ottili shipping record. On a mismatch or unknown result re-query
+   by tracking number, log the delta, flag for review.
+6. **Handle errors via the fix table.** Map carrier status codes to a
+   concrete fix. Auth errors (401/403) are never retried with the same
+   token; 409 means re-query, never re-create; 429/5xx use bounded
+   exponential backoff (base 500 ms, factor 2, max 3 attempts, cap 30 s).
 
 ## Decision tables
 
@@ -62,9 +66,9 @@ contract; use it.
 ## Pitfalls from research
 
 - **Idempotency key names differ per carrier.** DHL uses `X-Request-ID`,
-  UPS uses `X-Inbound-Idempotency-Key`, DPD/GLS use a reference field in
-  the body. Abstract the key behind a per-carrier adapter; never assume
-  one header name.
+  UPS uses `X-Inbound-Idempotency-Key`, DPD/GLS/Hermes use a reference
+  field in the body. Abstract the key behind a per-carrier adapter; never
+  assume one header name.
 - **A duplicate key does not always mean "return existing".** Some
   carriers return 409 and you must re-query by the reference number to
   find the existing label. Treat 409 as "re-query, never re-create".
@@ -88,6 +92,14 @@ contract; use it.
 - [ ] Results cached; no hammering
 - [ ] Label cost/status reconciled with Ottili shipping record
 - [ ] Error codes mapped to the fix table; auth errors never retried
+
+## Near-miss triggers (stop and re-read)
+
+- "I'll just retry the label request" → check the idempotency key first.
+- "The tracking page shows..." → that is not a data source; use the API.
+- "It worked once, so the key doesn't matter" → it matters on every retry.
+- "GLS/Hermes have no sandbox, skip testing" → dry-run the request envelope
+  instead; do not skip the idempotency check.
 
 ## References
 

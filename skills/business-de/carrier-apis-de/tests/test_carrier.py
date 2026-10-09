@@ -72,3 +72,46 @@ def test_reconcile_mismatch():
     assert r.returncode == 1, r.stderr
     deltas = json.loads(r.stdout)["deltas"]
     assert any(d["field"] == "cost" for d in deltas)
+
+
+def test_track_cache_hit_is_offline():
+    import tempfile, os
+    cache = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+    cache.write(json.dumps({"dhl:1": {"ts": 9_999_999_999, "body": "cached"}}))
+    cache.close()
+    r = run(TRACK, "--carrier", "dhl", "--number", "1",
+            "--cache-file", cache.name)
+    os.unlink(cache.name)
+    assert r.returncode == 0, r.stderr
+    data = json.loads(r.stdout)
+    assert data["cache_hit"] is True
+    assert data["body"] == "cached"
+
+
+def test_track_rejects_non_numeric():
+    r = run(TRACK, "--carrier", "dhl", "--number", "ABC-DEF")
+    assert r.returncode != 0
+
+
+def test_reconcile_unknown_result():
+    label = {"cost": {"amount": 12.50}, "status": "created", "trackingNumber": None}
+    record = {"cost": {"amount": 12.50}, "status": "created", "trackingNumber": None}
+    lp = Path("/tmp/_lab3.json"); lp.write_text(json.dumps(label))
+    rp = Path("/tmp/_rec3.json"); rp.write_text(json.dumps(record))
+    r = run(RECON, "--label", str(lp), "--record", str(rp))
+    assert r.returncode == 1, r.stderr
+    assert json.loads(r.stdout)["ok"] is False
+
+
+def test_reconcile_missing_file():
+    r = run(RECON, "--label", "/nonexistent/x.json", "--record", "/nonexistent/y.json")
+    assert r.returncode == 2
+
+
+def test_label_create_gls_embeds_key_in_body():
+    r = run(LABEL, "--carrier", "gls", "--ref", "ORD-5")
+    assert r.returncode == 0, r.stderr
+    data = json.loads(r.stdout)
+    assert data["idempotency_field"] == "labelId"
+    assert "X-Request-ID" not in data["request"]["headers"]
+    assert data["request"]["body"]["labelId"] == "ORD-5"
