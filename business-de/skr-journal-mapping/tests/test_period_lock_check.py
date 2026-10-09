@@ -67,3 +67,38 @@ def test_unlock_logs_override_and_check_flags_it():
         assert rc == 2 and "not locked" in out
         rc, out = run(["history"], state)
         assert rc == 0 and "correcting entry" in out
+
+
+def test_lock_rejects_bad_period():
+    with tempfile.TemporaryDirectory() as d:
+        state = Path(d) / "p.json"
+        rc, out = run(["lock", "--period", "2026-13", "--approved-by", "M. Braun",
+                       "--reason", "Monatsschluss", "--evidence", str(EV)], state)
+        assert rc == 2 and "valid YYYY-MM" in out
+
+
+def test_lock_rejects_double_lock():
+    with tempfile.TemporaryDirectory() as d:
+        state = Path(d) / "p.json"
+        run(["lock", "--period", "2026-12", "--approved-by", "M. Braun",
+             "--reason", "Monatsschluss", "--evidence", str(EV)], state)
+        rc, out = run(["lock", "--period", "2026-12", "--approved-by", "M. Braun",
+                       "--reason", "Monatsschluss", "--evidence", str(EV)], state)
+        assert rc == 2 and "already locked" in out
+
+
+def test_lock_force_relock_clears_overrides():
+    with tempfile.TemporaryDirectory() as d:
+        state = Path(d) / "p.json"
+        run(["lock", "--period", "2026-12", "--approved-by", "M. Braun",
+             "--reason", "Monatsschluss", "--evidence", str(EV)], state)
+        run(["unlock", "--by", "agent", "--reason", "correcting entry",
+             "--evidence", str(EV)], state)
+        rc, out = run(["lock", "--force", "--period", "2026-12",
+                       "--approved-by", "M. Braun", "--reason", "year-end close",
+                       "--evidence", str(EV)], state)
+        assert rc == 0 and "OK period" in out
+        rc, out = run(["check"], state)
+        assert rc == 0 and "no override" in out
+        rc, out = run(["history"], state)
+        assert "no overrides" in out

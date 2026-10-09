@@ -18,12 +18,22 @@ hardcoded. Deterministic and offline.
 """
 import argparse
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_STATE = SKILL_DIR / "config" / "period_lock.json"
+_PERIOD_RE = re.compile(r"^\d{4}-\d{2}$")
+
+
+def valid_period(p: str) -> bool:
+    """YYYY-MM with a real month (01-12)."""
+    if not _PERIOD_RE.match(p or ""):
+        return False
+    y, m = (int(x) for x in p.split("-"))
+    return 1 <= m <= 12
 
 
 def load(path: Path) -> dict:
@@ -64,6 +74,13 @@ def cmd_lock(state: dict, args) -> int:
     period = args.period or state.get("period")
     if not period:
         errors.append("period required (--period YYYY-MM)")
+    elif not valid_period(period):
+        errors.append(f"period {period!r} is not a valid YYYY-MM (e.g. 2026-12)")
+    elif state.get("locked") and state.get("period") == period and not args.force:
+        errors.append(
+            f"period {period} is already locked; use --force to re-lock "
+            "(re-locking clears the override audit trail - do it only after a "
+            "documented re-close)")
     approved_by = args.approved_by or state.get("approved_by")
     if not approved_by:
         errors.append("approved_by required (tax advisor name/ID)")
@@ -79,6 +96,11 @@ def cmd_lock(state: dict, args) -> int:
         for e in errors:
             print("FAIL", e, file=sys.stderr)
         return 2
+    # --force means "documented re-close": the override audit trail is
+    # intentionally cleared, whether the period is currently locked or was
+    # just unlocked for a correcting entry.
+    if args.force:
+        state["overrides"] = []
     state.update({
         "period": period, "locked": True,
         "locked_at": date.today().isoformat(),
@@ -133,6 +155,8 @@ def main(argv=None) -> int:
     p.add_argument("--reason")
     p.add_argument("--evidence")
     p.add_argument("--by")
+    p.add_argument("--force", action="store_true",
+                        help="re-lock an already-locked period (clears overrides)")
     p.add_argument("action", choices=["status", "check", "lock", "unlock", "history"])
     args = p.parse_args(argv)
     state = load(Path(args.state))
