@@ -28,9 +28,9 @@ scrapers — every carrier here has an official API and a contract.
    before expiry, never hardcode credentials and never log the token.
 3. **Create an idempotent label.** Every label request carries a
    client-generated idempotency key (your stable order/shipment reference).
-   On a duplicate key the carrier returns the existing label — never create
-   a second. The key field name differs per carrier; read it from
-   `config/versions.json`, never hardcode.
+   On a duplicate key the carrier hands back the label that already exists —
+   never mint a second one. The key field name differs per carrier; read it
+   from `config/versions.json`, never hardcode.
 4. **Track via the official API only.** Poll the carrier's tracking
    endpoint, cache results for 5 minutes (pinned), never scrape the public
    page.
@@ -76,9 +76,10 @@ scrapers — every carrier here has an official API and a contract.
   existing label. Treat 409 as "re-query, never re-create".
 - **Never scrape the tracking page.** Every carrier has an official tracking
   API; scraping breaks on layout changes and violates the carrier's terms.
-- **Sandbox availability varies.** DHL, DPD and UPS offer sandboxes; GLS and
-  Hermes do not (Hermes requires a business account). Treat sandbox tests as
-  optional; dry-run the request envelope instead, which is fully offline.
+- **Sandbox availability is uneven.** DHL, DPD and UPS provide sandboxes;
+  GLS and Hermes do not, and Hermes needs a business account. When no
+  sandbox exists, dry-run the request envelope instead — that path is fully
+  offline and exercises the same adapter code.
 - **Label cost reconciliation is not optional.** A label that was created but
   never reconciled silently diverges from the Ottili shipping record.
 - **DPD and GLS portals are SPAs.** Deeper paths (`/track`, `/api`,

@@ -33,11 +33,12 @@ providers whose signature scheme is unknown.
 4. **Respect replay windows.** For Stripe the timestamp is part of the
    signature — reject stale signatures before checking the HMAC. Hold
    unprocessed events for the window before declaring them lost.
-5. **Dead-letter.** On persistent failure (3 attempts), move the event to the
-   dead-letter queue with the raw payload and the failure reason; never
-   silently drop.
-6. **SSRF-safe delivery.** Validate the target URL against the allow-list of
-   Ottili endpoints; reject IP literals and `localhost` (never resolve them).
+5. **Dead-letter.** After three failed attempts, park the event in the
+   dead-letter queue together with the raw payload and the reason it failed;
+   a webhook must never vanish without a trace.
+6. **SSRF-safe delivery.** Check every outbound target against the allow-list
+   of Ottili endpoints; throw out IP literals and `localhost`, and never try
+   to resolve them first.
 7. **Log.** Record every verify/dedupe/delivery decision with the event id.
 
 ## Decision tables
@@ -85,7 +86,7 @@ providers whose signature scheme is unknown.
 - **GitHub's `X-Hub-Signature-256` is `sha256=<hex>`.** The older
   `X-Hub-Signature` (SHA1) is deprecated; never fall back to it.
 - **Dedupe must be atomic.** Check-and-set on the event id must be one
-  operation; a race processes the event twice.
+  operation; a race that checks then sets processes the event twice.
 - **Never deliver to arbitrary hosts.** An attacker-controlled webhook payload
   that triggers an outbound call is an SSRF. Validate the target against the
   allow-list.

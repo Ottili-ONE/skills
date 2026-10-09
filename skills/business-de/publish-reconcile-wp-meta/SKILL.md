@@ -49,8 +49,8 @@ general CMS logic, non-WordPress platforms, or non-Meta social platforms.
 
 | Situation | Action |
 |---|---|
-| Both platforms match | Ok; log |
-| One platform newer | Re-query the older; log the delta |
+| Both platforms agree | Ok; log |
+| One platform is newer than the other | Re-query the older one; log the delta |
 | Unknown result (timeout) | Re-query both by key; log the delta |
 | Persistent mismatch | Flag for human review; never silently overwrite |
 
@@ -64,9 +64,10 @@ general CMS logic, non-WordPress platforms, or non-Meta social platforms.
 - **Meta's pinned version is not the newest.** v19.0 is pinned, yet v20.0
   and v21.0 already appear in the changelog (re-verified 2026-10-09). Meta
   sunsets versions without notice; re-verify quarterly.
-- **Never assume the first response is authoritative.** Neither API
-  guarantees exactly-once delivery; re-query both platforms by the client
-  idempotency key and compare state.
+- **Never assume the first response is authoritative.** A single API call
+  can time out or succeed on one platform only; the safe move is to re-query
+  both platforms by the client idempotency key and compare state before
+  acting on either answer.
 - **SSRF-safe.** Publish only to the configured WP/Meta endpoints; never
   publish to arbitrary hosts.
 
