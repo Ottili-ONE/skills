@@ -45,15 +45,15 @@ scrapers — every carrier here has an official API and a contract.
 
 ## Decision tables
 
-### Carrier contract model
+### Carrier contract model (condensed)
 
-| Carrier | API | Auth | Idempotency header | Sandbox |
+| Carrier | Transport | Credentials | Key placement | Test env. |
 |---|---|---|---|---|
-| DHL Parcel DE | REST v3 | OAuth2 (consumer key/secret + token) | `X-Request-ID` | yes |
-| DPD Germany | XML/JSON | API key + DPD-Auth token | shipment reference (body) | yes |
-| GLS Germany | SOAP/REST | API key + secret | `labelId` (client-generated) | no public sandbox |
-| Hermes Germany | REST | OAuth2 / API key | `correlationId` | business account required |
-| UPS Germany | REST | OAuth2 client credentials | `X-Inbound-Idempotency-Key` | yes (CIM) |
+| DHL Parcel DE | REST v3 | OAuth2 client credentials | header `X-Request-ID` | sandbox |
+| DPD Germany | XML/JSON | API key + DPD-Auth token | body field | sandbox |
+| GLS Germany | SOAP/REST | API key + secret | body `labelId` | none public |
+| Hermes Germany | REST | OAuth2 / API key | body `correlationId` | account needed |
+| UPS Germany | REST | OAuth2 client credentials | header `X-Inbound-Idempotency-Key` | sandbox (CIM) |
 
 ### Label error → fix
 
@@ -67,10 +67,10 @@ scrapers — every carrier here has an official API and a contract.
 
 ## Pitfalls from research
 
-- **Idempotency key names differ per carrier.** DHL uses `X-Request-ID`,
-  UPS uses `X-Inbound-Idempotency-Key`, DPD/GLS/Hermes use a body reference
-  field. Abstract the key behind a per-carrier adapter; never assume one
-  header name.
+- **Idempotency key names differ per carrier.** DHL and UPS put the key in
+  a request header (`X-Request-ID`, `X-Inbound-Idempotency-Key`); DPD, GLS
+  and Hermes embed it in the request body. Abstract the key behind a
+  per-carrier adapter; never assume one header name.
 - **A duplicate key does not always mean "return existing".** Some carriers
   return 409 and you must re-query by the reference number to find the
   existing label. Treat 409 as "re-query, never re-create".
@@ -78,7 +78,7 @@ scrapers — every carrier here has an official API and a contract.
   API; scraping breaks on layout changes and violates the carrier's terms.
 - **Sandbox availability varies.** DHL, DPD and UPS offer sandboxes; GLS and
   Hermes do not (Hermes requires a business account). Treat sandbox tests as
-  optional; dry-run the request envelope instead.
+  optional; dry-run the request envelope instead, which is fully offline.
 - **Label cost reconciliation is not optional.** A label that was created but
   never reconciled silently diverges from the Ottili shipping record.
 - **DPD and GLS portals are SPAs.** Deeper paths (`/track`, `/api`,
