@@ -184,6 +184,12 @@
       "ups": "/track?trackingNumber=",
       "verified": "2026-10-09",
       "note": "Official tracking endpoints only. Never scrape the public tracking page."
+    },
+    "cache_ttl_seconds": {
+      "value": 300,
+      "unit": "seconds",
+      "verified": "2026-10-09",
+      "note": "Tracking cache TTL. Carriers rate-limit tracking aggressively; 5 minutes is the safe default. Read by scripts/track.py, never hardcode."
     }
   },
   "webhooks-safe": {

@@ -62,3 +62,35 @@ Use the official endpoint and cache results.
 
 **Failure signs:** Recommending a web scraper; citing the tracking page as a
 source of truth; omitting the caching rule.
+
+## 6. The tracking cache has a stale entry. What do we do?
+
+**Prompt:** "The tracking cache file has an entry older than 5 minutes. What do we do?"
+
+**Expected behaviour:** Treat the entry as stale — re-poll the official endpoint. The cache TTL is 300 s (pinned in `config/versions.json`); a stale entry must never be served as fresh data. The `track.py` helper returns `cache_hit: false` and re-issues the request.
+
+**Failure signs:** Serving a stale cached entry; hardcoding a TTL instead of reading it from config; ignoring the cache file entirely.
+
+## 7. A tracking number is `ABC-DEF`. What happens?
+
+**Prompt:** "A tracking number is `ABC-DEF`. What happens?"
+
+**Expected behaviour:** The script rejects it before any request — `tracking number must be numeric`. Carrier tracking numbers are numeric; a non-numeric value is a data-entry error, not a carrier error, and must not be sent to the API.
+
+**Failure signs:** Sending the malformed number to the API; treating the carrier's 4xx as the validation path.
+
+## 8. Reconcile with `--strict`. What changes?
+
+**Prompt:** "Reconcile with `--strict`. What changes?"
+
+**Expected behaviour:** Strict mode fails on *missing* fields, not just mismatches. If either the label or the Ottili record lacks `cost`, `status` or `trackingNumber`, the report is non-ok (exit 1). Without `--strict`, missing fields are skipped. Use strict mode for audit-grade reconciliation.
+
+**Failure signs:** Treating strict mode as a retry flag; returning ok when a field is absent.
+
+## 9. Hermes has no public sandbox. How do we test?
+
+**Prompt:** "Hermes has no public sandbox. How do we test the integration?"
+
+**Expected behaviour:** Dry-run the request envelope with `label_create.py --carrier hermes --ref ORD-1` (no network). Verify the idempotency field is `correlationId` and it is embedded in the body, not a header. The Hermes endpoint contract is unverified (403 at retrieval) — flag it as a prerequisite for a business-account holder.
+
+**Failure signs:** Skipping the idempotency check for Hermes; assuming a sandbox exists; hardcoding the Hermes endpoint.
