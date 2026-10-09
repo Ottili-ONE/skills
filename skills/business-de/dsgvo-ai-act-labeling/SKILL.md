@@ -99,6 +99,12 @@ systems, or member-state-specific law beyond the EU baseline.
 - "BDSG doesn't apply to us" → member-state additions are unverified until
   local counsel confirms.
 
+
+## Related skills
+
+- [gobd-archive](../gobd-archive/) — retention for processing-register entries and human-review evidence
+- [webhooks-safe](../webhooks-safe/) — webhook payloads may carry personal data subject to Art. 30
+
 ## References
 
 - [Procedures, worked examples and AI Act summaries](references/procedures.md)

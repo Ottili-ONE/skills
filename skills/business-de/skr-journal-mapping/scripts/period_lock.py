@@ -28,7 +28,7 @@ def load_state(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--period", required=True, help="YYYYMM")
+    ap.add_argument("--period", required=True, help="YYYYMM or YYYY-MM")
     ap.add_argument("--action", required=True,
                     choices=["lock", "status", "override", "unlock"])
     ap.add_argument("--approver", default="")
@@ -38,7 +38,7 @@ def main():
     args = ap.parse_args()
 
     if not PERIOD_RE.match(args.period):
-        print(json.dumps({"ok": False, "error": "period must be YYYYMM"},
+        print(json.dumps({"ok": False, "error": "period must be YYYYMM or YYYY-MM"},
                          indent=2, ensure_ascii=False))
         return 1
 

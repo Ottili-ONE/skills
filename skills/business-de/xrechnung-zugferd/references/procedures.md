@@ -1,7 +1,7 @@
 # Procedures — xrechnung-zugferd
 
 All versions are read from `config/versions.json`. Never hardcode a version in this
-file or in scripts. The standard moves ~twice a year; re-verify on every bump.
+file or in scripts.
 
 ## 1. Classify the document
 
@@ -23,6 +23,7 @@ if p.suffix.lower() == '.xml':
     head = p.read_bytes()[:2048]
     print('XML-only' if b'CrossIndustryInvoice' in head else 'other-xml')
 elif p.suffix.lower() == '.pdf':
+    # crude check: PDF/A-3 carries /EmbeddedFiles
     data = p.read_bytes()
     print('PDF/A-3 hybrid' if b'/EmbeddedFiles' in data else 'PDF-only')
 else:
@@ -30,19 +31,14 @@ else:
 PY
 ```
 
-**Near-miss trap:** a PDF/A-3 that embeds a *scan image* also carries
-`/EmbeddedFiles` (or none at all) — it is **not** hybrid. Only a PDF/A-3 with a
-`factur-x.xml` / `zugferd.xml` structured attachment is a ZUGFeRD invoice. The
-validator's `classification` field distinguishes `hybrid` from `pdf-only`.
-
 ## 2. Pin versions (never hardcode)
 
 ```bash
 python3 -c "import json;print(json.load(open('config/versions.json'))['xrechnung-zugferd'])"
 ```
 
-Re-verification cadence: on every spec/validator bump, re-validate the archive
-sample and append a dated entry to `references/SOURCES.md`.
+Re-verification cadence: on every spec/validator bump, re-validate the archive sample
+and append a dated entry to `references/SOURCES.md`.
 
 ## 3. Profile selection
 
@@ -56,9 +52,6 @@ sample and append a dated entry to `references/SOURCES.md`.
 
 Default for B2B: **COMFORT**.
 
-Run `python3 scripts/profile_selector.py --context B2B --data full --recipient
-factur-x` to get the recommendation plus the missing-fields list.
-
 ## 4. Validate
 
 Primary: KoSIT validator (tag `v2026-08-31`).
@@ -71,6 +64,23 @@ Typical hard errors:
 - BT-10 missing or malformed Leitweg-ID
 - BT-20 payment terms not parseable
 - Tax rate split missing for a rate present in the document
+
+## 4b. Element-scoped checks (BT-18 vs BT-20)
+
+Verified 2026-10-09 against the KoSIT `validator-configuration-xrechnung`
+`guidelines.json` (rule IDs + `cbc:` element names). The trap:
+
+- **BT-18** = `PaymentAllowedAccountID` — the bank account (IBAN, e.g.
+  `DE89370400440532013000`).
+- **BT-20** = `PaymentTerms` — free text with an amount and a due date, e.g.
+  `net 30, 2% discount within 10 days`.
+- Some UBL exports give both the same local name `PaymentTerms`. A naive
+  "does the document contain an IBAN?" check then passes BT-18 because BT-20's
+  text happens to contain digits, and a Leitweg-ID (`DE...`) passes BT-18's
+  IBAN-shaped regex.
+
+Fix: extract each rule's element text **by tag**, then test the regex on that
+text only. `scripts/validate_invoice.py` does this via `_element_text()`.
 
 ## 5. Business rules
 
@@ -91,6 +101,37 @@ Record in the retention log:
  "export_test": "passed", "validated": "2026-10-08"}
 ```
 
+## 6b. Worked examples
+
+### Good — COMFORT invoice
+
+```xml
+<CrossIndustryInvoice>
+  <cbc:IssueDate>2026-06-02</cbc:IssueDate>            <!-- BT-14 -->
+  <cbc:EndpointID schemeID="0154">DE12345678901234</cbc:EndpointID>  <!-- BT-10 -->
+  <cbc:PaymentTerms>net 30, 2% within 10 days</cbc:PaymentTerms>        <!-- BT-20 -->
+  <cbc:PaymentDueDate>20260702</cbc:PaymentDueDate>                    <!-- BT-17 -->
+  <cbc:PaymentAllowedAccountID>DE89370400440532013000</cbc:PaymentAllowedAccountID>  <!-- BT-18 -->
+  <cbc:TaxAmount currencyID="EUR">228.00</cbc:TaxAmount>               <!-- BT-19 -->
+</CrossIndustryInvoice>
+```
+
+`scripts/validate_invoice.py` reports `ok: true, errors: []`.
+
+### Bad — BT-18/BT-20 swapped
+
+```xml
+<CrossIndustryInvoice>
+  <cbc:IssueDate>2026-06-02</cbc:IssueDate>
+  <cbc:EndpointID schemeID="0154">DE12345678901234</cbc:EndpointID>
+  <cbc:PaymentTerms>IBAN DE89370400440532013000</cbc:PaymentTerms>  <!-- BT-20 holds an IBAN -->
+</CrossIndustryInvoice>
+```
+
+A whole-document regex passes BT-18 (IBAN found anywhere). Element-scoped
+checking correctly reports `BT-18 content invalid` because the
+`PaymentAllowedAccountID` element is missing.
+
 ## 7. Re-verification
 
 On any spec/validator bump:
@@ -100,38 +141,3 @@ python3 scripts/retention_check.py --archive ./archive --config config/versions.
 ```
 
 Append a dated entry to `references/SOURCES.md` recording the run.
-
-## Worked examples
-
-### Good output — valid COMFORT invoice (XML-only)
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
-  <IssueDate>2026-06-02</IssueDate>          <!-- BT-14 -->
-  <LeitwegID>DE12345678901234</LeitwegID>     <!-- BT-10 -->
-  <PaymentTerms>net 30</PaymentTerms>          <!-- BT-20 -->
-  <PaymentDueDate>2026-07-02</PaymentDueDate>  <!-- BT-17 -->
-</CrossIndustryInvoice>
-```
-
-`python3 scripts/validate_invoice.py inv.xml` → `ok: true, errors: []`.
-
-### Bad output — missing BT-14 and BT-10
-
-```xml
-<CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
-</CrossIndustryInvoice>
-```
-
-Validator → `ok: false`, errors: `BT-14 missing`, `BT-10 missing`,
-`BT-20 missing`. All three are blocking; the invoice cannot be archived until
-fixed.
-
-### Bad output — print-to-PDF "archive"
-
-A `print-to-PDF` copy of an e-invoice is **not** a valid archive artefact: it
-loses the structured XML and therefore the document is no longer machine
-readable. Keep the original XML or the original PDF/A-3 with the embedded
-`factur-x.xml`. The retention log must record the SHA-256 of the *original*,
-not of the print copy.

@@ -114,6 +114,11 @@ providers whose signature scheme is unknown.
 - "PayPal/Twilio use the same scheme as GitHub" → unverified; flag it.
 - "I'll skip the atomic check for speed" → a race processes the event twice.
 
+
+## Related skills
+
+- [gobd-archive](../gobd-archive/) — retention for webhook delivery and dedupe state
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)

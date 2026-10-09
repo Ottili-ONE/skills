@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-"""The 125-column DATEV Buchungsstapel heading row (Formatversion 13).
-
-Copied verbatim from DATEV's Musterdaten as corroborated by
-seamless-engineering/datev-extf src/columns.ts (EXTF_AS_OF 2026-09-25,
-fetched 2026-10-09). DATEV's importer reads columns by position, so this list
-is the authoritative column catalogue for the offline validator and the
-fixture generators. If DATEV changes the heading row, the validator warns
-rather than errors.
-
-1-based position == index + 1. Column 97 (index 96) is the USt-Schluessel
-(Anzahlungen); column 125 (index 124) is "Abw. Skontokonto".
-"""
-
 HEADING_ROW = [
     "Umsatz (ohne Soll/Haben-Kz)",
     "Soll/Haben-Kennzeichen",
@@ -20,8 +6,8 @@ HEADING_ROW = [
     "Basis-Umsatz",
     "WKZ Basis-Umsatz",
     "Konto",
-    "Gegenkonto (ohne BU-Schluessel)",
-    "BU-Schluessel",
+    "Gegenkonto (ohne BU-Schlüssel)",
+    "BU-Schlüssel",
     "Belegdatum",
     "Belegfeld 1",
     "Belegfeld 2",
@@ -74,31 +60,31 @@ HEADING_ROW = [
     "Zusatzinformation- Inhalt 6",
     "Zusatzinformation - Art 7",
     "Zusatzinformation- Inhalt 7",
+    "Zusatzinformation - Art 8",
     "Zusatzinformation- Inhalt 8",
-    "Zusatzinformation- Inhalt 8",
+    "Zusatzinformation - Art 9",
     "Zusatzinformation- Inhalt 9",
-    "Zusatzinformation- Inhalt 9",
-    "Zusatzinformation- Art 10",
+    "Zusatzinformation - Art 10",
     "Zusatzinformation- Inhalt 10",
-    "Zusatzinformation- Art 11",
+    "Zusatzinformation - Art 11",
     "Zusatzinformation- Inhalt 11",
-    "Zusatzinformation- Art 12",
+    "Zusatzinformation - Art 12",
     "Zusatzinformation- Inhalt 12",
-    "Zusatzinformation- Art 13",
+    "Zusatzinformation - Art 13",
     "Zusatzinformation- Inhalt 13",
-    "Zusatzinformation- Art 14",
+    "Zusatzinformation - Art 14",
     "Zusatzinformation- Inhalt 14",
-    "Zusatzinformation- Art 15",
+    "Zusatzinformation - Art 15",
     "Zusatzinformation- Inhalt 15",
-    "Zusatzinformation- Art 16",
+    "Zusatzinformation - Art 16",
     "Zusatzinformation- Inhalt 16",
-    "Zusatzinformation- Art 17",
+    "Zusatzinformation - Art 17",
     "Zusatzinformation- Inhalt 17",
-    "Zusatzinformation- Art 18",
+    "Zusatzinformation - Art 18",
     "Zusatzinformation- Inhalt 18",
-    "Zusatzinformation- Art 19",
+    "Zusatzinformation - Art 19",
     "Zusatzinformation- Inhalt 19",
-    "Zusatzinformation- Art 20",
+    "Zusatzinformation - Art 20",
     "Zusatzinformation- Inhalt 20",
     "Stück",
     "Gewicht",
@@ -119,7 +105,7 @@ HEADING_ROW = [
     "KOST-Datum",
     "SEPA-Mandatsreferenz",
     "Skontosperre",
-    "Gellschaftername",
+    "Gesellschaftername",
     "Beteiligtennummer",
     "Identifikationsnummer",
     "Zeichnernummer",

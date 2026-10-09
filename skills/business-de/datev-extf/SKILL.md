@@ -27,24 +27,35 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 
 ## Procedure
 
-1. **Identify the export type** — single booking (Einzelnachweis), booking stack
-   (Buchungsstapel), or full ledger export (Saldenliste/Kontenrahmen). The
-   Buchungsstapel is the common integration target.
+1. **Identify the export type** — Buchungsstapel (code 21, 125 columns) is
+   the common integration target. The other EXTF categories are Debitoren/
+   Kreditoren (code 16, per the DEBKRED spec) and Kontenbeschriftungen
+   (code 20, account labels). Header-level checks apply to every category;
+   category-specific checks do not. Say explicitly when a file is not a
+   Buchungsstapel instead of running Buchungsstapel rules against it.
 2. **Build the EXTF header** — the header is line 1 of the CSV, 31 mandatory
    fields. Key fields: Kennzeichen (must be `EXTF`), Versionsnummer (must be
    `700`), Formatkategorie (must be `21` for Buchungsstapel), Formatname
    (must be `Buchungsstapel`), Formatversion (must be `13`), Erzeugt am
-   (Erstellungsdatum YYYYMMDD), Herkunft, Exportiert von, Importiert von,
+   Erzeugt am (17 digits YYYYMMDDHHMMSS000), Herkunft, Exportiert von, Importiert von,
    Beraternummer, Mandantennummer, WJ-Beginn, Sachkontenlaenge, Datum vom,
    Datum bis, Bezeichnung, Diktatkuerzel, Festschreibung, WKZ,
    Sachkontenrahmen, Anwendungsinformation. Pin the schema version in config;
    never hardcode.
-3. **Assemble the Buchungsstapel** — one CSV envelope per file; each booking line
-   has: Buchungstext, Betrag (amount, comma decimal), Konto (account), Kst (cost
-   center), Steuerschlüssel (tax key), MwSt (VAT), Belegdatum, Buchungsdatum.
-   Validate every field against the EXTF schema.
-4. **Validate** — run the EXTF schema validation (XSD or the DATEV SDK validator).
-   Treat every schema error as blocking; map each error code to a fix.
+3. **Assemble the Buchungsstapel** — one CSV envelope per file: line 1 is the
+   31-field header, line 2 is the 125-column heading row, lines 3+ are booking
+   rows of 125 columns each. Per-row mandatory cells: col 1 Umsatz (comma
+   decimal, e.g. `12,50`), col 2 Soll/Haben-Kennzeichen (`S` or `H`), col 7
+   Konto (fits Sachkontenlaenge), col 9 BU-Schlüssel (**forbidden on
+   Automatikkonten**), col 10 Belegdatum (**TTMM**, day+month, 4 digits — the
+   year comes from the header, never the row), col 14 Buchungstext, col 37
+   KOST1, **col 97 USt-Schlüssel (Anzahlungen)** — the tax key, col 103 Buchungs
+   GUID. Column numbers are 1-based DATEV positions; list indices in code are
+   one less.
+4. **Validate** — run `scripts/validate_extf.py` on the produced file. Every
+   **error** is blocking; warnings must be documented, not suppressed. Map each
+   error code to a fix — never guess (see the error table in
+   `references/procedures.md` §5).
 5. **Handle validation errors** — common errors: missing Steuerschlüssel, invalid
    account number (plausibility check), wrong amount format (dot instead of
    comma), wrong date format (missing leading zero), duplicate Belegnummer.
@@ -53,7 +64,9 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
    deliberately broken one for negative testing. Fixtures must be deterministic
    and runnable offline.
 7. **Export for audit** — produce a complete, chronological, checksummed export
-   covering the retention period, with a manifest.
+   covering the retention period, with a manifest (MANIFEST.json), not a raw DB
+   dump. Produce it with `scripts/audit_export.py --source ./archive --output
+   ./export --year <WJ> --verify`.
 
 ## Decision tables
 
@@ -66,13 +79,16 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | Formatkategorie (field 3) | "21" = Buchungsstapel | yes |
 | Formatname (field 4) | "Buchungsstapel" | yes |
 | Formatversion (field 5) | "13" | yes |
-| Erzeugt am (field 6) | YYYYMMDD | yes |
+| Erzeugt am (field 6) | 17 digits YYYYMMDDHHMMSS000 | yes |
 | Herkunft (field 8) | sender id | yes |
 | Beraternummer (field 11) | advisor number | yes |
 | Mandantennummer (field 12) | client number | yes |
 | WJ-Beginn (field 13) | fiscal year start YYYYMMDD | yes |
-| Sachkontenlaenge (field 14) | account length | yes |
-| Datum vom/bis (fields 15-16) | from/to YYYYMMDD | yes |
+| Sachkontenlaenge (field 14) | account length, **4-8** (default 4) | yes |
+| Datum vom/bis (fields 15-16) | from/to YYYYMMDD, same WJ, from <= to | yes |
+| Beraternummer (field 11) | 4-7 digits, >= 1001 | yes |
+| Mandantennummer (field 12) | 1-5 digits, >= 1 | yes |
+| WKZ (field 22) | 3 uppercase letters if present | yes |
 | Bezeichnung (field 17) | label | yes |
 | Sachkontenrahmen (field 27) | SKR (03/04) | yes |
 
@@ -87,10 +103,11 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | 7 | Konto | account number | must fit Sachkontenlaenge |
 | 8 | Gegenkonto | contra account | omit BU-Schlüssel here |
 | 9 | BU-Schlüssel | business unit key | **forbidden on Automatikkonten** |
-| 10 | Belegdatum | voucher date | YYYYMMDD with leading zeros |
+| 10 | Belegdatum | voucher date | **TTMM** (day+month, 4 digits, e.g. `0206` for 2 June); the year comes from the header, not the row |
 | 14 | Buchungstext | booking text | quoted |
 | 35 | KOST1 - Kostenstelle | cost center | optional |
-| 125 | Buchungs GUID | booking GUID | optional |
+| 97 | USt-Schlüssel (Anzahlungen) | tax key, required |
+| 103 | Buchungs GUID | booking GUID, optional |
 
 Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 
@@ -98,7 +115,7 @@ Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 
 - Amounts use a **comma** decimal separator (12,50); a dot (12.50) is a hard
   error in DATEV's Prüfprogramm.
-- Belegdatum must be YYYYMMDD **with leading zeros** (02.06.2026, not 2.6.26).
+- Belegdatum is **TTMM** (day+month, 4 digits, zero-padded, e.g. `0206` for 2 June). The year is taken from the header (WJ-Beginn / Datum vom), never from the row. A 5+ digit value or a swapped day/month is a hard error. Verified 2026-10-09 against seamless-engineering/datev-extf (Belegdatum as day and month).
 - Automatikkonten (ledger accounts 1000-1999 in SKR 03) do not accept a
   BU-Schlüssel (business unit key) — adding one is a hard error.
 - Account numbers must not exceed Sachkontenlaenge; too-long account numbers
@@ -107,18 +124,52 @@ Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
   (Versionsnummer 700 / Formatversion 13) is marked "unverified until DATEV
   confirms" via the Prüfprogramm and must be re-verified on every integration
   test run.
+- **The Steuerschlüssel is column 97, not column 125.** Verified 2026-10-09
+  against `seamless-engineering/datev-extf src/columns.ts`: col 97 =
+  "USt-Schlüssel (Anzahlungen)" (the tax key), col 125 = "Abw. Skontokonto".
+  Writing the key at index 124 makes DATEV read it as "Abw. Skontokonto" and
+  silently drop the real tax key — the import proceeds with no Steuerschlüssel.
+  `fixture_generator.py` and `build_stapel.py` previously wrote it at index 124;
+  corrected 2026-10-09.
 
 ## Verification checklist
 
 - [ ] Export type identified (Buchungsstapel / Debitoren / Kreditoren)
 - [ ] Header fields complete and version pinned from config
 - [ ] Amounts use comma decimal separator
-- [ ] Dates are YYYYMMDD with leading zeros
+- [ ] Belegdatum is 4-digit TTMM (day+month) with leading zeros
+- [ ] Erzeugt am is 17 digits (YYYYMMDDHHMMSS000)
+- [ ] WJ-Beginn parses; Datum vom/bis inside the WJ, same year, from <= to
+- [ ] Sachkontenlaenge is 4-8; account numbers fit it
+- [ ] Beraternummer (4-7 digits, >= 1001) and Mandantennummer (>= 1) valid
 - [ ] No BU-Schlüssel on Automatikkonten
-- [ ] Account numbers fit Sachkontenlaenge
 - [ ] Validator returns 0 errors (all errors blocking)
 - [ ] Test fixtures generated (valid + broken)
 - [ ] Audit export is chronological, checksummed, with a manifest
+
+## Datenservices (other Formatkategorien)
+
+The Buchungsstapel (code 21) is the common integration target. DATEV also
+ships these other exports through the same EXTF envelope — the identical
+31-field header, but a different category code, name, version and column
+count:
+
+| Code | Name | Ver. | What | Cols |
+|---|---|---|---|---|
+| 21 | Buchungsstapel | 13 | booking rows | 125 |
+| 16 | Debitoren/Kreditoren | 5 | customer/supplier master data | see DEBKRED spec |
+| 20 | Kontenbeschriftungen | 1 | account labels | see spec |
+
+Header-level checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
+Sachkontenlaenge, Berater, Mandant) apply to **every** category. The
+category-specific checks (code/name/version, column count, row rules) do
+**not**. When a file is not a Buchungsstapel, say so explicitly instead of
+running Buchungsstapel rules against it.
+
+
+## Related skills
+
+- [gobd-archive](../gobd-archive/) — retention and immutability for exported booking stacks
 
 ## References
 

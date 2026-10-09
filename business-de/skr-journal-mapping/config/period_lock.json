@@ -1,0 +1,18 @@
+{
+  "period": "2026-12",
+  "locked": true,
+  "locked_at": "2026-10-09",
+  "locked_by": "agent",
+  "reason": "year-end close",
+  "approved_by": "M. Braun",
+  "evidence": "business-de/skr-journal-mapping/tests/test_journal_check.py",
+  "overrides": [
+    {
+      "at": "2026-10-09",
+      "by": "agent",
+      "reason": "correcting entry",
+      "evidence": "business-de/skr-journal-mapping/tests/test_journal_check.py"
+    }
+  ],
+  "unlocked_at": "2026-10-09"
+}

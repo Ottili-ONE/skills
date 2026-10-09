@@ -1,30 +1,26 @@
-# SOURCES: bank-reconciliation-camt
-Retrieval date: 2026-10-07. All URLs fetched with `curl` on 2026-10-07 unless noted otherwise.
-Version-sensitive facts pinned in config; never hardcoded in logic (R3 rule).
-Re-verify against the respective standards bodies before each build (ISO 20022 maintenance cycle ~March/September).
-Conflicts between sources noted at end of each section; secondary claims treated as unverified until primary source confirmed.
+# bank-reconciliation-camt — SOURCES
 
-## Versions verified (pinned, nothing hardcoded)
-- ISO 20022 CAMT.053 (Statement of Accounts) — version 13 (2023-09-15) current as of 2026-10-07.
-  Re-verify against iso20022.org before each build; version 14 expected ~2026-09.
-- ISO 20022 CAMT.052 (Transaction Status) — version 07 (2023-09-15) current as of 2026-10-07.
-- SWIFT MT940 (Customer Statement) — version 9 (2023-09-15) current as of 2026-10-07.
-- SEPA Instant Credit Transfer (SCT Inst) — Regulation (EU) 2017/754, current as of 2026-10-07.
+Retrieval date: 2026-10-09. Every URL below was re-fetched on that date;
+the HTTP status is recorded per row.
 
-## Primary sources
-1. ISO 20022 CAMT.053 specification — https://www.iso20022.org/iso20022/message-definitons — retrieved 2026-10-07. Authoritative definition of the statement XML schema, mandatory fields and grouping rules; the only primary source for field names and message structure. Access requires registration; pin the exact version date in config.
-2. ISO 20022 CAMT.052 specification — https://www.iso20022.org/iso20022/message-definitons — retrieved 2026-10-07. Defines the per-transaction status report used to detect duplicates and reversals.
-3. SWIFT MT940 specification — https://www.swift.com/standards — retrieved 2026-10-07. Defines the fixed-field structure of MT940 records (tag 61, 86, etc.) and the German convention for Buchungsschluessel in field 32a.
-4. Deutsche Bundesbank / EPC SEPA Instant — https://www.epc-cep.eu/ — retrieved 2026-10-07. Defines the SCT Inst rulebook, the 24x7x365 availability and the maximum execution time (10s) that drives the skill's timeout handling.
-5. DKH (Deutsche Kreditwirtschaft) — https://www.deutsche-kreditwirtschaft.de/ — retrieved 2026-10-07. Defines the German bank-account numbering convention (Kontonummer 10 digits, Bankleitzahl 8 digits) used in matching heuristics.
-6. BaFin circular 11/2020 (IT subprocesses) — https://www.bafin.de/ — retrieved 2026-10-07. Defines the security requirements for processing bank statement data; relevant when the skill runs in a hosted environment.
+| # | Source | URL | Retrieved | Verified version | Notes |
+|---|---|---|---|---|---|
+| 1 | Wikipedia — Camt-Format (de) | https://de.wikipedia.org/wiki/Camt-Format | 2026-10-09 | last edited 2025 | **200 OK**. Confirms: camt.053 replaces MT940, camt.052 replaces MT942, camt.054 replaces MT900/910; SEPA mandatory since 2014; SWIFT Nov 2025 closed the MT→ISO 20022 migration for cross-border payments, **no fixed deprecation for MT940 reporting**; EBICS transmission per DFÜ-Abkommen Anlage 3. **Lists the current message version as `camt.053.001.08`** — this is the namespace used in this skill. |
+| 2 | Wikipedia — MT940 (en) | https://en.wikipedia.org/wiki/MT940 | 2026-10-09 | last edited 2025-05-16 | **200 OK**. Confirms MT940 is the SWIFT standard for end-of-day account statements; long-term replacement by ISO 20022. |
+| 3 | ISO 20022 — camt.053 | https://www.iso20022.org/camt.053 | 2026-10-09 | — | **403 (access-restricted)**. The message definition is cited from the de.wikipedia Camt-Format article and the DFÜ-Abkommen. |
+| 4 | SWIFT — standards | https://www.swift.com/standards | 2026-10-09 | — | **403 (access-restricted)**. |
+| 5 | Bundesbank — MT940 | https://www.bundesbank.de/en/service/mt940 | 2026-10-09 | — | **404 at retrieval (re-confirmed)**. |
+| 6 | Wikipedia — EBICS (de) | https://de.wikipedia.org/wiki/EBICS | 2026-10-09 | last edited 2025 | **200 OK**. Confirms EBICS is the German standard for encrypted file transfer to banks and that the DFÜ-Abkommen Anlage 3 defines the message set — the legal basis for transmitting camt.053/MT940 over EBICS. |
+| 7 | R3_VERIFIED_FACTS.md | ../ottili-planning/inputs/R3_VERIFIED_FACTS.md | 2026-10-06 | — | starting point, re-verified 2026-10-09. |
 
-## Secondary sources (cross-check only)
-- Bankenverband (Bundesverband deutscher Banken) FAQ on CAMT.053 migration — used only to cross-check the primary catalogue; any conflict is recorded below.
-- Community parsers (e.g. python-banking libraries) — used only as test fixtures, never as authority.
+**Re-verification note (2026-10-09):** the camt.053 namespace was
+re-verified against the de.wikipedia article, which lists `camt.053.001.08`
+as the current BankToCustomerStatement version. The procedures.md previously
+carried `.008.01`, which is an older draft — corrected this pass. The
+iso20022.org and swift.com pages remain access-restricted (403); the
+namespace and field model are taken from the de.wikipedia article and the
+DFÜ-Abkommen. Re-fetch before audit.
 
-## Conflicts and open questions
-- **MT940 vs CAMT.053 field overlap**: some German banks encode the Buchungsschluessel in MT940 field 32a but not in CAMT.053. The skill therefore treats the key as optional in CAMT.053 and mandatory in MT940; do not treat them as interchangeable.
-- **Duplicate detection window**: primary sources define "duplicate" only as identical transaction reference; secondary sources suggest a 5-day amount+reference window. The skill uses the strict primary definition and treats the 5-day window as a configurable heuristic, disabled by default.
-- **No public version page for MT940**: the SWIFT standards site is access-gated. Pin the confirmed version in config and mark it "unverified until SWIFT confirms".
-- **Bundesbank IBAN validation**: the official IBAN-Prüfzahlenberechnung is published by the Deutsche Bundesbank; agents must use that algorithm, not a generic IBAN mod-97 check, because German IBANs carry a country-specific check-digit rule.
+**Conflict note:** no conflicts among the 200-OK sources. The ISO/SWIFT/Bundesbank
+pages were unreachable this pass; the camt.053 namespace and field model are
+taken from the de.wikipedia article and the DFÜ-Abkommen.

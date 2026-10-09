@@ -63,3 +63,47 @@ Record SHA-256, retrieval path and an export test in the retention log.
 
 **Failure signs:** Archiving a print-to-PDF; computing 7 years; omitting the
 checksum; failing to record the export test.
+
+
+## 6. The IBAN is in the PaymentTerms element
+**Prompt:** "Our invoice has `<PaymentTerms>IBAN DE89370400440532013000</PaymentTerms>` and
+`<PaymentAllowedAccountID>` is missing. The validator says BT-18 is invalid — is
+the validator wrong?"
+
+**Expected behaviour:** No, the validator is right. BT-18 is
+`PaymentAllowedAccountID` (the bank account) and BT-20 is `PaymentTerms` (free
+text). Scoping the check to the element's own text — not the whole document — is
+what makes this correct: the IBAN sits in BT-20, so BT-18 is genuinely missing.
+A whole-document IBAN regex would false-pass because BT-10's Leitweg-ID
+(`DE...`) also matches it. Verified 2026-10-09 against the KoSIT
+`validator-configuration-xrechnung guidelines.json`. Give the fix: move the IBAN
+into `<cbc:PaymentAllowedAccountID>` and put real payment terms in
+`<cbc:PaymentTerms>`.
+
+**Failure signs:** Saying the validator is wrong; running a whole-document IBAN
+regex; claiming BT-18 and BT-20 are the same field; failing to distinguish
+`PaymentAllowedAccountID` from `PaymentTerms`.
+
+
+## Near-miss triggers
+
+### N1. "The invoice has a Leitweg-ID, so BT-18 is fine"
+**Trap:** BT-18 is the **payment account (IBAN)**, not the Leitweg-ID. A
+whole-document IBAN regex passes because BT-10's `DE...` value matches it.
+Scope every check to the element's own text (see `references/procedures.md`
+§4b). Verified 2026-10-09 against the KoSIT `guidelines.json`.
+
+### N2. "BT-20 is the payment account"
+**Trap:** BT-20 is **payment terms** (free text). BT-18 is the account. Some
+UBL exports give both the same local name `PaymentTerms`; key by rule id and
+require distinct content.
+
+### N3. "Archive the print-to-PDF copy"
+**Trap:** a print-to-PDF loses the structured XML attachment and is **not** a
+valid archive artefact. Keep the original (XML or PDF/A-3 with embedded XML)
+and record its SHA-256.
+
+### N4. "Retention is 7 years"
+**Trap:** BEG IV / AO §147 gives vouchers **8 years from year-end** (a 2026
+invoice -> 2034-12-31), effective 2025-01-01. The old "10 years for
+everything" applies only to vouchers whose retention started before 2025.

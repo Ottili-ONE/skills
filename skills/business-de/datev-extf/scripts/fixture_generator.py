@@ -14,9 +14,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"
 from common import load_config  # noqa: E402
 
 
+# Line 2 of a DATEV Buchungsstapel: the 125-column heading row, copied
+# verbatim from DATEV's Musterdaten (Formatversion 13) as corroborated by
+# seamless-engineering/datev-extf src/columns.ts (EXTF_AS_OF 2026-09-25).
+# The full list lives in heading_row.py; this module imports it.
+from heading_row import HEADING_ROW  # noqa: E402
+
+
 def header(label):
     return [
-        "EXTF", "700", "21", "Buchungsstapel", "13", "20261008",
+        "EXTF", "700", "21", "Buchungsstapel", "13", "20261008000000000",
         "", "", "", "", "29098", "55003", "20260101", "4",
         "20260601", "20260630", label, "", "1", "EUR", "", "", "",
         "03", "", "", "", "", "", "", "",
@@ -30,7 +37,13 @@ def booking(amount, side, account, beleg, text):
     row[6] = account
     row[9] = beleg
     row[13] = text
-    row[124] = "19"
+    # col 97 (index 96) = "USt-Schlüssel (Anzahlungen)" — the tax key.
+    # Verified 2026-10-09 against seamless-engineering/datev-extf
+    # src/columns.ts BUCHUNGSSTAPEL_COLUMNS (EXTF_AS_OF 2026-09-25).
+    # col 125 is "Abw. Skontokonto", NOT the tax key — an earlier draft
+    # put the Steuerschlüssel at index 124, which DATEV would read as
+    # "Abw. Skontokonto" and silently drop the real tax key.
+    row[96] = "19"
     return row
 
 
@@ -51,12 +64,14 @@ def main() -> int:
     with valid_path.open("w", encoding="cp1252", newline="") as fh:
         w = csv.writer(fh, delimiter=";")
         w.writerow(header("Fixture 06/2026"))
-        w.writerow(booking("1200", "S", "4000", "20260601", "Netto+19%"))
-        w.writerow(booking("500", "S", "4200", "20260602", "Netto+7%"))
+        w.writerow(HEADING_ROW)
+        w.writerow(booking("1200", "S", "4000", "0206", "Netto+19%"))
+        w.writerow(booking("500", "S", "4200", "0306", "Netto+7%"))
 
     with broken_path.open("w", encoding="cp1252", newline="") as fh:
         w = csv.writer(fh, delimiter=";")
         w.writerow(header("Fixture-broken 06/2026"))
+        w.writerow(HEADING_ROW)
         # dot instead of comma, and a malformed Belegdatum
         w.writerow(booking("12.50", "S", "4000", "2026601", "Netto+19%"))
 

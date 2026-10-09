@@ -105,6 +105,11 @@ scrapers — every carrier here has an official API and a contract.
 - "GLS/Hermes have no sandbox, skip testing" → dry-run the envelope instead.
 - "The tracking number looks odd" → reject non-numeric before any request.
 
+
+## Related skills
+
+- [gobd-archive](../gobd-archive/) — retention for label and tracking records (8y vouchers)
+
 ## References
 
 - [Procedures, worked examples and carrier API summaries](references/procedures.md)

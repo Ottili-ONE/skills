@@ -16,29 +16,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"
 from common import load_config  # noqa: E402
 
 # Default Steuerschluessel per account, per Kontenrahmen.
-# Rates themselves come from config; this table only maps account -> rate key.
 ACCOUNT_TAX_KEYS = {
-    "04": {
-        "4000": "19", "4100": "00", "4200": "00", "4300": "07",
-        "8000": "19", "8100": "19", "8200": "19", "8300": "07",
-        "8400": "00", "8600": "19", "8900": "19",
-    },
-    "03": {
-        "4000": "19", "4100": "00", "4200": "00", "4300": "07",
-        "8000": "19", "8100": "19", "8200": "19", "8300": "07",
-        "8400": "00", "8600": "19", "8900": "19",
-    },
-}
-
-# Automatikkonten (AM-Konten) per SKR; a BU-Schluessel other than "40" on
-# these is rejected or double-counted by DATEV.
-AUTOMATIC_ACCOUNTS = {
-    "03": {"8120", "8125", "8300", "8310", "8315", "8336", "8338", "8400", "8449"},
-    "04": {"4120", "4125", "4300", "4310", "4315", "4336", "4338", "4400", "4449"},
+    "04": {"4000": "19", "4100": "00", "4200": "00", "4300": "07",
+           "8000": "19", "8100": "19", "8200": "19", "8300": "07",
+           "8400": "00", "8600": "19", "8900": "19"},
+    "03": {"4000": "19", "4100": "00", "4200": "00", "4300": "07",
+           "8000": "19", "8100": "19", "8200": "19", "8300": "07",
+           "8400": "00", "8600": "19", "8900": "19"},
 }
 
 
-def main() -> int:
+def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--account", required=True, help="SKR account number")
     ap.add_argument("--skr", default="04", choices=["03", "04"])
@@ -53,22 +41,17 @@ def main() -> int:
     skr = args.skr
 
     if account not in ACCOUNT_TAX_KEYS.get(skr, {}):
-        print(json.dumps({"ok": False, "error": f"unknown account {account} in SKR{skr}"},
+        print(json.dumps({"ok": False, "error": "unknown account %s in SKR%s" % (account, skr)},
                          indent=2, ensure_ascii=False))
         return 1
 
     key = ACCOUNT_TAX_KEYS[skr][account]
     key_to_rate = {
-        str(rates["standard"]): rates["standard"],
-        str(rates["reduced"]): rates["reduced"],
-        str(rates["zero"]): rates["zero"],
-        "07": rates["reduced"],
-        "00": rates["zero"],
-        "19": rates["standard"],
+        "19": rates["standard"], "07": rates["reduced"], "00": rates["zero"],
     }
     rate = key_to_rate.get(key)
     if rate is None:
-        print(json.dumps({"ok": False, "error": f"tax key {key} not in config rates"},
+        print(json.dumps({"ok": False, "error": "tax key %s not in config rates" % key},
                          indent=2, ensure_ascii=False))
         return 1
 
@@ -78,16 +61,15 @@ def main() -> int:
         rate = rates["zero"]
         override = "intra-EU override applied (0%)"
     elif args.intra_eu and key == "00":
-        override = "already 0% (intra-EU/export) — no override needed"
+        override = "already 0% (intra-EU/export) - no override needed"
 
     result = {
         "ok": True,
-        "kontenrahmen": f"SKR{skr}",
+        "kontenrahmen": "SKR%s" % skr,
         "account": account,
         "default_tax_key": key,
         "rate_percent": rate,
         "rates_from_config": rates,
-        "is_automatikkonto": account in AUTOMATIC_ACCOUNTS.get(skr, set()),
         "override": override,
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))

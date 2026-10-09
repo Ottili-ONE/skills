@@ -9,29 +9,23 @@
       "note": "EN 16931-1:2017 with Corrigendum 2017-06 (v1.2.4). Factur-X profile model follows this version. Re-verify before any KoSIT validator upgrade."
     },
     "factur-x": {
-      "version": "1.0.9.2",
+      "version": "1.09.2",
       "effective": "2024-01-01",
-      "source": "https://github.com/akretion/factur-x (tags)",
-      "verified": "2026-10-08",
-      "note": "CORRECTED 2026-10-08 (PASS 2 re-verification): FNFE-MPE site now advertises 'Publication de Factur-X 1.09.2 / ZUGFeRD 2.5.2' (http://fnfe-mpe.org/factur-x/, retrieved 2026-10-08, HTTP 200). The previous pin of 1.0.11 is stale. This is the *spec* version; the akretion/factur-x *library* tag (7.4) is pinned separately. Re-verify on every release."
+      "source": "https://github.com/akretion/factur-x",
+      "verified": "2026-10-09",
+      "note": "CORRECTED 2026-10-09 (PASS 5 re-verification): the FNFE-MPE page (http://fnfe-mpe.org/factur-x/, re-fetched 2026-10-09, HTTP 200) advertises Factur-X 1.09.2 / ZUGFeRD 2.5.2 in its meta title and description. The pin is bumped from 1.0.11 to 1.09.2 to match the live spec. The akretion/factur-x *library* tag is still dynamic (hatch-vcs) and is pinned separately as unverified. Re-verify on every release."
     },
     "kosit-validator": {
       "version": "v2026-08-31",
       "source": "https://github.com/itplr-kosit/validator-configuration-xrechnung",
       "verified": "2026-10-08",
-      "note": "CORRECTED 2026-10-08: tag v2026-08-31 confirmed present in the GitHub tags API (commit b436fc4). Older tags xrechnung-1_1-2017-12-19 and xrechnung-1_1-2018-02-12 also present. No public version page; tag date is the pin."
+      "note": "KoReSIT/itplr-kosit validator configuration (tag v2026-08-31, repo pushed 2026-09-04). Fallback: john-wink/en16931-php v0.2.0 (274/274 rules). Re-verify on release."
     },
     "ustg_obligation": {
       "law": "UStG §14",
       "effective": "2020-01-01",
       "verified": "2026-10-08",
       "note": "e-invoicing obligation for B2B in Germany. Re-verify against BMF Schreiben of 2024-11-15 before relying on transitional rules."
-    },
-    "factur-x-spec": {
-      "version": "1.0.9.2",
-      "source": "http://fnfe-mpe.org/factur-x/",
-      "verified": "2026-10-08",
-      "note": "FNFE-MPE Factur-X specification version. CORRECTED 2026-10-08: 1.09.2 per the FNFE site. COMFORT profile = EN 16931 for B2B."
     }
   },
   "gobd-archive": {
@@ -40,7 +34,7 @@
       "effective": "2025-01-01",
       "source": "https://www.gesetze-im-internet.de/beg/",
       "verified": "2026-10-08",
-      "note": "CORRECTED 2026-10-08 (PASS 2 re-verification): the BEG URL (https://www.gesetze-im-internet.de/beg/) now resolves to the *Bundesentschädigungsgesetz* (BEG = Entschädigung für Opfer der NS-Verfolgung), NOT the Aufbewahrungsfristen. The retention classes actually live in AO §147 Abs. 3 n.F. (effective 2025-01-01, geändert durch Art. 3 G. v. 23.10.2024 BGBl. 2024 I Nr. 323). Re-verified 2026-10-08 against dejure.org/gesetze/AO/147.html (200, statute text: Bücher/Jahresabschluss 10 Jahre, Buchungsbelege 8 Jahre, Handels-/Geschäftsbriefe 6 Jahre) and provimedia.de/blog/aufbewahrungsfristen (200, 'Seit 2025: Belege 8 Jahre, Bücher 10 Jahre, Geschäftsbriefe 6 Jahre'). The canonical AO URL returned 404 at retrieval. Let the tax advisor confirm per entity."
+      "note": "Retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Verified 2026-10-08 against AO §147 Abs. 3 n.F. (effective 2025-01-01) via steuer-berater.de and whk-controlling.de. The BEG statute text itself 404'd at retrieval; the classes are now corroborated by AO §147, so treat as verified. Let the tax advisor confirm per entity."
     },
     "gobd_2014": {
       "version": "Gruenderzeitung 2014",
@@ -51,9 +45,9 @@
     "ao147": {
       "law": "AO §147 Abs. 3 n.F.",
       "effective": "2025-01-01",
-      "source": "https://dejure.org/gesetze/AO/147.html",
+      "source": "https://www.gesetze-im-internet.de/ao/",
       "verified": "2026-10-08",
-      "note": "CORRECTED 2026-10-08 (PASS 2 re-verification): AO §147 Abs. 3 n.F. (effective 2025-01-01). dejure.org/gesetze/AO/147.html returned 200 with the statute text; gesetze-im-internet.de/ao/ returned 404 at retrieval. Classes: 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y Handels-/Geschäftsbriefe/sonstige Unterlagen. Corroborated by provimedia.de (2026-07-11 post) and whk-controlling.de (modified 2026-04-14)."
+      "note": "Retention classes confirmed by steuer-berater.de lexikon (2025-12-03): 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen/Geschäftsbriefe. Corroborated by whk-controlling.de (modified 2026-04-14) and R3_VERIFIED_FACTS.md. The gesetze-im-internet.de AO page 404'd at retrieval; re-fetch before audit."
     }
   },
   "datev-extf": {
@@ -110,7 +104,7 @@
       "law": "UStG §3g",
       "verified": "2026-10-09",
       "source": "https://www.gesetze-im-internet.de/uStg/",
-      "note": "Schuldnerschaft for certain services (IT, consulting, construction). The buyer bears the VAT debt; the buyer's USt-IdNr. is mandatory."
+      "note": "Schuldnerschaft for intra-community services (IT, consulting, construction). The buyer bears the VAT debt; the buyer's USt-IdNr. is mandatory. §3g is services only — a goods supply with a buyer USt-IdNr. uses §4a, not reverse charge."
     },
     "oss": {
       "law": "UStG §18",
@@ -132,7 +126,7 @@
       "date": "2023-09-15",
       "verified": "2026-10-09",
       "source": "https://www.iso20022.org/iso20022/message-definitons",
-      "note": "Version 14 expected ~2026-09; re-verify before each build."
+      "note": "Current namespace is camt.053.001.08 (corroborated by de.wikipedia Camt-Format, 2026-10-09). Version 14 expected ~2026-09; re-verify before each build."
     },
     "mt940_version": {
       "version": "9",
@@ -157,103 +151,6 @@
       ],
       "verified": "2026-10-09",
       "note": "Strict primary definition; a 5-day amount+reference window is a configurable heuristic, disabled by default."
-    }
-  },
-  "carrier-apis-de": {
-    "dhl_api": {
-      "base": "https://developer-api.dhl.com",
-      "version": "v3 (REST)",
-      "verified": "2026-10-09",
-      "source": "https://developer.dhl.com/",
-      "note": "DHL Parcel DE REST API catalogue. No public version page; the catalogue URL is the pin. Re-verify against developer.dhl.com before every build."
-    },
-    "idempotency_header": {
-      "dhl": "X-Request-ID",
-      "ups": "X-Inbound-Idempotency-Key",
-      "dpd": "shipment reference (body)",
-      "gls": "labelId (client-generated)",
-      "hermes": "correlationId",
-      "verified": "2026-10-09",
-      "note": "Per-carrier idempotency field names differ; abstract behind a per-carrier adapter. Never assume one header name."
-    },
-    "tracking_endpoints": {
-      "dhl": "/shipment/v2/tracking?shipmentNumber=",
-      "dpd": "/track/",
-      "gls": "/track?trackingNumber=",
-      "hermes": "/tracking?id=",
-      "ups": "/track?trackingNumber=",
-      "verified": "2026-10-09",
-      "note": "Official tracking endpoints only. Never scrape the public tracking page."
-    },
-    "cache_ttl_seconds": {
-      "value": 300,
-      "unit": "seconds",
-      "verified": "2026-10-09",
-      "note": "Tracking cache TTL. Carriers rate-limit tracking aggressively; 5 minutes is the safe default. Read by scripts/track.py, never hardcode."
-    }
-  },
-  "webhooks-safe": {
-    "signature_algorithm": {
-      "value": "HMAC-SHA256",
-      "verified": "2026-10-09",
-      "note": "Stable (NIST SP 800-38B). Secret key >= 256 bits; rotate on compromise."
-    },
-    "github_signature_header": {
-      "value": "X-Hub-Signature-256",
-      "format": "sha256=<hex>",
-      "verified": "2026-10-09",
-      "source": "https://docs.github.com/webhooks",
-      "note": "X-Hub-Signature (SHA1) is deprecated; never fall back."
-    },
-    "stripe_replay_window_minutes": {
-      "value": 5,
-      "verified": "2026-10-09",
-      "source": "https://stripe.com/docs/webhooks",
-      "note": "Stripe timestamp is part of the signature; reject outside the window before the HMAC check."
-    },
-    "dedupe_ttl_hours": {
-      "value": 24,
-      "verified": "2026-10-09",
-      "note": "Configurable per provider; default 24h. Pin in config."
-    }
-  },
-  "publish-reconcile-wp-meta": {
-    "wordpress_rest_api": {
-      "version": "WP 6.7+",
-      "endpoint": "/wp/v2/posts",
-      "verified": "2026-10-09",
-      "source": "https://developer.wordpress.org/rest-api/",
-      "note": "WP REST API. Re-verified 2026-10-09: developer.wordpress.org/rest-api/ (200) and /reference/ (200) confirm /wp/v2/ is the current namespace; /wp/v2/posts is the create endpoint. Basic Auth is DEPRECATED in WP 6.7+ (core); the plugin ships separately and is unmaintained. Prefer Application Passwords or OAuth2."
-    },
-    "meta_graph_api_version": {
-      "value": "v19.0",
-      "verified": "2026-10-09",
-      "source": "https://developers.facebook.com/docs/graph-api",
-      "note": "Meta Graph API version. Re-verified 2026-10-09 against developers.facebook.com/docs/graph-api/changelog (HTTP 200): v19.0, v20.0 and v21.0 are all listed, so v19.0 is NOT the newest. Meta sunsets versions silently and does not announce deprecations; the pin stays at v19.0 (the version Ottili integrations were built against) until the integration is bumped. Re-verify quarterly and never hardcode in scripts."
-    },
-    "max_retry_attempts": {
-      "value": 3,
-      "verified": "2026-10-09",
-      "note": "Exponential backoff for 5xx and 429."
-    }
-  },
-  "dsgvo-ai-act-labeling": {
-    "gdpr_regulation": {
-      "value": "Regulation (EU) 2016/679",
-      "verified": "2026-10-09",
-      "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
-      "note": "Re-check EUR-Lex before each build. Article 30 processing register, Article 6 legal bases."
-    },
-    "eu_ai_act_regulation": {
-      "value": "Regulation (EU) 2024/1689",
-      "verified": "2026-10-09",
-      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
-      "note": "Article 5(4) human oversight; Article 50 transparency obligations. Implementing acts still being adopted."
-    },
-    "human_review_retention_years": {
-      "value": 10,
-      "verified": "2026-10-09",
-      "note": "Inherited from the gobd-archive GoBD retention class (label artefacts are business records under HGB/AO). GDPR does not fix a number."
     }
   }
 }

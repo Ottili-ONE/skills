@@ -94,6 +94,12 @@ general CMS logic, non-WordPress platforms, or non-Meta social platforms.
 - "v19.0 is the current Meta version" → v20.0 and v21.0 already exist.
 - "The first response is authoritative" → re-query both platforms.
 
+
+## Related skills
+
+- [webhooks-safe](../webhooks-safe/) — outbound delivery targets are validated against the same allow-list
+- [gobd-archive](../gobd-archive/) — retention for publish records and idempotency keys
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)

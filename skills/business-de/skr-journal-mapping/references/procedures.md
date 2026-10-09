@@ -1,78 +1,75 @@
-# Procedures — skr-journal-mapping
+# skr-journal-mapping — procedures and worked examples
 
-All versions are read from `config/versions.json`. Never hardcode a version in
-this file or in scripts. The SKR account list is a stable standard; the
-tax-key *rates* change with UStG amendments and are read from config.
+Retrieval date: 2026-10-09. Version-sensitive facts are pinned in
+`config/versions.json`; re-verify before relying on a fact.
 
-## 1. Pin the Kontenrahmen
+## 1. Account set selection
 
-| Kontenrahmen | Entity | Default in config |
+| Entity type | Account set | Notes |
 |---|---|---|
-| SKR04 | GmbH | `skr-journal-mapping.kontenrahmen` |
-| SKR03 | GmbH & Co. KG | alternative; pin explicitly |
+| GmbH, large | SKR04 | ~260 accounts, 1xxx assets, 2xxx liabilities, 4xxx income/expense, 8xxx equity/tax |
+| GmbH, small | SKR03 | 93 accounts; 1xxx assets differ from SKR04 |
+| Einzelunternehmen / GbR | SKR03 | common default |
+| KG / large | SKR04 | |
 
-The account list is stable; the tax keys are not. Re-verify against
-DATEV/IDR before each build.
+SKR03 and SKR04 are **not** mixable. A journal that uses account 1200
+(SKR03: Bank) and account 1570 (SKR04: USt) in the same file is invalid.
 
-## 2. Map account to tax key
+## 2. Line classification
 
-Read rates from `config/versions.json` -> `skr-journal-mapping.ust_rates_2026`:
+1. Is the line an **asset** (1xxx)? — bank, receivables, equipment.
+2. Is it a **liability** (2xxx)? — liabilities, tax accounts.
+3. Is it **income/expense** (4xxx/5xxx)? — revenue, cost accounts.
+4. Is it **tax/equity** (8xxx)? — USt accounts, retained earnings.
 
-| Rate | Law | Use |
-|---|---|---|
-| 19% | UStG §12 Abs. 1 | standard rate, domestic sales |
-| 7% | UStG §12 Abs. 2 | reduced rate |
-| 0% | UStG §4 Nr. 1, §6 | intra-EU, exports |
+## 3. Tax keys (Steuerschlüssel)
 
-Every account has a *default* tax key; the transaction context can override it
-(intra-EU customer => 0%). The override is a decision, not a silent fallback.
+| Key | Rate | Meaning | Source |
+|---|---|---|---|
+| 19 | 19% | Standard rate (domestic) | UStG §12 Abs. 1 |
+| 7 | 7% | Reduced rate | UStG §12 Abs. 2 |
+| 16/1 | 16%/1% | Legacy (pre-2020, old rate) | historical, do not use |
+| 06/0 | 0% | Intra-EU supply (B2B), Steuerverrechnung | UStG §4a, MwStSimplification |
+| 09/0 | 0% | Internal service / intercompany | DATEV Steuerkennzeichen |
+| 13/0 | 19% split | Installment (Soll/IST) | UStG §13 Abs. 1 Nr. 1 Buchung |
 
-## 3. Generate a journal entry
+**Pitfall:** key 16/1 must not be used for new postings. The 2020 rate cut
+moved standard from 16% to 19% and reduced from 7% to 5%; any journal still
+using 16/1 is a legacy artefact.
 
-A journal entry has five mandatory fields:
+## 4. Automatic journal generation
 
-| Field | Meaning | Rule |
-|---|---|---|
-| Konto | account number | fits Sachkontenlaenge |
-| Betrag | amount | comma decimal, EUR |
-| Steuerschluessel | tax key | 19 / 07 / 00 |
-| Belegdatum | voucher date | YYYYMMDD with leading zeros |
-| Buchungsdatum | booking date | YYYYMMDD, >= Belegdatum |
-
-Bad example (tax key guessed, not mapped):
-
+For a domestic B2B sale of goods (19%):
 ```
-Konto 4000, Betrag 1.200,00, Steuerschluessel 19   <- rate hardcoded
+S  1200  Bank              119.00  19
+H   8000  Revenue           100.00  19
+H   1570  USt                19.00  19
 ```
+Sum debit = sum credit = 119.00. The tax line (1570 in SKR04, 1571 in SKR03)
+carries the same tax key as the revenue line.
 
-Good example (rate read from config, override documented):
-
+**Bad example** — tax line missing:
 ```
-Konto 4100, Betrag 1.200,00, Steuerschluessel 00, reason=intra-EU
+S  1200  Bank              119.00  19
+H   8000  Revenue           100.00  19
 ```
+This fails the USt-Anmeldung plausibility check: the tax account has no
+amount, so the tax declaration and the journal disagree.
 
-## 4. Lock a period
+## 5. Period lock (Monatsschluss)
 
-A period lock is a technical enforcement with three parts:
+1. Close all postings for the period.
+2. Set the Monatsschluss flag in the ledger.
+3. Block further postings (per Buchungsstapel: no new Zeilen with that
+   Mandant/Monat/Jahr).
+4. Run `scripts/period_lock_check.py`.
+5. Only then run the USt-Anmeldung for that period.
 
-1. Set the lock flag for the period (e.g. `2026-12`).
-2. Record the approval (who, when, why).
-3. Block further bookings until an override with documented evidence.
+**Pitfall:** posting a corrective entry after the lock without an explicit
+unlock + re-lock cycle breaks the plausibility check and the GoBD
+"nachträgliche Änderungen" rule.
 
-Never treat the lock as a policy statement — enforce it in code.
+## 6. Verification
 
-## 5. Reconcile
-
-Compare generated journals against source invoices. A mismatch is a
-**blocking error** until a human reviewer resolves it with documented evidence
-of review. Common causes of a tax-key mismatch:
-
-- reduced-rate item mapped to a standard-rate account
-- wrong account mapping (SKR03 vs SKR04 overlap)
-- wrong Steuerschluessel on the source invoice
-- intra-EU transaction charged at 19%
-
-## 6. Retain
-
-Keep the journal and its source invoices for 8 years (vouchers) / 10 years
-(books) per AO §147 Abs. 3 n.F. Record checksum and retrieval path.
+Run `scripts/journal_check.py <journal.json>` — exits 0 on balance and
+valid tax keys, 2 otherwise.

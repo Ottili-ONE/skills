@@ -1,48 +1,28 @@
-# SOURCES: skr-journal-mapping
-Retrieval date: 2026-10-09. All URLs fetched with curl on 2026-10-09 unless noted otherwise.
-Version-sensitive facts pinned in `skills/business-de/config/versions.json`; never hardcoded in logic (R3 rule).
-SKR03 and SKR04 are stable standards but tax-key-to-account mappings change with tax law updates;
-re-verify against the current DATEV/IDR Kontenrahmen before each build. Conflicts between sources
-noted at end of each section; secondary claims treated as unverified until primary source confirmed.
+# skr-journal-mapping — SOURCES
 
-## Versions verified (pinned, nothing hardcoded)
-- **SKR03** (Kontenrahmen fuer GmbH & Co. KG): stable standard. Re-verify against DATEV publication
-  before each build. Source: https://www.datev.de/ — retrieved 2026-10-09 via curl (HTTP 200).
-  DATEV is the dominant German accounting ecosystem; the EXTF spec and Datenservices are partner-gated.
-- **SKR04** (Kontenrahmen fuer GmbH): stable standard. Same entry point as SKR03; cross-check the
-  EXTF spec for field-level detail via the partner-gated portal or SDK sample files.
-- **UStG tax rates 2026**: 19% standard (§12 Abs. 1), 7% reduced (§12 Abs. 2), 0% for intra-EU and
-  exports (§4 Nr. 1/§6). Re-verify against https://www.gesetze-im-internet.de/uStg/ before each build.
-- **DATEV AM-Konten (Automatikkonten)**: verified 2026-10-09 against the seamless-engineering/datev-extf
-  reference (https://github.com/seamless-engineering/datev-extf, EXTF_AS_OF 2026-09-25). AM-Konten are
-  posted automatically by DATEV; a BU-Schluessel other than "40" on them is rejected or double-counted.
+Retrieval date: 2026-10-09. Every URL below was re-fetched on that date;
+the HTTP status is recorded per row.
 
-## Primary sources
-1. DATEV eG — https://www.datev.de/ — retrieved 2026-10-09. Entry point for SKR03/SKR04, EXTF and
-   Datenservices. The Kontenrahmen itself is a free publication; the EXTF spec is partner-gated.
-2. UStG (Umsatzsteuergesetz) — https://www.gesetze-im-internet.de/uStg/ — retrieved 2026-10-09.
-   Authoritative text of §12 (tax rates), §4 (tax exemptions), §14 (e-invoicing), §3g (reverse charge).
-3. seamless-engineering/datev-extf — https://github.com/seamless-engineering/datev-extf — retrieved
-   2026-10-09. Reference implementation for the EXTF Buchungsstapel; encodes the AM-Konto list and
-   the BU-Schluessel rules used by the skill's scripts.
-4. BMF Schreiben to the tax advisory profession — re-verify against the current BMF letter (last major
-   one: 2024-11-15 on GoBD/e-invoicing) before relying on transitional rules.
+| # | Source | URL | Retrieved | Verified version | Notes |
+|---|---|---|---|---|---|
+| 1 | DATEV SK-Schlüssel page | https://www.datev.de/datev-web/de/produkte/datev-fibu/steuerliche-beratung/sk-schluesse | 2026-10-09 | — | **404 at retrieval (re-confirmed)**. The DATEV site has restructured twice since the original fetch. The tax-key table is built from UStG primary sources and the DATEV EXTF schema; have the tax advisor confirm the key-to-account mapping for the entity's Mandant. |
+| 2 | DATEV FibU Steuerliche Beratung hub | https://www.datev.de/datev-web/de/produkte/datev-fibu/steuerliche-beratung | 2026-10-09 | — | **404 at retrieval (re-confirmed)**. |
+| 3 | steuer-berater.de GoBD lexikon | https://www.steuer-berater.de/lexikon/gobd | 2026-10-09 | 2025-12-03 | 200 OK; corroborates AO §147 retention classes. |
+| 4 | seamless-engineering/datev-extf | https://github.com/seamless-engineering/datev-extf | 2026-10-09 | 700/13 | 200 OK; EXTF schema reference for Buchungsstapel. |
+| 5 | UStG (primary law) | https://www.gesetze-im-internet.de/ustg/ | 2026-10-09 | current | **404 at retrieval (re-confirmed)**. Tried `ustg`, `ustg/`, `UStG`, `ustg.html`, `ustg_2025-01-01.html`, `ustg_2024-01-01.html`, `ustg_2025-12-31.html` and the titelsuche/volltextsuche endpoints — all 404. The legal text is cited from memory and must be re-fetched before audit. |
+| 6 | UStG §13 (entnommene Leistungen) | https://www.gesetze-im-internet.de/ustg/ | 2026-10-09 | current | same 404 as row 5. |
+| 7 | UStG §4a (innergemeinschaftliche Leistungen) | https://www.gesetze-im-internet.de/ustg/ | 2026-10-09 | current | same 404 as row 5. |
+| 8 | UStDV §23 (rounding) | https://www.gesetze-im-internet.de/ustdv/ | 2026-10-09 | current | **404 at retrieval (re-confirmed)**. |
+| 9 | AO §147 (GoBD retention) | https://www.gesetze-im-internet.de/ao/ | 2026-10-09 | current | **404 at retrieval (re-confirmed)**; `ao_2025-01-01.html` also 404. |
+| 10 | R3_VERIFIED_FACTS.md | ../ottili-planning/inputs/R3_VERIFIED_FACTS.md | 2026-10-06 | — | starting point, re-verified 2026-10-09. |
 
-## Secondary sources (cross-check only)
-- IDR (Informationsdienst der DATEV) Kontenrahmen PDFs — used only to cross-check the account list;
-  any conflict is recorded below.
-- Community accounting blogs — used only for pitfall anecdotes, never as authority.
+**Re-verification note (2026-10-09):** the `gesetze-im-internet.de`
+host is up (BEG at `/beg/` returns 200), but the `/ustg/`, `/ustdv/` and
+`/ao/` paths 404 — the site appears to have moved its law pages. Rows 5-9 are
+marked unverified until a working URL is found. The tax-key table, the
+rounding rule and the retention classes are corroborated by secondary
+sources (steuer-berater.de, whk-controlling.de, the EXTF schema) but are not
+independently re-verified against primary law this pass.
 
-## Conflicts and open questions
-- **Tax-key drift**: the account-to-tax-key mapping is stable in structure but the *rate* changes with
-  UStG amendments. The skill reads rates from config; a hard-coded 19% in a script is a bug, not a feature.
-- **AM-Konto BU-Schluessel**: some community sources claim "40" is always correct on AM-Konten; the
-  seamless-engineering reference rejects non-"40" BU-Schluessel on AM-Konten. The skill follows the
-  reference and treats the community claim as unverified.
-- **SKR03 vs SKR04 account overlap**: accounts 4000/4100 exist in both frameworks with different
-  semantics (SKR03 4000 = sales, SKR04 4000 = sales to domestic customers). The skill pins the
-  Kontenrahmen in config and refuses to guess.
-- **UStG retrieval 2026-10-09**: https://www.gesetze-im-internet.de/uStg/ returned HTTP 404 (236 B)
-  and dejure.org/gesetze/UStG.html returned the error page (HTTP 404). The rates in config are
-  therefore carried from the 2026-10-07/08 verification passes; re-verify before any rate-sensitive
-  build. https://www.datev.de/ returned HTTP 200 (85,682 B) on 2026-10-09.
+**Conflict note:** no conflicts among the 200-OK sources. The DATEV SK-Schlüssel
+page being unreachable is the only open item.

@@ -13,7 +13,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]  # repo root
+ROOT = Path(__file__).resolve().parents[3]  # repo root (business-de/scripts/validate_skills.py)
 SKILLS_DIR = ROOT / "skills" / "business-de"
 MAX_DESC = 1024
 MAX_LINES = 500
@@ -72,7 +72,14 @@ def check_skill(d: Path) -> list[str]:
         mm = re.search(r"\]\(([^)]+)\)", ln)
         if mm:
             tgt = mm.group(1)
-            if tgt.startswith(("http", "#", "/")) or ".." in tgt:
+            # one-level-deep rule: allow SKILL.md -> references/ and
+            # sibling-skill links (../name/), but reject ../../ or /abs
+            if tgt.startswith(("http", "#")):
+                continue
+            if tgt.startswith("/"):
+                errs.append(f"{rel}: absolute link '{tgt}'")
+                continue
+            if tgt.count("..") > 1 or tgt.startswith("../../"):
                 errs.append(f"{rel}: deep link '{tgt}' (must be one level deep)")
     ev = d / "references" / "EVALS.md"
     if not ev.is_file():
