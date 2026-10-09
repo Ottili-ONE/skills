@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WP = ROOT / "scripts" / "wp_publish.py"
 META = ROOT / "scripts" / "meta_publish.py"
 RECON = ROOT / "scripts" / "reconcile.py"
+IDSTORE = ROOT / "scripts" / "idempotency_store.py"
 
 
 def run(script, *args):
@@ -62,3 +63,43 @@ def test_reconcile_mismatch():
     assert r.returncode == 1, r.stderr
     deltas = json.loads(r.stdout)["deltas"]
     assert any(d["platform"] == "meta" for d in deltas)
+
+
+def test_idempotency_store_records_and_looks_up():
+    import tempfile, os
+    store = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
+    store.close()
+    r = run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress",
+            "--post-id", "42", "--store", store.name)
+    assert r.returncode == 0, r.stderr
+    r2 = run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress",
+             "--lookup", "--store", store.name)
+    os.unlink(store.name)
+    assert r2.returncode == 0, r2.stderr
+    data = json.loads(r2.stdout)
+    assert data["found"] is True
+    assert data["post_id"] == "42"
+
+
+def test_idempotency_store_lookup_miss():
+    import tempfile, os
+    store = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
+    store.close()
+    r = run(IDSTORE, "--key", "MISSING", "--platform", "wordpress",
+            "--lookup", "--store", store.name)
+    os.unlink(store.name)
+    assert r.returncode == 1, r.stderr
+    assert json.loads(r.stdout)["found"] is False
+
+
+def test_idempotency_store_append_only():
+    import tempfile, os
+    store = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
+    store.close()
+    run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress", "--post-id", "42",
+        "--store", store.name)
+    run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress", "--post-id", "43",
+        "--store", store.name)
+    lines = Path(store.name).read_text().splitlines()
+    os.unlink(store.name)
+    assert len(lines) == 2  # never mutated in place

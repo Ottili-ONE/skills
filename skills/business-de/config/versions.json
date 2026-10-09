@@ -223,13 +223,13 @@
       "endpoint": "/wp/v2/posts",
       "verified": "2026-10-09",
       "source": "https://developer.wordpress.org/rest-api/",
-      "note": "Basic Auth deprecated in WP 6.7+ (core); plugin ships separately and is unmaintained. Prefer Application Passwords or OAuth2."
+      "note": "WP REST API. Re-verified 2026-10-09: developer.wordpress.org/rest-api/ (200) and /reference/ (200) confirm /wp/v2/ is the current namespace; /wp/v2/posts is the create endpoint. Basic Auth is DEPRECATED in WP 6.7+ (core); the plugin ships separately and is unmaintained. Prefer Application Passwords or OAuth2."
     },
     "meta_graph_api_version": {
       "value": "v19.0",
       "verified": "2026-10-09",
       "source": "https://developers.facebook.com/docs/graph-api",
-      "note": "Meta sunsets versions silently; pin the version and re-verify quarterly. Never hardcode in scripts."
+      "note": "Meta Graph API version. Re-verified 2026-10-09 against developers.facebook.com/docs/graph-api/changelog (HTTP 200): v19.0, v20.0 and v21.0 are all listed, so v19.0 is NOT the newest. Meta sunsets versions silently and does not announce deprecations; the pin stays at v19.0 (the version Ottili integrations were built against) until the integration is bumped. Re-verify quarterly and never hardcode in scripts."
     },
     "max_retry_attempts": {
       "value": 3,

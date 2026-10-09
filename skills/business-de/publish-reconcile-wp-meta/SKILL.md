@@ -16,22 +16,25 @@ Ottili flows: create or update a post, handle API errors, and reconcile when
 the result is unknown. Do **not** use it for general CMS logic, non-WordPress
 platforms, or non-Meta social platforms.
 
-## Procedure
+## Procedure (numbered, in order)
 
-1. **Idempotent publish.** Every publish call carries a client-generated
-   idempotency key. On a duplicate key, return the existing post id — never
-   create a second.
-2. **WordPress path.** Use the WP REST API (Application Passwords or OAuth2;
-   Basic Auth is deprecated in WP 6.7+) with the `/wp/v2/posts` endpoint.
-3. **Meta path.** Use the Meta Graph API with a page access token via the
-   `/{page-id}/feed` endpoint.
+1. **Check the idempotency store first.** Before every publish, look up the
+   client-generated key in the store. If it exists, return the stored post
+   id — never create a second post.
+2. **Publish to the platform.** WordPress via `/wp/v2/posts` (Application
+   Passwords or OAuth2; Basic Auth is deprecated in WP 6.7+). Meta via
+   `/{page-id}/feed` on the pinned Graph API version.
+3. **Store the mapping.** On success, append the key → post id mapping to the
+   append-only store. Never mutate an entry in place.
 4. **Handle errors.** Treat 4xx as blocking (except 409, which means
-   conflict/duplicate). Retry 5xx with exponential backoff up to 3 attempts.
+   conflict/duplicate → re-query by key). Retry 5xx with exponential backoff
+   up to 3 attempts (base 500 ms, factor 2, cap 30 s).
 5. **Reconcile unknown results.** If the response is ambiguous (timeout,
-   partial success), re-query both APIs by idempotency key and log the delta
-   between WP and Meta states.
-6. **Log.** Record every publish attempt with the idempotency key, target
-   platform and outcome.
+   partial success), re-query both APIs by idempotency key, compare state,
+   log the delta. Persistent mismatch → flag for human review, never silently
+   overwrite.
+6. **SSRF-safe delivery.** Publish only to the configured WP/Meta endpoints;
+   never publish to arbitrary hosts.
 
 ## Decision tables
 
@@ -59,11 +62,12 @@ platforms, or non-Meta social platforms.
 - **POST is not idempotent by HTTP semantics.** Idempotency must be enforced
   server-side via a client-provided key. Neither WP nor Meta natively
   supports idempotency keys — the skill must implement it in the
-  reconciliation layer.
+  reconciliation layer (the `idempotency_store.py` helper).
 - **WordPress Basic Auth is deprecated** in WP 6.7+ (core); the plugin ships
   separately and is unmaintained. Prefer Application Passwords or OAuth2.
-- **Meta sunsets API versions silently.** v19.0 is current but Meta does not
-  announce deprecations. Pin the version in config and re-verify quarterly.
+- **Meta sunsets API versions silently.** v19.0 is pinned but v20.0 and v21.0
+  are already listed in the changelog (re-verified 2026-10-09) — do not assume
+  v19.0 is the newest. Re-verify quarterly.
 - **Never assume the first response is authoritative.** Neither API
   guarantees exactly-once delivery; re-query both platforms by the client
   idempotency key and compare state.
@@ -72,13 +76,21 @@ platforms, or non-Meta social platforms.
 
 ## Verification checklist
 
-- [ ] Idempotency key present and client-generated
+- [ ] Idempotency key looked up in the store before every publish
 - [ ] Duplicate key returns the existing post id (or 409 → re-query)
 - [ ] WP uses Application Passwords or OAuth2 (not deprecated Basic Auth)
 - [ ] Meta uses a page access token, pinned version
 - [ ] 4xx treated as blocking (except 409); 5xx retried with backoff
 - [ ] Unknown results re-queried by idempotency key; delta logged
 - [ ] Publish target validated against the configured endpoints
+- [ ] Idempotency store is append-only; no in-place mutation
+
+## Near-miss triggers (stop and re-read)
+
+- "I'll just POST again" → check the idempotency store first.
+- "Basic Auth is fine, it's just a plugin" → deprecated in WP 6.7+ core.
+- "v19.0 is the current Meta version" → v20.0 and v21.0 already exist.
+- "The first response is authoritative" → re-query both platforms.
 
 ## References
 
