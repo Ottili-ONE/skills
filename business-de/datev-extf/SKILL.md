@@ -93,7 +93,7 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | 10 | Belegdatum | voucher date | **TTMM** (day+month, 4 digits, e.g. `0206` for 2 June); the year comes from the header, not the row |
 | 14 | Buchungstext | booking text | quoted |
 | 35 | KOST1 - Kostenstelle | cost center | optional |
-| 97 | USt-Schlüssel (Anzahlungen) | tax key per rate | mandatory |
+| 97 | USt-Schlüssel (Anzahlungen) | tax key per rate | **mandatory** |
 | 103 | Buchungs GUID | booking GUID | optional |
 
 Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
@@ -136,21 +136,22 @@ Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 
 ## Datenservices (other Formatkategorien)
 
-The Buchungsstapel (category 21) is the common integration target. DATEV also
-ships these via the same EXTF envelope — same 31-field header, different
-Formatkategorie/Formatname/Formatversion and a different column count:
+The Buchungsstapel (code 21) is the common integration target. DATEV also
+ships these other exports through the same EXTF envelope — the identical
+31-field header, but a different category code, name, version and column
+count:
 
-| Formatkategorie | Formatname | Formatversion | Content | Column count |
+| Code | Name | Ver. | Content | Columns |
 |---|---|---|---|---|
 | 21 | Buchungsstapel | 13 | booking rows | 125 |
 | 16 | Debitoren/Kreditoren | 5 | customer/supplier master data | per DEBKRED spec |
 | 20 | Kontenbeschriftungen | 1 | account labels | per spec |
 
-The shared header checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
-Sachkontenlaenge, Berater, Mandant) apply to every category. The
-category-specific checks (Formatkategorie/Formatname/Formatversion, column
-count, row rules) do not. When a file is not a Buchungsstapel, say so
-explicitly rather than running Buchungsstapel rules against it.
+Header-level checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
+Sachkontenlaenge, Berater, Mandant) apply to **every** category. The
+category-specific checks (code/name/version, column count, row rules) do
+**not**. When a file is not a Buchungsstapel, say so explicitly instead of
+running Buchungsstapel rules against it.
 
 ## References
 
