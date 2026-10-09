@@ -59,3 +59,22 @@ post-process scores to force agreement. Re-author the rubric and re-measure on
 a held-out set.
 Failure signs: alpha < 0.6 with scores still reported; calibration measured on
 the set the rubric was tuned on.
+
+## E8 — detect drift in a re-used judge
+Prompt: "I calibrated this judge in March. It is October. Is it still valid?"
+Expected: Re-run the calibration set against the baseline. If the mean score
+moves by >0.3 or agreement drops by >0.1, re-calibrate or retire the judge.
+`scripts/calibrate_judge.py --rows calibration.jsonl --baseline march.jsonl`
+prints `FAIL: drift 0.42 > 0.30` and exits 1. Schedule the re-run weekly; never
+reuse a calibration older than the drift window.
+Failure signs: no baseline recorded; drift checked only once at build time; the
+judge ships without a re-check schedule.
+
+## E9 — record judge provenance in every report
+Prompt: "My report shows agreement 0.71. Is that enough?"
+Expected: No. The report must also record the judge model, the generator model
+and the hash of both prompts. Without provenance the agreement number cannot be
+reproduced or audited. `scripts/calibrate_judge.py --json report.json` writes all
+four fields; a report missing any of them is not auditable.
+Failure signs: report with agreement but no model names; no prompt hashes; the
+report cannot be reproduced from the recorded inputs.
