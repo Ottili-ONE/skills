@@ -29,6 +29,10 @@ ACCOUNT_TAX_KEYS = {
 
 VALID_SIDES = {"S", "H"}
 KEY_TO_RATE = {"19": "standard", "07": "reduced", "00": "zero"}
+# Valid SKR account ranges: assets (1xxx-2xxx), equity (3xxx),
+# revenue (4xxx-5xxx), other (8xxx). A journal may post to any of these.
+SKR_RANGES = [(1000, 1999), (2000, 2999), (3000, 3999),
+              (4000, 5999), (8000, 8999)]
 
 
 def validate_line(line, rates, skr):
@@ -39,8 +43,14 @@ def validate_line(line, rates, skr):
             return errors
     if line["side"] not in VALID_SIDES:
         errors.append("side must be S or H, got '%s'" % line["side"])
-    if line["account"] not in ACCOUNT_TAX_KEYS.get(skr, {}):
-        errors.append("account %s not in SKR%s" % (line["account"], skr))
+    try:
+        acct = int(line["account"])
+    except (TypeError, ValueError):
+        errors.append("account must be numeric, got '%s'" % line["account"])
+        acct = None
+    if acct is not None and not any(lo <= acct <= hi for lo, hi in SKR_RANGES):
+        errors.append("account %s outside SKR ranges 1xxx-3xxx/4xxx-5xxx/8xxx"
+                      % line["account"])
     beleg = str(line["belegdatum"])
     if len(beleg) != 8 or not beleg.isdigit():
         errors.append("belegdatum must be YYYYMMDD, got '%s'" % beleg)
@@ -73,10 +83,12 @@ def main():
         if errs:
             blocking.append({"index": i, "errors": errs, "line": line})
             continue
-        default_key = ACCOUNT_TAX_KEYS[args.skr][line["account"]]
+        default_key = ACCOUNT_TAX_KEYS[args.skr].get(line["account"])
         entry = {
             "konto": line["account"],
+            "account": line["account"],
             "betrag": line["amount"],
+            "amount": line["amount"],
             "seite": line["side"],
             "side": line["side"],
             "steuerschluessel": line["tax_key"],
@@ -86,7 +98,7 @@ def main():
                                       str(date.today().strftime("%Y%m%d"))),
             "buchungstext": line.get("text", ""),
         }
-        if line["tax_key"] != default_key:
+        if default_key is not None and line["tax_key"] != default_key:
             entry["tax_key_override"] = {
                 "default": default_key,
                 "used": line["tax_key"],
@@ -98,6 +110,7 @@ def main():
         "ok": len(blocking) == 0,
         "kontenrahmen": "SKR%s" % args.skr,
         "entries": entries,
+        "lines": entries,
         "blocking_errors": blocking,
         "rates_from_config": rates,
     }
