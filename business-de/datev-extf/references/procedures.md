@@ -16,7 +16,9 @@ DATEV does not publish a public version page.
 
 ## 2. Build the EXTF header (line 1, 31 fields)
 
-The header is a single semicolon-delimited row. Mandatory fields:
+The header is a single semicolon-delimited row. Mandatory fields. Verified
+2026-10-09 against seamless-engineering/datev-extf `src/extf.ts` (the rules
+DATEV itself does not publish publicly):
 
 | Pos | Field | Value |
 |---|---|---|
@@ -25,16 +27,22 @@ The header is a single semicolon-delimited row. Mandatory fields:
 | 3 | Formatkategorie | `21` |
 | 4 | Formatname | `Buchungsstapel` |
 | 5 | Formatversion | `13` |
-| 6 | Erzeugt am | YYYYMMDD |
-| 11 | Beraternummer | advisor number |
-| 12 | Mandantennummer | client number |
+| 6 | Erzeugt am | 17 digits YYYYMMDDHHMMSS000 |
+| 11 | Beraternummer | 4-7 digits, >= 1001 |
+| 12 | Mandantennummer | 1-5 digits, >= 1 |
 | 13 | WJ-Beginn | fiscal year start YYYYMMDD |
-| 14 | Sachkontenlaenge | account length (default 4) |
-| 15-16 | Datum vom/bis | booking period YYYYMMDD |
-| 17 | Bezeichnung | label |
+| 14 | Sachkontenlaenge | **4-8** (default 4) |
+| 15-16 | Datum vom/bis | booking period YYYYMMDD, same WJ, from <= to |
+| 17 | Bezeichning | label, <= 30 chars |
 | 21 | Festschreibung | `1` |
-| 22 | WKZ | `EUR` |
+| 22 | WKZ | `EUR` (3 uppercase letters if present) |
 | 27 | Sachkontenrahmen | `03` or `04` |
+
+**WJ arithmetic:** the fiscal year ends the day *before* the next WJ anniversary.
+For WJ-Beginn `20260101` the WJ end is `2026-12-31`, not `2026-01-01`. Datum
+vom/bis must lie inside that window. This is the check that catches a
+WJ-Beginn of `20260101` with Datum bis `20260630` — which is *correct* — and
+one with `20270630` — which is an error (`header-beyond-wj`).
 
 Line 2 is the 125-column heading row; lines 3+ are booking rows.
 
@@ -65,6 +73,35 @@ to a fix — never guess. The validator checks:
 - Belegdatum is exactly 4 digits TTMM (day+month, zero-padded); the year comes from the header (WJ-Beginn / Datum vom/bis), not from the row.
 - Erzeugt am (header field 6) is exactly 17 digits YYYYMMDDHHMMSS000.
 - Soll/Haben is `S` or `H`
+
+## 4b. Worked examples
+
+### Good — valid Buchungsstapel
+
+```
+EXTF;700;21;Buchungsstapel;13;20261009105214000;;;;;29098;55003;20260101;4;
+20260601;20260630;Shop 06/2026;;1;EUR;;;;03;;;;;;;
+Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;... (125 cols) ...
+12,50;S;;;;;4000;;;0206;;;Netto+19%;;;;...;;;19
+```
+
+`scripts/validate_extf.py` reports `ok: true, error_count: 0`.
+
+### Bad — WJ-Beginn inconsistent with the booking period
+
+```
+EXTF;...;20260101;4;20270601;20270630;...
+```
+
+The validator reports `header-beyond-wj` (Datum bis 2027-06-30 is outside the
+WJ that ends 2026-12-31). A common trap: keeping the WJ at the invoice year
+while the export period rolls into the next year.
+
+### Bad — Belegdatum year confusion
+
+Row `Belegdatum = 0206` with WJ-Beginn `20260101` means **2 June 2026**.
+The year is *never* in the row. Writing `20260602` there is a hard error
+(`belegdatum-format`: must be exactly 4 digits).
 
 ## 5. Handle validation errors
 

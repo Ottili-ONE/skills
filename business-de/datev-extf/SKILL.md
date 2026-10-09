@@ -71,8 +71,11 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | Beraternummer (field 11) | advisor number | yes |
 | Mandantennummer (field 12) | client number | yes |
 | WJ-Beginn (field 13) | fiscal year start YYYYMMDD | yes |
-| Sachkontenlaenge (field 14) | account length | yes |
-| Datum vom/bis (fields 15-16) | from/to YYYYMMDD | yes |
+| Sachkontenlaenge (field 14) | account length, **4-8** (default 4) | yes |
+| Datum vom/bis (fields 15-16) | from/to YYYYMMDD, same WJ, from <= to | yes |
+| Beraternummer (field 11) | 4-7 digits, >= 1001 | yes |
+| Mandantennummer (field 12) | 1-5 digits, >= 1 | yes |
+| WKZ (field 22) | 3 uppercase letters if present | yes |
 | Bezeichnung (field 17) | label | yes |
 | Sachkontenrahmen (field 27) | SKR (03/04) | yes |
 
@@ -115,11 +118,32 @@ Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 - [ ] Amounts use comma decimal separator
 - [ ] Belegdatum is 4-digit TTMM (day+month) with leading zeros
 - [ ] Erzeugt am is 17 digits (YYYYMMDDHHMMSS000)
+- [ ] WJ-Beginn parses; Datum vom/bis inside the WJ, same year, from <= to
+- [ ] Sachkontenlaenge is 4-8; account numbers fit it
+- [ ] Beraternummer (4-7 digits, >= 1001) and Mandantennummer (>= 1) valid
 - [ ] No BU-Schlüssel on Automatikkonten
-- [ ] Account numbers fit Sachkontenlaenge
 - [ ] Validator returns 0 errors (all errors blocking)
 - [ ] Test fixtures generated (valid + broken)
 - [ ] Audit export is chronological, checksummed, with a manifest
+
+## Datenservices (other Formatkategorien)
+
+The Buchungsstapel (category 21) is the common integration target. DATEV also
+ships these via the same EXTF envelope — same 31-field header, different
+Formatkategorie/Formatname/Formatversion and a different column count:
+
+| Formatkategorie | Formatname | Formatversion | Content | Column count |
+|---|---|---|---|---|
+| 21 | Buchungsstapel | 13 | booking rows | 125 |
+| 16 | Debitoren/Kreditoren | 5 | customer/supplier master data | per DEBKRED spec |
+| 20 | Saldenliste / Kontenrahmen | 1 | ledger balances / account master | per spec |
+| 21 | Einzelnachweis | 13 | single booking | 125 |
+
+The shared header checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
+Sachkontenlaenge, Berater, Mandant) apply to every category. The
+category-specific checks (Formatkategorie/Formatname/Formatversion, column
+count, row rules) do not. When a file is not a Buchungsstapel, say so
+explicitly rather than running Buchungsstapel rules against it.
 
 ## References
 
