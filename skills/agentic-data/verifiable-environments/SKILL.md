@@ -24,12 +24,15 @@ where the agent must not be able to game its own score.
    A verifier whose pass rate jumps by >20 points on an unmodified agent is
    suspect; re-derive thresholds on a held-out set.
 5. **Audit for reward hacking** — for every check, ask: can the agent reach this
-   outcome without doing the intended work? List the bypasses explicitly.
+   outcome without doing the intended work? Write every bypass into
+   `references/bypass-register.md` (direct / indirect / cosmetic, with severity).
+   A check with no entry is a FAIL.
 6. **Sandbox the agent's actions** — network off by default, filesystem scoped to a
    temp dir, no code execution that survives the run.
 7. **Verify the verifier** — run the same checks on a *broken* agent and on a
    *lazy* agent; the verifier must distinguish them. If both score 100%, the
-   verifier is broken.
+   verifier is broken. Also require the known-good agent to pass >=80%: checks
+   that are too strict are as useless as checks that are too loose.
 
 ## Decision tables
 - **Check type**: observable outcome > hidden state > process proxy. Never
@@ -38,9 +41,11 @@ where the agent must not be able to game its own score.
   time=bounded. Anything else is a leak.
 - **Pass-rate drift**: 0-5 points = noise; 6-20 = re-derive thresholds; >20 =
   verifier compromised, halt the run.
-- **Bypass severity**: direct (agent edits the check) = critical; indirect
-  (agent finds an unintended path) = high; cosmetic (agent reorders output) =
-  low.
+- **Bypass severity**: direct (agent edits the check/spec/harness) = critical;
+  indirect (agent finds an unintended path) = high; cosmetic (agent reorders
+  output) = low. Every check must have a written entry in the bypass register.
+- **Known-good pass rate**: >=80% required; below that the checks are too
+  strict and will reject correct agents.
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - A check passes on a deliberately broken agent -> the check is decorative.
@@ -48,6 +53,9 @@ where the agent must not be able to game its own score.
 - Pass rate 100% on every agent -> the checks have no discriminating power.
 - The agent can `curl` an internal service -> sandbox policy is wrong.
 - A check depends on wall-clock time -> flaky and gameable.
+- A check has no `spec_ref` pointing at the spec -> it was not derived from a spec.
+- A check has no bypass-register entry -> nobody has audited it.
+- Known-good agent passes <80% -> the checks are too strict, relax them.
 
 ## Pitfalls from research
 - P1: Verifiers that read the environment source are trivially reverse-engineered.
@@ -55,19 +63,25 @@ where the agent must not be able to game its own score.
 - P3: A verifier tuned until a known agent passes is overfit and will not transfer.
 - P4: Unbounded network or filesystem access lets an agent fetch the answer.
 - P5: Time-based checks are flaky; use deterministic completion signals.
+- P6: A check nobody has tried to game will be gamed later; the bypass register is
+  insurance, not paperwork.
 
 ## Verification checklist
 - [ ] Verifier written from a spec, not from the environment code.
+- [ ] Every check carries a `spec_ref` found in the spec text.
 - [ ] Every check is observable or justified as a hidden state check.
+- [ ] Every check has a bypass-register entry (direct/indirect/cosmetic).
 - [ ] Sandbox policy pinned: network=deny, fs=scoped, exec=allowlisted.
 - [ ] Pass rate calibrated on a known-good run and recorded.
 - [ ] Bypass list exists per check.
 - [ ] Broken and lazy agents score measurably below the good agent.
+- [ ] Known-good agent passes >=80%.
 - [ ] No check depends on wall-clock time.
 
 ## References
 - procedures: references/procedures.md
 - sandbox contract: references/sandbox-contract.md
+- bypass register: references/bypass-register.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/validate_skill.py
