@@ -37,12 +37,17 @@ currencies, or cash-counting tasks.
 
 ### Match priority
 
-| Priority | Key | When it wins |
+Match in this order; stop at the first rule that fires:
+
+| Step | Signal | Wins when |
 |---|---|---|
-| 1 | Amount exact + reference in ledger | unambiguous |
-| 2 | Amount exact + counterparty name | reference missing |
-| 3 | Amount ± tolerance + date within window | partial match |
-| 4 | Reference-only (no amount) | allocation by mandate |
+| 1 | amount exact + ledger reference | unambiguous |
+| 2 | amount exact + counterparty name | reference missing or free text |
+| 3 | amount within ±tolerance + date in window | partial match |
+| 4 | reference only | allocation by mandate/SEPA ID |
+
+Never allocate on amount alone when two open items share the amount. The
+full cascade with worked examples is in `references/procedures.md` §3.
 
 ### Duplicate detection
 
@@ -52,6 +57,15 @@ currencies, or cash-counting tasks.
 | Same reference (Verwendungszweck) | exact |
 | Same value date | same calendar day |
 | All three true | **duplicate** — block allocation |
+
+### Reason codes
+
+| Code | Use when |
+|---|---|
+| ROUNDING | difference under EUR 0.01 |
+| BANK_FEE | bank charge not in the ledger |
+| FX | currency conversion delta |
+| UNALLOCATED | entry with no open item, documented |
 
 ## Pitfalls from research
 
@@ -68,7 +82,7 @@ currencies, or cash-counting tasks.
 - A duplicate posting is **not** a rounding difference — block it and escalate
   to the bank.
 - Unallocated differences under EUR 0.01 are rounding; above that they need a
-  reason code.
+  reason code. Accepted codes: ROUNDING, BANK_FEE, FX, UNALLOCATED.
 
 ## Verification checklist
 

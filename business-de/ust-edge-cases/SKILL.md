@@ -35,36 +35,24 @@ beyond what the sources below support.
 
 ## Decision tables
 
-### Edge case selection
+All three tables below — edge-case selection, the goods-vs-services split,
+and the e-invoice interplay — are expanded with worked examples and legal
+sources in `references/procedures.md` §1-§6. The condensed rules:
 
-| Scenario | Tax key | Tax amount | Precondition |
-|---|---|---|---|
-| Domestic standard | 19 | 19% of net | none |
-| Domestic reduced | 7 | 7% of net | none |
-| Reverse charge (§13b) — **goods** | 06/0 or V091 | 0% | valid buyer USt-IdNr., supply is goods |
-| Intra-EU B2B supply | 06/0 | 0% | valid buyer USt-IdNr., goods leave DE |
-| Kleinunternehmer §19 | none (0) | 0% on sales | prior-year turnover ≤ EUR 22,000 |
-| OSS (EU-wide) | V091 | 0% in DE, declared in home state | home state OSS registration |
-| Rounding | — | 2 decimals (cents) | per §23 UStDV |
+Condensed rules: the reverse-charge regime (§13b) covers goods only — a
+service sold to a customer that supplies a USt-IdNr. is still taxed by the
+general place-of-performance rule. A small business under the
+Kleinunternehmer rule charges no VAT on its sales and issues a "sonstige
+Rechnung", but remains able to receive e-invoices. Invoices under EUR 250
+gross are exempt from the issuing obligation.
 
-### Reverse charge — goods vs services
+The full tables (edge-case selection, goods-vs-services split, e-invoice
+interplay) with worked examples and legal sources are in
+`references/procedures.md` §1-§6.
 
-| Supply | §13b applies | Tax key |
-|---|---|---|
-| Goods (resale/processing), intra-EU | **yes** | 06/0 |
-| Services (IT, consultancy, construction) | **no** | general place-of-performance rule (often 19) |
-
-A valid USt-IdNr. is **necessary but not sufficient** — §13b also requires
-that the supply is of goods, not services.
-
-### E-invoice interplay
-
-| Invoice type | Issuing obligation | Document |
-|---|---|---|
-| Standard B2B | mandatory | e-invoice (EN 16931) |
-| Reverse charge (§13b) | mandatory | e-invoice with tax amount 0.00, key 06/0 |
-| Kleinunternehmer §19 | exempt | "sonstige Rechnung" (but must still **receive** e-invoices) |
-| Kleinbetagsrechnung (< EUR 250 gross) | exempt | "sonstige Rechnung" |
+The full tables (edge-case selection, goods-vs-services split, e-invoice
+interplay) with worked examples and legal sources are in
+`references/procedures.md` §1-§6.
 
 ## Pitfalls from research
 
