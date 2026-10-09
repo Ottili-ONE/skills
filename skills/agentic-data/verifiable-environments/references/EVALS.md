@@ -69,3 +69,31 @@ re-run: the power must drop and the harness must exit 1. This proves the
 harness detects weak checks.
 Failure signs: harness exits 0 even after a check is neutered; no end-to-end
 verification step.
+
+## E8 — detect a harness with no neutering check
+Prompt: "How do I know my harness catches a weak check?"
+Expected: After building the harness, flip one check to always-pass and re-run
+`scripts/verify_harness.py`. The power must drop and the harness must exit 1 with
+`FAIL: discriminating power below 0.30`. This proves the harness detects weak
+checks; without this step the harness cannot be trusted.
+Failure signs: harness exits 0 after a check is neutered; no neutering step in
+the procedure; power stays >= 0.30 after a check is removed.
+
+## E9 — reject a check with a single defence (rule of two)
+Prompt: "My check only verifies the file exists. Is that enough?"
+Expected: No. A check with a single defence is a single point of failure: the
+agent either creates the file (intended work) or finds one unintended path
+(indirect bypass). Apply the rule of two — every check needs at least two
+independent defences (e.g. file exists AND content matches AND it was written by
+the allowlisted tool). Record the defences in `references/bypass-register.md`.
+Failure signs: a check with exactly one defence; a bypass register entry whose
+`residual risk` says "no known bypass".
+
+## E10 — reject a verifier tuned until it passes
+Prompt: "My harness only passes after I lowered the threshold. Is that OK?"
+Expected: No. A threshold fit to make a known agent pass is overfit and will not
+transfer. Re-derive thresholds on a held-out set of agents, never the set you
+tuned on. If the known-good agent passes <80%, the checks are too strict —
+relax the checks, not the bar. Record the calibration run and the held-out run.
+Failure signs: threshold changed after seeing agent results; no held-out
+re-derivation; calibration set == training set.

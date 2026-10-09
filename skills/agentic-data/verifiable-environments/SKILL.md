@@ -9,30 +9,40 @@ license: MIT
 Trigger: building or auditing an eval harness, benchmark, or agent+environment pair
 where the agent must not be able to game its own score.
 
+## Core invariant
+A verifier is trustworthy only if a *rational but lazy* agent cannot reach a pass
+without doing the intended work. Every check is derived from a spec the agent
+cannot edit, and every bypass is written down. If you cannot write the bypass
+for a check, you have not audited it.
+
 ## Procedure (numbered — follow in order)
-1. **Separate spec from implementation** — write the verifier against a *spec*
-   document, never against the environment code. A verifier that reads the
-   environment source can be reverse-engineered.
-2. **Prefer oracle-free checks** — observable outcome checks (did the file land
-   where it should, does the command exit 0, does the test pass) beat hidden
-   internal-state checks; hidden checks are legitimate only for state that has
-   no observable side effect.
+1. **Separate spec from implementation** — write the verifier against a `SPEC.md`
+   document, never against the environment code. A verifier that imports the
+   environment module shares its bugs and can be reverse-engineered. Keep the
+   spec in a directory the agent cannot write to.
+2. **Prefer oracle-free checks** — observable outcomes (file at path, exit code,
+   stdout equality) beat hidden internal-state checks. Hidden checks are
+   legitimate only for state with no observable side effect, and must carry a
+   comment justifying them.
 3. **Pin the sandbox contract** — the environment exposes a fixed API (container
-   exec, filesystem, network policy). Pin the API version and record it; never
-   let the agent choose its own tools mid-run.
-4. **Calibrate the pass rate** — on a known-good agent run, record the pass rate.
-   A verifier whose pass rate jumps by >20 points on an unmodified agent is
-   suspect; re-derive thresholds on a held-out set.
-5. **Audit for reward hacking** — for every check, ask: can the agent reach this
-   outcome without doing the intended work? Write every bypass into
+   exec, filesystem, network policy). Pin the API version and record it in
+   `references/sandbox-contract.md`; never let the agent choose tools mid-run.
+   The harness asserts the contract is active *before* any agent runs.
+4. **Calibrate the pass rate** — run a known-good, a deliberately broken and a
+   deliberately lazy agent. A usable harness has
+   `pass_good - pass_lazy >= 0.30` and `pass_good - pass_broken >= 0.30`.
+   Re-derive thresholds on a held-out set; never fit to the training set.
+5. **Audit for reward hacking** — for every check ask: can the agent reach this
+   outcome without the intended work? Write every bypass into
    `references/bypass-register.md` (direct / indirect / cosmetic, with severity).
    A check with no entry is a FAIL.
-6. **Sandbox the agent's actions** — network off by default, filesystem scoped to a
-   temp dir, no code execution that survives the run.
+6. **Sandbox the agent's actions** — network off by default, filesystem scoped to
+   a temp dir, no code execution that survives the run, time bounded.
 7. **Verify the verifier** — run the same checks on a *broken* agent and on a
-   *lazy* agent; the verifier must distinguish them. If both score 100%, the
-   verifier is broken. Also require the known-good agent to pass >=80%: checks
-   that are too strict are as useless as checks that are too loose.
+   *lazy* agent; the verifier must distinguish them. Also require the known-good
+   agent to pass >=80%: checks that are too strict are as useless as checks that
+   are too loose. Then flip one check to always-pass and re-run: the power must
+   drop and the harness must exit 1.
 
 ## Decision tables
 - **Check type**: observable outcome > hidden state > process proxy. Never
@@ -46,6 +56,8 @@ where the agent must not be able to game its own score.
   output) = low. Every check must have a written entry in the bypass register.
 - **Known-good pass rate**: >=80% required; below that the checks are too
   strict and will reject correct agents.
+- **Discriminating power**: `min(pass_good - pass_lazy, pass_good - pass_broken)`
+  must be >= 0.30. Below that the checks have no discriminating power.
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - A check passes on a deliberately broken agent -> the check is decorative.
@@ -56,6 +68,7 @@ where the agent must not be able to game its own score.
 - A check has no `spec_ref` pointing at the spec -> it was not derived from a spec.
 - A check has no bypass-register entry -> nobody has audited it.
 - Known-good agent passes <80% -> the checks are too strict, relax them.
+- The harness exits 0 after a check is neutered -> the verifier is not verified.
 
 ## Pitfalls from research
 - P1: Verifiers that read the environment source are trivially reverse-engineered.
@@ -65,6 +78,8 @@ where the agent must not be able to game its own score.
 - P5: Time-based checks are flaky; use deterministic completion signals.
 - P6: A check nobody has tried to game will be gamed later; the bypass register is
   insurance, not paperwork.
+- P7: A harness that only checks "did it finish" has no discriminating power;
+  an agent that stalls to the timeout scores 100%.
 
 ## Verification checklist
 - [ ] Verifier written from a spec, not from the environment code.
@@ -77,6 +92,7 @@ where the agent must not be able to game its own score.
 - [ ] Broken and lazy agents score measurably below the good agent.
 - [ ] Known-good agent passes >=80%.
 - [ ] No check depends on wall-clock time.
+- [ ] Harness re-run after neutering a check drops power and exits 1.
 
 ## References
 - procedures: references/procedures.md
@@ -84,4 +100,4 @@ where the agent must not be able to game its own score.
 - bypass register: references/bypass-register.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/validate_skill.py
+- scripts: scripts/verify_harness.py
