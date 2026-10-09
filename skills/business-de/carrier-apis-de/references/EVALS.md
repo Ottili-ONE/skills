@@ -108,3 +108,34 @@ instead of pretending the fields match.
 **Failure signs:** Returning ok on a cost mismatch; comparing only one field;
 failing to re-query on an unknown result; treating a missing identifier as a
 match.
+
+## Near-miss triggers
+
+Prompts that look fine at first glance but hide a trap. The agent must catch
+the trap and still produce a passing artefact.
+
+### N1. "The tracking number is 12345678901234567890, just track it"
+**Trap:** a 20-digit numeric string is a valid DHL shipmentNumber, but the
+tracking endpoint is `/shipment/v2/tracking?shipmentNumber=` — a bare
+`/track/` path 404s. Key the endpoint by carrier, never by number shape.
+
+### N2. "Create the label and retry on 409"
+**Trap:** 409 is the idempotency conflict — the label already exists for that
+reference. Retrying with the same `X-Request-ID` repeats the 409 forever.
+Re-query by reference; only a genuinely new reference may be retried.
+
+### N3. "Reconcile the cost, the amount is in cents"
+**Trap:** the label API returns `amount` in the currency unit (12.50 = EUR
+12.50), while the Ottili record stores cents (1250). Normalise both to the
+same unit before comparing; `--strict` then flags the unit drift.
+
+### N4. "Track via the carrier website"
+**Trap:** the skill forbids unofficial tracking scrapers — every carrier here
+has an official API under contract. The website is for human eyes only and
+its HTML changes without notice.
+
+### N5. "UPS is just like DHL, use the same header"
+**Trap:** idempotency fields differ per carrier: DHL `X-Request-ID` (header),
+UPS `X-Inbound-Idempotency-Key` (header), DPD shipment reference (body),
+GLS client-generated `labelId`, Hermes `correlationId` (body). One wrong
+header name is a 400.
