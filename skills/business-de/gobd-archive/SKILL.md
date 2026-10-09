@@ -133,6 +133,12 @@ not "today + 8 years". `scripts/purge_decision.py` derives
 
 ## Related skills
 
+- [xrechnung-zugferd](../xrechnung-zugferd/) — archived e-invoices are vouchers (8y) and must keep the original XML
+- [datev-extf](../datev-extf/) — the audit export is emitted as a DATEV EXTF Buchungsstapel
+- [skr-journal-mapping](../skr-journal-mapping/) — generated journals are books (10y)
+- [bank-reconciliation-camt](../bank-reconciliation-camt/) — reconciled bank statements are vouchers (8y)
+- [carrier-apis-de](../carrier-apis-de/) — label and tracking records are vouchers (8y)
+- [dsgvo-ai-act-labeling](../dsgvo-ai-act-labeling/) — processing-register entries and human-review evidence are correspondence (6y)
 
 ## References
 
