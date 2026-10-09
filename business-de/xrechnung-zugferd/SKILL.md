@@ -54,8 +54,9 @@ Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X
   2026-10-09 against the KoSIT `guidelines.json`.
 - BT-19 (tax amount per rate) is required in COMFORT/EXTENDED; a BG-19 tax split
   whose per-rate amounts do not sum to the invoice total is a hard error.
-- A `print-to-PDF` of an e-invoice loses the structured XML attachment and is
-  **not** a valid archive artefact — keep the original.
+- A `print-to-PDF` of an e-invoice **drops the structured XML attachment**,
+  so it is **not** a valid archive artefact — keep the original file (XML,
+  or PDF/A-3 with embedded XML) and record its SHA-256.
 
 ## Verification checklist
 
