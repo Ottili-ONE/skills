@@ -22,9 +22,9 @@ Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X
 1. **Classify the document** — XML-only (XRechnung), hybrid PDF/A-3 + XML (ZUGFeRD/Factur-X) or other. Reject paper/PDF-only as "sonstige Rechnung".
 2. **Pin versions** — read pinned spec+validator versions from `config/versions.json` (never hardcode). Re-verify on a scheduled cadence; record in SOURCES.md.
 3. **Choose the profile** — MINIMUM / BASIC WL / BASIC / EN 16931 (COMFORT) / EXTENDED. Default for B2B: EN 16931/COMFORT. EXTENDED only when sector extensions are required.
-4. **Validate** — run KoSIT validator (or the pure-PHP `john-wink/en16931-php` fallback) against the pinned configuration. Treat every error as blocking; warnings must be documented.
+4. **Validate** — run the KoSIT validator (tag `v2026-08-31`) or the pure-PHP `john-wink/en16931-php` v0.2.0 fallback against the pinned configuration. Treat every error as blocking; warnings must be documented. Run `scripts/validate_invoice.py` for the offline subset; it scopes every BT-* check to the element's own text (see the table below) and exits non-zero on any failure.
 5. **Check business rules** — mandatory BT-* fields, Leitweg-ID in BT-10, payment terms syntax in BT-20, tax split per rate.
-6. **Archive** — keep the original file (XML or PDF-with-embedded-XML) unchanged; 8-year retention from year-end; record checksum, retrieval path and export test in the retention log.
+6. **Archive** — retain the **original** artefact as-is (XML, or PDF/A-3 with embedded XML). Never retain a print-to-PDF copy: a print-to-PDF **drops the structured XML attachment**, so it is not a valid archive artefact. Retention is 8 years from year-end (BEG IV, effective 2025-01-01). Record SHA-256, retrieval path and an export test in the retention log; verify the archive later with `scripts/retention_check.py`.
 7. **Re-verify** — on any spec/validator bump, re-validate the whole archive sample; log the run.
 
 ## Decision tables
@@ -57,6 +57,43 @@ Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X
 - A `print-to-PDF` of an e-invoice **drops the structured XML attachment**,
   so it is **not** a valid archive artefact — keep the original file (XML,
   or PDF/A-3 with embedded XML) and record its SHA-256.
+
+## Element-scoped BT-* table
+
+Verified 2026-10-09 against the KoSIT `validator-configuration-xrechnung`
+rule IDs and `cbc:` element names. Scope every check to the element's own
+text — never run a content regex over the whole document.
+
+| Rule | Element | What it is | Mandatory in |
+|---|---|---|---|
+| BT-10 | `cbc:EndpointID` / `LeitwegID` | buyer/seller identifier (Leitweg-ID) | B2B |
+| BT-14 | `cbc:IssueDate` | invoice issue date | **every profile** |
+| BT-15 | `cbc:DeliveryDate` | delivery date | BASIC WL+ |
+| BT-17 | `cbc:PaymentDueDate` | payment due date | BASIC+ |
+| BT-18 | `cbc:PaymentAllowedAccountID` | payment account (IBAN) | BASIC+ |
+| BT-19 | `cbc:TaxAmount` | tax amount per rate | COMFORT/EXTENDED |
+| BT-20 | `cbc:PaymentTerms` | payment terms (free text) | **every profile** |
+
+**The trap:** BT-18 (`PaymentAllowedAccountID`, an IBAN) and BT-20
+(`PaymentTerms`, free text) share the local name `PaymentTerms` in some UBL
+exports, and BT-10's `DE...` Leitweg-ID matches an IBAN regex. A whole-document
+check false-passes both ways. `scripts/validate_invoice.py` extracts each
+rule's element text by tag via `_element_text()` and tests the regex on that
+text only.
+
+## Archive retention
+
+| Invoice year | Retention (BEG IV, 8y vouchers) | Retention end |
+|---|---|---|
+| 2026 | 8 years from year-end | 2034-12-31 |
+| 2025 | 8 years from year-end | 2033-12-31 |
+| 2024 | 8 years from year-end | 2032-12-31 |
+| 2020 | 8 years from year-end | 2028-12-31 |
+| 2017 | 8 years from year-end | 2025-12-31 |
+
+Books/annual accounts are 10 years (2026 -> 2036-12-31); commercial
+correspondence is 6 years (2026 -> 2032-12-31). The clock starts at the end
+of the calendar year of creation, not on the document's own date.
 
 ## Verification checklist
 
