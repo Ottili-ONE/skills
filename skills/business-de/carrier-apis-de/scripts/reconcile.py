@@ -43,27 +43,38 @@ def _norm_cost(cost) -> float | None:
     return None
 
 
+def _id_get(d: dict):
+    """Carriers name the identifier differently: DHL/UPS use
+    `shipmentNumber`, DPD/GLS/Hermes use `trackingNumber`. Normalise both
+    so the reconcile comparison works for every carrier."""
+    return d.get("trackingNumber") or d.get("shipmentNumber")
+
+
 def reconcile(label: dict, record: dict, strict: bool = False) -> dict:
     deltas = []
     # cost: compare the numeric amount, not the envelope shape
     lv, rv = _norm_cost(label.get("cost")), _norm_cost(record.get("cost"))
     if lv is not None and rv is not None and lv != rv:
         deltas.append({"field": "cost", "label": lv, "record": rv, "match": False})
-    for key in ("status", "trackingNumber"):
+    for key in ("status",):
         lv, rv = label.get(key), record.get(key)
         if lv is None and rv is None:
             continue
         if lv != rv:
             deltas.append({"field": key, "label": lv, "record": rv, "match": False})
-    # unknown-result handling: a missing tracking number means we cannot
-    # re-query; flag it instead of pretending it matches.
-    if label.get("trackingNumber") is None and record.get("trackingNumber") is None:
+    # Identifier: normalised across carriers (trackingNumber/shipmentNumber).
+    lid, rid = _id_get(label), _id_get(record)
+    if lid is None and rid is None:
         deltas.append({"field": "trackingNumber", "label": None, "record": None,
                        "match": False, "reason": "unknown result: re-query by reference"})
+    elif lid != rid:
+        deltas.append({"field": "trackingNumber", "label": lid, "record": rid,
+                       "match": False})
     if strict and not deltas:
         # strict mode also requires every compared field to be present
-        for key in ("cost", "status", "trackingNumber"):
-            if label.get(key) is None or record.get(key) is None:
+        for key in ("cost", "status", "trackingNumber", "shipmentNumber"):
+            lv, rv = label.get(key), record.get(key)
+            if lv is None or rv is None:
                 deltas.append({"field": key, "label": label.get(key),
                                "record": record.get(key), "match": False,
                                "reason": "missing field in strict mode"})
