@@ -24,8 +24,9 @@ balance-sheet preparation (that is a separate skill).
    ~260 accounts). Default to SKR04 unless the entity runs SKR03.
 2. **Classify the line** — asset / liability / income / expense / tax / equity
    per the table in `references/procedures.md` §2.
-3. **Assign the tax key** — standard 19, reduced 7, legacy 16/1, intra-EU
-   06/0, internal service 09/0, installment 13/0. Never guess.
+3. **Assign the tax key** — pick from the set {19, 7, 16/1, 06/0, 09/0,
+   13/0} according to the rate and the supply type. Never guess a key, since
+   it feeds the USt-Anmeldung directly.
 4. **Generate the journal** — debit/credit side, account, tax key, amount,
    reference. Validate with `scripts/journal_check.py`.
 5. **Lock the period** — set the Monatsschluss flag, block further postings,
@@ -43,6 +44,9 @@ balance-sheet preparation (that is a separate skill).
 | Intra-EU supply (B2B) | 06/0 | 0% (Steuerverrechnung) |
 | Internal service | 09/0 | 0% |
 | Installment (Soll/IST) | 13/0 | 19% split |
+
+The worked examples and the legal sources for each key are in
+`references/procedures.md` §3.
 
 ## Pitfalls from research
 
