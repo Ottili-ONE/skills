@@ -1,6 +1,6 @@
 # skr-journal-mapping — procedures and worked examples
 
-Retrieval date: 2026-10-09. All version-sensitive facts are pinned in
+Retrieval date: 2026-10-09. Version-sensitive facts are pinned in
 `config/versions.json`; re-verify before relying on a fact.
 
 ## 1. Account set selection
