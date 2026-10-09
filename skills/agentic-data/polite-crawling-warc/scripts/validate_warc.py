@@ -22,18 +22,24 @@ RECORD_ID_RE = re.compile(r"^<urn:uuid:[0-9a-fA-F-]+>$")
 
 
 def parse_records(data: bytes):
-    """Yield raw record bytes (header + block)."""
-    start = 0
-    while True:
-        idx = data.find(RECORD_SEP, start)
-        if idx == -1:
+    """Yield raw record bytes (version line + headers + block).
+
+    A WARC record begins with the version line `WARC/1.1\r\n` immediately
+    followed by `WARC-Type:`. Splitting on that marker is safe because our
+    writer never emits it inside a block, and it is robust where the old
+    implementation was not: the old code searched for the *first* `\r\n\r\n`
+    after each start, which is the header/block separator -- so it yielded one
+    header-only slice per record and then broke, reporting 1 record for a
+    3-record file (verified live 2026-10-08)."""
+    marker = b"WARC/1.1\r\nWARC-Type:"
+    start = data.find(marker)
+    while start != -1:
+        nxt = data.find(marker, start + len(marker))
+        if nxt == -1:
+            yield data[start:]
             break
-        # A record starts with "WARC/1.1"; skip the version line.
-        rec_start = data.find(b"WARC/1.1", start)
-        if rec_start == -1 or rec_start > idx:
-            break
-        yield data[rec_start:idx]
-        start = idx + len(RECORD_SEP)
+        yield data[start:nxt]
+        start = nxt
 
 
 def parse_headers(rec: bytes) -> dict:

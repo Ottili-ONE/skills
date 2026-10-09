@@ -1,0 +1,25 @@
+{
+  "generated_by": "scripts/build-index.py",
+  "skills": [
+    {
+      "id": "work-untill-i-die",
+      "name": "work-untill-i-die",
+      "package": "core",
+      "path": "skills/core/work-untill-i-die",
+      "version": "1.4.0",
+      "description": "Long-horizon, checkpointed, self-correcting execution mode for engineering agents.",
+      "has_scripts": false,
+      "has_references": false
+    },
+    {
+      "id": "cursor-cli",
+      "name": "cursor-cli",
+      "package": "curated",
+      "path": "skills/curated/cursor-cli",
+      "version": "2.1.0",
+      "description": "Guide for Cursor CLI (Agent) installation, commands, CI mode, and automation.",
+      "has_scripts": false,
+      "has_references": false
+    }
+  ]
+}
