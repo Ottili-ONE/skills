@@ -2,8 +2,8 @@
 """Validate a DATEV EXTF Buchungsstapel (CSV, semicolon, cp1252, Formatversion 13).
 
 Rules verified against seamless-engineering/datev-extf (src/extf.ts,
-src/columns.ts, src/messages.ts, EXTF_AS_OF 2026-09-25). Emits a machine-
-readable pass/fail JSON plus a list of findings with severity and code.
+src/columns.ts, EXTF_AS_OF 2026-09-25). Emits a machine-readable pass/fail JSON
+plus a list of findings with severity and code.
 
 Usage:
     python3 validate_extf.py Buchungsstapel.csv [--config config/versions.json]
@@ -76,9 +76,12 @@ def parse_ymd(s):
     return None
 
 
-def add(findings, code, severity, line, field, value, params=None):
-    f = {"code": code, "severity": severity, "line": line,
-         "field": field, "value": value}
+def add(findings, code, severity, line, field=None, value=None, params=None):
+    f = {"code": code, "severity": severity, "line": line}
+    if field is not None:
+        f["field"] = field
+    if value is not None:
+        f["value"] = value
     if params:
         f["params"] = params
     findings.append(f)
