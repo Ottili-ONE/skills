@@ -9,24 +9,39 @@ license: MIT
 Trigger: recording, replaying or auditing a multi-step agent run so that the
 result is reproducible and auditable.
 
+## Core invariant
+A free-form log is not a ledger. A ledger is a sequence of typed events where
+every tool call is grounded (args + result recorded), every state carries a
+`state_hash`, every terminal event carries evidence, and cost carries units.
+Without those four properties the run cannot be replayed or audited.
+
 ## Procedure (numbered — follow in order)
 1. **Define the schema first** — every trajectory is a JSONL file of events:
    `step`, `timestamp`, `type` (tool/think/observe), `tool`, `args`, `result`,
-   `state_hash`, `cost`. Never free-form text in the ledger.
+   `state_hash`, `cost`. Never free-form text in the ledger. The full field list
+   and examples live in `references/schema.md`.
 2. **Hash the state at every step** — `state_hash = sha256(canonical(state))`.
    A missing or mismatched hash means the trajectory was tampered with or the
-   replay diverged.
+   replay diverged. Canonicalise with
+   `json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))`.
 3. **Ground every tool call** — record the exact command and its exit code; a
-   tool call with no recorded result is ungrounded and must be re-run.
+   tool call with no recorded result is ungrounded and must be re-run. A `tool`
+   event without `args` or without `result.exit_code` fails the audit.
 4. **Track outcome status** — `pending` -> `running` -> `succeeded` | `failed` |
-   `blocked` | `timeout`. Never mark `succeeded` without evidence.
+   `blocked` | `timeout`. Never mark `succeeded` without evidence. Each
+   terminal outcome requires a specific field: `succeeded` needs `evidence`,
+   `failed` needs `reason`, `blocked` needs `blocker`, `timeout` needs
+   `elapsed_seconds`.
 5. **Record cost** — tokens in/out, wall-clock, tool calls, retries. A cost
-   ledger without a unit is not a ledger.
+   ledger without a unit is not a ledger. The USD rate is pinned per model in
+   the run header; never mix units.
 6. **Enable replay** — given a trajectory and the same inputs, re-running must
    reproduce the same `state_hash` sequence. If it diverges, the run was not
-   deterministic.
+   deterministic; record the first divergence as an `observe` event with
+   `non_determinism: true` and stop the replay.
 7. **Audit** — walk the ledger: every `succeeded` has a result, every `failed`
-   has a reason, every hash matches, and the cost ledger sums.
+   has a reason, every hash matches, and the cost ledger sums. Run
+   `scripts/ledger.py audit <ledger.jsonl>`.
 
 ## Decision tables
 - **Outcome status**: `succeeded` requires a recorded result; `failed` requires a
@@ -44,6 +59,7 @@ result is reproducible and auditable.
 - `state_hash` missing on any step -> the trajectory can be tampered with.
 - Replay diverges at step 1 -> the environment is non-deterministic; record it.
 - Cost recorded without units -> not auditable.
+- A `tool` event with `type` but no `tool` field -> malformed event.
 
 ## Pitfalls from research
 - P1: Free-form logs are not a ledger; they cannot be replayed or audited.
@@ -51,6 +67,7 @@ result is reproducible and auditable.
 - P3: `succeeded` without a recorded result is a fabricated success.
 - P4: Unrecorded tool args make replay impossible.
 - P5: Non-deterministic environments must be recorded, not hidden.
+- P6: A cost field that mixes tokens and USD cannot be summed meaningfully.
 
 ## Verification checklist
 - [ ] Schema defined and documented.
