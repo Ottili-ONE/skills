@@ -14,7 +14,7 @@ import io
 import json
 import re
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
@@ -103,6 +103,33 @@ def validate(path: Path, config: dict) -> dict:
     header = rows[0][1]
     booking_rows = rows[1:]
 
+    # WJ-Beginn (header field 13, YYYYMMDD) supplies the year for every
+    # Belegdatum in the file — the row carries day+month only. Deriving it
+    # here instead of hardcoding it is what makes the impossible-date check
+    # correct across fiscal years. Verified 2026-10-09 against
+    # seamless-engineering/datev-extf src/extf.ts (parseYmd + value(13)).
+    wj_year = 2026
+    wj_end = None
+    if len(header) >= 14:
+        m = re.fullmatch(r"(20\d{2})(\d{2})(\d{2})", header[12] or "")
+        if m:
+            wj_year = int(m.group(1))
+            # WJ end = the day BEFORE the next WJ anniversary
+            # (seamless-engineering/datev-extf src/extf.ts: wjDate + 1y - 1d).
+            # For WJ 2026-01-01 this is 2026-12-31, NOT 2026-01-01.
+            wj_end = (date(wj_year + 1, int(m.group(2)), int(m.group(3)))
+                      - timedelta(days=1))
+    # Sachkontenlaenge (header field 14) bounds the account numbers in the rows.
+    sachkontenlaenge = 4
+    if len(header) >= 15:
+        skl_raw = header[13] or ""
+        if skl_raw == "":
+            add(findings, "header-skl-missing", "warning", rows[0][0], field=14)
+        elif re.fullmatch(r"[4-8]", skl_raw):
+            sachkontenlaenge = int(skl_raw)
+        else:
+            add(findings, "header-skl", "error", rows[0][0], field=14, value=skl_raw)
+
     # --- header (line 1, 31 fields) ---
     if len(header) < EXPECTED_HEADER_FIELDS:
         add(findings, "header-too-short", "error", rows[0][0],
@@ -125,6 +152,50 @@ def validate(path: Path, config: dict) -> dict:
             add(findings, "erzeugt-am-format", "error", rows[0][0], field=6, value=header[5])
         if header[20] not in ("", "0", "1"):
             add(findings, "festschreibung", "error", rows[0][0], field=21, value=header[20])
+        # Beraternummer (field 11): 4-7 digits, >= 1001.
+        berater = header[10] or ""
+        if not re.fullmatch(r"\d{4,7}", berater) or int(berater) < 1001:
+            add(findings, "header-berater", "error", rows[0][0], field=11, value=berater)
+        # Mandantennummer (field 12): 1-5 digits, >= 1.
+        mandant = header[11] or ""
+        if not re.fullmatch(r"\d{1,5}", mandant) or int(mandant) < 1:
+            add(findings, "header-mandant", "error", rows[0][0], field=12, value=mandant)
+        # WKZ (field 22): if present, must be 3 uppercase letters.
+        wkz = header[21] or ""
+        if wkz and not re.fullmatch(r"[A-Z]{3}", wkz):
+            add(findings, "header-currency", "error", rows[0][0], field=22, value=wkz)
+        # Bezeichnung (field 17): > 30 chars is a warning.
+        label = header[16] or ""
+        if len(label) > 30:
+            add(findings, "header-label", "warning", rows[0][0], field=17,
+                value=label, params={"max": 30})
+        # Sachkontenrahmen (field 27): if present, must be 2 digits.
+        skr = header[26] or ""
+        if skr and not re.fullmatch(r"\d{2}", skr):
+            add(findings, "header-skr", "warning", rows[0][0], field=27, value=skr)
+        # Datum vom/bis (fields 15-16): both must parse, bis must not be
+        # before vom, and neither may fall outside the WJ. Verified 2026-10-09
+        # against seamless-engineering/datev-extf src/extf.ts (header-date,
+        # header-dates-order, header-dates-year, header-beyond-wj).
+        d_from = parse_ymd(header[14]) if len(header) >= 16 else None
+        d_to = parse_ymd(header[15]) if len(header) >= 17 else None
+        if d_from is None and (header[14] or ""):
+            add(findings, "header-date", "error", rows[0][0], field=15, value=header[14])
+        if d_to is None and (header[15] or ""):
+            add(findings, "header-date", "error", rows[0][0], field=16, value=header[15])
+        if d_from and d_to:
+            if d_to < d_from:
+                add(findings, "header-dates-order", "error", rows[0][0],
+                    field="15-16", params={"from": header[14], "to": header[15]})
+            if d_from.year != d_to.year:
+                add(findings, "header-dates-year", "error", rows[0][0],
+                    field="15-16", params={"from": header[14], "to": header[15]})
+            if wj_end and d_to > wj_end:
+                add(findings, "header-beyond-wj", "error", rows[0][0],
+                    field=16, value=header[15], params={"wj_end": wj_end.isoformat()})
+            if wj_end and d_from and d_from < date(wj_year, int(m.group(2)), int(m.group(3))):
+                add(findings, "header-before-wj", "error", rows[0][0],
+                    field=15, value=header[14], params={"wj_start": header[12]})
 
     # --- heading row (line 2, 125 columns) ---
     # DATEV's importer reads columns by position, so a missing or mismatched
@@ -162,10 +233,11 @@ def validate(path: Path, config: dict) -> dict:
             add(findings, "side-invalid", "error", line_no, field=2, value=side)
         if not re.fullmatch(r"\d{4}", beleg):
             add(findings, "belegdatum-format", "error", line_no, field=10, value=beleg)
-        elif not is_real_day(2026, int(beleg[2:4]), int(beleg[0:2])):
+        elif not is_real_day(wj_year, int(beleg[2:4]), int(beleg[0:2])):
             add(findings, "belegdatum-impossible", "warning", line_no, field=10, value=beleg)
-        if account and len(account) > 4:
-            add(findings, "account-too-long", "warning", line_no, field=7, value=account)
+        if account and len(account) > sachkontenlaenge:
+            add(findings, "account-too-long", "warning", line_no, field=7,
+                value=account, params={"sachkontenlaenge": sachkontenlaenge})
         # Automatikkonto rule: BU-Schlüssel (col 9, 1-based) other than "40"
         bu = cells[8]
         if account in AUTOMATIC_ACCOUNTS.get("03", set()) and bu and bu != "40":
