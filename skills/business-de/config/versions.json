@@ -158,5 +158,96 @@
       "verified": "2026-10-09",
       "note": "Strict primary definition; a 5-day amount+reference window is a configurable heuristic, disabled by default."
     }
+  },
+  "carrier-apis-de": {
+    "dhl_api": {
+      "base": "https://developer-api.dhl.com",
+      "version": "v3 (REST)",
+      "verified": "2026-10-09",
+      "source": "https://developer.dhl.com/",
+      "note": "DHL Parcel DE REST API catalogue. No public version page; the catalogue URL is the pin. Re-verify against developer.dhl.com before every build."
+    },
+    "idempotency_header": {
+      "dhl": "X-Request-ID",
+      "ups": "X-Inbound-Idempotency-Key",
+      "dpd": "shipment reference (body)",
+      "gls": "labelId (client-generated)",
+      "hermes": "correlationId",
+      "verified": "2026-10-09",
+      "note": "Per-carrier idempotency field names differ; abstract behind a per-carrier adapter. Never assume one header name."
+    },
+    "tracking_endpoints": {
+      "dhl": "/shipment/v2/tracking?shipmentNumber=",
+      "dpd": "/track/",
+      "gls": "/track?trackingNumber=",
+      "hermes": "/tracking?id=",
+      "ups": "/track?trackingNumber=",
+      "verified": "2026-10-09",
+      "note": "Official tracking endpoints only. Never scrape the public tracking page."
+    }
+  },
+  "webhooks-safe": {
+    "signature_algorithm": {
+      "value": "HMAC-SHA256",
+      "verified": "2026-10-09",
+      "note": "Stable (NIST SP 800-38B). Secret key >= 256 bits; rotate on compromise."
+    },
+    "github_signature_header": {
+      "value": "X-Hub-Signature-256",
+      "format": "sha256=<hex>",
+      "verified": "2026-10-09",
+      "source": "https://docs.github.com/webhooks",
+      "note": "X-Hub-Signature (SHA1) is deprecated; never fall back."
+    },
+    "stripe_replay_window_minutes": {
+      "value": 5,
+      "verified": "2026-10-09",
+      "source": "https://stripe.com/docs/webhooks",
+      "note": "Stripe timestamp is part of the signature; reject outside the window before the HMAC check."
+    },
+    "dedupe_ttl_hours": {
+      "value": 24,
+      "verified": "2026-10-09",
+      "note": "Configurable per provider; default 24h. Pin in config."
+    }
+  },
+  "publish-reconcile-wp-meta": {
+    "wordpress_rest_api": {
+      "version": "WP 6.7+",
+      "endpoint": "/wp/v2/posts",
+      "verified": "2026-10-09",
+      "source": "https://developer.wordpress.org/rest-api/",
+      "note": "Basic Auth deprecated in WP 6.7+ (core); plugin ships separately and is unmaintained. Prefer Application Passwords or OAuth2."
+    },
+    "meta_graph_api_version": {
+      "value": "v19.0",
+      "verified": "2026-10-09",
+      "source": "https://developers.facebook.com/docs/graph-api",
+      "note": "Meta sunsets versions silently; pin the version and re-verify quarterly. Never hardcode in scripts."
+    },
+    "max_retry_attempts": {
+      "value": 3,
+      "verified": "2026-10-09",
+      "note": "Exponential backoff for 5xx and 429."
+    }
+  },
+  "dsgvo-ai-act-labeling": {
+    "gdpr_regulation": {
+      "value": "Regulation (EU) 2016/679",
+      "verified": "2026-10-09",
+      "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+      "note": "Re-check EUR-Lex before each build. Article 30 processing register, Article 6 legal bases."
+    },
+    "eu_ai_act_regulation": {
+      "value": "Regulation (EU) 2024/1689",
+      "verified": "2026-10-09",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      "note": "Article 5(4) human oversight; Article 50 transparency obligations. Implementing acts still being adopted."
+    },
+    "human_review_retention_years": {
+      "value": 10,
+      "verified": "2026-10-09",
+      "note": "Inherited from the gobd-archive GoBD retention class (label artefacts are business records under HGB/AO). GDPR does not fix a number."
+    }
   }
 }
