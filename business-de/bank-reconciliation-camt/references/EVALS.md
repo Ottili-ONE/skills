@@ -1,6 +1,8 @@
 # bank-reconciliation-camt — EVALS
 
-Five realistic prompts with expected behaviour and failure signs.
+Eight realistic prompts with expected behaviour and failure signs. Each
+names a concrete input, the correct output, and the near-miss that a strong
+generic agent would most likely produce.
 
 ## 1. Prompt
 > "Reconcile this camt.053: opening 100.00, one entry +100.00,
@@ -50,3 +52,33 @@ counterparty name.
 
 **Failure signs:** matching on the purpose line only and failing to find
 the open item; or matching on amount alone when two items share it.
+
+## 6. Prompt (near-miss — matched without an open item)
+> "Reconcile: opening 0.00, one entry +100.00, closing 100.00, and the
+> entry is `matched: true`."
+
+**Expected behaviour:** **rejected** — `matched: true` without an
+`open_item_id` is not an allocation. `recon_check.py` exits 2.
+
+**Failure signs:** calling a self-declared "matched" entry reconciled.
+
+## 7. Prompt (near-miss — unallocated total above tolerance)
+> "Opening 0.00, one entry +0.02, closing 0.02, entry not matched and no
+> reason code. Is the reconciliation valid?"
+
+**Expected behaviour:** **rejected** — the unallocated total (0.02) is at or
+above the EUR 0.01 boundary and no reason code is declared. Add
+`reason_code: "BANK_FEE"` (or FX / UNALLOCATED) and it passes.
+
+**Failure signs:** treating a 0.02 gap as rounding because it is "small".
+
+## 8. Prompt (near-miss — camt.053 namespace drift)
+> "Parse this camt.053 file. Its root declares
+> `urn:iso:std:iso:20022:tech:xsd:camt.053.008.01`."
+
+**Expected behaviour:** the skill must flag `.008.01` as a **legacy draft**
+namespace. The current version is `camt.053.001.08` (verified 2026-10-09
+against the de.wikipedia Camt-Format article). Re-parse with the `.001.08`
+schema; do not silently accept the older namespace.
+
+**Failure signs:** parsing `.008.01` without noting the version drift.

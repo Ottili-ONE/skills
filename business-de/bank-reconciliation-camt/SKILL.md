@@ -58,6 +58,10 @@ currencies, or cash-counting tasks.
 - camt.053 is mandatory in SEPA since 2014; MT940 has **no fixed
   deprecation date** for reporting messages (SWIFT, Nov 2025). Both remain in
   use; handle both.
+- The current camt.053 message version is **camt.053.001.08**
+  (namespace `urn:iso:std:iso:20022:tech:xsd:camt.053.001.08`). Files
+  declaring `.008.01` are legacy drafts — re-parse with the `.001.08` schema
+  rather than accepting the older namespace silently.
 - MT940 purpose lines are free text and often truncated; camt.053 structures
   them in structured fields (Mandat-ID, EndToEndId). Prefer camt.053 for
   matching.

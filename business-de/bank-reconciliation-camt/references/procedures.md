@@ -14,9 +14,17 @@ camt.053 is preferred: structured fields (Mandat-ID, EndToEndId,
 BIC/IBAN of counterparty) make matching far more reliable than MT940's
 free-text Verwendungszweck lines.
 
+**Version note (verified 2026-10-09):** the current ISO 20022 message
+definition for a BankToCustomerStatement is **camt.053.001.08**. The
+namespace in a real camt.053 file is
+`urn:iso:std:iso:20022:tech:xsd:camt.053.001.08`. Earlier drafts used
+`.008.01`; treat a file claiming `.008.01` as legacy and re-parse with the
+`.001.08` schema. The de.wikipedia Camt-Format article (last edited 2025)
+lists `camt.053.001.08`; the iso20022.org page is access-restricted (403).
+
 ## 2. Parse
 
-**camt.053** — XML with namespace `urn:iso:std:iso:20022:tech:xsd:camt.053.008.01`:
+**camt.053** — XML with namespace `urn:iso:std:iso:20022:tech:xsd:camt.053.001.08`:
 - `/Document/BkToCstmrStmt/Stmt/Ntry[]` — entries
 - each entry: `NtryId`, `BookgDt`/`ValDt`, `Amt` (credit/debit), `NtryDtl[]`
 - counterparty: `RltdPties/Cdtr`/`Dbtr`, `RltdPties/Agt`
