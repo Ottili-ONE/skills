@@ -12,7 +12,7 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
 from common import load_config  # noqa: E402
 
 # Default Steuerschluessel per account, per Kontenrahmen.
