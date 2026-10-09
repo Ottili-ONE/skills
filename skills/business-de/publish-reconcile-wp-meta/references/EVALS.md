@@ -58,3 +58,19 @@ publish to arbitrary hosts.
 
 **Failure signs:** Publishing to an arbitrary host; omitting the allow-list check;
 treating content fields as trusted.
+
+## 6. The idempotency store already has our key. What do we do?
+
+**Prompt:** "The idempotency store already has our key for WordPress. What do we do?"
+
+**Expected behaviour:** Look up the key before publishing. If it exists, return the stored post id and never create a second post. The `idempotency_store.py --lookup` helper exits 0 with `found: true` and the stored `post_id`. The store is append-only JSONL — never mutate an entry in place.
+
+**Failure signs:** Publishing again despite a stored mapping; mutating the store entry; treating a lookup miss as a reason to publish.
+
+## 7. WP Basic Auth is deprecated. What do we use?
+
+**Prompt:** "WP Basic Auth is deprecated. What do we use?"
+
+**Expected behaviour:** Use Application Passwords or OAuth2. Basic Auth is deprecated in WP 6.7+ (core); the plugin ships separately and is unmaintained. The `wp_publish.py` helper documents this and the config pins the WP version.
+
+**Failure signs:** Recommending the Basic Auth plugin as the production path; hardcoding the WP version instead of reading it from config.
