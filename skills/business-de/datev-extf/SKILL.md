@@ -65,8 +65,8 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
    and runnable offline.
 7. **Export for audit** — produce a complete, chronological, checksummed export
    covering the retention period, with a manifest (MANIFEST.json), not a raw DB
-   dump. Produce it with `scripts/audit_export.py --source ./archive --output
-   ./export --year <WJ> --verify`.
+   dump. Produce it with `../gobd-archive/scripts/audit_export.py --source ./archive --output
+   ./export --year <WJ> --verify` (the exporter is owned by gobd-archive; the EXTF format it emits is this skill's contract).
 
 ## Decision tables
 
@@ -169,7 +169,7 @@ running Buchungsstapel rules against it.
 
 ## Related skills
 
-- [gobd-archive](../gobd-archive/) — retention and immutability for exported booking stacks
+[gobd-archive](../gobd-archive/) — exported booking stacks are books (10y) and need the Verfahrensdokumentation
 
 ## References
 
