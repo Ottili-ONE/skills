@@ -103,6 +103,27 @@ Row `Belegdatum = 0206` with WJ-Beginn `20260101` means **2 June 2026**.
 The year is *never* in the row. Writing `20260602` there is a hard error
 (`belegdatum-format`: must be exactly 4 digits).
 
+## 4c. Datenservices (other Formatkategorien)
+
+The Buchungsstapel (category 21) is the common integration target. DATEV ships
+these other exports through the same EXTF envelope — same 31-field header,
+different Formatkategorie/Formatname/Formatversion and a different column
+count. Verified 2026-10-09 against seamless-engineering/datev-extf
+`src/extf.ts` (the `Category` enum and the debkred text-field list):
+
+| Formatkategorie | Formatname | Formatversion | Content | Columns |
+|---|---|---|---|---|
+| 21 | Buchungsstapel | 13 | booking rows | 125 |
+| 16 | Debitoren/Kreditoren | 5 | customer/supplier master data | per DEBKRED spec |
+| 20 | Saldenliste / Kontenrahmen | 1 | ledger balances / account master | per spec |
+| 21 | Einzelnachweis | 13 | single booking | 125 |
+
+The shared header checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
+Sachkontenlaenge, Berater, Mandant) apply to every category. The
+category-specific checks (Formatkategorie/Formatname/Formatversion, column
+count, row rules) do not. When a file is not a Buchungsstapel, say so
+explicitly instead of running Buchungsstapel rules against it.
+
 ## 5. Handle validation errors
 
 | Error | Cause | Fix |

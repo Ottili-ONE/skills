@@ -38,14 +38,21 @@ def main() -> int:
         key, ("COMFORT", "default fallback"))
     pinned = load_config(Path(args.config))["xrechnung-zugferd"]
 
-    missing = []
-    if profile in ("COMFORT", "EXTENDED"):
-        missing += ["BT-10 Leitweg-ID", "BT-14 issue date", "BT-20 payment terms",
-                    "BG-19 tax split per rate"]
-    if profile == "BASIC":
-        missing += ["BT-14", "BT-20", "BT-17", "BT-18"]
+    # "missing_fields" = the BT-* that a COMFORT/EXTENDED invoice needs but this
+    # profile does NOT require. BT-14 and BT-20 are mandatory in *every*
+    # profile (verified 2026-10-09 against the KoSIT guidelines.json), so they are
+    # never listed here.
+    extra_for_comfort = ["BT-10 Leitweg-ID", "BT-17 payment due date",
+                         "BT-18 payment account (IBAN)", "BT-19 tax amount per rate",
+                         "BG-19 tax split per rate", "BT-15 delivery date (BASIC WL+)"]
     if profile == "MINIMUM":
-        missing = ["BT-14", "BT-20"]
+        missing = list(extra_for_comfort)
+    elif profile == "BASIC":
+        missing = [x for x in extra_for_comfort if not x.startswith("BT-15")]
+    elif profile == "BASIC WL":
+        missing = [x for x in extra_for_comfort if not x.startswith("BT-15")]
+    else:  # COMFORT / EXTENDED
+        missing = []
 
     print(json.dumps({
         "recommended_profile": profile,
