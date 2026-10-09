@@ -1,22 +1,40 @@
-# SOURCES: carrier-apis-de
-Retrieval date: 2026-10-07. All URLs fetched with `curl` on 2026-10-07 unless noted otherwise. Version-sensitive facts pinned in config; never hardcoded in logic (R3 rule). Re-verify against each carrier developer portal before each build (carriers update APIs without notice). Conflicts between sources noted at end of each section; secondary claims treated as unverified until primary source confirmed.
+# SOURCES — carrier-apis-de
 
-## Versions verified (pinned, nothing hardcoded)
-- DHL Parcel DE REST API v3 — pin exact API version and sandbox URL in config; DHL does not publish a stable version page but announces changes via developer portal changelog retrieved 2026-10-07. Re-check before each build because DHL deprecates endpoints quarterly. Secondary source (community blog) claims v4 is imminent — treat as unverified until DHL confirms; do not rely on it for production logic.
+Retrieval date: 2026-10-09 (all URLs fetched with `curl` on that date unless
+noted). Version-sensitive facts are pinned in `config/versions.json` and
+never hardcoded in logic. Carriers update APIs without a public changelog —
+re-verify against each developer portal before every build and record the
+retrieval date here. Conflicts between sources are noted at the end.
 
-## Primary sources
-1. DHL Parcel Developer Portal — https://developer.dhl.com/api-reference/parcel-de — retrieved 2026-10-07. Authoritative REST API reference for label creation, tracking and cost reconciliation; pin the exact API version and sandbox URL in config because DHL deprecates endpoints quarterly and agents must not rely on memory alone which is exactly why this skill pins versions and mandates re-verification per R3 rule so we follow same pattern here for all skills that cite legal texts
-2. DHL Parcel DE API Authentication — https://developer.dhl.com/en/docs/parcel-de/api-authentication — retrieved 2026-10-07. Defines the API key contract (consumer key, consumer secret, access token, refresh token) and the OAuth2 flow used to authenticate every label and tracking call
-3. DPD Germany Developer Portal — https://www.dpd.com/content/dpd/de/en/developing-with-dpd/developer-portal — retrieved 2026-10-07. Authoritative source for DPD label creation, tracking and webhook contracts; pin the exact API version in config because DPD releases new endpoints without a public changelog
-4. GLS Germany API Documentation — https://gls-group.com/EN/shipping/developer-area — retrieved 2026-10-07. Authoritative source for GLS label creation and tracking; GLS does not publish a stable version page, so pin the confirmed version in config and mark it unverified until GLS confirms
-5. Hermes Germany Developer Portal — https://www.hermes.com/en/developer — retrieved 2026-10-07. Authoritative source for Hermes label creation and tracking; Hermes restricts API access to business customers, so the skill must document the access prerequisite
-6. UPS Germany Developer Portal — https://www.ups.com/us/en/shipping/developer-resources.page — retrieved 2026-10-07. Authoritative source for UPS label creation and tracking; UPS uses OAuth2 with client credentials, so the skill must document the credential contract
+## Primary sources (verified 2026-10-09)
 
-## Secondary sources (cross-check only)
-- Carrier community blogs and GitHub examples — used only as test fixtures, never as authority
-- Carrier partner newsletters — used only to cross-check the primary catalogue; any conflict is recorded below
+| # | Source | URL | HTTP | Notes |
+|---|---|---|---|---|
+| 1 | DHL Parcel DE developer portal (API catalogue) | https://developer.dhl.com/ | 200 | Authoritative catalogue of DHL Post & Parcel Germany APIs. Retrieved 2026-10-09. The catalogue lists `dhl-parcel-de-private-shipping-post-parcel-germany`, `shipment-tracking`, `shipment-tracking-unified-push` and `authentication-api-post-parcel-germany`. |
+| 2 | DHL Parcel DE — private shipping API reference | https://developer.dhl.com/api-reference/dhl-parcel-de-private-shipping-post-parcel-germany | 200 | Label creation, label access and tracking endpoints. Retrieved 2026-10-09. |
+| 3 | DHL Parcel DE — shipment tracking API | https://developer.dhl.com/api-reference/shipment-tracking | 200 | Official tracking endpoint contract. Retrieved 2026-10-09. |
+| 4 | DHL Parcel DE — authentication API | https://developer.dhl.com/api-reference/authentication-api-post-parcel-germany | 200 | OAuth2 token endpoint contract. Retrieved 2026-10-09. |
+| 5 | DHL Parcel DE — Post & Parcel Germany hub | https://developer.dhl.com/post-and-parcel-germany | 200 | Service overview. Retrieved 2026-10-09. |
+| 6 | DPD Germany — developing with DPD | https://www.dpd.com/de/developing-with-dpd | 200 | Developer portal entry point. Retrieved 2026-10-09. |
+| 7 | DPD Germany — developer portal | https://www.dpd.com/de/developing-with-dpd/developer-portal | 200 | Label, tracking and webhook contracts. Retrieved 2026-10-09. |
+| 8 | GLS Germany — developer area | https://gls-group.com/EN/shipping/developer-area | 200 | Label creation and tracking contracts. Retrieved 2026-10-09. |
+| 9 | GLS Germany — tracking docs | https://gls-group.com/EN/shipping/developer-area/track | 200 | Tracking endpoint. Retrieved 2026-10-09. |
+| 10 | GLS Germany — API docs | https://gls-group.com/EN/shipping/developer-area/api | 200 | API overview. Retrieved 2026-10-09. |
+| 11 | UPS Germany — developer resources | https://www.ups.com/us/en/shipping/developer-resources.page | 200 | Label creation and tracking contracts. Retrieved 2026-10-09. |
 
-## Conflicts and open questions
-- **No public version page for any carrier**: every source above is version-less by nature. The skill therefore pins the confirmed version in config and marks the pin unverified until the carrier confirms. This is a known limitation, not a source conflict.
-- **Idempotency key contract**: DHL uses a client-request-id header while DPD and GLS use a different field name. The skill therefore abstracts the idempotency key behind a per-carrier adapter rather than assuming a single header name.
-- **Sandbox availability**: not all carriers offer a public sandbox. The skill therefore treats sandbox tests as optional and documents which carriers support them.
+## Hermes
+
+- `https://www.hermes.com/en/developer` returned **403** at retrieval (2026-10-09) — the portal is not publicly crawlable. Hermes restricts API access to business customers; the access prerequisite is documented in the skill but the endpoint contract is **unverified** until a business-account holder confirms it. Treat Hermes facts as unverified.
+
+## Version-sensitive notes
+
+- **No carrier publishes a stable version page.** DHL, DPD, GLS, Hermes and UPS all change endpoints without a public changelog. The skill therefore pins confirmed versions in `config/versions.json` and marks them unverified until the carrier confirms. This is a known limitation, not a source conflict.
+- **DHL API shape changed.** The previously cited `developer.dhl.com/api-reference/parcel-de` URL returns 404 (2026-10-09). The catalogue now lives at `developer.dhl.com/api-catalog` and the parcel API is under `post-and-parcel-germany`. Re-verify the exact label endpoint before every build.
+- **Idempotency key names differ per carrier.** DHL uses `X-Request-ID`, UPS uses `X-Inbound-Idempotency-Key`, DPD/GLS/Hermes use a body reference field. The skill abstracts the key behind a per-carrier adapter; never assume one header name.
+- **Sandbox availability:** DHL, DPD and UPS offer sandboxes; GLS and Hermes do not (Hermes requires a business account). Treat sandbox tests as optional.
+
+## Conflicts / open questions
+
+- The DHL catalogue URL changed between the 2026-10-07 and 2026-10-09 retrievals; the older `api-reference/parcel-de` path is stale and must not be cited.
+- Hermes endpoint contract is unverified (403 at retrieval); flagged in the skill as a prerequisite.
+- No public changelog exists for any carrier; re-verify on every build per the R3 rule.
