@@ -36,9 +36,7 @@ balance-sheet preparation (that is a separate skill).
 ## Decision tables
 
 The full tax-key table (scenario, key, rate, legal source) and worked examples
-live in `references/procedures.md` §3. Quick reference for the keys: 19 for
-standard, 7 for reduced, 16/1 legacy, 06/0 intra-EU, 09/0 internal service,
-13/0 installment.
+live in `references/procedures.md` §3.
 
 ## Pitfalls from research
 
