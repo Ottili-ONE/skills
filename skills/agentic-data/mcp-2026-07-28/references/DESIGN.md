@@ -3,7 +3,7 @@
 ## Trigger description (SKILL.md description draft, <=1024 chars)
 "Build and consume stateless MCP servers and clients on the 2026-07-28 revision:
 server/discover, per-request metadata via _meta, tasks extension, OAuth 2.1 with PKCE,
-backward-compat negotiation down to 2025-11-25 and 2026-07-28. Use when an agent must
+backward-compat negotiation down to 2025-11-25 and 2025-06-18. Use when an agent must
 scaffold an MCP server or client, debug a protocol handshake, map error codes to actions,
 or verify that a deployment is stateless and version-pinned. Not for general API design."
 
@@ -34,3 +34,9 @@ A generic agent knows "MCP is a protocol"; this skill pins the exact revision, g
 MUST/MAY/removed rule table, the error-code action map, and a stateless-replay probe. It
 prevents the common incident of shipping a 2025-06-18 server that breaks on a 2026-07-28
 client because the initialize handshake was removed.
+
+## IO contract for scripts (decided here, enforced by all scripts)
+- Machine-readable summary counts go to **stdout** (CI pipelines grep exit codes).
+- Human-readable detail lines prefixed `FAIL:`/`PASS:`/`WARN:`/`INFO:` go to **stderr**.
+- Scripts never fetch remote URLs during validation; allowed version lists are vendored locally
+  and updated via PR review when a spec revision ships.
