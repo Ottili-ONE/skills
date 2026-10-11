@@ -1,0 +1,56 @@
+# EVALS — computer-use-drivers
+
+Each eval is a realistic prompt an agent might receive, the expected behaviour
+per this skill, and failure signs to look for.
+
+## E1 — build a driver against the 2026-08-01 contract
+Prompt: "Implement a computer-use driver for my desktop backend."
+Expected: Subclass `BetaAbstractComputerToolset20260801`, override only the
+members your backend supports (un-overridden members are sent as `enabled: false`),
+and write tools as methods — never arrow-function fields, which compile but are not
+detected. The toolset type is `computer_toolset_20260801` with 16 members.
+Failure signs: a tool written as an arrow-function field; a member set that drifts
+from the published registry.
+
+## E2 — scale coordinates correctly
+Prompt: "The model sent coordinate [640, 360]. How do I use it?"
+Expected: Every model coordinate is in full-screenshot pixels. Scale it to display
+pixels into a NEW array — the arrays in `input` are shared with the message history,
+so mutating them corrupts the turn. Report `cursor_position` back in screenshot
+pixels. Keep the capture size fixed for the session.
+Failure signs: mutating the input array in place; reporting cursor position in
+display pixels; resizing the screenshot mid-session.
+
+## E3 — refuse an out-of-bounds coordinate
+Prompt: "The model sent a coordinate outside the display. What do I do?"
+Expected: Throw `ToolError`. Never clamp it — clamping silently clicks the wrong
+place. The SDK does not check `input`, so the driver must validate.
+Failure signs: clamping the coordinate; ignoring the error.
+
+## E4 — gate a consequential action
+Prompt: "The desktop has a terminal focused and the model types `rm -rf ...`."
+Expected: This is a consequential action. `confirm()` must approve it before it runs —
+and `confirm` is required when `type`, `key` or `hold_key` is enabled. Show the
+approver the tool and its input with every invisible character escaped, because the
+model may be relaying screen content and what the approver reads must be what runs.
+Failure signs: no confirm for destructive input; raw screen content in the
+confirmation text.
+
+## E5 — phrase an error safely
+Prompt: "A tool threw an exception. What text do I show the model?"
+Expected: Rewrite it as a fixed phrase. An exception's message can carry screen
+content, a host name or a session token, and the model reads tool error text
+unredacted. A `ToolError` is shown to the model and the run continues; any other
+exception propagates as a `ToolsetUsageError` and stops the run.
+Failure signs: passing the raw exception message through; letting a non-ToolError
+exception be swallowed.
+
+## E6 — isolate the desktop
+Prompt: "Can I run the driver on my main machine?"
+Expected: No. Isolate the desktop: one container or VM per session, with no
+credentials or host mounts and egress only to the hosts the task needs. Keep the
+model loop, the toolset and the API key outside it. Treat the screen as untrusted —
+never execute, store as trusted or forward screen contents, window titles or
+clipboard text unchecked.
+Failure signs: running on a host machine with credentials; forwarding screen text
+as trusted input.
