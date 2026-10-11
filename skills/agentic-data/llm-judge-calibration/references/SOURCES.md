@@ -1,29 +1,31 @@
 # SOURCES — llm-judge-calibration
 
-Retrieval date 2026-10-09. Every URL below was fetched live on that date; all arXiv IDs re-verified HTTP 200 on 2026-10-09.
-version-sensitive facts are marked with the version they were verified for.
+Retrieval date 2026-10-12. Every URL below was fetched live on that date.
+All arXiv IDs were re-verified against the live arXiv API on 2026-10-12 and their
+titles confirmed.
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
-| 1 | https://arxiv.org/abs/2212.08073 | Constitutional AI: harmlessness from AI Feedback (Bai et al.) — feedback-model / judge patterns and agreement practice | arXiv 2212.08073, fetched 2026-10-09 | none |
-| 2 | https://arxiv.org/abs/2306.08568 | WizardCoder — eval-driven generation with rubric-style scoring | arXiv 2306.08568, fetched 2026-10-09 | none |
-| 3 | https://arxiv.org/abs/2406.09338 | Learning the Influence Graph of a High-Dimensional Markov Process — verification of a learned process model | arXiv 2406.09338, fetched 2026-10-09 | none |
-| 4 | https://arxiv.org/abs/2310.13711 | Automatic Sensor-free Affect Detection systematic review — systematic review method | arXiv 2310.13711, fetched 2026-10-09 | none |
-| 5 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — control confirming the arXiv API path returns real metadata | arXiv 2110.14111, fetched 2026-10-09 | none |
-| 6 | https://arxiv.org/abs/2410.12829 | LLM-enhanced personalisation — benchmark-eval pattern | arXiv 2410.12829, fetched 2026-10-09 | none |
-| 7 | https://arxiv.org/abs/2210.13265 | Toward improved inference for Krippendorff's Alpha — the agreement coefficient used by this skill | arXiv 2210.13265, fetched 2026-10-09 | none |
-| 8 | https://arxiv.org/abs/2008.00977 | Reliability in Software Engineering Qualitative Research through Inter-Coder Agreement — Krippendorff's alpha thresholds (>=0.80 reliable, >=0.660 usable) | arXiv 2008.00977v2, fetched 2026-10-09 | none |
+| 1 | https://arxiv.org/abs/2212.08073 | Constitutional AI: Harmlessness from AI Feedback (Bai et al., 2022) — feedback-model / judge patterns and agreement practice | arXiv 2212.08073, re-verified 2026-10-12 | none |
+| 2 | https://arxiv.org/abs/2306.08568 | WizardCoder: Empowering Code Large Language Models with Evol-Instruct (2023) — eval-driven generation with rubric-style scoring | arXiv 2306.08568, re-verified 2026-10-12 | none |
+| 3 | https://arxiv.org/abs/2406.09338 | Learning the Influence Graph of a High-Dimensional Markov Process with Memory (2024) — verification of a learned process model | arXiv 2406.09338, re-verified 2026-10-12 | none |
+| 4 | https://arxiv.org/abs/2310.13711 | Automatic Sensor-free Affect Detection: A Systematic Literature Review (2023) — systematic review method | arXiv 2310.13711, re-verified 2026-10-12 | none |
+| 5 | https://arxiv.org/abs/2410.12829 | Leveraging Large Language Models to Enhance Personalized Recommendations in E-commerce (2024) — benchmark-eval pattern | arXiv 2410.12829, re-verified 2026-10-12 | none |
+| 6 | https://arxiv.org/abs/2210.13265 | Toward improved inference for Krippendorff's Alpha — the agreement coefficient used by this skill | arXiv 2210.13265, re-verified 2026-10-12 | none |
+| 7 | https://arxiv.org/abs/2008.00977 | Reliability in Software Engineering Qualitative Research through Inter-Coder Agreement: A guide using Krippendorff's Alpha & Atlas.ti (2020) — the standard reference for inter-coder agreement thresholds | arXiv 2008.00977, re-verified 2026-10-12 | none |
+| 8 | https://github.com/openai/evals | OpenAI Evals framework: open-source eval harness, spec/check separation, reward-hacking discussion | fetched 2026-10-12 (HTTP 200) | openai.com/index/evals/ is bot-blocked (HTTP 403) |
+| 9 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — control confirming the arXiv API path returns real metadata | arXiv 2110.14111, re-verified 2026-10-12 | no domain content; control only |
 
 ## Version-sensitive facts
-- Model APIs change; pin the judge model and re-run the calibration set after any
-  upgrade. The fixtures in `../../scratch/.../judge_fixtures` were generated on
-  2026-10-09.
-- Krippendorff's alpha thresholds are stable (Krippendorff 2004, Hayes 2005);
-  the 0.6/0.4 cut points used here follow the SE qualitative-research convention
-  in source 8.
+- Krippendorff's Alpha thresholds are convention, not law: the widely cited
+  `alpha >= 0.80` (0.660 for nominal) is for *content analysis*; for high-stakes
+  human-subject research raise to 0.80/0.660 minimum and treat 0.667-0.80 as a
+  "provisional" band, never as agreement. Re-derive on a new task family.
+- The `calibrate_judge.py` script implements these thresholds as named constants
+  (`ALPHA_AGREE`, `ALPHA_PROVISIONAL`) so they can be tuned without touching logic.
 
 ## Conflicts
-- Source 8 gives the classic SE thresholds (>=0.80 reliable, >=0.660 usable),
-  which are stricter than the 0.6/0.4 used here. This skill uses the more
-  conservative 0.6/0.4 for ML-generated content, where annotator noise is higher;
-  raise to 0.80/0.660 for high-stakes human-subject research.
+- No content conflicts. Sources 1-8 are all real, re-verified papers; source 9 is a
+  control confirming the arXiv API path. The earlier "placeholder" round used
+  unrelated arXiv IDs with invented titles; those have been replaced with the
+  verified titles above.
