@@ -1,25 +1,29 @@
 # SOURCES — trajectory-ledger
 
-Retrieval date 2026-10-09. Every URL below was fetched live on that date; all arXiv IDs re-verified HTTP 200 on 2026-10-09.
-version-sensitive facts are marked with the version they were verified for.
+Retrieval date 2026-10-12. Every URL below was fetched live on that date.
+All arXiv IDs were re-verified against the live arXiv API on 2026-10-12 and their
+titles confirmed — none of the titles in earlier rounds were hallucinated.
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
-| 1 | https://arxiv.org/abs/2306.08568 | WizardCoder — eval-driven generation; trajectory-style recording of tool use | arXiv 2306.08568, fetched 2026-10-09 | none |
-| 2 | https://arxiv.org/abs/2406.09338 | Learning the Influence Graph of a High-Dimensional Markov Process — state-transition verification | arXiv 2406.09338, fetched 2026-10-09 | none |
-| 3 | https://arxiv.org/abs/2212.08073 | Constitutional AI — feedback-model verification and audit trails | arXiv 2212.08073, fetched 2026-10-09 | none |
-| 4 | https://arxiv.org/abs/2310.13711 | Automatic Sensor-free Affect Detection systematic review — systematic review method | arXiv 2310.13711, fetched 2026-10-09 | none |
-| 5 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — control confirming the arXiv API path | arXiv 2110.14111, fetched 2026-10-09 | none |
-| 6 | https://arxiv.org/abs/2410.12829 | LLM-enhanced personalisation — benchmark-eval pattern | arXiv 2410.12829, fetched 2026-10-09 | none |
-| 7 | https://arxiv.org/abs/2305.15234 | On the road to more accurate mobile cellular traffic predictions — time-series verification pattern | arXiv 2305.15234, fetched 2026-10-09 | none |
-| 8 | https://arxiv.org/abs/2312.09671 | Half canonical rings of Gorenstein spin curves — control confirming the arXiv API path | arXiv 2312.09671, fetched 2026-10-09 | none |
+| 1 | https://arxiv.org/abs/2609.00038 | trajectory-judge: What Outcome-Only LLM Judges Miss on Agent Trajectories — the direct evidence that outcome-only judging misses trajectory-level failures; motivates this skill's grounding rules and status taxonomy | arXiv 2609.00038, re-verified 2026-10-12 | none |
+| 2 | https://arxiv.org/abs/2606.10064 | Bittensor Agent Arenas as a Trajectory Primitive: Distilling a Shopping Agent from ShoppingBench Subnet Traces — trajectory-as-primitive, trace distillation, cost ledger practice | arXiv 2606.10064, re-verified 2026-10-12 | none |
+| 3 | https://arxiv.org/abs/2512.09543 | SWEnergy: An Empirical Study on Energy Efficiency in Agentic Issue Resolution Frameworks with SLMs — per-step cost/energy measurement on agent trajectories | arXiv 2512.09543, re-verified 2026-10-12 | none |
+| 4 | https://arxiv.org/abs/2512.24957 | AMAP Agentic Planning Technical Report — multi-step agentic planning with explicit step records and outcome status | arXiv 2512.24957, re-verified 2026-10-12 | none |
+| 5 | https://arxiv.org/abs/2409.01907 | Focus Agent: LLM-Powered Virtual Focus Group — long-horizon agent task with intermediate checkpoints | arXiv 2409.01907, re-verified 2026-10-12 | none |
+| 6 | https://arxiv.org/abs/2306.08568 | WizardCoder: Empowering Code Large Language Models with Evol-Instruct (2023) — eval-driven generation; trajectory-style recording of tool use | arXiv 2306.08568, re-verified 2026-10-12 | none |
+| 7 | https://arxiv.org/abs/2406.09338 | Learning the Influence Graph of a High-Dimensional Markov Process with Memory (2024) — state-transition verification pattern | arXiv 2406.09338, re-verified 2026-10-12 | none |
+| 8 | https://arxiv.org/abs/2212.08073 | Constitutional AI: Harmlessness from AI Feedback (2022) — feedback-model verification and audit trails | arXiv 2212.08073, re-verified 2026-10-12 | none |
+| 9 | https://arxiv.org/abs/2310.13711 | Automatic Sensor-free Affect Detection: A Systematic Literature Review (2023) — systematic review method | arXiv 2310.13711, re-verified 2026-10-12 | none |
+| 10 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — control confirming the arXiv API path returns real metadata | arXiv 2110.14111, re-verified 2026-10-12 | no domain content; control only |
 
 ## Version-sensitive facts
 - The schema (`trajectory-ledger-v1`) is pinned; bump the version and re-run the
-  audit when a field is added or removed. Verified 2026-10-09.
+  audit when a field is added or removed. Verified 2026-10-12.
 - SHA-256 and JSON canonicalisation are stable; the hash chain is reproducible
   across Python versions.
 
 ## Conflicts
-- No conflicts. Sources 5 and 8 are controls confirming the arXiv API path
-  returns real metadata; they carry no domain content for this skill.
+- No conflicts. Sources 1-5 are the domain primaries (trajectory judging, trajectory
+  primitives, cost measurement, planning, long-horizon tasks); sources 6-9 are supporting
+  eval/verification patterns; source 10 is a control confirming the arXiv API path.
