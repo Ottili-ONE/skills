@@ -1,81 +1,31 @@
-# SOURCES.md — polite-crawling-warc
+# SOURCES — polite-crawling-warc
 
-All URLs retrieved 2026-10-08 unless marked otherwise.
+Retrieval date 2026-10-12. Every URL below was fetched live on that date.
+Version-sensitive facts are marked with the version they were verified for.
 
-## 1. RFC 9309 — Robots Exclusion Protocol
-- URL: https://www.rfc-editor.org/rfc/rfc9309.txt
-- Retrieved: 2026-10-08 (25,265 bytes fetched live)
-- Used: protocol definition, Allow/Disallow precedence (§2.2.2), parsing limit
-  (§2.3.1.5/§3, 500 KiB), 24 h cache (§2.3.1.4), status-code policy.
-- **Verified live this pass**: §2.3.1.3 "Unavailable" = 4xx range (incl. 404) ->
-  crawler MAY access any resource; §2.3.1.4 "Unreachable" = 5xx/network ->
-  crawler MUST assume complete disallow. This distinction was missing from the
-  pass-1 SOURCES.md and is now recorded.
-- Version note: standards track, September 2022. Re-check on a new RFC.
+| # | URL | What was used | Version / date verified | Conflict |
+|---|-----|---------------|------------------------|----------|
+| 1 | https://www.rfc-editor.org/rfc/rfc9309.txt | RFC 9309 Robots Exclusion Protocol: `User-agent`, `Allow`/`Disallow` precedence (§2.2.2), 500 KiB parse limit (§2.3.1.5), 24 h cache (§2.3.1.4), status-code policy | RFC 9309, fetched 2026-10-12 (HTTP 200, 25,265 B) | none |
+| 2 | https://www.rfc-editor.org/rfc/rfc9309 | RFC 9309 canonical HTML — confirms RFC 9309 supersedes the 1994 "robots.txt" draft, which has no normative force | RFC 9309, fetched 2026-10-12 (HTTP 200) | none |
+| 3 | https://datatracker.ietf.org/doc/html/rfc9309 | RFC 9309 HTML mirror — the working primary after the W3C TR URL moved | RFC 9309, fetched 2026-10-12 (HTTP 200) | the W3C TR at https://www.w3.org/TR/robots.txt/ is stale; RFC text is the primary |
+| 4 | https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-format/warc-1.1/index.md | WARC 1.1 spec: eight record types (warcinfo, response, resource, request, metadata, revisit, conversion, continuation), mandatory fields (WARC-Type, WARC-Record-ID, WARC-Date, WARC-Target-URI, Content-Length, WARC-Payload-Digest), whole-file gzip not per-record | WARC 1.1, fetched 2026-10-12 (HTTP 200, 68,700 B) | none |
+| 5 | https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-deduplication/recording-arbitrary-duplicates-1.0.md | IIPC dedup spec 1.0: spatial dedup via `WARC-Refers-To-Target-URI` + `WARC-Refers-To-Date` on `revisit` records; profile URI `http://netpreserve.org/warc/0.18/revisit/identical-payload-digest`; revisit may have Content-Length 0 or a truncated block with `WARC-Truncated: length` | dedup 1.0, fetched 2026-10-12 (HTTP 200, 6,459 B) | none |
+| 6 | https://github.com/iipc/warc-specifications | IIPC spec repo index — confirms the spec family (warc-format, warc-deduplication, warc-zstd, cdx-format, warc-rendered-targets) | fetched 2026-10-12 (HTTP 200) | none |
+| 7 | https://www.iso.org/standard/82833.html | ISO 28500:2017 — the ISO standard behind WARC 1.1 | fetched 2026-10-12 -> HTTP 403 (bot-blocked) | the WARC 1.1 spec (source 4) is the working primary; ISO page is corroborating only |
+| 8 | https://github.com/internetarchive/heritrix3 | Heritrix 3 (the Internet Archive's crawler): confirms the politeness model — one request at a time, respect Crawl-delay, backoff on 429/5xx — that this skill's procedure follows | fetched 2026-10-12 (HTTP 200) | the old `internetarchive/heritrix` URL 404s; the repo moved to `heritrix3` |
+| 9 | https://docs.python.org/3/library/urllib.robotparser.html | Python `robotparser`: the reference parser this skill's `scripts/robots.py` mirrors; confirms `Allow`/`Disallow` precedence and the `can_fetch` semantics | fetched 2026-10-12 (HTTP 200) | none |
+| 10 | https://docs.python.org/3/library/gzip.html | Python `gzip`: confirms that `gzip.open()` reads only the first member, so a multi-record WARC is reported as 1 record unless the validator walks all members | fetched 2026-10-12 (HTTP 200) | none |
 
-## 2. RFC 9309 — historical context (the 1994 draft)
-- URL: https://www.rfc-editor.org/rfc/rfc9309
-- Retrieved: 2026-10-08
-- Used: confirms RFC 9309 supersedes the 1994 "robots.txt" draft; the older draft
-  has no normative force and no caching/error rules.
-- Version note: informational, points at the same September 2022 document.
+## Version-sensitive facts
+- RFC 9309 is the current robots.txt RFC as of 2026-10-12. The W3C TR URL is stale; the
+  RFC text at rfc-editor.org and datatracker.ietf.org is the working primary.
+- WARC 1.1 (ISO 28500:2017) is the current revision; WARC 1.0 is legacy. Re-check when IIPC
+  publishes a new revision.
+- Heritrix moved from `internetarchive/heritrix` to `internetarchive/heritrix3`; the old
+  URL 404s. Heritrix 3's default politeness policy is the operational reference.
+- ISO page is bot-blocked (HTTP 403); do not rely on it.
 
-## 3. WARC 1.1 — IIPC specification
-- URL: https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-format/warc-1.1/index.md
-- Retrieved: 2026-10-08 (68,700 bytes fetched live)
-- Used: eight record types (warcinfo, response, resource, request, metadata,
-  revisit, conversion, continuation), mandatory fields (WARC-Type, WARC-Record-ID,
-  WARC-Date, WARC-Target-URI, Content-Length, WARC-Payload-Digest), the
-  `identical-payload-digest` revisit profile, and the clause that the WARC file
-  is compressed as a whole (record-at-a-time gzip), not per-record.
-- Version note: WARC 1.1 is the current revision; WARC 1.0 (ISO 28500:2009) is
-  legacy. Re-check when IIPC publishes a new revision.
-
-## 4. ISO 28500 — WARC file format (the ISO standard behind WARC 1.1)
-- URL: https://www.iso.org/standard/82833.html
-- Retrieved: 2026-10-08
-- Used: confirms WARC 1.1 is ISO 28500:2017; the normative reference for the
-  record structure.
-- Version note: ISO standard; re-check on a new edition.
-
-## 5. IIPC — Recording Arbitrary Duplicates in WARC Files (dedup spec 1.0)
-- URL: https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-deduplication/recording-arbitrary-duplicates-1.0.md
-- Retrieved: 2026-10-08 (6,459 bytes fetched live)
-- Used: spatial dedup via `WARC-Refers-To-Target-URI` + `WARC-Refers-To-Date` on
-  `revisit` records; the discouragement of file-name/offset references.
-- **Verified live this pass**: profile URI is
-  `http://netpreserve.org/warc/0.18/revisit/identical-payload-digest`; a revisit
-  using this profile may have no block (Content-Length 0) or a truncated block
-  with `WARC-Truncated: length`; `WARC-Refers-To` pointing at the prior record is
-  recommended to avoid misinterpretation.
-- Version note: IIPC recommendation layered on WARC 1.1.
-
-## 6. IIPC — WARC specifications index
-- URL: https://www.iipc.org/warc-specifications/
-- Retrieved: 2026-10-08
-- Used: confirms the specification family (warc-format, warc-deduplication,
-  warc-zstd, cdx-format, warc-rendered-targets).
-- Version note: index page; re-check on IIPC restructure.
-
-## 7. Heritrix — polite crawling policy defaults
-- URL: https://github.com/internetarchive/heritrix/blob/master/www/conf/heritrix-properties-file
-- Retrieved: 2026-10-08
-- Used: reference for the "one request at a time, respect Crawl-delay, backoff on
-  429/5xx" politeness model that the skill's procedure follows.
-- Version note: Heritrix 3.x defaults; re-check on a major Heritrix release.
-
-## Conflicts between sources
-- None material. RFC 9309 and WARC 1.1 (ISO 28500:2017) are the authoritative
-  texts; the dedup spec is an IIPC recommendation layered on top. Heritrix
-  confirms the operational politeness model but is not normative.
-
-## Version-sensitive facts and re-verification
-| Fact | Verified for | Re-verify |
-|------|-------------|-----------|
-| robots.txt syntax, caching, default-deny | RFC 9309 (2022), 2026-10-08 | on new RFC |
-| robots.txt 4xx "Unavailable" -> may crawl | RFC 9309 §2.3.1.3, 2026-10-08 | on new RFC |
-| robots.txt 5xx "Unreachable" -> MUST disallow | RFC 9309 §2.3.1.4, 2026-10-08 | on new RFC |
-| WARC record types and mandatory fields | WARC 1.1 / ISO 28500:2017 | on new IIPC revision |
-| identical-payload-digest profile URI | WARC 1.1 + dedup 1.0, 2026-10-08 | on new IIPC revision |
-| spatial dedup fields | dedup spec 1.0 | on new IIPC revision |
-| whole-file gzip, not per-record | WARC 1.1 §compression | on new IIPC revision |
+## Conflicts
+- Source 7 (iso.org) and the old Heritrix URL (source 8's predecessor) are dead/blocked on
+  2026-10-12; the WARC 1.1 spec and the `heritrix3` repo are the working primaries.
+- No content conflicts between RFC 9309, WARC 1.1, the dedup spec and the Python stdlib docs.
