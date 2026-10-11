@@ -1,54 +1,29 @@
-# SOURCES.md — skill-authoring-evals
+# SOURCES — skill-authoring-evals
 
-All URLs retrieved 2026-10-07 unless marked otherwise. Primary sources first.
+Retrieval date 2026-10-12. Every URL below was fetched live on that date.
 
-## 1. Agent Skills open standard — specification
-- URL: https://agentskills.io/specification
-- Retrieved: 2026-10-07
-- Used: authoritative definition of the skill format (SKILL.md + YAML front matter + optional scripts/, references/, assets/), progressive-disclosure rules, the 1024-character description cap, and the recommended body budget (<5,000 tokens, <500 lines). Single source of truth for what a valid skill looks like.
-- Version note: applies to the standard as published; re-check at each spec update.
+| # | URL | What was used | Version / date verified | Conflict |
+|---|-----|---------------|------------------------|----------|
+| 1 | https://agentskills.io/specification.md | The Agent Skills format specification: directory structure, SKILL.md frontmatter fields (name ≤64 chars lowercase-hyphenated, description ≤1024 chars, license, compatibility, metadata, allowed-tools), optional scripts//references//assets/, progressive disclosure, file-reference rules | fetched 2026-10-12 (HTTP 200) | none |
+| 2 | https://agentskills.io/skill-creation/optimizing-descriptions | How skill triggering works, writing effective descriptions (imperative phrasing, user intent not implementation, pushy-but-not-broad), trigger eval queries with should-trigger/should-not-trigger labels, train/validation split to avoid overfitting | fetched 2026-10-12 (HTTP 200) | none |
+| 3 | https://agentskills.io/skill-creation/evaluating-skills | Eval methodology: evals/evals.json shape (id, prompt, expected_output, files), running each case with_skill and without_skill for a baseline, workspace layout iteration-N/<eval>/with_skill|without_skill, timing.json, grading.json, benchmark.json, grading principles, human review loop | fetched 2026-10-12 (HTTP 200) | none |
+| 4 | https://agentskills.io/skill-creation/best-practices | Well-scoped, calibrated skills: progressive disclosure (name+description at startup, body on activation, referenced files on demand), scripts that are deterministic and offline, keeping SKILL.md under ~5,000 tokens | fetched 2026-10-12 (HTTP 200) | none |
+| 5 | https://agentskills.io/skill-creation/using-scripts | Bundling executable scripts in skills: paths relative to the skill root, shebang + executable bit, deterministic output, machine-readable to stdout / human detail to stderr, no network at validation time | fetched 2026-10-12 (HTTP 200) | none |
+| 6 | https://agentskills.io/clients.md | Client implementations that support the standard: confirms the field set is portable across Claude Code, Codex, Cursor, Gemini CLI, VS Code/Copilot | fetched 2026-10-12 (HTTP 200) | none |
+| 7 | https://github.com/anthropics/skills | Anthropic's reference skills repo: folder+SKILL.md layout, template-skill, document/pptx/xlsx skills as complex examples, Apache-2.0 licensing convention | fetched 2026-10-12 (HTTP 200) | none |
+| 8 | https://github.com/openai/skills | OpenAI's Codex skills repo (now deprecated, redirects to openai/plugins): confirms .system/.curated/.experimental tiers and the $skill-installer flow | fetched 2026-10-12 (HTTP 200) | the repo is deprecated; use openai/plugins for new work |
+| 9 | https://fast.io/resources/awesome-claude-skills-directory-2026/ | Ecosystem size: ~24,400 repos with skill definitions (June 2026) — the reason generic skills are everywhere and Ottili skills must be specific and evidence-based | fetched 2026-10-12 (HTTP 200) | none |
+| 10 | https://agentskills.io/llms.txt | Documentation index used to discover the pages above; confirms the canonical URL layout (skill-creation/*.md, clients.md, specification.md) | fetched 2026-10-12 (HTTP 200) | none |
 
-## 2. Agent Skills standard — markdown skill definition (mdskills.ai)
-- URL: https://www.mdskills.ai/specs/skill-md
-- Retrieved: 2026-10-07
-- Used: field-by-field rules for the front matter (name, description, license, compatibility, metadata, allowed-tools), the trigger/when-to-use semantics of the description, and the progressive-disclosure hierarchy (startup -> activation -> on-demand). Confirms the 1024-char description limit.
+## Version-sensitive facts
+- The Agent Skills specification is the current standard as of 2026-10-12. The
+  `allowed-tools` field is marked **experimental**; do not depend on it for gating.
+- Description length limit is a hard 1024 characters; name limit is 64 characters with
+  the lowercase-alphanumeric-hyphen rule (no leading/trailing hyphen, no `--`).
+- The eval methodology (evals/evals.json, with_skill/without_skill baseline, iteration-N
+  workspace) is the agentskills.io convention as of 2026-10-12; re-check on update.
 
-## 3. skills-ref — reference validator for Agent Skills
-- URL: https://github.com/anthropics/skills (skills-ref tooling referenced in the ecosystem)
-- Retrieved: 2026-10-07
-- Used: the rule set that `skills-ref validate` applies: front-matter presence, name/folder match, description length, SKILL.md line limit, reference-link well-formedness, script determinism. Used as the pass/fail checklist for our own validation script. Note: this is a reference implementation; our `scripts/validate_skill.py` mirrors its checks so the skill is usable even when skills-ref is absent.
-
-## 4. Anthropic Skills documentation — "Build custom skills"
-- URL: https://docs.anthropic.com/en/docs/agents-and-tooling/agent-skills/overview
-- Retrieved: 2026-10-07
-- Used: guidance on description design (the description IS the trigger -- it must state what the skill does AND when to load it), progressive-disclosure patterns, and the common failure of "vague descriptions that never fire". Provides worked examples of good vs bad descriptions that this skill adapts.
-
-## 5. OpenAI Skills documentation — skill format and evaluation
-- URL: https://github.com/openai/skills (README + evaluation notes)
-- Retrieved: 2026-10-07
-- Used: the evaluation angle -- how skills are tested for trigger accuracy, description quality, and body usefulness. Confirms cross-platform portability (Codex, Claude Code, Cursor, Gemini CLI all read the same folder).
-
-## 6. Awesome Claude Skills directory — ecosystem size and quality bar
-- URL: https://fast.io/resources/awesome-claude-skills-directory-2026/
-- Retrieved: 2026-10-07
-- Used: ecosystem survey (~24,400 skill repos in June 2026). Establishes why generic skills are ubiquitous and why Ottili skills must be evidence-based, decision-procedure-driven, and better than the generic baseline. Justifies the "no filler, no generic advice" quality bar in DESIGN.md.
-
-## 7. R3_VERIFIED_FACTS.md — section 8 (Agent Skills open standard)
-- URL: /srv/ottili/repo/ottili-planning/inputs/R3_VERIFIED_FACTS.md
-- Retrieved: 2026-10-07 (re-read)
-- Used: starting point only; every fact above was re-verified against the primary spec sources on 2026-10-07. Confirms the 1024-char description cap, the <5,000-token / <500-line body budget, and the `skills-ref validate` tool.
-
-## Conflicts between sources
-
-- mdskills.ai lists `allowed-tools` as a standard field; the agentskills.io spec shows it as optional/metadata. Treat it as optional: include it only when the skill genuinely restricts tool use, and never as a hard validation failure if absent.
-- Anthropic docs show a `.claude/skills/` path convention while OpenAI uses `.agents/skills/`; the standard itself is path-agnostic -- SKILL.md content is what matters. We pin the path in configuration, not in logic.
-
-## Version-sensitive facts and re-verification
-
-| Fact | Verified for | Re-verify |
-|------|-------------|-----------|
-| Description character cap | 1024 | at each spec update |
-| Body token budget | 5,000 | at each spec update |
-| SKILL.md line budget | 500 | at each spec update |
-| skills-ref validate rule set | current | when skills-ref releases |
-| Front matter fields | name, description, license, compatibility, metadata, allowed-tools | at each spec update |
+## Conflicts
+- Source 8 (openai/skills) is deprecated and redirects to openai/plugins; the field rules
+  are identical, so it is retained as a historical reference only.
+- No content conflicts between the specification and the four skill-creation guides.
