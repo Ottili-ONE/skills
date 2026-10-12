@@ -144,6 +144,8 @@ def main() -> int:
     ap.add_argument("--min-power", type=float, default=MIN_POWER)
     ap.add_argument("--min-good-pass-rate", type=float, default=MIN_GOOD_PASS_RATE)
     ap.add_argument("--json", type=Path, default=None, help="write JSON report here")
+    ap.add_argument("--neutered-checks", type=Path, default=None,
+                    help="verify the verifier: checks with one flipped to always-pass. The power must drop vs the live run and this command must exit 1.")
     args = ap.parse_args()
 
     for name in ("checks",):
@@ -238,10 +240,42 @@ def main() -> int:
     for d in detail:
         print(d, file=sys.stderr)
 
+    if args.neutered_checks is not None:
+        if not args.neutered_checks.is_file():
+            return _die(f"neutered checks file not found: {args.neutered_checks}")
+        try:
+            neutered = load_checks(args.neutered_checks)
+        except SystemExit as e:
+            print(str(e), file=sys.stderr)
+            return 2
+        if len(neutered) != total:
+            detail.append(f"FAIL: neutered checks have {len(neutered)} checks, expected {total}")
+        else:
+            ng, _, _ = run_checks(neutered, args.good)
+            nl, _, _ = run_checks(neutered, args.lazy)
+            nb, _, _ = run_checks(neutered, args.broken)
+            n_power_lazy = pass_rate(ng, total) - pass_rate(nl, total)
+            n_power_broken = pass_rate(ng, total) - pass_rate(nb, total)
+            report["neutered"] = {
+                "power_vs_lazy": round(n_power_lazy, 4),
+                "power_vs_broken": round(n_power_broken, 4),
+            }
+            if n_power_lazy >= power_vs_lazy or n_power_broken >= power_vs_broken:
+                detail.append(
+                    f"FAIL: neutering a check did not drop power "
+                    f"(lazy {n_power_lazy:.2f} vs {power_vs_lazy:.2f}, "
+                    f"broken {n_power_broken:.2f} vs {power_vs_broken:.2f}); "
+                    "the verifier is not verified")
+            else:
+                print("INFO: neutering a check dropped power; verifier verified",
+                      file=sys.stderr)
+
     if args.json:
         args.json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
     if not ok:
+        return 1
+    if any("FAIL: neutering" in d for d in detail):
         return 1
     print("PASS: harness discriminates good, broken and lazy agents", file=sys.stderr)
     return 0
