@@ -62,3 +62,52 @@ client polls `tasks/get`; on `input_required` it sends `tasks/update` with
 `inputResponses`.
 
 **Bad:** blocking on a plain tool call for three minutes, or calling `tasks/result`.
+
+## server/discover — good vs bad
+
+**Good:** client calls `server/discover` first, reads `supportedVersions`,
+intersects with its own vendored list, agrees on the highest common version,
+and stores it in config. On empty intersection it refuses with `-32022`.
+
+```python
+result = call("server/discover", {}, meta=meta)
+agreed = negotiate(client_versions, result["result"]["supportedVersions"])
+if agreed is None:
+    raise SystemExit("-32022: no common version")
+config.revision = agreed            # config, never a literal in logic
+```
+
+**Bad:** skipping discover and hardcoding `"2026-07-28"`. The next revision
+ships and the client keeps talking a removed revision. Detection: grep for the
+literal; every hit must sit behind a config/env read.
+
+**Bad:** a discover response whose `capabilities.tasks` advertises
+`tasks/result`. Detection: `scripts/protocol_check.py` prints
+`FAIL: capabilities advertises tasks/result, which was removed in 2026-07-28`.
+
+## per-request `_meta` — good vs bad
+
+**Good:** every request, including `tasks/get` polls, carries
+`protocolVersion`, `clientInfo`, `clientCapabilities`. Detection: the request
+log shows `_meta` on every line.
+
+**Bad:** sending `_meta` only on the first request. Detection: the second request
+returns `-32021` MissingRequiredClientCapability. Per-request means per-request.
+
+## Tasks extension — full worked example
+
+A tool that generates a report takes three minutes.
+
+1. Client declares `io.modelcontextprotocol/tasks` in `clientCapabilities.extensions`
+   and confirms the server advertised it in `server/discover`.
+2. Call the tool. Response:
+   ```json
+   {"resultType": "task", "task": {"id": "t1", "status": "working"}}
+   ```
+3. Poll `tasks/get` with id `t1` every 250 ms (doubling to a 5 s cap).
+4. The server responds `{"status": "input_required", "question": "Which quarter?"}`.
+5. Client sends `tasks/update` with `{"id": "t1", "inputResponses": ["Q3"]}`.
+6. Status returns to `working`, then `completed` with the report in `task.result`.
+
+Detection signal: no blocking on the plain tool call; no call to `tasks/result`;
+`input_required` is handled, not treated as an error.
