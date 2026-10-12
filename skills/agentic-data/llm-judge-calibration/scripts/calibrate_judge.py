@@ -16,12 +16,33 @@ from pathlib import Path
 
 
 def load_rows(path: Path) -> list[dict]:
+    """Read JSONL. Malformed lines are warned and skipped; an empty result is a
+    hard failure at the caller, never a silent PASS."""
+    if not path.is_file():
+        raise SystemExit(f"ERROR: rows file not found: {path}")
     rows: list[dict] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = line.strip()
         if not line:
             continue
-        rows.append(json.loads(line))
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError as e:
+            print(f"WARN: line {n} is not a JSON object ({e}); skipped", file=sys.stderr)
+            continue
+        if not isinstance(obj, dict):
+            print(f"WARN: line {n} is not a JSON object; skipped", file=sys.stderr)
+            continue
+        # coerce scores to numbers, drop non-numeric entries
+        raw = obj.get("scores")
+        if isinstance(raw, list):
+            obj["scores"] = [float(v) for v in raw if isinstance(v, (int, float))]
+        elif raw is None:
+            obj["scores"] = []
+        else:
+            print(f"WARN: line {n} 'scores' is not a list; treated as empty", file=sys.stderr)
+            obj["scores"] = []
+        rows.append(obj)
     return rows
 
 
@@ -100,7 +121,20 @@ def main() -> int:
     ap.add_argument("--json", type=Path, default=None)
     args = ap.parse_args()
 
+    for opt, val in (("--min-agreement", args.min_agreement),
+                    ("--max-position-bias", args.max_position_bias),
+                    ("--max-drift", args.max_drift)):
+        if not (0.0 <= val <= 1.0):
+            raise SystemExit(f"ERROR: {opt}={val} must be in [0, 1]")
+    if args.baseline and not args.baseline.is_file():
+        raise SystemExit(f"ERROR: baseline file not found: {args.baseline}")
+    if args.json and not args.json.parent.is_dir():
+        raise SystemExit(f"ERROR: --json parent dir missing: {args.json.parent}")
+
     rows = load_rows(args.rows)
+    if not rows:
+        print("FAIL: no usable items in rows file", file=sys.stderr)
+        return 1
     alpha = krippendorff_alpha(rows)
     mean = mean_score(rows)
     bias = position_bias(rows)
@@ -130,6 +164,7 @@ def main() -> int:
         if drift > args.max_drift:
             failures.append(f"FAIL: drift {drift:.3f} > {args.max_drift}")
 
+    report["degenerate"] = alpha == 1.0 and len({v for r in rows for v in r["scores"]}) == 1
     report["ok"] = not failures
     print(f"INFO: items={len(rows)} alpha={alpha:.3f} mean={mean:.3f} bias={bias:.3f}", file=sys.stderr)
     if args.baseline:

@@ -73,6 +73,7 @@ the number is circular.
 ## References
 - procedures: references/procedures.md
 - rubric template: references/rubric-template.md
+- robustness: references/robustness.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/calibrate_judge.py
