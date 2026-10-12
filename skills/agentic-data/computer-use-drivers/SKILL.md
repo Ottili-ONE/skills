@@ -81,5 +81,6 @@ click buttons, type into fields, scroll, read what is on screen.
 
 ## References
 - procedures: references/procedures.md
+- worked examples: references/examples.md
 - SOURCES: references/SOURCES.md
 - EVALS: references/EVALS.md
