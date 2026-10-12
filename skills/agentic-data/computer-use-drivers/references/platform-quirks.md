@@ -12,7 +12,7 @@ the host's coordinate space. Rule: **scale into a NEW array** — the `input`
 arrays are shared with message history, so mutating them in place corrupts the
 conversation. Verified in `computer-toolset.md`.
 
-## The 16-member set
+## The 17-member set
 
 Key, hold_key, type, cursor_position, mouse_move, left_mouse_down, left_mouse_up,
 left_click, left_click_drag, right_click, middle_click, double_click, triple_click,

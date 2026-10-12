@@ -3,7 +3,7 @@
 Verified 2026-10-12 against the anthropic-sdk-typescript sources.
 Good and bad driver code, with the detection signal for each.
 
-## Good — 16-member driver, confirm-gated, new-array scaling
+## Good — 17-member driver, confirm-gated, new-array scaling
 
 ```python
 class Driver(BetaAbstractComputerToolset20260801):

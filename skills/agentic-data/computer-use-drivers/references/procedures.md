@@ -6,7 +6,7 @@ Step-by-step instructions that SKILL.md links to on demand.
 
 ## P1 — set up the driver
 
-1. Pick the toolset type: `computer_toolset_20260801` (16 members).
+1. Pick the toolset type: `computer_toolset_20260801` (17 members).
 2. Subclass `BetaAbstractComputerToolset20260801`. Override only the members your
    backend supports; un-overridden members are sent as `enabled: false` by the SDK.
 3. Write each tool as a **method**, never an arrow-function field — arrow fields

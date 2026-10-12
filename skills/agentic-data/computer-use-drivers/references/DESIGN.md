@@ -8,7 +8,7 @@ that a browser cannot reach; not for browser automation or remote-control via VN
 without a driver contract."
 
 ## Primary sources used
-- Anthropic computer-toolset README (2026-08-01 toolset, 16 members):
+- Anthropic computer-toolset README (2026-08-01 toolset, 17 members):
   https://github.com/anthropics/anthropic-sdk-typescript/blob/main/computer-toolset.md
   -> driver subclass contract, coordinate scaling, confirm() gate, error phrasing rules.
 - Member registry:

@@ -15,7 +15,7 @@ Every URL below was fetched live on 2026-10-12 (re-verification pass). Primary s
 ## 2. Computer toolset member registry
 - URL: https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer_toolset_20260801.json
 - fetched 2026-10-12 (HTTP 200, re-verified live)
-- Used: the exact 16-member set — key, hold_key, type, cursor_position, mouse_move,
+- Used: the exact 17-member set — key, hold_key, type, cursor_position, mouse_move,
   left_mouse_down, left_mouse_up, left_click, left_click_drag, right_click,
   middle_click, double_click, triple_click, scroll, wait, screenshot, zoom — and the
   rule that un-overridden members are sent as `enabled: false`.
@@ -96,7 +96,7 @@ Every URL below was fetched live on 2026-10-12 (re-verification pass). Primary s
 | URL | HTTP | Note |
 |-----|------|------|
 | raw anthropics SDK computer-toolset.md | 200 | driver contract still current |
-| raw .../computer_toolset_20260801.json | 200 | 16-member registry unchanged |
+| raw .../computer_toolset_20260801.json | 200 | 17-member registry unchanged |
 | raw .../computer-members.ts | 200 | result kinds unchanged |
 | raw .../computer.ts | 200 | confirm() gate and error phrasing unchanged |
 | raw .../computer-fakes.ts | 200 | ToolError / ToolsetUsageError semantics unchanged |

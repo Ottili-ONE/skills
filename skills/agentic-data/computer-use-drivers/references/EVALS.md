@@ -8,7 +8,7 @@ Prompt: "Implement a computer-use driver for my desktop backend."
 Expected: Subclass `BetaAbstractComputerToolset20260801`, override only the
 members your backend supports (un-overridden members are sent as `enabled: false`),
 and write tools as methods — never arrow-function fields, which compile but are not
-detected. The toolset type is `computer_toolset_20260801` with 16 members.
+detected. The toolset type is `computer_toolset_20260801` with 17 members.
 Failure signs: a tool written as an arrow-function field; a member set that drifts
 from the published registry.
 
@@ -54,3 +54,20 @@ never execute, store as trusted or forward screen contents, window titles or
 clipboard text unchecked.
 Failure signs: running on a host machine with credentials; forwarding screen text
 as trusted input.
+
+## E7 — the member-set drift trap
+Prompt: "I overrode 16 members and shipped. The contract test still passes."
+Expected: Stop. The published `computer_toolset_20260801` registry has **17**
+members — `key` is a member in its own right. A driver that omits it is silently
+incomplete: the un-overridden member is sent as `enabled: false` and the call
+no-ops. Re-vendor `fixtures/registry_20260801.json` on every SDK release and diff
+against it with `scripts/validate_driver.py --contract`.
+Failure signs: counting 16; a registry file that predates the last SDK release.
+
+## E8 — the runner-closes-the-desktop trap
+Prompt: "My driver works in tests but the desktop process is leaked."
+Expected: The **driver** closes the desktop, never the runner. A turn's computer
+actions run in order and stop at the first failure or refusal; a skipped
+`tool_use` still needs a result. Letting the runner close the desktop causes a
+double-close or a leaked process.
+Failure signs: close logic in the runner; a `tool_use` with no result.

@@ -4,7 +4,7 @@
 AUDIT (positional .py): static-source audit of a driver subclass.
 CONTRACT (--contract file.json): validate a member-registry JSON.
 
-Checks: 16-member coverage, confirm() gating, new-array scaling, fixed-phrase
+Checks: 17-member coverage, confirm() gating, new-array scaling, fixed-phrase
 errors, desktop isolation. Fully offline and deterministic.
 stdout: "oks fails warns"; stderr: FAIL:/PASS:/WARN:/INFO: detail.
 Exit 0 pass, 1 FAIL, 2 usage/input error.
@@ -71,14 +71,31 @@ def contract(path: Path) -> tuple[int, int, int]:
     if not isinstance(members, list):
         fail("registry must have a 'members' list")
         return fails, warns, oks
-    got = [m.get("name") for m in members if isinstance(m, dict)]
+    # The published registry is a list of member-name strings; some internal
+    # representations use objects with a "name" key. Support both.
+    got: list[str] = []
+    for m in members:
+        if isinstance(m, str):
+            got.append(m)
+        elif isinstance(m, dict) and isinstance(m.get("name"), str):
+            got.append(m["name"])
+        else:
+            warn(f"unrecognized member entry: {m!r}")
     if sorted(got) != sorted(CANONICAL):
-        fail(f"member set drift: got {sorted(got)}")
+        fail(f"member set drift: got {sorted(got)}; expected {sorted(CANONICAL)}")
     else:
         oks += 1
+    disabled = doc.get("default_disabled") if isinstance(doc, dict) else None
+    if isinstance(disabled, list):
+        for d in disabled:
+            if d not in CANONICAL:
+                warn(f"default_disabled lists unknown member {d!r}")
+            elif d in GATED:
+                warn(f"default_disabled gates a gated member {d!r} — confirm() still required")
     for m in members:
-        if isinstance(m, dict) and m.get("name") not in CANONICAL:
-            warn(f"unknown member {m.get('name')!r}")
+        name = m if isinstance(m, str) else (m.get("name") if isinstance(m, dict) else None)
+        if name and name not in CANONICAL:
+            warn(f"unknown member {name!r}")
     return fails, warns, oks
 
 
