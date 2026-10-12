@@ -77,6 +77,11 @@ OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP inte
 - [ ] Error codes mapped to actions; `-32022` used for version refusal.
 - [ ] Statelessness proven by a replay test.
 
+## Worked examples
+Good and bad client behaviour, with the detection signal for each, live in
+`references/examples.md` (discover-first negotiation, `-32022` refusal, tasks
+extension, header-casing trap).
+
 ## References
 - changelog: references/changelog.md
 - error codes: references/error-codes.md
