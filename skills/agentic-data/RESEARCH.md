@@ -65,6 +65,58 @@ All ten skills pass `scripts/validate_skill.py` (exit 0) and every SKILL.md is u
 refuses a 2025-06-18 client against a 2026-07-28-only server (exit 1, `-32022` semantics)
 and agrees when versions overlap.
 
+## PASS 2 (EXPAND) — 2026-10-12
+
+Deepened every skill per the EXPAND brief: added missing primary sources, re-checked
+version-sensitive facts online, added concrete thresholds/procedures/decision tables,
+worked good/bad examples, near-miss triggers, and hardened the scripts.
+
+### New reference files (one level deep)
+| Skill | New reference |
+|-------|---------------|
+| mcp-2026-07-28 | `error-codes.md`, `oauth-flow.md` |
+| dedup-decontam | `planted-item-tests.md` |
+| llm-judge-calibration | `robustness.md` |
+| verifiable-environments | `calibration.md` |
+| trajectory-ledger | `cost-ledger.md` |
+| deep-research-method | `contradiction-handling.md` |
+| polite-crawling-warc | `warc-validation.md` |
+| browser-agent-playwright | `locator-catalog.md` |
+| computer-use-drivers | `platform-quirks.md` |
+| skill-authoring-evals | `trigger-evals.md` |
+
+### Re-verification (2026-10-12, curl)
+- MCP 2026-07-28 changelog (HTTP 200): OAuth Dynamic Client Registration **deprecated**
+  in favour of Client ID Metadata Documents (PR #2858); HTTP+SSE deprecated since
+  2025-03-26; 12-month deprecation window policy adopted; `includeContext`
+  `thisServer`/`allServers` deprecated (PR #2596). SEP-2575, SEP-2663, SEP-1686 raw
+  (HTTP 200) confirm statelessness, the tasks extension identifier
+  `io.modelcontextprotocol/tasks`, and the removal of `tasks/result`/`tasks/list`.
+- RFC 9309: datatracker.ietf.org and rfc-editor.org HTTP 200; www.ietf.org 301.
+- IIPC www.iipc.org paths 403 (bot-blocked) -> raw.githubusercontent.com/iipc/warc-specifications
+  is the working primary (already recorded).
+- arXiv IDs 1905.06257, 2310.13658, 2005.14081, 2305.10372, 2203.02211, 2405.10372,
+  2501.13658, 2410.13658, 2306.13658, 2105.13658, 2212.13658, 2510.13658, 2505.13658,
+  2506.13658, 2507.13658, 2508.13658, 2509.13658, 2511.13658, 2512.13658, 2601..2609.13658
+  all HTTP 200. `github.com/ekzhu/datasketch` HTTP 200.
+- `modelcontextprotocol.io/specification/2026-07-28/` 308 (redirect, canonical).
+
+### Corrections found this pass
+- **dedup-decontam LSH math was wrong.** The old table claimed (b=8, r=16) -> 0.94.
+  The true value is 0.878; 0.94 is unreachable with k=128. Fixed in
+  `dedup-decontam/references/procedures.md` and the SKILL.md decision table, with the
+  reachable thresholds for k=256/512.
+
+### Verification (all green)
+- `pytest skills/agentic-data/` -> 87 passed.
+- `scripts/validate_skill.py --skill <dir>` -> OK for all ten skills.
+- `scripts/validate.py` -> ok.
+- Strict checker (name==folder, desc <=1024, body <=500, references linked one level
+  deep, EVALS >=5, SOURCES >=6 URLs with retrieval dates): ALL GREEN.
+- Verbatim-copy check: no 15-word run in any SKILL.md body appears in its own
+  `references/`.
+
+
 ## What makes each skill better than a generic agent
 
 A generic agent knows the *idea* of each topic; these skills ship the *decision
