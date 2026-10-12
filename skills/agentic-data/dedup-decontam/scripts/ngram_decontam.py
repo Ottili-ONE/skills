@@ -44,20 +44,6 @@ def ngrams(tokens: list, n: int) -> set:
     return {tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)}
 
 
-def normalize(text: str) -> str:
-    text = text.replace("\ufeff", "").replace("\u200b", "").replace("\u200c", "")
-    text = text.replace("\u200d", "")
-    out = []
-    for ch in text:
-        if ch == "\r":
-            continue
-        if ord(ch) < 32 and ch not in "\n\t":
-            continue
-        out.append(ch)
-    s = "".join(out)
-    s = s.lower()
-    return " ".join(s.split())
-
 
 
 def main_args(argv=None) -> int:
@@ -76,7 +62,12 @@ def main() -> int:
     ap.add_argument("--corpus", nargs="+", required=True)
     ap.add_argument("--prompts", nargs="+", required=True)
     ap.add_argument("--n", type=int, default=DEFAULT_N)
-    ap.add_argument("--tokenize", choices=["gpt2", "raw"], default="gpt2")
+    ap.add_argument("--tokenize", choices=["gpt2", "raw", "bpe"], default="gpt2",
+                    help="gpt2 = apply the GPT-2 pre-tokenizer regex; raw = whitespace split; "
+                         "bpe = input is already tokenized (space-separated token strings), e.g. "
+                         "output from a real BPE tokenizer -- this is the mode that matches a "
+                         "benchmark tokenized with GPT-2/GPT-3/etc. Using raw chars on BPE-tokenized "
+                         "data misses real leakage and over-reports (SKILL.md pitfall P4).")
     ap.add_argument("--manifest", default=None, help="write JSON manifest here")
     args = ap.parse_args()
 
@@ -93,6 +84,8 @@ def main() -> int:
             return 1
         text = normalize(text)
         toks = tokenize_gpt2(text) if args.tokenize == "gpt2" else text.split()
+        # --bpe is identical to --raw here: the caller is responsible for feeding
+        # already-tokenized input. The distinction is documented, not enforced.
         prompt_ngrams |= ngrams(toks, args.n)
 
     hits = 0

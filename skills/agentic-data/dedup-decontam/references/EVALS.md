@@ -72,6 +72,16 @@ held-out clean set before applying. Never hardcode the threshold in logic — pa
 it in via `--threshold`. `scripts/embed_decontam.py` runs offline on precomputed
 embeddings (JSON or numpy).
 Failure signs: threshold copied from another model's blog post; no calibration
+
+## E10 — the two-normalizer trap
+Prompt: "Why does my exact-dedup report 0 duplicates while my n-gram decontam reports leaks on the same corpus?"
+Expected: the answer is that the pipeline has two normalizers -- `normalize.py` for hashing and a private copy inside `ngram_decontam.py` -- and they can drift apart. The fix is a single source of truth: `ngram_decontam.normalize` must be `normalize.normalize`. Verify with `ngram_decontam.normalize is normalize.normalize`.
+Failure signs: `ngram_decontam.normalize.__module__ == "ngram_decontam"` (a private copy still exists); the two functions disagree on BOM/zero-width/case input.
+
+## E11 — `--tokenize bpe` for a real BPE tokenizer
+Prompt: "My benchmark is tokenized with a real BPE tokenizer. Which `--tokenize` mode do I use?"
+Expected: `--tokenize bpe` -- the caller feeds already-tokenized input (space-separated token strings) and the n-gram window runs over tokens. `--tokenize raw` splits on whitespace and is the fallback; `--tokenize gpt2` applies the GPT-2 pre-tokenizer regex. Using raw chars on BPE-tokenized data misses real leakage and over-reports false positives (pitfall P4).
+Failure signs: `--tokenize raw` chosen for a BPE-tokenized benchmark; `--tokenize bpe` not listed in the choices.
 step; threshold baked into the script.
 
 ## E8 — embedding decontam is clean when vectors are orthogonal

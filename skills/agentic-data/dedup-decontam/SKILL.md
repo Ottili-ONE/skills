@@ -50,6 +50,7 @@ remove duplicates and prevent test-set leakage.
 - k < 64 -> MinHash estimate is unstable; the planted-item test will fail.
 - n-gram decontamination uses raw chars while the benchmark is BPE-tokenized ->
   you will miss real leakage and over-report false positives; match the tokenization.
+- `ngram_decontam.py` shipped its own private `normalize()` alongside the import from `normalize.py` -> the pipeline had two normalizers that could drift apart, so exact-dedup hashes one canonical form while n-gram scanning uses another. The private copy is deleted; `ngram_decontam.normalize` is now `normalize.normalize`, a single source of truth.
 - Planted-item test passes while real duplicates are missed -> LSH bands/rows are
   tuned wrong; re-run with explicit `--bands`/`--rows` for the target threshold.
 - Embedding threshold copied from another model's blog post -> it does not transfer;
@@ -74,6 +75,7 @@ remove duplicates and prevent test-set leakage.
 - [ ] Normalization is deterministic and documented.
 - [ ] Every dropped item has a reason in the manifest.
 - [ ] n-gram size matches the benchmark's tokenization.
+- [ ] There is exactly one normalizer in the pipeline (`normalize.normalize`); no script defines its own.
 - [ ] Embedding threshold is pinned per model, not hardcoded in logic.
 
 ## Worked examples

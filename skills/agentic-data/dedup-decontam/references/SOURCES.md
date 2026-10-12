@@ -1,6 +1,7 @@
 # SOURCES — dedup-decontam
 
 Retrieval date 2026-10-12. Every URL below was fetched live on that date.
+Re-verified 2026-10-12 (EXPAND pass): datasketch is still at 2.0.0 on PyPI (the `affine32` default holds); the GPT-2 pre-tokenizer regex was re-fetched from openai/gpt-2 `src/encoder.py` line 53 and matches the pattern baked into `ngram_decontam._GPT2_PAT` (`'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+`). The MMLU repo (hendrycks/test) contains no decontamination code of its own -- the n=13 window comes from the MMLU paper (arXiv 2009.03300) and the community decontamination practice; the repo is cited as the benchmark source, not the n-gram source.
 Version-sensitive facts are marked with the version they were verified for.
 
 | # | URL | What was used | Version / date verified | Conflict |
@@ -14,7 +15,8 @@ Version-sensitive facts are marked with the version they were verified for.
 | 7 | https://arxiv.org/abs/2203.08975 | A Survey of Multi-Agent Deep Reinforcement Learning with Communication — used as a control confirming the arXiv API path returns real metadata | arXiv 2203.08975, title re-verified 2026-10-12 | no domain content; control only |
 | 8 | https://arxiv.org/abs/2206.07682 | Emergent Abilities of Large Language Models — benchmark-eval context for why decontamination matters | arXiv 2206.07682, title re-verified 2026-10-12 | none |
 | 9 | https://arxiv.org/abs/2309.00986 | ModelScope-Agent: Building Your Customizable Agent System with Open-source Large Language Models — agent-system context | arXiv 2309.00986, title re-verified 2026-10-12 | none |
-| 10 | https://github.com/hendrycks/test | MMLU repo (default branch `master`, verified live): the recommended n=13 n-gram window for MMLU-style benchmark decontamination | fetched 2026-10-12 (HTTP 200) | none |
+| 10 | https://github.com/hendrycks/test | MMLU repo (default branch `master`, verified live): the benchmark source. The n=13 window is NOT in this repo -- it comes from the MMLU paper (arXiv 2009.03300) and community decontamination practice; the repo is cited here as the benchmark source, not as the n-gram source | fetched 2026-10-12 (HTTP 200) | none |
+| 11 | https://raw.githubusercontent.com/openai/gpt-2/master/src/encoder.py | GPT-2 pre-tokenizer regex (line 53): `"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"`. This is the regex `ngram_decontam._GPT2_PAT` is based on; re-verified byte-for-byte on 2026-10-12 | fetched 2026-10-12 (HTTP 200, 117 lines) | none |
 
 ## Version-sensitive facts
 - **datasketch v2.0.0** changed the default MinHash permutation scheme to `affine32`.
