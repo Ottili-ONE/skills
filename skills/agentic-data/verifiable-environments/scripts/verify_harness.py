@@ -305,10 +305,6 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-
 def load_bypass_register(path: str) -> list[dict]:
     """Load the bypass register. Each row: {check, direct, indirect, cosmetic, severity, defences}."""
     p = Path(path)
@@ -375,3 +371,7 @@ def cmd_bypass(args: argparse.Namespace) -> int:
         return 1
     print("PASS: every check has a bypass-register entry with >= 2 defences", file=sys.stderr)
     return 0
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+
