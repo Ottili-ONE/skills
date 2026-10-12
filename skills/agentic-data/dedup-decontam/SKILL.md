@@ -76,6 +76,32 @@ remove duplicates and prevent test-set leakage.
 - [ ] n-gram size matches the benchmark's tokenization.
 - [ ] Embedding threshold is pinned per model, not hardcoded in logic.
 
+## Worked examples
+
+### Good — near-duplicate pair kept, exact dropped
+Corpus: 100k docs. Pair A/B differ in 2 of 5 words and share a 64-gram
+signature at band 14. Threshold table says `jaccard >= 0.95` => drop one.
+
+1. Normalize both (lowercase, strip punctuation, split on whitespace).
+2. MinHash 128 bands, LSH query returns A as a candidate for B.
+3. Exact check: 5/5 6-grams match => exact duplicate, drop B, record reason.
+4. Near check: jaccard 0.96 on 6-grams => above threshold, drop B.
+
+Result: one canonical copy, every drop recorded with a reason.
+
+### Bad — threshold set to "whatever makes the test pass"
+Setting `jaccard_threshold = 0.5` to keep more items.
+
+Why it fails: at 0.5 the decontamination is decorative — the benchmark's
+planted items are still present in the output. The planted-item test
+(5 exact + 5 near) exists precisely to catch this: it would fail 5/5 near.
+
+### Bad — embedding threshold pinned to a model version
+`EMBED_THRESHOLD = 0.85` hardcoded for `text-embedding-3-large`.
+
+Why it fails: the threshold moves with the model. Pin it per model in the
+config and re-derive it on every model change; the script reads the pin,
+never a constant.
 ## References
 - procedures: references/procedures.md
 - planted-item tests: references/planted-item-tests.md
