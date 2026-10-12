@@ -323,3 +323,40 @@ Every skill carries `references/SOURCES.md` with at least six primary sources, e
 recorded with URL, retrieval date, what was used from it, and any conflict between
 sources. Version-sensitive facts are marked with the version they were verified for
 and a re-verification note.
+
+## PASS 5 (COMPETITIVE AUDIT) — 2026-10-12
+
+Task 3 of the R3-01 brief asks what existing public skills do and what this job's
+do differently. Every one of the ten skills now carries a
+`## What existing public skills do (and what this one does differently)` section in
+`references/DESIGN.md`, built from a live survey of the four known directories:
+
+| Directory | URL | Fetched 2026-10-12 | What it has for these topics |
+|-----------|-----|--------------------|------------------------------|
+| `anthropics/skills` | github.com/anthropics/skills | HTTP 200 | reference skills + `template-skill`; **no** MCP, browser, crawler, dedup, judge, trajectory, verifier or authoring-eval skill |
+| `openai/skills` | github.com/openai/skills | HTTP 200 (deprecated, redirects to `openai/plugins`) | `.system/.curated/.experimental` tier flow; no coverage of the ten topics |
+| Fastio 2026 directory | fast.io/resources/awesome-claude-skills-directory-2026/ | HTTP 200 | `Agent-Browser` (ref-based targeting, 14k stars), `Paper Search`, `Code-Reviewer`, `Design Auditor`, `Superpowers`; **no** WARC, dedup, judge-calibration or trajectory skill |
+| `skills.cat` | skills.cat | HTTP 200 | community catalogue; no entry for any of the ten topics |
+
+### Per-skill gap statement (the short version)
+
+| Skill | The closest public thing | What this job's skill does instead |
+|-------|--------------------------|-----------------------------------|
+| `mcp-2026-07-28` | the MCP spec + SDKs (not a skill) | pins the revision, ships a MUST/MAY/removed table, an error-code action map, a version-negotiator and a stateless-replay probe |
+| `skill-authoring-evals` | `template-skill` + prose "what goes in a SKILL.md" | treats the description as a measurable trigger with should-fire/should-not-fire evals and precision/recall |
+| `computer-use-drivers` | `Agent-Browser` (browser only) | desktop accessibility-tree driver with the SDK's `confirm()` gate, coordinate scaling rule and 17-member registry diff |
+| `browser-agent-playwright` | `playwright-mcp`, vision agents | mandatory tree-first grounding, injection sanitizer with a trust ladder, locator fallback chain, handoff envelope |
+| `polite-crawling-warc` | Heritrix 3 (a crawler, not a skill) | RFC 9309 robots decisions, measured rate limiting, WARC 1.1 writer+validator, resume state, hostile-input handling |
+| `dedup-decontam` | datasketch + arXiv papers (no skill) | one normalization contract, MinHash threshold table for k=128, GPT-2 BPE tokenization-matching rule, model-dependent embedding threshold, planted-item test |
+| `verifiable-environments` | `openai/evals` (library, not a skill) | verifier-of-verifier, measured power against good/broken/lazy agents, machine-readable bypass register, pass-rate calibration |
+| `llm-judge-calibration` | JudgeLM / Prometheus papers (research code) | judge/teacher separation, rubric lint, calibration set with ground truth, drift control, robustness probes |
+| `trajectory-ledger` | JSON Schema / ML logs (not replayable) | typed schema, grounding rules that distinguish real from fabricated success, chained `state_hash`, replay with divergence handling, single-unit cost ledger |
+| `deep-research-method` | `Paper Search`, CRAAP test (rubrics, not procedures) | pre-read 0-10 quality scoring, primary-first ordering, mandatory retrieval dates, six-step contradiction resolution, stated confidence ladder |
+
+### Verdict
+
+No replacement was made: all ten map 1:1 to the seed topics and no public skill
+covers any of them at skill granularity. The competitive audit found no existing
+skill that would make one of these redundant; it did confirm that every one of the
+ten fills a gap the directories leave open. The comparison sections are the
+evidence; the per-skill `references/SOURCES.md` files record the live fetches.
