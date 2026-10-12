@@ -333,7 +333,7 @@ def audit_bypass_register(rows: list[dict], checks: list[dict]) -> list[str]:
     """
     failures: list[str] = []
     for c in checks:
-        cid = c.get("id", "?")
+        cid = c.get("id") or c.get("name", "?")
         entries = [r for r in rows if r.get("check") == cid]
         if not entries:
             failures.append(f"FAIL: check {cid} has no bypass-register entry")

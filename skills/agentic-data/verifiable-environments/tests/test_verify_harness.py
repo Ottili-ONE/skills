@@ -121,3 +121,50 @@ def test_full_pipeline_with_spec_and_register() -> None:
     )
     assert r.returncode == 0, r.stderr
     assert "PASS: harness discriminates" in r.stderr
+
+
+def test_bypass_audit_passes_on_generated_register() -> None:
+    r = run(
+        "--bypass-audit", str(FIX / "SPEC.json"), str(FIX / "bypass-register.jsonl"),
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 0, r.stderr
+    assert "PASS: every check has a bypass-register entry with >= 2 defences" in r.stderr
+
+
+def test_bypass_audit_fails_when_register_is_empty() -> None:
+    empty = FIX / "bypass-empty.jsonl"
+    empty.write_text("")
+    r = run(
+        "--bypass-audit", str(FIX / "SPEC.json"), str(empty),
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 1
+    assert "no bypass-register entry" in r.stderr
+
+
+def test_bypass_audit_fails_on_single_defence() -> None:
+    one = FIX / "bypass-one-defence.jsonl"
+    one.write_text(json.dumps({
+        "check": "output_file", "severity": "low",
+        "direct": "x", "indirect": "y", "cosmetic": "z",
+        "defences": ["output_file.exists"],
+    }) + "\n")
+    r = run(
+        "--bypass-audit", str(FIX / "SPEC.json"), str(one),
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 1
+    assert "rule of two needs >= 2" in r.stderr
