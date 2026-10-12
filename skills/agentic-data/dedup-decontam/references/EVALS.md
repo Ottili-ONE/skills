@@ -1,8 +1,3 @@
-# EVALS — dedup-decontam
-
-Each eval is a realistic prompt an agent might receive, the expected behaviour
-per this skill, and failure signs to look for.
-
 ## E1 — remove duplicates from a web-scraped corpus
 Prompt: "I scraped 50,000 forum posts into a folder. Remove exact and near
 duplicates before training."
@@ -73,18 +68,18 @@ it in via `--threshold`. `scripts/embed_decontam.py` runs offline on precomputed
 embeddings (JSON or numpy).
 Failure signs: threshold copied from another model's blog post; no calibration
 
-## E10 — the two-normalizer trap
+## E8 — the two-normalizer trap
 Prompt: "Why does my exact-dedup report 0 duplicates while my n-gram decontam reports leaks on the same corpus?"
 Expected: the answer is that the pipeline has two normalizers -- `normalize.py` for hashing and a private copy inside `ngram_decontam.py` -- and they can drift apart. The fix is a single source of truth: `ngram_decontam.normalize` must be `normalize.normalize`. Verify with `ngram_decontam.normalize is normalize.normalize`.
 Failure signs: `ngram_decontam.normalize.__module__ == "ngram_decontam"` (a private copy still exists); the two functions disagree on BOM/zero-width/case input.
 
-## E11 — `--tokenize bpe` for a real BPE tokenizer
+## E9 — `--tokenize bpe` for a real BPE tokenizer
 Prompt: "My benchmark is tokenized with a real BPE tokenizer. Which `--tokenize` mode do I use?"
 Expected: `--tokenize bpe` -- the caller feeds already-tokenized input (space-separated token strings) and the n-gram window runs over tokens. `--tokenize raw` splits on whitespace and is the fallback; `--tokenize gpt2` applies the GPT-2 pre-tokenizer regex. Using raw chars on BPE-tokenized data misses real leakage and over-reports false positives (pitfall P4).
 Failure signs: `--tokenize raw` chosen for a BPE-tokenized benchmark; `--tokenize bpe` not listed in the choices.
 step; threshold baked into the script.
 
-## E8 — embedding decontam is clean when vectors are orthogonal
+## E10 — embedding decontam is clean when vectors are orthogonal
 Prompt: "My corpus and prompts are unrelated; the embedding detector must not
 false-positive."
 Expected: with orthogonal or dissimilar vectors, `embed_decontam.py` reports
@@ -92,14 +87,14 @@ Expected: with orthogonal or dissimilar vectors, `embed_decontam.py` reports
 Failure signs: false positives on unrelated documents (normalization bug,
 threshold too low, dimension mismatch).
 
-## E9 — embedding detector rejects an out-of-range threshold
+## E11 — embedding detector rejects an out-of-range threshold
 Prompt: "Run the embedding detector with --threshold 1.5."
 Expected: the script exits 1 with a FAIL about the threshold being outside
 [-1, 1); it does not silently clamp or proceed.
 Failure signs: threshold silently clamped; no validation.
 
 
-## E10 — LSH banding must match the achievable threshold, not the requested one
+## E12 — LSH banding must match the achievable threshold, not the requested one
 Prompt: "Tune LSH for k=128 to a 0.94 Jaccard threshold."
 Expected: `bands_for(128, 0.94)` returns the closest achievable (b, r) and prints
 a WARN that 0.94 is not reachable with k=128 (the nearest is b=8, r=16 ->
