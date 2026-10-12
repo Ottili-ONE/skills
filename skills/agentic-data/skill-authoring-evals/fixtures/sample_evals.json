@@ -1,0 +1,11 @@
+[
+  {"id": "E1", "prompt": "My skill folder is `my-skill` but the frontmatter says `name: other`. What happens?", "should_fire": true},
+  {"id": "E2", "prompt": "My description is 1,400 characters. Is that a problem?", "should_fire": true},
+  {"id": "E3", "prompt": "My skill fires on tasks that have nothing to do with it.", "should_fire": true},
+  {"id": "E4", "prompt": "I linked `references/foo.md` but the file is missing.", "should_fire": true},
+  {"id": "E5", "prompt": "My SKILL.md is 600 lines. What do I do?", "should_fire": true},
+  {"id": "E6", "prompt": "I ran my skill on five prompts and it produced good output. Is that enough?", "should_fire": true},
+  {"id": "N1", "prompt": "Write a README for my new Python package.", "should_fire": false},
+  {"id": "N2", "prompt": "Explain how Docker networking works.", "should_fire": false},
+  {"id": "N3", "prompt": "What is the capital of France?", "should_fire": false}
+]
