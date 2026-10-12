@@ -95,3 +95,34 @@ def test_audit_rejects_empty_claims_file() -> None:
     r = run("audit", str(FIX / "good.jsonl"), str(out))
     assert r.returncode == 1
     assert "empty" in r.stderr
+
+def test_cite_emits_kept_sources() -> None:
+    r = run("cite", str(FIX / "good.jsonl"))
+    assert r.returncode == 0, r.stderr
+    assert "europa.eu" in r.stderr
+    assert "PASS: 3 citation" in r.stderr
+
+
+def test_cite_drops_below_min() -> None:
+    r = run("cite", str(FIX / "bad.jsonl"), "--min", "6")
+    assert r.returncode == 1
+    assert "no kept sources" in r.stderr
+
+
+def test_cite_missing_file_exit_2() -> None:
+    r = run("cite", str(FIX / "nope.jsonl"))
+    assert r.returncode == 2
+    assert "not found" in r.stderr
+
+
+def test_fetch_lists_urls() -> None:
+    r = run("fetch", str(FIX / "good.jsonl"))
+    assert r.returncode == 0, r.stderr
+    assert "europa.eu" in r.stdout
+    assert "PASS: 3 fetch URL" in r.stderr
+
+
+def test_fetch_empty_when_all_below_min() -> None:
+    r = run("fetch", str(FIX / "bad.jsonl"), "--min", "6")
+    assert r.returncode == 1
+    assert "no kept sources" in r.stderr

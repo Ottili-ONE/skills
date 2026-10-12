@@ -158,6 +158,31 @@ def cmd_audit(sources: list[dict], claims_path: Path, min_score: int) -> int:
     return 0
 
 
+def cmd_cite(sources: list[dict], min_score: int) -> int:
+    """Emit a citation block: one line per kept source, URL + retrieval date."""
+    kept = [s for s in sources if score_source(s) >= min_score and s.get("url")]
+    if not kept:
+        print("FAIL: no kept sources to cite", file=sys.stderr)
+        return 1
+    for s in kept:
+        ver = f" v={s['version']}" if s.get("version") else ""
+        print(f'{s["url"]} retrieved={s.get("retrieved", "?")}{ver}', file=sys.stderr)
+    print(f"PASS: {len(kept)} citation(s) emitted", file=sys.stderr)
+    return 0
+
+
+def cmd_fetch(sources: list[dict], min_score: int) -> int:
+    """Dry-run the fetch list: every kept source's URL, in order, for curl."""
+    urls = [s["url"] for s in sources if score_source(s) >= min_score and s.get("url")]
+    if not urls:
+        print("FAIL: no kept sources to fetch", file=sys.stderr)
+        return 1
+    for u in urls:
+        print(u)
+    print(f"PASS: {len(urls)} fetch URL(s)", file=sys.stderr)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -176,8 +201,16 @@ def main() -> int:
     p.add_argument("pairs", type=Path)
     p.add_argument("--min", type=int, default=MIN_SCORE)
 
+    p = sub.add_parser("cite")
+    p.add_argument("sources", type=Path)
+    p.add_argument("--min", type=int, default=MIN_SCORE)
+
+    p = sub.add_parser("fetch")
+    p.add_argument("sources", type=Path)
+    p.add_argument("--min", type=int, default=MIN_SCORE)
+
     args = ap.parse_args()
-    if args.cmd == "score" and not args.sources.is_file():
+    if args.cmd in ("score", "cite", "fetch") and not args.sources.is_file():
         print(f"FAIL: sources file not found: {args.sources}", file=sys.stderr)
         return 2
     sources = load_sources(args.sources)
@@ -185,6 +218,10 @@ def main() -> int:
         return cmd_score(sources, args.min)
     if args.cmd == "contradictions":
         return cmd_contradictions(sources, args.pairs, args.min)
+    if args.cmd == "cite":
+        return cmd_cite(sources, args.min)
+    if args.cmd == "fetch":
+        return cmd_fetch(sources, args.min)
     return cmd_audit(sources, args.claims, args.min)
 
 
