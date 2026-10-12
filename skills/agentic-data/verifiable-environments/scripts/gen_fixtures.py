@@ -72,10 +72,23 @@ def main() -> int:
     write_agent(out / "broken", None, None)
     write_agent(out / "lazy", json.dumps({"status": "ok"}), None)
 
-    # A neutered check (always-pass) for the verify-the-verifier step.
-    neutered = {"checks": [dict(c, name=c["name"] + "_neutered") for c in CHECKS["checks"]]}
+    # A neutered check set for the verify-the-verifier step: the live checks with
+    # exactly one check flipped to always-pass (it asserts a marker file no agent
+    # creates, with exists=False, so it passes for good, broken and lazy alike).
+    # Flipping summary_file is decisive: the lazy agent writes output.json but no
+    # summary, so a live summary check is the only thing between it and a perfect
+    # score. With summary neutered, the lazy agent passes everything and power
+    # collapses to 0 vs lazy -- proving the harness detects a dead check.
+    neutered = {"checks": [
+        dict(c) for c in CHECKS["checks"]
+        if c["name"] != "summary_file"
+    ] + [{
+        "name": "summary_file_neutered",
+        "path": "__neutered_marker__",
+        "exists": False,
+        "spec_ref": "verify-the-verifier: this check is intentionally always-pass",
+    }]}
     (out / "checks_neutered.json").write_text(json.dumps(neutered, indent=2) + "\n", encoding="utf-8")
-
     print(f"PASS: fixtures written to {out}", file=sys.stderr)
     return 0
 
