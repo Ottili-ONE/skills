@@ -64,6 +64,16 @@ click buttons, type into fields, scroll, read what is on screen.
 | Tree present but sparse (some apps) | Tree for identity, pixels only for *position* | Never infer meaning from a screenshot alone |
 | No tree at all (game, canvas) | Do not use this skill | Document skill, canvas renderer, or OCR skill |
 
+- **Tree first**: enumerate `role`/`name`/`value`/`description` before any click. The
+  screenshot gives pixels; the tree gives *what is at those pixels*. A tree node with
+  `role: "unknown"` and no `name` is unusable — skip it.
+- **Error classification**: `ToolError` -> rewrite as a fixed phrase, the run continues
+  and the model sees only the rewrite. `ToolsetUsageError` -> stop the run, never show
+  to the model. Any other exception -> stop; do not swallow.
+- **Scaling**: every model coordinate is in full-screenshot pixels; scale into a NEW
+  array; report `cursor_position` back in screenshot pixels; keep the capture size
+  fixed for the session. Out of bounds -> `ToolError`, never clamp.
+
 ### D3 — platform capability matrix
 | Platform | Tree depth | Speed | Permissions | Notes |
 |---|---|---|---|---|
@@ -79,6 +89,11 @@ click buttons, type into fields, scroll, read what is on screen.
 - A member is missing from the override map -> it is sent as `enabled: false` and the
   call silently no-ops. Check the full 17-member set.
 - Running `type` without `confirm()` enabled -> the action is ungated and destructive.
+- Matching on visible label text instead of the accessible `name` -> wrong widget.
+- Clicking a coordinate derived from a screenshot alone -> clicking blind.
+- Clamping an out-of-bounds coordinate -> the model retries and compounds.
+- Passing `error.message` to the model -> screen content leaks.
+- A pointer method that never scales -> unsafe; `validate_driver.py` fails it.
 
 ## Pitfalls from research
 - P1: `input` arrays are shared with message history; scaling in place corrupts the conversation.
@@ -130,6 +145,9 @@ content if it must.
 - procedures: references/procedures.md
 - platform quirks: references/platform-quirks.md
 - worked examples: references/examples.md
+- tree protocol: references/tree-protocol.md
+- safety layers: references/safety-layers.md
+- coordinate scaling: references/coordinate-scaling.md
 - SOURCES: references/SOURCES.md
 - EVALS: references/EVALS.md
 - fixtures: fixtures/sample_driver.py, fixtures/registry_20260801.json

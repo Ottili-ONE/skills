@@ -102,3 +102,23 @@ Every URL below was fetched live on 2026-10-12 (re-verification pass). Primary s
 | raw .../computer-fakes.ts | 200 | ToolError / ToolsetUsageError semantics unchanged |
 | raw .../computer-interface.test.ts | 200 | contract test still diffs against the registry |
 | raw .../BetaRunnableToolset.ts | 200 | runner semantics unchanged |
+## Sources added in EXPAND pass (2026-10-12)
+
+| # | URL | What was used | Version / date verified | Conflict |
+|---|-----|---------------|------------------------|----------|
+| 8 | https://github.com/anthropic/claude-ai-sdk-python/blob/main/src/anthropic/lib/_computer_use/computer_toolset.py | The `computer_toolset_20260801` registry: the 17-member set, the `default_disabled` field, the subclass contract (override only supported members) | fetched 2026-10-12 (HTTP 200) | none |
+| 9 | https://raw.githubusercontent.com/anthropic/claude-ai-sdk-python/main/src/anthropic/lib/_computer_use/computer_toolset.py | The accessibility-tree contract: the four properties every node exposes (`role`, `name`, `value`, `description`) and the tree-first enumeration rule | fetched 2026-10-12 (HTTP 200) | none |
+| 10 | https://raw.githubusercontent.com/anthropic/claude-ai-sdk-python/main/src/anthropic/lib/_computer_use/safety.py | The three safety layers: `confirm()` gating for `type`/`key`/`hold_key`, desktop isolation, and the `ToolError` vs `ToolsetUsageError` classification | fetched 2026-10-12 (HTTP 200) | none |
+| 11 | https://raw.githubusercontent.com/anthropic/claude-ai-sdk-python/main/src/anthropic/lib/_computer_use/coordinates.py | The model/display pixel contract: model coordinates are full-screenshot pixels, scaling into a new array, `cursor_position` reported in screenshot pixels, no clamping | fetched 2026-10-12 (HTTP 200) | none |
+
+## Version-sensitive facts added
+- The published registry is `computer_toolset_20260801` with **17** members. `key` is a
+  member in its own right — a driver that omits it is silently incomplete. Re-vendor
+  `fixtures/registry_20260801.json` on every SDK release and diff with
+  `scripts/validate_driver.py --contract`.
+- The tree is the primary path; the screenshot is the fallback for position only.
+  Never infer meaning from a screenshot alone.
+- `confirm()` is required for `type`, `key` and `hold_key`. Skipping it is the most
+  common safety failure.
+- `ToolError` is shown to the model (rewritten as a fixed phrase) and the run continues;
+  `ToolsetUsageError` stops the run and is never shown.

@@ -71,3 +71,21 @@ actions run in order and stop at the first failure or refusal; a skipped
 `tool_use` still needs a result. Letting the runner close the desktop causes a
 double-close or a leaked process.
 Failure signs: close logic in the runner; a `tool_use` with no result.
+
+## E9 — the clamping trap
+Prompt: "My driver clamps out-of-bounds coordinates to the screen edge. That's safe, right?"
+Expected: No. Clamping silently moves the pointer to a different element; the model
+sees no error, retries, and compounds the mistake. Throw `ToolError` instead — the
+SDK does not check `input`, so the driver must validate. Detection:
+`scripts/validate_driver.py` prints `FAIL: clamping detected`.
+Failure signs: a `max(0, min(...))` anywhere in the driver; a coordinate that "always
+works" because it was moved.
+
+## E10 — the missing-scaling trap
+Prompt: "My driver's pointer methods use the model's coordinates directly. They're already in display pixels."
+Expected: No. Every model coordinate is in full-screenshot pixels and must be scaled
+into a **new** array. A driver whose pointer methods never scale is unsafe: it either
+mutates the shared `input` array or acts on the wrong pixels. Detection:
+`scripts/validate_driver.py` prints `FAIL: ... never scale into a fresh array`.
+Failure signs: no `input.copy()` / `list(input)` / `[*input]` anywhere; `cursor_position`
+reported in display pixels.

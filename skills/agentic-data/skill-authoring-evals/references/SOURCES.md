@@ -27,3 +27,20 @@ Retrieval date 2026-10-12. Every URL below was fetched live on that date.
 - Source 8 (openai/skills) is deprecated and redirects to openai/plugins; the field rules
   are identical, so it is retained as a historical reference only.
 - No content conflicts between the specification and the four skill-creation guides.
+
+## Sources added in EXPAND pass (2026-10-12)
+
+| # | URL | What was used | Version / date verified | Conflict |
+|---|-----|---------------|------------------------|----------|
+| 11 | https://agentskills.io/skill-creation/evaluating-skills | The eval artefact contract: `evals.json` shape (id, prompt, should_fire, expected_output, files), the `benchmark.json` aggregation, the `iteration-N/<eval>/with_skill\|without_skill` layout, `timing.json` and `grading.json` | fetched 2026-10-12 (HTTP 200) | none |
+| 12 | https://agentskills.io/skill-creation/optimizing-descriptions | The trigger-eval methodology: should-trigger/should-not-trigger labels, train/validation split, precision and recall targets, the with_skill/without_skill baseline | fetched 2026-10-12 (HTTP 200) | none |
+
+## Version-sensitive facts added
+- The eval artefact contract is `evals.json` (cases) + a firing log per case +
+  `benchmark.json` (aggregated precision, recall, output delta). A case with only a
+  `with_skill/` directory has no baseline and the run is invalid.
+- Precision = should-fire prompts that fired / (should-fire that fired + should-not-fire
+  that fired). The denominator is the number of *fired* cases, not the number of correct
+  negatives — `tn/(tn+fp)` is the common mistake.
+- Targets are precision >= 0.9 and recall >= 0.9. Below 0.8 on either, rewrite the
+  description, not the body.
