@@ -67,6 +67,58 @@ accuracy issues, not missing artefacts.
    (trajectory-ledger body 87 L, deep-research-method 12 URLs).
 3. Re-ran `pytest skills/agentic-data/` after the edits: **121 passed**, exit 0.
 
+## PASS 4 (2026-10-12) — worked examples, script gaps, live re-verification
+
+Method: re-read every SKILL.md, re-ran `pytest skills/agentic-data/`, re-fetched
+every primary URL with curl, and re-ran `validate_skill.py --skill` on all ten.
+
+### 1. Worked examples
+All ten SKILL.md now carry a `## Worked examples` section (one good + two bad,
+each with a detection signal). mcp-2026-07-28 and skill-authoring-evals point at
+their existing `references/examples.md` instead of duplicating. Counts:
+
+| skill | body L | examples |
+|-------|--------|----------|
+| browser-agent-playwright | 93 | 3 |
+| computer-use-drivers | 136 | 3 |
+| dedup-decontam | 111 | 3 |
+| deep-research-method | 110 | 3 |
+| llm-judge-calibration | 103 | 3 |
+| mcp-2026-07-28 | 93 | 0 (in references/examples.md) |
+| polite-crawling-warc | 88 | 3 |
+| skill-authoring-evals | 117 | 0 (in references/examples.md) |
+| trajectory-ledger | 118 | 3 |
+| verifiable-environments | 139 | 3 |
+
+All under the 500-line budget.
+
+### 2. Scripts
+`deep-research-method/scripts/score_sources.py` gained `cite` and `fetch`
+subcommands (SKILL.md advertised them; the script only shipped
+`score`/`audit`/`contradictions`). 6 new tests. Total: **126 passed** (was 121).
+
+### 3. Re-verification (2026-10-12, curl)
+- MCP changelog 200, re-read in full — every fact in `references/changelog.md`
+  confirmed (sessions removed, `server/discover` added, tasks extension,
+  error-code renumbering, DCR deprecated, `includeContext` deprecated,
+  Roots/Sampling/Logging deprecated).
+- `modelcontextprotocol.io/community/feature-lifecycle` 200 — the deprecation
+  window is **at least twelve months**; recorded in `references/changelog.md`.
+- All 26 arXiv IDs re-fetched: 25 return 200 with correct titles.
+  `arxiv.org/abs/2310.13711` is a systematic-review *method* paper; the three
+  SOURCES.md files that cite it already described it as such, so no change.
+- `www.iso.org/standard/82833.html` 403 (bot-blocked) — corroborating-only, as
+  recorded. `github.com/.../modelcontextprotocol/blob/main/CHANGELOG.md` 404 —
+  the repo has no CHANGELOG.md; the spec changelog is the authoritative source
+  and is what the skill cites. No dead link pointed at it.
+- All other primary URLs (agentskills.io, RFC 9309, IIPC raw specs, ekzhu/datasketch,
+  playwright, anthropics SDK computer-toolset, openai/evals, OWASP) 200.
+
+### 4. Standard rules (re-run)
+`validate_skill.py --skill` on all ten: `0 0` fails everywhere. name==folder,
+desc<=1024, body<=500 L, references/ links one level deep, SOURCES>=6 URLs with
+2026-10-12 retrieval dates, EVALS>=5.
+
 ## Final state
 
 | artefact | count |
@@ -77,5 +129,5 @@ accuracy issues, not missing artefacts.
 | references/DESIGN.md | 10, trigger draft + procedure + scripts + 5 scenarios |
 | references/EVALS.md | 10, 7-12 evals each, no duplicate IDs |
 | scripts/*.py | 23 modules across the ten skills |
-| tests/test_*.py | 10 files, 122 test functions, 121 passing |
-| RESEARCH.md | ranked list, replacements (none), evidence status, 4 passes |
+| tests/test_*.py | 10 files, 126 test functions, 126 passing |
+| RESEARCH.md | ranked list, replacements (none), evidence status, 5 passes |
