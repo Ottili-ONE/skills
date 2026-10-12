@@ -283,3 +283,71 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def load_bypass_register(path: str) -> list[dict]:
+    """Load the bypass register. Each row: {check, direct, indirect, cosmetic, severity, defences}."""
+    p = Path(path)
+    if not p.is_file():
+        raise SystemExit(f"ERROR: bypass register not found: {path}")
+    rows: list[dict] = []
+    for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as exc:
+            print(f"FAIL: bypass register line {i} is not valid JSON: {exc}", file=sys.stderr)
+            raise SystemExit(1)
+    return rows
+
+
+def audit_bypass_register(rows: list[dict], checks: list[dict]) -> list[str]:
+    """Audit the bypass register against the spec checks.
+
+    Returns a list of failure strings (empty = PASS). Enforces:
+    - every check has at least one register entry (no un-audited check),
+    - no entry carries a critical (direct) severity,
+    - every check has >= 2 independent defences (rule of two).
+    """
+    failures: list[str] = []
+    for c in checks:
+        cid = c.get("id", "?")
+        entries = [r for r in rows if r.get("check") == cid]
+        if not entries:
+            failures.append(f"FAIL: check {cid} has no bypass-register entry")
+            continue
+        severities = {str(r.get("severity", "low")).lower() for r in entries}
+        if "critical" in severities:
+            failures.append(f"FAIL: check {cid} has a critical (direct) bypass")
+        defences: list[str] = []
+        for r in entries:
+            for d in r.get("defences", []):
+                if d not in defences:
+                    defences.append(d)
+        if len(defences) < 2:
+            failures.append(
+                f"FAIL: check {cid} has {len(defences)} defence(s); rule of two needs >= 2"
+            )
+    return failures
+
+
+def cmd_bypass(args: argparse.Namespace) -> int:
+    """Audit the bypass register against the checks in the spec."""
+    spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
+    checks = spec.get("checks", [])
+    rows = load_bypass_register(args.bypass)
+    failures = audit_bypass_register(rows, checks)
+    print(
+        f"INFO: bypass register: {len(rows)} entries for {len(checks)} checks, "
+        f"{len(failures)} problem(s)",
+        file=sys.stderr,
+    )
+    for f in failures:
+        print(f, file=sys.stderr)
+    if failures:
+        print(f"FAIL: {len(failures)} bypass-register problem(s)", file=sys.stderr)
+        return 1
+    print("PASS: every check has a bypass-register entry with >= 2 defences", file=sys.stderr)
+    return 0
