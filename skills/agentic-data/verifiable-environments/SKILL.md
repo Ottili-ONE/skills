@@ -56,6 +56,11 @@ for a check, you have not audited it.
   output) = low. Every check must have a written entry in the bypass register.
 - **Known-good pass rate**: >=80% required; below that the checks are too
   strict and will reject correct agents.
+- **Rule of two**: every check needs at least two independent defences (e.g. file
+  exists AND content matches AND it was written by the allowlisted tool). A check
+  with exactly one defence is a single point of failure: the agent either does the
+  intended work or finds the one unintended path. Record the defences in
+  `references/bypass-register.md`.
 - **Discriminating power**: `min(pass_good - pass_lazy, pass_good - pass_broken)`
   must be >= 0.30. Below that the checks have no discriminating power.
 
@@ -67,6 +72,8 @@ for a check, you have not audited it.
 - A check depends on wall-clock time -> flaky and gameable.
 - A check has no `spec_ref` pointing at the spec -> it was not derived from a spec.
 - A check has no bypass-register entry -> nobody has audited it.
+- A check has exactly one defence -> single point of failure; add a second defence
+  or split the check.
 - Known-good agent passes <80% -> the checks are too strict, relax them.
 - The harness exits 0 after a check is neutered -> the verifier is not verified.
 

@@ -46,6 +46,20 @@ work?*
 Record the bypasses in `references/bypass-register.md`. A check with a direct
 bypass is critical and must be redesigned.
 
+## 4b. Rule of two (per check)
+Every check needs at least two *independent* defences. A check with one defence is a
+single point of failure: the agent either does the intended work, or finds the one
+unintended path. Examples:
+- "file exists" alone -> agent creates an empty file. Add "content matches the spec".
+- "exit code 0" alone -> agent calls `exit 0` at the top. Add "stdout equals the
+  canonical output".
+- "tool was called" alone -> agent calls the tool with no effect. Add "the tool's
+  observable side effect is present".
+
+Record every defence in `references/bypass-register.md` next to the bypass it blocks.
+A check whose bypass-register entry says "no known bypass" is a check nobody has
+audited, not a check that is safe.
+
 ## 5. Sandbox contract (pinned)
 | Element   | Default        | Leak if set otherwise |
 |-----------|----------------|-----------------------|
