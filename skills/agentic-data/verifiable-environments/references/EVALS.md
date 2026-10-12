@@ -97,3 +97,16 @@ tuned on. If the known-good agent passes <80%, the checks are too strict —
 relax the checks, not the bar. Record the calibration run and the held-out run.
 Failure signs: threshold changed after seeing agent results; no held-out
 re-derivation; calibration set == training set.
+
+
+## E11 — prove the harness detects a dead check
+Prompt: "How do I prove my harness is not just reporting numbers?"
+Expected: Generate fixtures with `scripts/gen_fixtures.py --out <dir>`, run
+`scripts/verify_harness.py --checks checks.json --contract contract.json
+--good good --broken broken --lazy lazy --neutered-checks checks_neutered.json
+--json report.json`. It must exit 0 on the live run AND the neutered run must
+drop power (the lazy agent, which writes output.json but no summary, now
+passes every check). If power does not drop or the harness still exits 0, the
+verifier is not verified. The procedure is in `references/neutering.md`.
+Failure signs: harness exits 0 after a check is neutered; neutering all checks
+instead of exactly one; a neutered check that is not actually always-pass.

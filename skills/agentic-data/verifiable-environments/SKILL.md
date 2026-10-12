@@ -134,6 +134,7 @@ written entry in `references/bypass-register.md`, and this one has none.
 - sandbox contract: references/sandbox-contract.md
 - bypass register: references/bypass-register.md
 - calibration: references/calibration.md
+- neutering: references/neutering.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/verify_harness.py
+- scripts: scripts/verify_harness.py, scripts/gen_fixtures.py
