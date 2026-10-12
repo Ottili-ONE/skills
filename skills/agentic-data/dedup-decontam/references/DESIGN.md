@@ -52,3 +52,39 @@ tokenization-matching rule for n-gram decontamination, the model-dependent embed
 threshold, and a planted-item test with explicit pass/fail criteria. It prevents the
 common incident of a "decontaminated" dataset that still leaks test-set n-grams
 because the tokenization did not match the benchmark's.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. No public Agent Skill covers corpus deduplication or
+decontamination; the work lives in research code (datasketch, MinHash libraries,
+benchmark harnesses) and in blog posts. `anthropics/skills`, the Fastio 2026
+directory and `skills.cat` have no entry for this topic. A generic agent that hits
+this problem writes ad-hoc `set()` comparisons and calls it done.
+
+This skill is the only one that ships the *complete* contract:
+- **One normalization function**: every comparison runs on the same
+  `scripts/normalize.py` output (BOM/zero-width strip, `\r` drop, lowercase unless
+  code, whitespace collapse, URL canonicalization, SHA-256 of bytes). Different
+  normalizations produce different duplicate sets — this is the most common silent
+  failure.
+- **MinHash/LSH with a threshold table**: k=128 permutations (never below 64),
+  Jaccard ≈ matching/k with a ±12% 95% interval, and the achievable thresholds for
+  k=128 (0.008/0.125/0.420/0.707/0.878; ~0.94 needs k=256, b=8, r=32). The old
+  draft's 0.85/0.94 were wrong for k=128.
+- **Tokenization-matching rule for n-gram decontamination**: the GPT-2 BPE regex
+  (`'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+`,
+  re-verified byte-for-byte from `openai/gpt-2` on 2026-10-12) is baked into
+  `ngram_decontam._GPT2_PAT`; using character n-grams against a BPE benchmark
+  misses matches and over-reports.
+- **Model-dependent embedding threshold**: 0.92 is pinned to `all-MiniLM-L6-v2`
+  only; it is a CLI argument, never baked into logic.
+- **Planted-item test with pass/fail criteria**: plant 5 exact + 5 near-duplicates
+  (Jaccard ~0.85); expect 5/5 exact, >=4/5 near. A detector that finds 3/5 is
+  broken and no real result may be trusted until it is fixed.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `ekzhu/datasketch` v2.0.0 | MinHash/LSH library | no procedure, no planted-item test, no decontamination |
+| arXiv MinHash papers (1811.04633, 1407.4416, 1710.08436, 2109.03337) | the estimators | no agent-facing contract |
+| `hendrycks/test` (MMLU) | the benchmark | no decontamination code of its own |
