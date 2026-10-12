@@ -15,7 +15,7 @@ weakest skill section rewritten.
 - Every SKILL.md < 500 lines (measured: 88-139).
 - All `references/` links resolve one level deep; no escapes.
 
-## 2. Tests (all passing, 127 total)
+## 2. Tests (all passing, 126 total)
 | skill | tests |
 |---|---|
 | mcp-2026-07-28 | 22 |
@@ -37,6 +37,9 @@ weakest skill section rewritten.
 - `polite-crawling-warc/rate_limit.py --crawl-delay 5 --once` -> PASS, rate 0.200/s.
 - `polite-crawling-warc/resume_state.py --help`, `warc_writer.py --help`,
   `validate_warc.py --help` -> all present.
+- `verifiable-environments/verify_harness.py --help`,
+  `llm-judge-calibration/calibrate_judge.py --help` -> CLI present and matches
+  the SKILL.md scripts line.
 - `dedup-decontam/{minhash_lsh,ngram_decontam,embed_decontam,plant_test,normalize}.py`
   -> exercised by their 17 tests on real corpora.
 - `verifiable-environments/verify_harness.py` -> 8 tests.
@@ -44,6 +47,9 @@ weakest skill section rewritten.
 - `trajectory-ledger/ledger.py` append/audit/replay/cost -> 6 tests.
 - `deep-research-method/score_sources.py` score/audit/contradictions/cite/fetch
   -> 16 tests, incl. JSONL claims.
+- `dedup-decontam/{minhash_lsh,ngram_decontam,plant_test}.py` run on a
+  planted corpus (`plant_test.py --out` -> PASS 5/5 exact, 5/5 near; minhash
+  finds 9 near pairs; ngram flags the exact prompt as leaked).
 
 ## 4. EVALS read critically against SKILL.md text
 Defects found and fixed this pass:
