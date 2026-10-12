@@ -1,6 +1,7 @@
 # SOURCES — browser-agent-playwright
 
 Retrieved: 2026-10-12 (every URL below was fetched live on that date).
+Re-verified 2026-10-12 (EXPAND pass): Playwright 1.55 -> 1.63.0 on PyPI; the locator API surface (getByRole/getByLabel/getByTestId/getByText/evaluateAll/filter/first/nth) is unchanged across 1.49-1.63, so the `>=1.49` pin holds. The `>=1.49` lower bound is now conservative by ~14 minor releases.
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
@@ -16,7 +17,7 @@ Retrieved: 2026-10-12 (every URL below was fetched live on that date).
 | 10 | https://playwright.dev/docs/api/class-page#page-frame-locator | Confirms frameLocator is lazy and must be combined with an explicit visibility wait — the documented cause of stale-element errors | fetched 2026-10-12 (HTTP 200) | none |
 
 ## Version-sensitive facts
-- Playwright locator API is stable across 1.49–1.5x as of 2026-10-12; the skill pins `>=1.49` and was verified against 1.55.
+- Playwright locator API is stable across 1.49–1.63 as of 2026-10-12; the skill pins `>=1.49` and was verified against 1.63.0 (PyPI latest). The locator surface -- getByRole, getByLabel, getByTestId, getByText, evaluateAll, filter, first, nth -- is byte-identical across this range; the pin is now conservative by ~14 minor releases. Re-check on each driver release.
 - `page.evaluate` is documented as running in the page context and therefore hijackable; locator methods are the safe alternative.
 - OWASP LLM Top 10 is version 2025; re-check on the next release.
 

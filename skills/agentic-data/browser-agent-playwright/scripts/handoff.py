@@ -21,18 +21,28 @@ REQUIRED = ["task", "url", "title", "ended_at", "locator_strings",
 
 
 def build(args) -> dict:
+    """Build the hand-off summary. Returns a dict, or an empty dict carrying
+    ``_error`` when the arguments are inconsistent -- never ``None``.
+
+    Returning ``None`` was a latent bug: the CLI wrapper checked the return
+    value, but callers that use ``build()`` directly (and every test that
+    imports the module) passed the result straight to ``validate()``, which
+    then crashed with ``TypeError: argument of type 'NoneType' is not
+    iterable``. The empty-dict-with-error contract is the same one
+    ``resume_state.load()`` uses and keeps the failure explicit.
+    """
     if len(args.locator) != len(args.field):
         print(f"FAIL: need one --locator per --field "
               f"({len(args.locator)} locators for {len(args.field)} fields)",
               file=sys.stderr)
-        return None
+        return {"_error": "locator/field count mismatch"}
     fields = {}
     locators = []
     evidence = []
     for kv, loc in zip(args.field, args.locator or [None] * len(args.field)):
         if "=" not in kv:
             print(f"FAIL: --field must be name=value, got {kv!r}", file=sys.stderr)
-            return None
+            return {"_error": f"bad --field {kv!r}"}
         name, _, value = kv.partition("=")
         fields[name] = value
         locators.append(loc)
@@ -52,6 +62,16 @@ def build(args) -> dict:
 
 
 def validate(summary: dict) -> list[str]:
+    """Validate a hand-off summary. Returns a list of error strings.
+
+    Tolerates ``None`` and summaries carrying ``_error`` (both are schema
+    violations, never crashes) so the function is safe to call on the return
+    value of ``build()`` without a null check.
+    """
+    if summary is None:
+        return ["summary is None (build() failed)"]
+    if isinstance(summary, dict) and summary.get("_error"):
+        return [f"build failed: {summary['_error']}"]
     errors = []
     for k in REQUIRED:
         if k not in summary:

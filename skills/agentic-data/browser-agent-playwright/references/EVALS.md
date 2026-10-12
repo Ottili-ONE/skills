@@ -62,4 +62,9 @@ Expected: the browser phase returns a structured summary (URL, title, key fields
 evidence locator strings) and closes the context; the code phase receives only the
 typed fields, never raw HTML; the final answer cites the locator strings as evidence.
 Failure signs: raw HTML in the hand-off; context still open after the browser phase;
+
+## E9 — hand-off summary with mismatched field/locator counts
+Prompt: "Build a hand-off summary with `--field heading=Hi` but no `--locator` argument."
+Expected: `scripts/handoff.py` exits 1 with `FAIL: need one --locator per --field (0 locators for 1 fields)`; the summary is never written; any programmatic caller using `handoff.build()` gets a dict carrying `_error` rather than `None`, and `handoff.validate()` returns an explicit error list instead of crashing with `TypeError`.
+Failure signs: `TypeError: argument of type 'NoneType' is not iterable` from a caller that did not null-check the return value; a malformed summary written to disk.
 no evidence locators in the summary.
