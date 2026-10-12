@@ -22,7 +22,9 @@ SPEC_TEXT = """# SPEC: file-writing task
 The agent must produce, in its sandbox output directory:
 
 1. `output.json` — a JSON object with field `status` equal to the string `ok`.
+   The file must exist and its status field must equal ok.
 2. `summary.md` — a markdown file of at least 20 words describing the output.
+   The file must exist.
 
 Observable outcomes only. Nothing else is checked.
 """
@@ -35,9 +37,9 @@ CONTRACT_BROKEN = {"network": "allow", "filesystem": "open", "exec": "allow",
 CHECKS = {"checks": [
     {"name": "output_file", "path": "output.json", "exists": True,
      "json_field": "status", "json_value": "ok",
-     "spec_ref": "output.json — a JSON object with field status equal to the string ok"},
+     "spec_ref": "The file must exist and its status field must equal ok"},
     {"name": "summary_file", "path": "summary.md", "exists": True,
-     "spec_ref": "summary.md — a markdown file of at least 20 words describing the output"},
+     "spec_ref": "The file must exist."}
 ]}
 
 SUMMARY_GOOD = ("The agent wrote output.json with status set to ok and confirmed "
@@ -73,15 +75,13 @@ def main() -> int:
     write_agent(out / "lazy", json.dumps({"status": "ok"}), None)
 
     # A neutered check set for the verify-the-verifier step: the live checks with
-    # exactly one check flipped to always-pass (it asserts a marker file no agent
-    # creates, with exists=False, so it passes for good, broken and lazy alike).
-    # Flipping summary_file is decisive: the lazy agent writes output.json but no
-    # summary, so a live summary check is the only thing between it and a perfect
-    # score. With summary neutered, the lazy agent passes everything and power
-    # collapses to 0 vs lazy -- proving the harness detects a dead check.
+    # exactly one check flipped to always-pass. summary_file is flipped because it
+    # is the only check the lazy agent (which writes output.json but no summary)
+    # fails -- neutering it makes the lazy agent pass everything and power vs lazy
+    # collapses. The neutered set keeps the same number of checks as the live set
+    # (3), so the harness can compare power on equal totals.
     neutered = {"checks": [
-        dict(c) for c in CHECKS["checks"]
-        if c["name"] != "summary_file"
+        dict(c) for c in CHECKS["checks"] if c["name"] != "summary_file"
     ] + [{
         "name": "summary_file_neutered",
         "path": "__neutered_marker__",
