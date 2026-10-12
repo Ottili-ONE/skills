@@ -52,3 +52,35 @@ WARC 1.1 record hygiene with exact required headers, time- and spatial-dedup via
 IIPC revisit profile, and resume state. It prevents the common incident of a crawler
 that refuses to crawl a site whose robots.txt 404'd, or writes WARC records that fail
 validation because they lack WARC-Payload-Digest.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. The Fastio 2026 directory and `skills.cat` list no
+WARC-emitting crawler skill; community crawlers (e.g. `crawl4j`, `scrapy` plugins,
+`browser-navigate` skills) either emit logs/JSON or skip politeness entirely.
+`anthropics/skills` has no crawling skill. The Internet Archive's Heritrix 3 is a
+crawler, not a skill — it is the behavioural reference this skill codifies.
+
+This skill is the only one that packages the *full* politeness + WARC contract for
+an agent:
+- **robots.txt is a decision, not a prefetch**: RFC 9309 §2.3.1.3 may-crawl on 4xx,
+  default-deny on 5xx, 500 KiB parse limit, 24 h cache. `scripts/robots.py`
+  mirrors `urllib.robotparser` and returns an exit code, not a suggestion.
+- **Rate limiting is measured, not asserted**: `scripts/rate_limit.py` reports
+  requests/second against a configured Crawl-delay and exits non-zero on drift.
+- **WARC is a first-class output**: eight record types, mandatory fields
+  (`WARC-Type`, `WARC-Record-ID`, `WARC-Date`, `WARC-Target-URI`,
+  `Content-Length`, `WARC-Payload-Digest`), whole-file gzip (not per-record).
+  `scripts/warc_writer.py` + `scripts/validate_warc.py` round-trip a file.
+- **Resume is stateful**: `scripts/resume_state.py` persists the frontier and the
+  robots cache so a killed crawl restarts without re-crawling.
+- **Hostile inputs are handled**: a robots.txt or HTML page that exceeds the parse
+  limit or contains malformed markup is truncated per spec, never crashes the
+  crawler.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `anthropics/skills` | no crawling skill | no politeness or WARC at all |
+| `crawl4j` / `scrapy` | crawling engines | not agent skills; no WARC validation or resume state |
+| Heritrix 3 (Internet Archive) | the politeness reference | a crawler, not a skill; no agent-facing procedure |
