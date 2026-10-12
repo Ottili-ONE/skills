@@ -29,7 +29,7 @@ LLM-as-judge scoring pipeline; not for building a single rubric from scratch."
 - `scripts/calibrate_judge.py` — given a rubric, a calibration set with gold labels and
   judge outputs, reports agreement, position bias, drift and the derived threshold.
 
-## Five eval prompts (mirrored in `references/EVALS.md`)
+## Five eval scenarios (expanded in `references/EVALS.md`)
 1. "The judge and the generator are the same model. Is the agreement number usable?" ->
    No: circular. Separate judge from teacher first.
 2. "My rubric has definitions but no examples. What happens?" -> Annotator spread of 20+

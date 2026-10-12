@@ -52,3 +52,30 @@ collected; one collection-time skip is counted in the file list). Exit 0.
 Acceptance bar (RESEARCH.md + SOURCES.md + DESIGN.md per skill, >=6 sources each,
 >=5 evals each, standard rules green): **MET**. Findings 1-4 are documentation
 accuracy issues, not missing artefacts.
+
+## Pass 4 — fixes applied (2026-10-12)
+
+1. **DESIGN.md "mirrored" claim reworded** in all ten files:
+   `## Five eval prompts (mirrored in ...)` -> `## Five eval scenarios (expanded in ...)`.
+   Verified: the prompts are scenario paraphrases, not verbatim copies; the new
+   wording is accurate. `grep "mirrored in" skills/agentic-data/*/references/DESIGN.md`
+   now returns nothing.
+2. **`RESEARCH.md` source-count table corrected.** The "scripts" column was a count of
+   *new* scripts, not the total listed in SKILL.md. `trajectory-ledger` and
+   `deep-research-method` rows now note that SKILL.md lists 4 named scripts each while
+   `scripts/` ships one module. Line counts and source counts were also re-derived
+   (trajectory-ledger body 87 L, deep-research-method 12 URLs).
+3. Re-ran `pytest skills/agentic-data/` after the edits: **121 passed**, exit 0.
+
+## Final state
+
+| artefact | count |
+|----------|-------|
+| skills | 10 |
+| SKILL.md | 10, all under 500 L, name==folder, desc<=1024 |
+| references/SOURCES.md | 10, 9-12 primary URLs each, all dated 2026-10-12 |
+| references/DESIGN.md | 10, trigger draft + procedure + scripts + 5 scenarios |
+| references/EVALS.md | 10, 7-12 evals each, no duplicate IDs |
+| scripts/*.py | 23 modules across the ten skills |
+| tests/test_*.py | 10 files, 122 test functions, 121 passing |
+| RESEARCH.md | ranked list, replacements (none), evidence status, 4 passes |

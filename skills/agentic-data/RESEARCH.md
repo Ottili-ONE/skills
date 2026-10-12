@@ -57,8 +57,8 @@ and their replacements are recorded in each skill's `Conflicts` section:
 | dedup-decontam | 10 | 83 L | 10 | 6 (normalize, validate_skill, ngram_decontam, embed_decontam, plant_test, minhash_lsh) |
 | verifiable-environments | 10 | 103 L | 10 | 1 (verify_harness) |
 | llm-judge-calibration | 9 | 78 L | 9 | 1 (calibrate_judge) |
-| trajectory-ledger | 10 | 86 L | 7 | 1 (audit) |
-| deep-research-method | 10 | 79 L | 9 | 1 (score_sources) |
+| trajectory-ledger | 10 | 87 L | 7 | 1 (audit) — SKILL.md lists append/replay/cost/audit; `scripts/ledger.py` is the single module |
+| deep-research-method | 12 | 75 L | 10 | 1 (score_sources) — SKILL.md lists score_sources/audit/cite/fetch; `scripts/score_sources.py` is the single module |
 
 All ten skills pass `scripts/validate_skill.py` (exit 0) and every SKILL.md is under the
 500-line budget. The MCP scripts were exercised live: `version_negotiate.py` correctly

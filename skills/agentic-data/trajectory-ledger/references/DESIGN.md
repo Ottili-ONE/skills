@@ -28,7 +28,7 @@ logging application telemetry."
 - `scripts/ledger.py` — append events, verify the hash chain, replay against a live
   environment, and audit a ledger file (`ledger.py audit <ledger.jsonl>`).
 
-## Five eval prompts (mirrored in `references/EVALS.md`)
+## Five eval scenarios (expanded in `references/EVALS.md`)
 1. "A `succeeded` event has no result field. Is the run valid?" -> No: fabricated success.
 2. "A tool call's args were not recorded. Can I replay it?" -> No: unrecorded args make
    replay impossible.

@@ -46,7 +46,7 @@ without a driver contract."
 - macOS: AX API; sandboxed apps may not expose their tree; `screencapture` for images.
 - Linux: AT-SPI2; X11 vs Wayland changes screenshot and input paths.
 
-## Five eval prompts (mirrored in `references/EVALS.md`)
+## Five eval scenarios (expanded in `references/EVALS.md`)
 1. "The model sent a coordinate outside the display. What do I do?" -> Throw ToolError;
    never clamp it.
 2. "My confirm() function shows raw screen content. Is that a problem?" -> Yes: escape
