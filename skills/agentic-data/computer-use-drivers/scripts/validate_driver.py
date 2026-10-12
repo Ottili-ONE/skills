@@ -51,10 +51,24 @@ def audit(path: Path) -> tuple[int, int, int]:
         blk = src[idx:src.find("def ", idx + 4)]
         if "confirm" in blk:
             fail(f"{m} must NOT be gated by confirm()")
-    if "input.copy()" in src or "list(input)" in src or "[*input" in src:
+    # Count scaling signals. Every pointer method must scale into a fresh array;
+    # a driver with no scaling signal at all is unsafe.
+    scale_signals = sum(1 for sig in ("input.copy()", "list(input)", "[*input", ".copy()")
+                       if sig in src)
+    if scale_signals:
         oks += 1
     elif "input" in src:
-        warn("coordinate scaling may mutate input in place")
+        fail("pointer methods reference input but never scale into a fresh array")
+    else:
+        fail("no coordinate scaling found at all — every pointer method must scale")
+
+    # Clamping is the silent failure: it moves the pointer and the model cannot detect it.
+    # Clamping is the silent failure: it moves the pointer and the model cannot
+    # detect it. Match both the literal word and the max(0, min(...)) idiom.
+    if re.search(r"\bclamp\b|max\s*\(\s*0\s*,\s*min\s*\(", src, re.IGNORECASE):
+        fail("clamping detected — never clamp; throw ToolError on out-of-bounds coordinates")
+    if re.search(r"\bscreen_content\b|error\.message", src) and "fixed" not in src.lower():
+        warn("error path may pass raw screen content or error.message to the model")
     if re.search(r'f".*\{.*\}.*"', src) and "fixed" not in src.lower():
         warn("f-string in error path may carry screen content")
     if "credentials" in src.lower() or "mount" in src.lower():
@@ -83,7 +97,9 @@ def contract(path: Path) -> tuple[int, int, int]:
             got.append(m["name"])
         else:
             warn(f"unrecognized member entry: {m!r}")
-    if sorted(got) != sorted(CANONICAL):
+    if not got:
+        fail("registry members list is empty")
+    elif sorted(got) != sorted(CANONICAL):
         fail(f"member set drift: got {sorted(got)}; expected {sorted(CANONICAL)}")
     else:
         oks += 1
@@ -105,8 +121,21 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("file", nargs="?", help="driver .py to audit")
     ap.add_argument("--contract", help="member-registry JSON to validate")
+    ap.add_argument("--json", action="store_true",
+                    help="emit a machine-readable report object to stdout")
     args = ap.parse_args()
     if args.contract:
+        try:
+            f, w, o = contract(Path(args.contract))
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"FAIL: {e}", file=sys.stderr); return 2
+        if args.json:
+            print(json.dumps({"mode": "contract", "oks": o, "fails": f, "warns": w,
+                              "valid": f == 0}))
+            return 1 if f else 0
+        print(f"{o} {f} {w}")
+        return 1 if f else 0
+    if not args.file:
         try:
             f, w, o = contract(Path(args.contract))
         except (OSError, json.JSONDecodeError) as e:
@@ -121,6 +150,10 @@ def main() -> int:
             f, w, o = audit(p)
         except UnicodeDecodeError as e:
             print(f"FAIL: {e}", file=sys.stderr); return 2
+    if args.json:
+        print(json.dumps({"mode": "audit", "oks": o, "fails": f, "warns": w,
+                          "valid": f == 0}))
+        return 1 if f else 0
     print(f"{o} {f} {w}")
     return 1 if f else 0
 
