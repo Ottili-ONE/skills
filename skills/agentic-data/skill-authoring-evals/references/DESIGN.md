@@ -44,3 +44,35 @@ the `name` field disagree, or a description so vague it never fires.
    Yes: reference-link well-formedness is a standard check.
 5. "My SKILL.md is 600 lines. What do I do?" -> Over the 500-line budget; split into
    `references/` files linked one level deep.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. The ecosystem has ~24,400 skill-definition repositories
+(fast.io, verified live) and the directories are full of *content* skills
+(frontend-design, paper-search, security) — but almost none about *authoring
+skills itself*. `anthropics/skills` ships a `template-skill` and a README convention
+(the "how to write a skill" page), and `openai/skills` (deprecated, redirects to
+`openai/plugins`) documented the `.system/.curated/.experimental` tier flow. Neither
+is a skill you can invoke to validate or evaluate a skill. The Fastio 2026 directory
+dedicates one section ("What Goes in a SKILL.md File") to the same topic in prose.
+
+This skill is the only one that turns authoring into a measurable, repeatable
+procedure:
+- **Description is the trigger, and it is measurable**: the skill ships
+  should-fire / should-not-fire prompt sets and measures precision/recall. A skill
+  that never fires or fires too often has a description problem, not a body problem.
+- **Validation mirrors `skills-ref validate`** (name == folder name, description <=
+  1024 chars, SKILL.md <= 500 lines, references well-formed one level deep, scripts
+  deterministic and offline) but adds the checks the standard leaves to the author:
+  progressive-disclosure depth, trigger-accuracy evals, and a report JSON.
+- **Eval-driven iteration is a loop, not a checkbox**: rewrite the weakest section,
+  re-run evals, re-validate. A skill whose evals were never run is not shipped.
+- **`allowed-tools` is optional metadata**, never a hard failure — the standard
+  lists it as optional and treating its absence as a failure rejects valid skills.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `anthropics/skills` (template-skill, README) | a convention | not an invocable skill; no validation or evals |
+| `openai/skills` (deprecated) | tier flow docs | deprecated; no validation |
+| `agentskills.io/specification` | the standard | a spec, not a procedure; no scripts |
