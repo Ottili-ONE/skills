@@ -70,6 +70,30 @@ the number is circular.
 - [ ] Pass-rate threshold derived from the calibration set, not the training set.
 - [ ] Judge model, generator model and prompt hashes recorded in the report.
 
+## Worked examples
+
+### Good — separated judge, calibrated threshold
+Generator: `gpt-4.1` produces 100 summaries. Judge: `claude-sonnet-4` scores
+them on a 4-point rubric with per-level examples. Calibration set of 40
+items with human gold labels gives agreement 0.71 and a pass threshold of
+>=3. The threshold is recorded with the date and the judge/generator hashes.
+
+Result: the score is evidence, not a self-fulfilling prophecy.
+
+### Bad — same model judges its own outputs
+`gpt-4.1` generates the summaries and `gpt-4.1` scores them.
+
+Why it fails: agreement is circular — the judge agrees with itself by
+construction. The skill rule is separation: different model, or at minimum
+a different prompt. Record both hashes in the report or the score is
+unverifiable.
+
+### Bad — rubric with definitions only, no examples
+"1 = poor, 2 = fair, 3 = good, 4 = excellent."
+
+Why it fails: without per-level examples annotators spread 20+ points on
+re-annotation and the rubric collapses onto the middle. Every score point
+needs a definition AND at least one example.
 ## References
 - procedures: references/procedures.md
 - rubric template: references/rubric-template.md
