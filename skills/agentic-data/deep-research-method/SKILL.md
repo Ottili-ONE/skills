@@ -121,5 +121,5 @@ citation, not a quote.
 - contradiction handling: references/contradiction-handling.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/score_sources.py (score, audit, contradictions, cite, fetch)
+- scripts: scripts/score_sources.py (score, audit, contradictions, cite, fetch, staleness) (score, audit, contradictions, cite, fetch)
 - citation and fetch: references/cite-fetch.md

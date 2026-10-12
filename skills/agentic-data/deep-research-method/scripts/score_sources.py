@@ -183,9 +183,43 @@ def cmd_fetch(sources: list[dict], min_score: int) -> int:
     return 0
 
 
+
+def staleness(sources: list[dict], question_date: str, max_age_days: int = 365) -> tuple[list[str], list[dict]]:
+    """Flag sources whose retrieval date is older than max_age_days before question_date.
+
+    Returns (failures, stale). A stale source is not discarded by score; it is
+    flagged so the researcher re-fetches it. The question date is explicit
+    because "today" is not a fact the script can know.
+    """
+    from datetime import date, datetime
+    try:
+        qd = datetime.strptime(question_date, "%Y-%m-%d").date()
+    except ValueError:
+        return [f"FAIL: invalid question date '{question_date}' (need YYYY-MM-DD)"], []
+    failures: list[str] = []
+    stale: list[dict] = []
+    for i, s in enumerate(sources):
+        try:
+            rd = datetime.strptime(str(s.get("retrieved", "")), "%Y-%m-%d").date()
+        except ValueError:
+            continue  # validate_source already flags a missing/invalid date
+        age = (qd - rd).days
+        if age > max_age_days:
+            stale.append({**s, "age_days": age})
+            failures.append(
+                f"FAIL: source {i} ({s.get('url', '?')}) retrieved {s['retrieved']}, "
+                f"{age}d before question date {question_date} -- re-fetch"
+            )
+    return failures, stale
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("staleness")
+    p.add_argument("sources", type=Path)
+    p.add_argument("--question-date", required=True, help="YYYY-MM-DD the question is about")
+    p.add_argument("--max-age-days", type=int, default=365)
 
     p = sub.add_parser("score")
     p.add_argument("sources", type=Path)
@@ -214,6 +248,15 @@ def main() -> int:
         print(f"FAIL: sources file not found: {args.sources}", file=sys.stderr)
         return 2
     sources = load_sources(args.sources)
+    if args.cmd == "staleness":
+        failures, stale = staleness(sources, args.question_date, args.max_age_days)
+        for f in failures:
+            print(f, file=sys.stderr)
+        if failures:
+            print(f"FAIL: {len(stale)} source(s) are stale and must be re-fetched", file=sys.stderr)
+            return 1
+        print(f"PASS: no source is older than {args.max_age_days}d before {args.question_date}", file=sys.stderr)
+        return 0
     if args.cmd == "score":
         return cmd_score(sources, args.min)
     if args.cmd == "contradictions":

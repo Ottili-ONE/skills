@@ -126,3 +126,29 @@ def test_fetch_empty_when_all_below_min() -> None:
     r = run("fetch", str(FIX / "bad.jsonl"), "--min", "6")
     assert r.returncode == 1
     assert "no kept sources" in r.stderr
+
+
+def test_staleness_flags_old_source() -> None:
+    stale = FIX / "stale.jsonl"
+    stale.write_text(
+        '{"url": "https://arxiv.org/abs/2212.08073", "authority": 3, "recency": 2, '
+        '"corroboration": 3, "retrieved": "2024-01-01", "version": "v1"}\n'
+        '{"url": "https://openai.com/index/evals/", "authority": 3, "recency": 3, '
+        '"corroboration": 3, "retrieved": "2026-10-09", "version": "HEAD"}\n'
+    )
+    r = run("staleness", str(stale), "--question-date", "2026-10-12")
+    assert r.returncode == 1
+    assert "stale" in r.stderr
+    assert "2024-01-01" in r.stderr
+
+
+def test_staleness_clean_within_window() -> None:
+    r = run("staleness", str(FIX / "good.jsonl"), "--question-date", "2026-10-12")
+    assert r.returncode == 0, r.stderr
+    assert "PASS: no source is older than" in r.stderr
+
+
+def test_staleness_rejects_bad_question_date() -> None:
+    r = run("staleness", str(FIX / "good.jsonl"), "--question-date", "not-a-date")
+    assert r.returncode == 1
+    assert "invalid question date" in r.stderr
