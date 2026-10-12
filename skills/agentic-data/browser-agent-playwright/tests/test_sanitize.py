@@ -87,3 +87,41 @@ def test_check_exits_0_when_clean():
     rc, out, err = run(["--check"], stdin="the page shows a login form")
     assert rc == 0, err
     assert "PASS" in err
+
+
+def test_gen_hostile_produces_all_severities():
+    """The fixture generator must cover every severity the decision table names."""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    gen = Path(__file__).resolve().parent.parent / "scripts" / "gen_hostile.py"
+    out = subprocess.run(
+        [sys.executable, str(gen)], capture_output=True, text=True, check=True
+    ).stdout
+    severities = {json.loads(line)["severity"] for line in out.strip().splitlines()}
+    assert severities == {"high", "medium", "clean"}, severities
+
+
+def test_gen_hostile_clean_control_is_clean():
+    """The clean control must not trip any injection flag (guards against false positives)."""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    gen = Path(__file__).resolve().parent.parent / "scripts" / "gen_hostile.py"
+    sanitize = Path(__file__).resolve().parent.parent / "scripts" / "sanitize.py"
+    fixtures = subprocess.run(
+        [sys.executable, str(gen), "--severity", "clean"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip().splitlines()
+    assert fixtures, "no clean fixtures generated"
+    for line in fixtures:
+        text = json.loads(line)["text"]
+        r = subprocess.run(
+            [sys.executable, str(sanitize), "--check"],
+            input=text, capture_output=True, text=True,
+        )
+        assert r.returncode == 0, f"clean fixture flagged: {text!r}\n{r.stderr}"
