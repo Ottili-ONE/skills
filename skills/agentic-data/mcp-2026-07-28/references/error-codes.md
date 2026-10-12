@@ -1,57 +1,49 @@
 # Error codes — mcp-2026-07-28
 
-Verified 2026-10-12 against
-https://modelcontextprotocol.io/specification/2026-07-28/changelog (HTTP 200) and
-SEP-2575 / SEP-2663 (raw, HTTP 200). The 2026-07-28 revision **renumbered** the
-reserved code range. Old codes are grandfathered only.
+Verified 2026-10-12 against the 2026-07-28 changelog and SEP-2575.
+JSON-RPC 2.0 reserved codes are unchanged; MCP renumbered its own range in this revision.
 
-## Ranges (current revision)
+## Ranges
 
 | Range | Meaning | Action |
 |-------|---------|--------|
-| `-32600` | Parse error | Fix the JSON; the request never reached the server |
-| `-32601` | Method not found | The method is not in the server's capability set. `server/discover` failures also return this with HTTP 404 |
-| `-32602` | Invalid params | Validate against the tool/inputSchema in `server/discover` |
-| `-32603` | Internal error | Server bug or unexpected state; retry once, then log |
-| `-32700` | Resource not found | The URI is wrong or was deleted |
-| `-32000..-32019` | Implementation-defined (grandfathered) | Treat as opaque; map to a retry/no-retry decision by convention only |
-| `-32020` | HeaderMismatch | A `Mcp-*` header is missing, malformed or conflicts with `_meta` |
-| `-32021` | MissingRequiredClientCapability | The client omitted a capability the request needs |
-| `-32022` | UnsupportedProtocolVersion | No version in common between client and server |
+| `-32600` | JSON-RPC: Invalid Request | Reject the whole message; do not retry malformed JSON. |
+| `-32601` | JSON-RPC: Method not found | The method name is wrong or unsupported. `server/discover` failures return this with HTTP 404. |
+| `-32602` | JSON-RPC: Invalid params | Schema validation failed. Return the field path in `data`. |
+| `-32603` | JSON-RPC: Internal error | Transport/JSON parse failure. Retry with backoff; do not treat as application logic. |
+| `-32700` | JSON-RPC: Parse error | Not valid JSON. Retry; a persistent parse error means the framing is wrong. |
+| `-32000..-32019` | Implementation-defined (grandfathered) | Legacy. Map to a named action in your own table; never invent meaning. |
+| `-32020` | MCP: HeaderMismatch | A required `Mcp-*` header is missing or wrong. Fix the header, not the body. |
+| `-32021` | MCP: MissingRequiredClientCapability | The client omitted a capability from per-request `clientCapabilities`. Add it; servers MUST NOT infer capabilities. |
+| `-32022` | MCP: UnsupportedProtocolVersion | No version in the intersection of client and server lists. Refuse; never silently downgrade. |
+| `-32023..-32099` | Reserved for MCP | Do not use. If you need a code, use `-32000..-32019` and document it. |
 
-## Old-code mapping (2025-11-25 -> 2026-07-28)
+## Renumbering map (old -> new)
 
-| Old code | Old meaning | New code |
-|----------|-------------|----------|
-| `-32001` | HeaderMismatch | `-32020` |
-| `-32003` | MissingRequiredClientCapability | `-32021` |
-| `-32004` | UnsupportedProtocolVersion | `-32022` |
+| Old code (2025-11-25) | New code (2026-07-28) | Meaning |
+|-----------------------|----------------------|---------|
+| `-32001` | `-32020` | HeaderMismatch |
+| `-32003` | `-32021` | MissingRequiredClientCapability |
+| `-32004` | `-32022` | UnsupportedProtocolVersion |
 
-A client written against 2025-11-25 that still emits `-32004` will be refused by a
-2026-07-28-only server that emits `-32022`. Detect by code, never by numeric range
-alone: treat anything in `-32000..-32099` as "MCP-reserved" and branch on the exact
-code.
+If you see an old code from a 2026-07-28 server, the server is not on this revision.
 
-## Ordered decision procedure on receipt of an error
+## HTTP status mapping
 
-1. **Read the code exactly.** Do not infer meaning from the range.
-2. **`-32600` / `-32602`**: client-side fault. Re-serialize, re-validate params, retry.
-3. **`-32601`**: confirm the method exists via `server/discover`; if it does, the
-   capability is missing — ask the operator, do not guess.
-4. **`-32022`**: re-run version negotiation. If the server list really has no
-   overlap, stop and report the incompatibility. Never silently downgrade the client.
-5. **`-32020` / `-32021`**: fix the header or the capability declaration, then retry.
-6. **`-32603` / `-32700` / `-32000..-32019`**: retry once with exponential backoff
-   (100 ms, 400 ms, cap 5 retries). If it persists, capture `_meta`, method and the
-   full response and escalate.
-7. **Never** retry a request that mutated state on a `-32601` or `-32022` without
-   re-checking `server/discover` first.
+| Error | HTTP status |
+|-------|-------------|
+| `server/discover` not found | 404 |
+| Missing `MCP-Protocol-Version` header | 400 |
+| Unsupported version | 400 with `-32022` in the body |
+| Missing required client capability | 403 with `-32021` |
+| All other JSON-RPC errors | 200 with the error in the JSON-RPC body |
 
-## Near-miss triggers
+## Ordered response procedure
 
-- Matching on `-32004` when the server speaks only 2026-07-28 -> the server returns
-  `-32022`, your matcher misses it, and you loop forever.
-- Treating `-32000..-32019` as "unknown" and retrying blindly -> some implementors use
-  them for permanent failures; retrying can duplicate a side effect.
-- Reading the error from a wrapped HTTP body instead of the JSON-RPC error object ->
-  the code field is nested under `error.code`.
+1. Read the `code` field.
+2. If it is a JSON-RPC reserved code, fix the request framing or params.
+3. If it is `-32020`, check the `Mcp-Method`/`Mcp-Name`/`MCP-Protocol-Version` headers (case-insensitive).
+4. If it is `-32021`, add the missing capability to `clientCapabilities` on the next request.
+5. If it is `-32022`, re-run `server/discover`, intersect the lists, and pin the agreed version in config.
+6. If it is `-32000..-32019`, look up your own legacy map; if absent, treat as internal error.
+7. Never retry a request that failed with `-32601` or `-32602` without changing something first.
