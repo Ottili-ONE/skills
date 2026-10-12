@@ -12,8 +12,10 @@ remove duplicates and test-set leakage; not for single-document similarity."
    whitespace, canonicalize URLs, SHA-256 the bytes for exact dedup.
 2. MinHash/LSH near-dedup: char-level shingles of size w (5 prose, 8 code); k=128
    min-hash values (never below 64); Jaccard ≈ matching/k with 95% interval ±12%.
-   Band with b bands of r rows (k=b*r); threshold t ≈ (1/b)^(1/r). b=32,r=4 -> 0.67;
-   b=16,r=8 -> 0.85; b=8,r=16 -> 0.94. Compare candidate pairs exactly and keep those
+   Band with b bands of r rows (k=b*r); threshold t ≈ (1/b)^(1/r). b=32,r=4 -> 0.420;
+   b=16,r=8 -> 0.707; b=8,r=16 -> 0.878. Compare candidate pairs exactly and keep those
+    (the old draft's 0.85/0.94 were wrong -- the achievable thresholds for k=128 are
+    0.008/0.125/0.420/0.707/0.878; to reach ~0.94 use k=256, b=8,r=32 -> 0.937).
    above the target.
 3. n-gram decontamination: build the test-prompt n-gram set (n=13 MMLU/GSM8K-style,
    n=8 code, n=5 prose) and slide the same window over the corpus. Tokenization must
