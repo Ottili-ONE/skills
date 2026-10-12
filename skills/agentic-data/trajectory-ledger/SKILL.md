@@ -81,6 +81,7 @@ Without those four properties the run cannot be replayed or audited.
 ## References
 - procedures: references/procedures.md
 - schema: references/schema.md
+- cost ledger: references/cost-ledger.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/ledger.py

@@ -53,3 +53,26 @@ def test_audit_rejects_discarded_source() -> None:
     r = run("audit", str(FIX / "good.jsonl"), str(FIX / "claims_bad.json"))
     assert r.returncode == 1
     assert "not kept" in r.stderr
+
+
+def test_contradictions_resolved_by_weight() -> None:
+    pairs = FIX / "contradictions.json"
+    r = run("contradictions", str(FIX / "good.jsonl"), str(pairs))
+    assert r.returncode == 0, r.stderr
+    assert "wins (score" in r.stderr
+
+
+def test_contradictions_unknown_source_fails() -> None:
+    pairs = FIX / "contradictions_bad.json"
+    pairs.write_text(json.dumps([{"a": "https://nope.example/x", "b": "https://www.europa.eu/legal-summary/", "claim_a": "x", "claim_b": "y"}]))
+    r = run("contradictions", str(FIX / "good.jsonl"), str(pairs))
+    assert r.returncode == 1
+    assert "unknown source" in r.stderr
+
+
+def test_contradictions_equal_scores_unresolved() -> None:
+    pairs = FIX / "contradictions_equal.json"
+    pairs.write_text(json.dumps([{"a": "https://arxiv.org/abs/2212.08073", "b": "https://openai.com/index/evals/", "claim_a": "x", "claim_b": "y"}]))
+    r = run("contradictions", str(FIX / "equal.jsonl"), str(pairs))
+    assert r.returncode == 1
+    assert "UNRESOLVED" in r.stderr

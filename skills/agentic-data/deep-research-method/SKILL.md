@@ -74,6 +74,7 @@ without a retrieval date is not evidence, it is memory.
 ## References
 - procedures: references/procedures.md
 - scoring: references/source-scoring.md
+- contradiction handling: references/contradiction-handling.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/score_sources.py

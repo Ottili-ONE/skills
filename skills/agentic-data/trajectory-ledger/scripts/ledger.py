@@ -38,6 +38,8 @@ def state_hash(state: object) -> str:
 
 
 def load_events(path: Path) -> list[dict]:
+    if not path.is_file():
+        raise SystemExit(f"ERROR: ledger file not found: {path}")
     events: list[dict] = []
     for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = line.strip()
@@ -53,6 +55,9 @@ def load_events(path: Path) -> list[dict]:
 
 def check_event(ev: dict, idx: int) -> list[str]:
     failures: list[str] = []
+    if not isinstance(ev, dict):
+        failures.append(f"FAIL: event {idx} is not a JSON object")
+        return failures
     for field in ("step", "timestamp", "type", "state_hash", "cost"):
         if field not in ev:
             failures.append(f"FAIL: event {idx} missing mandatory field '{field}'")
@@ -71,6 +76,16 @@ def check_event(ev: dict, idx: int) -> list[str]:
         req = REQUIRED_BY_OUTCOME[outcome]
         if req not in ev:
             failures.append(f"FAIL: event {idx} outcome '{outcome}' missing '{req}'")
+    c = ev.get("cost", {})
+    if isinstance(c, dict):
+        for k in ("tokens_in", "tokens_out"):
+            v = c.get(k)
+            if v is not None and (not isinstance(v, (int, float)) or v < 0):
+                failures.append(f"FAIL: event {idx} cost.{k} must be a non-negative number")
+        for k in ("seconds", "usd"):
+            v = c.get(k)
+            if v is not None and (not isinstance(v, (int, float)) or v < 0):
+                failures.append(f"FAIL: event {idx} cost.{k} must be a non-negative number")
     if "state" in ev:
         if state_hash(ev["state"]) != ev.get("state_hash"):
             failures.append(f"FAIL: event {idx} state_hash does not recompute")
@@ -139,7 +154,11 @@ def main() -> int:
 
     args = ap.parse_args()
     if args.cmd == "append":
-        ev = json.loads(args.event)
+        try:
+            ev = json.loads(args.event)
+        except json.JSONDecodeError as e:
+            print(f"FAIL: event is not valid JSON: {e}", file=sys.stderr)
+            return 2
         ev.setdefault("step", 0)
         if "state" in ev and "state_hash" not in ev:
             ev["state_hash"] = state_hash(ev["state"])

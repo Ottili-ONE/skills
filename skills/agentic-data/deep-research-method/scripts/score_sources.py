@@ -27,6 +27,8 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def load_sources(path: Path) -> list[dict]:
+    if not path.is_file():
+        raise SystemExit(f"ERROR: sources file not found: {path}")
     rows: list[dict] = []
     for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = line.strip()
@@ -58,6 +60,9 @@ def validate_source(s: dict, idx: int) -> list[str]:
 
 
 def cmd_score(sources: list[dict], min_score: int) -> int:
+    if not sources:
+        print("FAIL: no sources in file", file=sys.stderr)
+        return 1
     failures: list[str] = []
     kept = 0
     for i, s in enumerate(sources):
@@ -75,6 +80,44 @@ def cmd_score(sources: list[dict], min_score: int) -> int:
         print(f"FAIL: {len(failures)} source problem(s)", file=sys.stderr)
         return 1
     print(f"PASS: {kept}/{len(sources)} sources kept at >= {min_score}", file=sys.stderr)
+    return 0
+
+
+def cmd_contradictions(sources: list[dict], pairs_path: Path, min_score: int) -> int:
+    """Report contradictions between kept sources, weighted by quality.
+
+    Reads a JSON list of {a, b, claim_a, claim_b} pairs. For each pair the
+    higher-scoring source wins; equal-score pairs are unresolved.
+    """
+    try:
+        pairs = json.loads(pairs_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"FAIL: contradictions file is not valid JSON: {e}", file=sys.stderr)
+        return 2
+    if not isinstance(pairs, list):
+        print("FAIL: contradictions file must be a JSON list", file=sys.stderr)
+        return 2
+    by_url = {s.get("url"): s for s in sources}
+    unresolved = 0
+    for i, pair in enumerate(pairs):
+        a = by_url.get(pair.get("a"))
+        b = by_url.get(pair.get("b"))
+        if a is None or b is None:
+            print(f"FAIL: pair {i} cites an unknown source", file=sys.stderr)
+            return 1
+        sa, sb = score_source(a), score_source(b)
+        if sa > sb:
+            verdict = f"{pair.get('a')} wins (score {sa} > {sb})"
+        elif sb > sa:
+            verdict = f"{pair.get('b')} wins (score {sb} > {sa})"
+        else:
+            verdict = "UNRESOLVED: equal scores"
+            unresolved += 1
+        print(f"INFO: pair {i}: {pair.get('claim_a', '?')} vs {pair.get('claim_b', '?')} -> {verdict}", file=sys.stderr)
+    if unresolved:
+        print(f"FAIL: {unresolved} contradiction(s) unresolved", file=sys.stderr)
+        return 1
+    print(f"PASS: all {len(pairs)} contradictions resolved by quality weight", file=sys.stderr)
     return 0
 
 
@@ -115,10 +158,20 @@ def main() -> int:
     p.add_argument("claims", type=Path)
     p.add_argument("--min", type=int, default=MIN_SCORE)
 
+    p = sub.add_parser("contradictions")
+    p.add_argument("sources", type=Path)
+    p.add_argument("pairs", type=Path)
+    p.add_argument("--min", type=int, default=MIN_SCORE)
+
     args = ap.parse_args()
+    if args.cmd == "score" and not args.sources.is_file():
+        print(f"FAIL: sources file not found: {args.sources}", file=sys.stderr)
+        return 2
     sources = load_sources(args.sources)
     if args.cmd == "score":
         return cmd_score(sources, args.min)
+    if args.cmd == "contradictions":
+        return cmd_contradictions(sources, args.pairs, args.min)
     return cmd_audit(sources, args.claims, args.min)
 
 
