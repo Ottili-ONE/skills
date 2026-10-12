@@ -60,3 +60,38 @@ web-first assertions, routes every injection flag through a decision table, and
 enforces a structured hand-off. It prevents the common incident of an agent following
 text injected into a page (OWASP LLM Top 10 #1) because the page text was pasted into
 the prompt unmodified.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12: `anthropics/skills` (no browser skill — only a
+`computer-use` skill that operates on a desktop screenshot, not a browser DOM),
+the Fastio 2026 directory (no Playwright-grounded agent skill; the closest entries
+are generic "web automation" snippets), and `skills.cat` (no injection-defence
+browser skill). The public offerings split into two camps:
+
+- **Generic Playwright wrappers** (e.g. `playwright-mcp`, community `browser-navigate`
+  skills): they navigate and click but have no grounding rule, no injection
+  sanitizer and no handoff contract. They treat the page content as trusted.
+- **Vision-based browser agents**: they read pixels, so they are slow, cannot read
+  ARIA labels reliably, and are the worst possible target for prompt injection
+  (the model sees the injected text directly).
+
+This skill differs in four ways:
+1. **Grounding is mandatory, not optional**: every action is derived from the
+   accessibility tree; the screenshot is used for position only and is never fed to
+   the model as content.
+2. **Injection is a first-class failure mode**: `scripts/sanitize.py` detects
+   typoglycemia (a real incident pattern) and the skill defines a trust-level ladder
+   (trusted/untrusted/refused) for page content entering the agent's context.
+3. **Locators are strategy-catalogued**: each element is resolved through a defined
+   fallback chain (role > name > testid > css > text), so a re-render does not
+   silently break the agent.
+4. **Handoff is an envelope**: a downstream agent receives `hostile_inputs`,
+   `sanitized_payload` and a `trust_level`, never raw page text.
+
+Public skills surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `anthropics/skills` | desktop computer-use only | no browser DOM grounding |
+| `playwright-mcp` (community) | navigate/click/screenshot | no injection defence, no locator fallbacks |
+| Fastio 2026 directory | generic automation snippets | no WARC/crawl context, no trust ladder |
