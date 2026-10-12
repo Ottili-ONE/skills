@@ -70,6 +70,11 @@ fires when it should.
 - P3: Evals with no without_skill baseline — you cannot tell if the skill helped.
 - P4: Overfitting the description to the eval set so it passes but fails in the wild.
 - P5: Shipping a skill whose evals were never run.
+- P6: Computing precision as tn/(tn+fp) instead of tp/(tp+fp) — the denominator is the
+  number of *fired* cases, not the number of correct negatives. `scripts/eval_metrics.py`
+  implements the right formula.
+- P7: A firing log that omits a case id — the missing case counts as a miss, so a sparse
+  log can make a good skill look bad. Every case must have a firing record.
 
 ## Verification checklist
 - [ ] Folder name == `name` field, slug form, <=64 chars.

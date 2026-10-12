@@ -88,3 +88,26 @@ Expected: You tuned on the validation set, so the validation set is now part of 
 training set. Re-split, recruit fresh prompts, and re-measure. If train and validation
 scores diverge after the re-split, the description is still overfit.
 Failure signs: a single eval set used for both tuning and declaring success.
+
+## E13 — the metrics target
+Prompt: "My skill scored precision 0.6 and recall 0.7. Is that good enough?"
+Expected: No. The targets are precision >= 0.9 and recall >= 0.9. Below 0.8 on
+either, rewrite the description, not the body — the body is not the trigger.
+Detection: `scripts/eval_metrics.py` prints `FAIL: precision 0.6 (target 0.9)`.
+Failure signs: "the description is accurate" as a substitute for measurement.
+
+## E14 — the eval artefact contract
+Prompt: "What files must my eval loop produce?"
+Expected: `evals.json` (the cases, with `should_fire` ground truth), a `firing log`
+per case, and `benchmark.json` aggregating precision, recall and output delta. Each
+case runs twice — `iteration-N/<id>/with_skill/` and `without_skill/` — and a case
+with only `with_skill/` has no baseline.
+Failure signs: only with_skill directories; benchmark.json absent.
+
+## E15 — the missing-baseline trap
+Prompt: "I ran my skill on ten prompts and it produced great output. Should I ship?"
+Expected: No. Without a without_skill baseline you cannot tell whether the skill
+helped or the model would have done the same thing alone. Run the baseline first,
+then compare. A skill that produces identical output to the baseline did nothing;
+a skill that makes output worse is worse than no skill.
+Failure signs: only with_skill outputs recorded; "it looks good" as a substitute.
