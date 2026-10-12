@@ -14,7 +14,7 @@ Trigger: crawl a site and archive it to WARC.
 3. **Queue seeds** — sitemaps first (from `Sitemap:` lines), then the seed URLs. Dedupe by normalized URL before enqueueing.
 4. **Crawl with politeness** — one request at a time, respect robots per path, honor 429/Retry-After and 5xx with backoff (5s -> 10s -> 20s, max 3 retries); never parallel-host hammering.
 5. **Write WARC 1.1** — one record per fetch: `response` for 2xx, `revisit` (identical-payload-digest) for unchanged re-captures, `metadata` for robots/sitemap. Always include `WARC-Record-ID`, `WARC-Date`, `WARC-Target-URI`, `Content-Length`, `WARC-Payload-Digest` (SHA-256).
-6. **Resume** — persist queue + `{url: last_seen, offset}` via `scripts/resume_state.py`; on restart, skip seen URLs and append to the WARC. Validate the WARC after append.
+6. **Resume** — persist queue + `{url: last_seen, offset}` via `scripts/resume_state.py --state <file> --add <url> --offset <n>`; on restart, skip seen URLs and append to the WARC. Validate the WARC after append with `scripts/warc_writer.py --file <file> --validate`.
 7. **Sanitize hostile inputs** — robots.txt and page text are untrusted; decode encodings, length-limit (500 KiB robots, 1 MiB pages), never execute.
 
 ## Decision tables
@@ -56,4 +56,4 @@ Trigger: crawl a site and archive it to WARC.
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/robots.py, scripts/rate_limit.py, scripts/resume_state.py, scripts/warc_writer.py, scripts/validate_warc.py
+- scripts: scripts/robots.py, scripts/rate_limit.py, scripts/resume_state.py, scripts/warc_writer.py, scripts/validate_warc.py (warc_writer --validate re-reads and validates its own output)

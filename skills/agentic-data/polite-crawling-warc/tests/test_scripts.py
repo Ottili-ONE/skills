@@ -264,3 +264,16 @@ def test_validate_warc_rejects_bad_date():
         p = run(Path(ROOT, "scripts", "validate_warc.py"), [f])
         assert p.returncode == 1, p.stderr
         assert "bad WARC-Date" in p.stderr
+def test_allow_overrides_disallow():
+    """RFC 9309 2.2.2: an Allow rule overrides a matching Disallow for the same agent."""
+    text = "User-agent: *\nDisallow: /private/\nAllow: /private/public\n"
+    p = run(ROBOTS, ["--path", "/private/public"], stdin=text)
+    assert p.returncode == 0, p.stderr
+    assert "allowed=true" in p.stdout
+
+
+def test_disallow_still_wins_without_allow():
+    text = "User-agent: *\nDisallow: /private/\n"
+    p = run(ROBOTS, ["--path", "/private/secret"], stdin=text)
+    assert p.returncode == 1, p.stderr
+    assert "allowed=false" in p.stdout

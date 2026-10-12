@@ -1,6 +1,6 @@
 ---
 name: trajectory-ledger
-description: "Schema, grounding rules, outcome status and cost ledgers for agent trajectories. Use when an agent must record, replay or audit a multi-step run (task, tools, state transitions, cost, outcome) so that results are reproducible and auditable; not for logging application telemetry."
+description: "Schema, grounding rules, outcome status and cost ledgers for agent trajectories. Use when an agent must record, replay or audit a multi-step run (task, tools, state transitions, cost, outcome) so that results are reproducible and auditable; not for logging application telemetry. Verified 2026-10-12."
 compatibility: Python 3.10+, JSONL storage; verified 2026-10-09
 license: MIT
 ---
@@ -84,4 +84,4 @@ Without those four properties the run cannot be replayed or audited.
 - cost ledger: references/cost-ledger.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/ledger.py
+- scripts: scripts/ledger.py (append, audit, replay, cost)

@@ -177,6 +177,7 @@ def main() -> int:
     if not r["flags"]:
         print("PASS: no injection indicators", file=sys.stderr)
     if args.check and r["flags"]:
+        print("FAIL: check mode saw injection indicators", file=sys.stderr)
         return 1
     # Quoted, safe output -> stdout.
     print(f"{MARKER_START}\n{r['clean']}\n{MARKER_END}")

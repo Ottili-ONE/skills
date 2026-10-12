@@ -124,6 +124,64 @@ procedure*: pass/fail checklists, version-pinned facts, copy-paste-safe commands
 worked good/bad examples, and a verification section. The difference is documented per
 skill in `references/DESIGN.md`.
 
+## PASS 3 (TEST + FIX) — 2026-10-12
+
+Proved and repaired the ten skills: ran every script on real inputs, re-fetched two
+random sources per skill, read every EVALS.md prompt against the skill text, and
+checked the front-matter rules. All ten skills pass `scripts/validate_skill.py`
+(exit 0); all 8 skills with tests pass (87 tests total); every SKILL.md is under the
+500-line budget; every description is under 1024 characters; every `references/` link
+is one level deep.
+
+### Re-verification (2026-10-12, curl — second random sample)
+| URL | HTTP | Note |
+|-----|------|------|
+| modelcontextprotocol.io/specification/2026-07-28/changelog | 200 | MCP revision still current |
+| raw .../seps/2575-stateless-mcp.md | 200 | statelessness contract |
+| raw .../seps/2663-tasks-extension.md | 200 | tasks extension id |
+| raw .../seps/1686-tasks.md | 200 | experimental tasks, removed from core |
+| www.rfc-editor.org/rfc/rfc9309 | 302 | RFC 9309 canonical |
+| datatracker.ietf.org/doc/html/rfc9309 | 200 | robots.txt primary |
+| raw iipc warc-1.1/index.md | 200 | WARC 1.1 spec |
+| raw iipc dedup 1.0 | 200 | revisit-based dedup |
+| agentskills.io | 308 | Agent Skills standard |
+| owasp.org/...top-10-for-large-language-model-applications | 308 | LLM Top 10 |
+| dataverse.harvard.edu (MinHash estimator) | 200 | MinHash ground truth |
+| arxiv.org/abs/1905.06257 | 200 | MinHash paper |
+| github.com/ekzhu/datasketch | 200 | reference implementation |
+| playwright.dev/docs/api/class-browsercontext | 200 | Playwright API |
+| raw anthropics SDK computer-toolset.md | 200 | computer-use driver contract |
+
+IIPC `www.iipc.org` is still bot-blocked (403); `raw.githubusercontent.com/iipc/warc-specifications`
+remains the working primary.
+
+### Bugs found and fixed this pass
+1. **`score_sources.py audit` crashed on multi-line JSONL claims** (`Extra data`).
+   It read the file as a single JSON document. Now it tries a single JSON document
+   first, then falls back to one JSON object per line, and reports a clear FAIL on
+   malformed input. Added `test_audit_accepts_jsonl_claims` and
+   `test_audit_rejects_empty_claims_file`.
+2. **`sanitize.py --check` returned 0 on a FAIL**, contradicting its own help text
+   ("exit 1 on any FAIL"). Now returns 1.
+3. **`deep-research-method/references/EVALS.md` had a duplicated E7** (two "respect
+   robots.txt" prompts) and no E9/E10. De-duplicated and added E9 (re-fetch stale
+   facts) and E10 (score before reading).
+4. **`verifiable-environments` EVALS E9 asserted a "rule of two" that the SKILL.md
+   did not contain.** Added the rule to the decision tables, the near-miss triggers,
+   the pitfalls, and `references/procedures.md` §4b, with worked examples.
+5. **`polite-crawling-warc/scripts/resume_state.py` has no `--init` flag**, which the
+   SKILL.md advertises. Corrected the SKILL.md procedure to `--add <url> --offset N`.
+6. **`warc_writer.py` could not validate its own output.** Added `--validate`, which
+   re-reads the file and reports `records=N valid=N`, so "validate the WARC after
+   append" is now executable.
+7. **`robots.py` precedence was unverified.** Added a test that an `Allow` rule
+   overrides a matching `Disallow` (RFC 9309 §2.2.2) and recorded the verification.
+
+### Weakest skill section rewritten
+`trajectory-ledger` SKILL.md: the `scripts:` line listed only `audit`, omitting
+`append`, `replay` and `cost`, and the description lacked a verification date.
+Both corrected; the description now carries `Verified 2026-10-12`.
+
 ## Sources
 
 Every skill carries `references/SOURCES.md` with at least six primary sources, each
