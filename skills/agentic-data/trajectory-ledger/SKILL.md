@@ -83,6 +83,32 @@ Without those four properties the run cannot be replayed or audited.
 - [ ] Replay reproduces the hash sequence (or divergence is recorded).
 - [ ] Audit walk passes.
 
+## Worked examples
+
+### Good — grounded, replayable trajectory
+A run calls `git diff`, writes a file, then reports success.
+
+1. Each step is a typed event with `tool`, `args`, `result.exit_code`,
+   `state_hash` and `cost` (tokens in/out, seconds).
+2. The terminal event carries `outcome: "succeeded"` and `evidence`.
+3. `scripts/ledger.py audit` walks the file: every tool call has args+result,
+   every state_hash matches, every terminal event has its required field.
+
+Result: the run is auditable and `replay` reproduces the hash sequence.
+
+### Bad — free-form log
+`"2026-10-12 agent ran git diff and it worked"`.
+
+Why it fails: there is no tool, no args, no result, no hash and no outcome
+field. The audit cannot ground a single call, so the run is neither
+reproducible nor auditable. This is an application log, not a ledger.
+
+### Bad — succeeded with no evidence
+`{"outcome": "succeeded"}` with no `evidence` field.
+
+Why it fails: `succeeded` requires `evidence`. The audit exits 1 and the
+run cannot be trusted — a run that claims success without evidence is the
+exact failure mode the ledger exists to prevent.
 ## References
 - procedures: references/procedures.md
 - schema: references/schema.md
