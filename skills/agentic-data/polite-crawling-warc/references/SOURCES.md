@@ -1,6 +1,6 @@
 # SOURCES — polite-crawling-warc
 
-Retrieval date 2026-10-12. Every URL below was fetched live on that date.
+Retrieved: 2026-10-12 (every URL below was fetched live on that date).
 Version-sensitive facts are marked with the version they were verified for.
 
 | # | URL | What was used | Version / date verified | Conflict |

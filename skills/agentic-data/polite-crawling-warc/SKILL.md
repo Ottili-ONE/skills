@@ -52,6 +52,8 @@ Trigger: crawl a site and archive it to WARC.
 ## References
 - procedures: references/procedures.md
 - policy: references/crawl-policy.md
+- warc validation: references/warc-validation.md
+- DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/robots.py, scripts/rate_limit.py, scripts/resume_state.py, scripts/warc_writer.py, scripts/validate_warc.py

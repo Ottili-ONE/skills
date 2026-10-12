@@ -196,6 +196,22 @@ def main() -> int:
         and good_ok
     )
 
+    detail: list[str] = []
+    for cf in contract_failures:
+        detail.append(f"FAIL: {cf}")
+    if contract_failures:
+        detail.append("FAIL: sandbox contract is not pinned")
+    if spec_failures:
+        detail.append(f"FAIL: {len(spec_failures)} check(s) lack a valid spec reference")
+    if register_failures:
+        detail.append(f"FAIL: {len(register_failures)} check(s) have no bypass-register entry")
+    if power_vs_broken < args.min_power:
+        detail.append(f"FAIL: harness does not separate good from broken (power {power_vs_broken:.2f} < {args.min_power})")
+    if power_vs_lazy < args.min_power:
+        detail.append(f"FAIL: harness does not separate good from lazy (power {power_vs_lazy:.2f} < {args.min_power})")
+    if not good_ok:
+        detail.append(f"FAIL: known-good agent passes only {good:.0%} (min {args.min_good_pass_rate:.0%}) — checks are too strict")
+
     report = {
         "ok": ok,
         "contract": contract,
@@ -211,7 +227,7 @@ def main() -> int:
             "min_power": args.min_power,
         },
         "good_pass_rate_min": args.min_good_pass_rate,
-        "failures": contract_failures + spec_failures + register_failures,
+        "failures": detail,
     }
 
     print(
@@ -219,20 +235,13 @@ def main() -> int:
         f"power(broken)={power_vs_broken:.2f} power(lazy)={power_vs_lazy:.2f}",
         file=sys.stderr,
     )
+    for d in detail:
+        print(d, file=sys.stderr)
+
+    if args.json:
+        args.json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
     if not ok:
-        if contract_failures:
-            print("FAIL: sandbox contract is not pinned", file=sys.stderr)
-        if spec_failures:
-            print(f"FAIL: {len(spec_failures)} check(s) lack a valid spec reference", file=sys.stderr)
-        if register_failures:
-            print(f"FAIL: {len(register_failures)} check(s) have no bypass-register entry", file=sys.stderr)
-        if power_vs_broken < args.min_power:
-            print(f"FAIL: harness does not separate good from broken (power {power_vs_broken:.2f} < {args.min_power})", file=sys.stderr)
-        if power_vs_lazy < args.min_power:
-            print(f"FAIL: harness does not separate good from lazy (power {power_vs_lazy:.2f} < {args.min_power})", file=sys.stderr)
-        if not good_ok:
-            print(f"FAIL: known-good agent passes only {good:.0%} (min {args.min_good_pass_rate:.0%}) — checks are too strict", file=sys.stderr)
         return 1
     print("PASS: harness discriminates good, broken and lazy agents", file=sys.stderr)
     return 0

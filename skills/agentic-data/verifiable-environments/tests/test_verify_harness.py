@@ -59,7 +59,7 @@ def test_low_min_power_fails() -> None:
         "--min-power", "0.5",
     )
     assert r.returncode == 1
-    assert "vs lazy" in r.stderr
+    assert "does not separate good from lazy" in r.stderr
 
 
 def test_json_report_written() -> None:
@@ -93,7 +93,7 @@ def test_spec_ref_missing_fails() -> None:
         "--lazy", str(FIX / "lazy"),
     )
     assert r.returncode == 1
-    assert "spec_ref" in r.stderr
+    assert "lack a valid spec reference" in r.stderr
 
 
 def test_bypass_register_missing_fails() -> None:

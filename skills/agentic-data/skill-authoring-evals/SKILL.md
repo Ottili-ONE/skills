@@ -84,6 +84,7 @@ fires when it should.
 
 ## References
 - procedures: references/procedures.md
+- trigger evals: references/trigger-evals.md
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
 - scripts: scripts/validate_skill.py

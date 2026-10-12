@@ -79,6 +79,7 @@ remove duplicates and prevent test-set leakage.
 ## References
 - procedures: references/procedures.md
 - planted-item tests: references/planted-item-tests.md
+- DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/normalize.py, scripts/minhash_lsh.py, scripts/ngram_decontam.py, scripts/embed_decontam.py, scripts/plant_test.py, scripts/validate_skill.py

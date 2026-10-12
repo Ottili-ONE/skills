@@ -12,6 +12,7 @@ Exit 0 on success, 1 on any FAIL.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -114,10 +115,25 @@ def check(skill_dir: Path) -> tuple[int, int, int]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("skill_dir", help="path to a skill folder")
+    ap.add_argument("--json", type=Path, default=None, help="write JSON report here")
     args = ap.parse_args()
 
-    fails, warns, oks = check(Path(args.skill_dir).resolve())
+    skill_dir = Path(args.skill_dir).resolve()
+    if not skill_dir.is_dir():
+        print(f"FAIL: skill dir not found: {skill_dir}", file=sys.stderr)
+        return 2
+    fails, warns, oks = check(skill_dir)
     print(f"{oks} {fails} {warns}")
+    if args.json:
+        if not args.json.parent.is_dir():
+            print(f"FAIL: --json parent dir missing: {args.json.parent}", file=sys.stderr)
+            return 2
+        args.json.write_text(json.dumps({
+            "skill": skill_dir.name,
+            "path": str(skill_dir),
+            "oks": oks, "fails": fails, "warns": warns,
+            "ok": fails == 0,
+        }, indent=2) + "\n", encoding="utf-8")
     return 1 if fails else 0
 
 
