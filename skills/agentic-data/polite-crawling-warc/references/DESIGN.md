@@ -33,7 +33,7 @@ site and archive it to WARC; not for one-page fetches or server-side scraping."
 - `scripts/robots.py`, `scripts/rate_limit.py`, `scripts/resume_state.py`,
   `scripts/warc_writer.py`, `scripts/validate_warc.py`, `scripts/validate_skill.py`.
 
-## Five eval prompts
+## Five eval prompts (mirrored in `references/EVALS.md`)
 1. "robots.txt returned 404. Can I crawl the site?" -> Yes: 4xx = Unavailable, default
    allow. Do not default-deny on a 404.
 2. "robots.txt returned 500. Can I crawl the site?" -> No: 5xx = Unreachable, default-deny;

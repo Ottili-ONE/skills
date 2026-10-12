@@ -22,7 +22,7 @@ or verify that a deployment is stateless and version-pinned. Not for general API
 - `scripts/version_negotiate.py` — given client+server version lists, returns the agreed version or FAIL.
 - `scripts/stateless_probe.py` — replays a request and asserts idempotent statelessness.
 
-## Five eval prompts
+## Five eval prompts (mirrored in `references/EVALS.md`)
 1. "My MCP server still sends Mcp-Session-Id. Is it 2026-07-28 compliant?" -> FAIL: sessions removed.
 2. "Client talks 2025-06-18, server only 2026-07-28. What happens?" -> negotiate down or connection refused; never silently downgrade security.
 3. "Where does per-request metadata go?" -> in the `_meta` reserved-key block on every request.

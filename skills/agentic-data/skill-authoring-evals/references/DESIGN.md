@@ -33,7 +33,7 @@ and adds trigger-accuracy evals (should-fire vs should-not-fire prompts). It pre
 common incident of a well-written skill that never registers because the folder name and
 the `name` field disagree, or a description so vague it never fires.
 
-## Five eval prompts
+## Five eval prompts (mirrored in `references/EVALS.md`)
 1. "My skill's folder is `my-skill` but the frontmatter says `name: other`. What
    happens?" -> It never registers; make them identical.
 2. "My description is 1,400 characters. Is that a problem?" -> Yes: over the 1024 cap;

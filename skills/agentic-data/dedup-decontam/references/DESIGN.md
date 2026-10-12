@@ -31,7 +31,7 @@ remove duplicates and test-set leakage; not for single-document similarity."
 - `scripts/normalize.py`, `scripts/minhash_lsh.py`, `scripts/ngram_decontam.py`,
   `scripts/embed_decontam.py`, `scripts/plant_test.py`, `scripts/validate_skill.py`.
 
-## Five eval prompts
+## Five eval prompts (mirrored in `references/EVALS.md`)
 1. "I decontaminated using character n-grams but the benchmark uses GPT-2 BPE. Is my
    result valid?" -> No: tokenization mismatch misses matches and over-reports.
 2. "My MinHash uses num_perm=8. What's wrong?" -> Unstable estimate, not reproducible;

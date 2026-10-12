@@ -51,7 +51,7 @@ you have not audited it.
 - `scripts/verify_harness.py` — runs the three agents (good/broken/lazy), reports pass
   rates, discriminating power, and exits 1 if the harness cannot distinguish them.
 
-## Five eval prompts
+## Five eval prompts (mirrored in `references/EVALS.md`)
 1. "My verifier imports the environment module. Is that a problem?" -> Yes: it shares
    the environment's bugs and can be reverse-engineered. Write against a SPEC.md.
 2. "A check has no bypass entry. What do I do?" -> FAIL the check; you have not audited

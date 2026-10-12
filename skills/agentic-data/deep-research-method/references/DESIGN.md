@@ -24,7 +24,7 @@ document."
 - `scripts/score_sources.py` — computes the 0-10 score from authority/recency/corroboration
   inputs; rejects <6 with a reason; emits a scored evidence table.
 
-## Five eval prompts
+## Five eval prompts (mirrored in `references/EVALS.md`)
 1. "My only source is a blog post from 2023. Can I cite it as high confidence?" -> No:
    secondary only = low confidence; fetch the primary.
 2. "Two sources disagree on a date. Which do I use?" -> List the contradiction, weight by
