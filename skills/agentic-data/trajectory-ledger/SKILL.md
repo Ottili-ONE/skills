@@ -41,7 +41,8 @@ Without those four properties the run cannot be replayed or audited.
    `non_determinism: true` and stop the replay.
 7. **Audit** — walk the ledger: every `succeeded` has a result, every `failed`
    has a reason, every hash matches, and the cost ledger sums. Run
-   `scripts/ledger.py audit <ledger.jsonl>`.
+   `scripts/ledger.py audit <ledger.jsonl>` (exit 0 = clean, 1 = any FAIL).
+   The same binary also does `append`, `replay` and `cost`.
 
 ## Decision tables
 - **Outcome status**: `succeeded` requires a recorded result; `failed` requires a
