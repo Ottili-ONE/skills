@@ -220,3 +220,47 @@ def test_warc_count_records_across_members():
         p = run(Path(ROOT, "scripts", "validate_warc.py"), [f])
         assert p.returncode == 0, p.stderr
         assert "records=3 valid=3" in p.stdout, p.stdout
+
+
+def test_robots_crlf_and_comments_ignored():
+    text = "# a comment\r\nUser-agent: *\r\nDisallow: /private/\r\n"
+    p = run(ROBOTS, ["--path", "/private/x"], stdin=text)
+    assert p.returncode == 1, p.stderr
+
+
+def test_robots_unknown_user_agent_matches_star():
+    text = "User-agent: BadBot\nDisallow: /private/\nUser-agent: *\nAllow: /\n"
+    p = run(ROBOTS, ["--path", "/private/x", "--ua", "BadBot"], stdin=text)
+    assert p.returncode == 1, p.stderr
+
+
+def test_robots_specific_overrides_star():
+    text = "User-agent: *\nDisallow: /\nUser-agent: OttiliCrawler\nAllow: /public/\n"
+    p = run(ROBOTS, ["--path", "/public/x", "--ua", "OttiliCrawler"], stdin=text)
+    assert p.returncode == 0, p.stderr
+
+
+def test_validate_warc_empty_file_fails():
+    import tempfile, os as _os
+    with tempfile.TemporaryDirectory() as d:
+        f = _os.path.join(d, "empty.warc.gz")
+        Path(f).write_bytes(b"")
+        p = run(Path(ROOT, "scripts", "validate_warc.py"), [f])
+        assert p.returncode == 1, p.stderr
+        assert "records=0" in p.stdout
+
+
+def test_validate_warc_rejects_bad_date():
+    import gzip as gz, tempfile, os as _os
+    with tempfile.TemporaryDirectory() as d:
+        f = _os.path.join(d, "bad.warc.gz")
+        raw = (b"WARC/1.1\r\nWARC-Type: response\r\n"
+               b"WARC-Record-ID: <urn:uuid:12345678-1234-1234-1234-123456789abc>\r\n"
+               b"WARC-Date: 2026-10-08 12:00:00\r\n"
+               b"WARC-Target-URI: http://e/\r\n"
+               b"Content-Length: 0\r\nWARC-Payload-Digest: sha256:abc\r\n\r\n\r\n\r\n")
+        with gz.open(f, "wb") as fh:
+            fh.write(raw)
+        p = run(Path(ROOT, "scripts", "validate_warc.py"), [f])
+        assert p.returncode == 1, p.stderr
+        assert "bad WARC-Date" in p.stderr

@@ -109,6 +109,8 @@ def main() -> int:
     args = ap.parse_args()
     total, ok, fails = validate(args.file)
     print(f"records={total} valid={ok}")
+    if total == 0:
+        fails.append("no records found in WARC file")
     for f in fails:
         print(f"FAIL: {f}", file=sys.stderr)
     if not fails:

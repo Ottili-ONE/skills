@@ -158,7 +158,14 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="exit 1 on any FAIL")
     ap.add_argument("--max", type=int, default=DEFAULT_MAX, help=f"max chars before scan (default {DEFAULT_MAX})")
     args = ap.parse_args()
-    data = sys.stdin.read()
+    if args.max < 1:
+        print("FAIL: --max must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        data = sys.stdin.read()
+    except OSError as e:
+        print(f"FAIL: cannot read stdin: {e}", file=sys.stderr)
+        return 2
     r = sanitize(data, args.max)
     # Machine-readable summary -> stdout.
     print(f"length={r['length']} truncated={str(r['truncated']).lower()} flags={len(r['flags'])}")
