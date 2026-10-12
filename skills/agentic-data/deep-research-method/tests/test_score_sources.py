@@ -76,3 +76,22 @@ def test_contradictions_equal_scores_unresolved() -> None:
     r = run("contradictions", str(FIX / "equal.jsonl"), str(pairs))
     assert r.returncode == 1
     assert "UNRESOLVED" in r.stderr
+
+
+def test_audit_accepts_jsonl_claims() -> None:
+    """The audit subcommand must accept one-claim-per-line JSONL, not only JSON."""
+    out = FIX / "claims_jsonl.jsonl"
+    out.write_text(json.dumps({"text": "a", "cites": ["https://www.europa.eu/legal-summary/"]})
+                   + "\n"
+                   + json.dumps({"text": "b", "cites": ["https://arxiv.org/abs/2212.08073"]}))
+    r = run("audit", str(FIX / "good.jsonl"), str(out))
+    assert r.returncode == 0, r.stderr
+    assert "PASS" in r.stderr
+
+
+def test_audit_rejects_empty_claims_file() -> None:
+    out = FIX / "claims_empty.jsonl"
+    out.write_text("")
+    r = run("audit", str(FIX / "good.jsonl"), str(out))
+    assert r.returncode == 1
+    assert "empty" in r.stderr
