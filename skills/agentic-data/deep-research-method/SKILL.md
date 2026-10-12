@@ -31,7 +31,8 @@ without a retrieval date is not evidence, it is memory.
    evidence. Never copy long passages. Record the URL next to every claim.
 6. **Handle contradictions explicitly** — list them, weight by source quality,
    state the resolution. Never silently pick the majority view and never average
-   two views into a fake middle.
+   two views into a fake middle. The full four-step procedure, the re-weighting
+   rule and the worked example are in `references/contradiction-handling.md`.
 7. **State confidence** — high (primary + corroboration), medium (primary
    only), low (secondary only). Never claim high without corroboration.
 
@@ -44,12 +45,23 @@ without a retrieval date is not evidence, it is memory.
 - **Corroboration**: 3+ independent = 3; 2 = 2; 1 = 1; none = 0.
 - **Confidence**: high = primary + >=2 corroborating; medium = primary only;
   low = secondary only; none = no source.
+- **Contradiction resolution** (full procedure in `references/contradiction-handling.md`):
+  | step | action | failure if skipped |
+  |---|---|---|
+  | list | quote each claim, its score and its retrieval date | resolved by whoever speaks last |
+  | frame | same outcome/population/definition? many "contradictions" are orthogonal | comparing unlike things |
+  | weight | higher quality wins; equal scores -> prefer the more recent | count beats quality, the wrong prior |
+  | state | name the winner, keep the loser as a named disagreement, give the range | the reader cannot see the disagreement |
+  | re-weight | if the primary is stale or a third source supports the minority, recompute and say so | a silent flip is unauditable |
+  | no synthesis | never average into a middle value; if evidence is insufficient, downgrade confidence | fake precision |
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - A source with no retrieval date -> not evidence, re-fetch and record.
 - A secondary source used as the sole evidence -> fetch the primary.
 - A contradiction resolved by majority vote -> re-weight by quality.
 - A fact stated without a source -> mark it as unverified.
+- Two sources disagree and the answer averages the numbers -> fake precision;
+  list, weight, state the range (see `references/contradiction-handling.md`).
 - A 2024 fact used for a 2026 question without re-checking -> re-fetch.
 - A kept source with score <6 -> it was never scored.
 
@@ -61,6 +73,9 @@ without a retrieval date is not evidence, it is memory.
 - P5: Stale facts are reused because they were once verified.
 - P6: A source that scores 5 is not "close enough" — it is discarded, unless it
   is the only source for a sub-question, in which case it is flagged low.
+- P7: Averaging two sources into a middle value produces a number no source
+  claimed; it reads as precision and carries no evidence. List, weight, state the
+  range — or downgrade confidence instead of synthesising.
 
 ## Verification checklist
 - [ ] Question decomposed into sub-questions.

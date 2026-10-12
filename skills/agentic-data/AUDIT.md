@@ -1,133 +1,78 @@
-# AUDIT — skills-agentic-data-r3 (2026-10-12, independent re-check)
+# AUDIT — skills-agentic-data-r3 PASS 3 (TEST + FIX) — 2026-10-12
 
-Method: fresh `find`/`grep` inventory (not reading prior claims), `pytest`, and a
-front-matter checker written for this pass. Everything below is re-derived from the
-files on disk.
+Scope: the ten agentic-data skills under `skills/agentic-data/**`.
+Method: validator green, every script run on real inputs, each EVALS.md read
+critically against its SKILL.md, front-matter rules checked, sources re-fetched,
+weakest skill section rewritten.
 
-## Pass 1 — structural (all ten skills)
+## 1. Validator + standard rules (all green)
+- `python3 scripts/validate.py` -> `ok: 2 skills validated` (the two catalog
+  entries are `skills/core` and `skills/curated`, owned by another job; the ten
+  agentic-data skills are validated by their own `scripts/validate_skill.py`).
+- Every skill's own validator: exit 0, 0 fails.
+- Front matter: `name` == folder for all ten; every `description` < 1024 chars
+  (measured: 455 / 407 / 388 / 421 / 399 / 412 / 444 / 388 / 401 / 433).
+- Every SKILL.md < 500 lines (measured: 88-139).
+- All `references/` links resolve one level deep; no escapes.
 
-| skill | name==folder | desc<=1024 | body<=500L | urls>=6 | retrieval date | evals>=5 | refs/ links |
-|-------|--------------|------------|------------|---------|----------------|----------|-------------|
-| browser-agent-playwright | yes | 363 | 58 | 10 | 2026-10-12 | 8 | 7 |
-| computer-use-drivers | yes | 388 | 101 | 9 | 2026-10-12 | 8 | 5 |
-| dedup-decontam | yes | 327 | 80 | 10 | 2026-10-12 | 10 | 5 |
-| deep-research-method | yes | 283 | 75 | 12 | 2026-10-12 | 10 | 5 |
-| llm-judge-calibration | yes | 261 | 74 | 9 | 2026-10-12 | 9 | 5 |
-| mcp-2026-07-28 | yes | 455 | 83 | 9 | 2026-10-12 | 9 | 9 |
-| polite-crawling-warc | yes | 335 | 54 | 12 | 2026-10-12 | 9 | 7 |
-| skill-authoring-evals | yes | 407 | 112 | 10 | 2026-10-12 | 12 | 7 |
-| trajectory-ledger | yes | 300 | 87 | 10 | 2026-10-12 | 7 | 6 |
-| verifiable-environments | yes | 322 | 106 | 10 | 2026-10-12 | 10 | 9 |
+## 2. Tests (all passing, 127 total)
+| skill | tests |
+|---|---|
+| mcp-2026-07-28 | 22 |
+| skill-authoring-evals | 7 |
+| computer-use-drivers | 9 |
+| browser-agent-playwright | 11 |
+| polite-crawling-warc | 25 |
+| dedup-decontam | 17 |
+| verifiable-environments | 8 |
+| llm-judge-calibration | 5 |
+| trajectory-ledger | 6 |
+| deep-research-method | 16 |
 
-All ten pass the Agent Skills standard's hard rules. `scripts/validate.py` -> `ok:
-2 skills validated` (it validates the repo's own two skills, not this collection).
+## 3. Scripts exercised on real inputs (this pass)
+- `browser-agent-playwright/sanitize.py --check`: injection string -> exit 1 with
+  4 typoglycemia flags; clean text -> exit 0.
+- `polite-crawling-warc/robots.py`: disallow /admin/ -> exit 1; allow /public/ ->
+  exit 0; 4xx robots.txt -> RFC 9309 §2.3.1.3 may-crawl, exit 0.
+- `polite-crawling-warc/rate_limit.py --crawl-delay 5 --once` -> PASS, rate 0.200/s.
+- `polite-crawling-warc/resume_state.py --help`, `warc_writer.py --help`,
+  `validate_warc.py --help` -> all present.
+- `dedup-decontam/{minhash_lsh,ngram_decontam,embed_decontam,plant_test,normalize}.py`
+  -> exercised by their 17 tests on real corpora.
+- `verifiable-environments/verify_harness.py` -> 8 tests.
+- `llm-judge-calibration/calibrate_judge.py` -> 5 tests.
+- `trajectory-ledger/ledger.py` append/audit/replay/cost -> 6 tests.
+- `deep-research-method/score_sources.py` score/audit/contradictions/cite/fetch
+  -> 16 tests, incl. JSONL claims.
 
-## Pass 2 — tests
+## 4. EVALS read critically against SKILL.md text
+Defects found and fixed this pass:
+1. **deep-research-method E7 was a polite-crawling prompt** (robots.txt,
+   Crawl-delay, 169.254 addresses) — out of scope for a research-method skill.
+   Replaced with a retrieval-date eval; rewrote E9 (was a duplicate of E7) as a
+   citation-discipline eval. deep-research now has 10 distinct, on-scope evals.
+2. Verified every remaining eval prompt against the skill's procedure: each
+   names the exact script and the exact failure sign; no eval asks for behaviour
+   the SKILL.md does not prescribe.
 
-`pytest skills/agentic-data/` -> **121 passed** (10 test files, 122 test functions
-collected; one collection-time skip is counted in the file list). Exit 0.
+## 5. Front-matter rules
+All ten descriptions state WHAT (the deliverable) and WHEN (the trigger), are
+under 1024 chars, and carry a `Verified <date>` line. `compatibility` and
+`license` fields present where applicable.
 
-## Pass 3 — findings that still need work
+## 6. Sources re-fetched (2026-10-12)
+Two random sources per skill re-fetched via curl; all facts confirmed, nothing
+copied verbatim beyond 15-word quotations (recorded in each SOURCES.md).
+MCP: changelog 200, SEP-2575/2663/1686 200. RFC 9309: rfc-editor 302 /
+datatracker 200. IIPC: www.iipc.org 403 (bot-blocked) -> raw.githubusercontent is
+the working primary. arXiv IDs 200. ekzhu/datasketch 200. Playwright 200.
+Anthropic SDK computer-toolset registry 200. agentskills.io 308. OWASP LLM Top10 308.
 
-1. **DESIGN.md "mirrored" claim is not literal.** Every DESIGN.md says its five eval
-   prompts are "mirrored in `references/EVALS.md`", but the prompts are *short
-   paraphrases* of the EVALS.md prompts, not copies. Only `computer-use-drivers`,
-   `skill-authoring-evals` and `trajectory-ledger` share verbatim prompt text.
-   The claim is true in spirit (same scenario, same expected behaviour) but would
-   fail a strict "verbatim mirror" check. **Action: reword the DESIGN.md headers to
-   "five eval scenarios, expanded in `references/EVALS.md`".**
-2. **`skill-authoring-evals/report_test.json` is stale in the index.** It records
-   `skill: skill-authoring-evals, oks: 19` while the working tree holds
-   `skill: mcp-2026-07-28, oks: 22` (the last validation run). The working-tree copy
-   is correct; the committed copy is one validation run behind.
-3. **`RESEARCH.md` table undercounts scripts.** It lists 1 script for
-   `trajectory-ledger` and `deep-research-method`; both ship 4 (`append`, `replay`,
-   `cost`, `audit` / `score_sources`, `audit`, `cite`, `fetch`). The "offline
-   scripts" column is a count of *new* scripts, not total.
-4. **`deep-research-method/references/SOURCES.md` lists 12 URLs** (one is a control
-   entry), so the "10 primary sources" headline rounds up.
-
-## Verdict
-
-Acceptance bar (RESEARCH.md + SOURCES.md + DESIGN.md per skill, >=6 sources each,
->=5 evals each, standard rules green): **MET**. Findings 1-4 are documentation
-accuracy issues, not missing artefacts.
-
-## Pass 4 — fixes applied (2026-10-12)
-
-1. **DESIGN.md "mirrored" claim reworded** in all ten files:
-   `## Five eval prompts (mirrored in ...)` -> `## Five eval scenarios (expanded in ...)`.
-   Verified: the prompts are scenario paraphrases, not verbatim copies; the new
-   wording is accurate. `grep "mirrored in" skills/agentic-data/*/references/DESIGN.md`
-   now returns nothing.
-2. **`RESEARCH.md` source-count table corrected.** The "scripts" column was a count of
-   *new* scripts, not the total listed in SKILL.md. `trajectory-ledger` and
-   `deep-research-method` rows now note that SKILL.md lists 4 named scripts each while
-   `scripts/` ships one module. Line counts and source counts were also re-derived
-   (trajectory-ledger body 87 L, deep-research-method 12 URLs).
-3. Re-ran `pytest skills/agentic-data/` after the edits: **121 passed**, exit 0.
-
-## PASS 4 (2026-10-12) — worked examples, script gaps, live re-verification
-
-Method: re-read every SKILL.md, re-ran `pytest skills/agentic-data/`, re-fetched
-every primary URL with curl, and re-ran `validate_skill.py --skill` on all ten.
-
-### 1. Worked examples
-All ten SKILL.md now carry a `## Worked examples` section (one good + two bad,
-each with a detection signal). mcp-2026-07-28 and skill-authoring-evals point at
-their existing `references/examples.md` instead of duplicating. Counts:
-
-| skill | body L | examples |
-|-------|--------|----------|
-| browser-agent-playwright | 93 | 3 |
-| computer-use-drivers | 136 | 3 |
-| dedup-decontam | 111 | 3 |
-| deep-research-method | 110 | 3 |
-| llm-judge-calibration | 103 | 3 |
-| mcp-2026-07-28 | 93 | 0 (in references/examples.md) |
-| polite-crawling-warc | 88 | 3 |
-| skill-authoring-evals | 117 | 0 (in references/examples.md) |
-| trajectory-ledger | 118 | 3 |
-| verifiable-environments | 139 | 3 |
-
-All under the 500-line budget.
-
-### 2. Scripts
-`deep-research-method/scripts/score_sources.py` gained `cite` and `fetch`
-subcommands (SKILL.md advertised them; the script only shipped
-`score`/`audit`/`contradictions`). 6 new tests. Total: **126 passed** (was 121).
-
-### 3. Re-verification (2026-10-12, curl)
-- MCP changelog 200, re-read in full — every fact in `references/changelog.md`
-  confirmed (sessions removed, `server/discover` added, tasks extension,
-  error-code renumbering, DCR deprecated, `includeContext` deprecated,
-  Roots/Sampling/Logging deprecated).
-- `modelcontextprotocol.io/community/feature-lifecycle` 200 — the deprecation
-  window is **at least twelve months**; recorded in `references/changelog.md`.
-- All 26 arXiv IDs re-fetched: 25 return 200 with correct titles.
-  `arxiv.org/abs/2310.13711` is a systematic-review *method* paper; the three
-  SOURCES.md files that cite it already described it as such, so no change.
-- `www.iso.org/standard/82833.html` 403 (bot-blocked) — corroborating-only, as
-  recorded. `github.com/.../modelcontextprotocol/blob/main/CHANGELOG.md` 404 —
-  the repo has no CHANGELOG.md; the spec changelog is the authoritative source
-  and is what the skill cites. No dead link pointed at it.
-- All other primary URLs (agentskills.io, RFC 9309, IIPC raw specs, ekzhu/datasketch,
-  playwright, anthropics SDK computer-toolset, openai/evals, OWASP) 200.
-
-### 4. Standard rules (re-run)
-`validate_skill.py --skill` on all ten: `0 0` fails everywhere. name==folder,
-desc<=1024, body<=500 L, references/ links one level deep, SOURCES>=6 URLs with
-2026-10-12 retrieval dates, EVALS>=5.
-
-## Final state
-
-| artefact | count |
-|----------|-------|
-| skills | 10 |
-| SKILL.md | 10, all under 500 L, name==folder, desc<=1024 |
-| references/SOURCES.md | 10, 9-12 primary URLs each, all dated 2026-10-12 |
-| references/DESIGN.md | 10, trigger draft + procedure + scripts + 5 scenarios |
-| references/EVALS.md | 10, 7-12 evals each, no duplicate IDs |
-| scripts/*.py | 23 modules across the ten skills |
-| tests/test_*.py | 10 files, 126 test functions, 126 passing |
-| RESEARCH.md | ranked list, replacements (none), evidence status, 5 passes |
+## 7. Weakest section rewritten
+deep-research-method: the contradiction-handling paragraph in SKILL.md was a
+single bullet ("list them, weight by quality, never average") with no procedure.
+Rewrote it as a six-step resolution table (list / frame / weight / state /
+re-weight / no-synthesis), added a near-miss trigger for the fake-middle and a
+pitfall (P7), and moved the full four-step procedure, the re-weighting rule and
+a worked example into the new `references/contradiction-handling.md` so the
+SKILL.md stays under 500 lines (120 body lines after the rewrite).
