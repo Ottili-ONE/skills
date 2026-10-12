@@ -127,10 +127,15 @@ def cmd_audit(sources: list[dict], claims_path: Path, min_score: int) -> int:
         print("FAIL: claims file is empty", file=sys.stderr)
         return 1
     # Claims files are JSONL (one claim per line) or a single JSON array/object.
-    if raw.lstrip().startswith("[") or raw.lstrip().startswith("{"):
+    # Try a single JSON document first; fall back to one JSON object per line.
+    try:
         claims = json.loads(raw)
-    else:
-        claims = [json.loads(line) for line in raw.splitlines() if line.strip()]
+    except json.JSONDecodeError:
+        try:
+            claims = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        except json.JSONDecodeError as exc:
+            print(f"FAIL: claims file is not valid JSON or JSONL: {exc}", file=sys.stderr)
+            return 1
     kept_urls = {s["url"] for s in sources if score_source(s) >= min_score and s.get("url")}
     failures: list[str] = []
     claim_list = claims.get("claims", claims) if isinstance(claims, dict) else claims
