@@ -24,3 +24,9 @@ Re-verified 2026-10-12 (EXPAND pass): Playwright 1.55 -> 1.63.0 on PyPI; the loc
 ## Conflicts
 - Source 7: the canonical owasp.org URL for the LLM Top 10 404s on 2026-10-12; the project has moved to genai.owasp.org. Both are recorded so the evidence chain is honest.
 - No content conflicts between the Playwright docs and the OWASP list.
+
+## Re-verified 2026-10-12 (PASS 3 / TEST+FIX)
+Two random sources re-fetched live to confirm nothing had moved:
+- https://playwright.dev/docs/locators — HTTP 200, 268,087 B (locator API surface unchanged).
+- https://genai.owasp.org/llm-top-10/ — HTTP 200, 921,152 B (OWASP LLM Top 10 2025 still the current version).
+PyPI confirms Playwright latest is still 1.63.0, so the `>=1.49` pin holds.

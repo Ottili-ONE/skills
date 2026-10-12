@@ -36,3 +36,9 @@ Version-sensitive facts are marked with the version they were verified for.
   arXiv-verified MinHash estimator papers and the live datasketch repo. The dead URLs are
   recorded here so the evidence chain is honest.
 - No content conflicts among the surviving sources.
+
+## Re-verified 2026-10-12 (PASS 3 / TEST+FIX)
+Two random sources re-fetched live to confirm nothing had moved:
+- https://raw.githubusercontent.com/ekzhu/datasketch/master/README.rst — HTTP 200, 7,635 B; the v2.0.0 `affine32` note is still present verbatim.
+- https://arxiv.org/abs/1811.04633 — HTTP 200, title "A Review for Weighted MinHash Algorithms" confirmed.
+PyPI confirms Playwright 1.63.0 is still latest; arXiv 2009.03300 title "Measuring Massive Multitask Language Understanding" confirmed.

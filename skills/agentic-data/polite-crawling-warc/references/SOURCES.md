@@ -30,3 +30,8 @@ Version-sensitive facts are marked with the version they were verified for.
 - Source 7 (iso.org) and the old Heritrix URL (source 8's predecessor) are dead/blocked on
   2026-10-12; the WARC 1.1 spec and the `heritrix3` repo are the working primaries.
 - No content conflicts between RFC 9309, WARC 1.1, the dedup spec and the Python stdlib docs.
+
+## Re-verified 2026-10-12 (PASS 3 / TEST+FIX)
+Two random sources re-fetched live to confirm nothing had moved:
+- https://www.rfc-editor.org/rfc/rfc9309.txt — HTTP 200, 25,265 B (RFC 9309 unchanged).
+- https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-format/warc-1.1/index.md — HTTP 200, 68,700 B (WARC 1.1 still the current revision; no WARC 1.2 exists).
