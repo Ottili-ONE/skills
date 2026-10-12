@@ -39,7 +39,10 @@ def load(path: str | None) -> dict:
         raw = sys.stdin.read()
     if not raw.strip():
         raise ValueError("input is empty")
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"input is not valid JSON: {exc}") from exc
 
 
 def check(doc: dict, strict: bool = False) -> tuple[int, int, int]:
@@ -135,6 +138,8 @@ def main() -> int:
     ap.add_argument("file", nargs="?", help="JSON file (default: stdin)")
     ap.add_argument("--strict", action="store_true",
                     help="treat INFO/WARN as FAIL")
+    ap.add_argument("--json", action="store_true",
+                    help="emit a machine-readable report object to stdout")
     args = ap.parse_args()
 
     try:
@@ -144,6 +149,10 @@ def main() -> int:
         return 2
 
     fails, warns, oks = check(doc, strict=args.strict)
+    if args.json:
+        print(json.dumps({"oks": oks, "fails": fails, "warns": warns,
+                          "valid": fails == 0}))
+        return 1 if fails else 0
     print(f"{oks} {fails} {warns}")
     return 1 if fails else 0
 
