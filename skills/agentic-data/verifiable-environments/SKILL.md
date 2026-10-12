@@ -98,6 +98,7 @@ for a check, you have not audited it.
 - procedures: references/procedures.md
 - sandbox contract: references/sandbox-contract.md
 - bypass register: references/bypass-register.md
+- calibration: references/calibration.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/verify_harness.py

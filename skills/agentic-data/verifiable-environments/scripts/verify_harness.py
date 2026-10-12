@@ -53,10 +53,15 @@ def assert_contract(contract: dict) -> list[str]:
 
 
 def load_checks(checks_path: Path) -> list[dict]:
-    data = json.loads(checks_path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(checks_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"ERROR: checks file is not valid JSON: {e}")
     checks = data.get("checks", data) if isinstance(data, dict) else data
     if not isinstance(checks, list):
-        raise ValueError("checks file must contain a JSON list of check objects")
+        raise SystemExit("ERROR: checks file must contain a JSON list of check objects")
+    if not checks:
+        raise SystemExit("ERROR: checks file is empty")
     return checks
 
 
@@ -122,6 +127,11 @@ def pass_rate(passed: int, total: int) -> float:
     return passed / total
 
 
+def _die(msg: str, code: int = 2) -> int:
+    print(f"ERROR: {msg}", file=sys.stderr)
+    return code
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--contract", type=Path, default=None, help="sandbox contract JSON")
@@ -129,62 +139,86 @@ def main() -> int:
     ap.add_argument("--good", type=Path, required=True, help="known-good agent output dir")
     ap.add_argument("--broken", type=Path, required=True, help="deliberately broken agent output dir")
     ap.add_argument("--lazy", type=Path, required=True, help="deliberately lazy agent output dir")
+    ap.add_argument("--spec", type=Path, default=None, help="spec markdown (for spec_ref validation)")
+    ap.add_argument("--bypass-register", type=Path, default=None, help="bypass register markdown")
     ap.add_argument("--min-power", type=float, default=MIN_POWER)
-    ap.add_argument("--min-good-pass-rate", type=float, default=MIN_GOOD_PASS_RATE,
-                    help="known-good agent must pass at least this fraction")
-    ap.add_argument("--spec", type=Path, default=None,
-                    help="spec markdown; every check must carry a spec_ref found in it")
-    ap.add_argument("--bypass-register", type=Path, default=None,
-                    help="bypass register markdown; every check must have an entry")
-    ap.add_argument("--json", type=Path, default=None, help="write machine-readable report here")
+    ap.add_argument("--min-good-pass-rate", type=float, default=MIN_GOOD_PASS_RATE)
+    ap.add_argument("--json", type=Path, default=None, help="write JSON report here")
     args = ap.parse_args()
+
+    for name in ("checks",):
+        if not args.checks.is_file():
+            return _die(f"checks file not found: {args.checks}")
+    for name in ("good", "broken", "lazy"):
+        d = getattr(args, name)
+        if not d.is_dir():
+            return _die(f"{name} dir not found: {d}")
+    if args.spec and not args.spec.is_file():
+        return _die(f"--spec file not found: {args.spec}")
+    if args.bypass_register and not args.bypass_register.is_file():
+        return _die(f"--bypass-register file not found: {args.bypass_register}")
+    if args.json and not args.json.parent.is_dir():
+        return _die(f"--json parent dir missing: {args.json.parent}")
+    for opt, val in (("--min-power", args.min_power),
+                     ("--min-good-pass-rate", args.min_good_pass_rate)):
+        if not (0.0 <= val <= 1.0):
+            return _die(f"{opt}={val} must be in [0, 1]")
+
+    try:
+        checks = load_checks(args.checks)
+    except SystemExit as e:
+        print(str(e), file=sys.stderr)
+        return 2
 
     contract = load_contract(args.contract)
     contract_failures = assert_contract(contract)
-    for line in contract_failures:
-        print(line, file=sys.stderr)
-
-    checks = load_checks(args.checks)
     spec_failures = assert_checks_spec_ref(checks, args.spec)
-    for line in spec_failures:
-        print(line, file=sys.stderr)
     register_failures = assert_checks_bypass_register(checks, args.bypass_register)
-    for line in register_failures:
-        print(line, file=sys.stderr)
 
-    report: dict = {"contract": contract, "contract_ok": not contract_failures,
-                    "spec_ok": not spec_failures, "bypass_register_ok": not register_failures,
-                    "checks": len(checks), "agents": {}}
+    good_passed, total, _ = run_checks(checks, args.good)
+    broken_passed, _, _ = run_checks(checks, args.broken)
+    lazy_passed, _, _ = run_checks(checks, args.lazy)
 
-    for label, d in (("good", args.good), ("broken", args.broken), ("lazy", args.lazy)):
-        passed, total, details = run_checks(checks, d)
-        rate = pass_rate(passed, total)
-        report["agents"][label] = {"passed": passed, "total": total, "pass_rate": rate}
-        print(f"INFO: {label} agent {passed}/{total} = {rate:.0%}", file=sys.stderr)
-        for line in details:
-            print(f"  {line}", file=sys.stderr)
+    good = pass_rate(good_passed, total)
+    broken = pass_rate(broken_passed, total)
+    lazy = pass_rate(lazy_passed, total)
 
-    good = report["agents"]["good"]["pass_rate"]
-    broken = report["agents"]["broken"]["pass_rate"]
-    lazy = report["agents"]["lazy"]["pass_rate"]
     power_vs_broken = good - broken
     power_vs_lazy = good - lazy
-    report["power_vs_broken"] = power_vs_broken
-    report["power_vs_lazy"] = power_vs_lazy
-    report["min_power"] = args.min_power
-
     good_ok = good >= args.min_good_pass_rate
-    report["good_pass_rate"] = good
-    report["min_good_pass_rate"] = args.min_good_pass_rate
-    report["good_ok"] = good_ok
-    ok = (contract_failures == [] and spec_failures == [] and register_failures == []
-          and power_vs_broken >= args.min_power and power_vs_lazy >= args.min_power
-          and good_ok)
-    report["ok"] = ok
-    print(f"INFO: discriminating power vs broken = {power_vs_broken:.2f}, vs lazy = {power_vs_lazy:.2f} (min {args.min_power})", file=sys.stderr)
 
-    if args.json:
-        args.json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    ok = (
+        not contract_failures
+        and not spec_failures
+        and not register_failures
+        and power_vs_broken >= args.min_power
+        and power_vs_lazy >= args.min_power
+        and good_ok
+    )
+
+    report = {
+        "ok": ok,
+        "contract": contract,
+        "n_checks": total,
+        "agents": {
+            "good": {"pass_rate": round(good, 4), "passed": good_passed},
+            "broken": {"pass_rate": round(broken, 4), "passed": broken_passed},
+            "lazy": {"pass_rate": round(lazy, 4), "passed": lazy_passed},
+        },
+        "power": {
+            "vs_broken": round(power_vs_broken, 4),
+            "vs_lazy": round(power_vs_lazy, 4),
+            "min_power": args.min_power,
+        },
+        "good_pass_rate_min": args.min_good_pass_rate,
+        "failures": contract_failures + spec_failures + register_failures,
+    }
+
+    print(
+        f"INFO: good={good:.2f} broken={broken:.2f} lazy={lazy:.2f} "
+        f"power(broken)={power_vs_broken:.2f} power(lazy)={power_vs_lazy:.2f}",
+        file=sys.stderr,
+    )
 
     if not ok:
         if contract_failures:
