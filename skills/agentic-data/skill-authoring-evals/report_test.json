@@ -1,7 +1,7 @@
 {
-  "skill": "skill-authoring-evals",
-  "path": "/srv/ottili/repo/skills/skills/agentic-data/skill-authoring-evals",
-  "oks": 19,
+  "skill": "mcp-2026-07-28",
+  "path": "/srv/ottili/repo/skills/skills/agentic-data/mcp-2026-07-28",
+  "oks": 22,
   "fails": 0,
   "warns": 0,
   "ok": true
