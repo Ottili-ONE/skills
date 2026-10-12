@@ -46,6 +46,43 @@ SUMMARY_GOOD = ("The agent wrote output.json with status set to ok and confirmed
                 "the result in a summary file as required by the task specification.")
 
 
+
+BYPASS_REGISTER = [
+    {
+        "check": "output_file",
+        "severity": "low",
+        "direct": "agent edits checks.json to remove the check (critical, out of scope)",
+        "indirect": "agent touches an empty output.json (high); closed by status_ok which requires real content",
+        "cosmetic": "JSON key order",
+        "defences": ["output_file.exists", "status_ok.json_value == ok"],
+    },
+    {
+        "check": "status_ok",
+        "severity": "low",
+        "direct": "agent edits checks.json (critical, out of scope)",
+        "indirect": "agent hand-writes a literal status=ok dict (high); closed by summary_file requiring a second artefact",
+        "cosmetic": "JSON key order",
+        "defences": ["status_ok.json_value == ok", "summary_file.exists"],
+    },
+    {
+        "check": "summary_file",
+        "severity": "low",
+        "direct": "agent edits checks.json (critical, out of scope)",
+        "indirect": "agent touches an empty summary.md (high); closed by a min-length assertion in real harnesses",
+        "cosmetic": "whitespace / heading style",
+        "defences": ["summary_file.exists", "output_file.exists"],
+    },
+    {
+        "check": "summary_file_neutered",
+        "severity": "low",
+        "direct": "n/a (harness-authored tautology)",
+        "indirect": "n/a (passes for every agent by construction)",
+        "cosmetic": "n/a",
+        "defences": ["summary_file_neutered.tautology", "output_file.exists"],
+    },
+]
+
+
 def write_agent(out: Path, output_json: str | None, summary: str | None) -> None:
     out.mkdir(parents=True, exist_ok=True)
     if output_json is not None:
@@ -89,6 +126,10 @@ def main() -> int:
         "spec_ref": "verify-the-verifier: this check is intentionally always-pass",
     }]}
     (out / "checks_neutered.json").write_text(json.dumps(neutered, indent=2) + "\n", encoding="utf-8")
+    (out / "bypass-register.jsonl").write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in BYPASS_REGISTER),
+        encoding="utf-8",
+    )
     print(f"PASS: fixtures written to {out}", file=sys.stderr)
     return 0
 

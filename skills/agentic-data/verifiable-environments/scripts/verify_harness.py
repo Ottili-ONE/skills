@@ -144,6 +144,8 @@ def main() -> int:
     ap.add_argument("--min-power", type=float, default=MIN_POWER)
     ap.add_argument("--min-good-pass-rate", type=float, default=MIN_GOOD_PASS_RATE)
     ap.add_argument("--json", type=Path, default=None, help="write JSON report here")
+    ap.add_argument("--bypass-audit", nargs=2, metavar=("SPEC", "REGISTER"), default=None,
+                    help="audit the bypass register against the spec checks (every check needs a register entry with >= 2 defences and no critical severity)")
     ap.add_argument("--neutered-checks", type=Path, default=None,
                     help="verify the verifier: checks with one flipped to always-pass. The power must drop vs the live run and this command must exit 1.")
     args = ap.parse_args()
@@ -159,6 +161,12 @@ def main() -> int:
         return _die(f"--spec file not found: {args.spec}")
     if args.bypass_register and not args.bypass_register.is_file():
         return _die(f"--bypass-register file not found: {args.bypass_register}")
+    if args.bypass_audit:
+        spec_p, reg_p = args.bypass_audit
+        if not Path(spec_p).is_file():
+            return _die(f"--bypass-audit spec file not found: {spec_p}")
+        if not Path(reg_p).is_file():
+            return _die(f"--bypass-audit register file not found: {reg_p}")
     if args.json and not args.json.parent.is_dir():
         return _die(f"--json parent dir missing: {args.json.parent}")
     for opt, val in (("--min-power", args.min_power),
@@ -171,6 +179,22 @@ def main() -> int:
     except SystemExit as e:
         print(str(e), file=sys.stderr)
         return 2
+
+    if args.bypass_audit:
+        spec_p, reg_p = args.bypass_audit
+        try:
+            spec_obj = json.loads(Path(spec_p).read_text(encoding="utf-8"))
+            register_rows = load_bypass_register(reg_p)
+        except SystemExit as e:
+            print(str(e), file=sys.stderr)
+            return 2
+        bypass_failures = audit_bypass_register(register_rows, spec_obj.get("checks", []))
+        for f in bypass_failures:
+            print(f, file=sys.stderr)
+        if bypass_failures:
+            print(f"FAIL: {len(bypass_failures)} bypass-register problem(s)", file=sys.stderr)
+            return 1
+        print("PASS: every check has a bypass-register entry with >= 2 defences", file=sys.stderr)
 
     contract = load_contract(args.contract)
     contract_failures = assert_contract(contract)
