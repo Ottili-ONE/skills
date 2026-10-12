@@ -28,9 +28,12 @@ OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP inte
    `tasks/get` to poll and `tasks/update` for client-to-server input. The extension
    identifier is `io.modelcontextprotocol/tasks` and it is only available to clients that
    declare it in per-request `clientCapabilities.extensions`.
-6. **OAuth 2.1.** Authorization Code with PKCE. Client ID Metadata Documents replace
-   Dynamic Client Registration (deprecated). Key persisted credentials by issuer and
-   re-register when the issuer changes. Validate `iss` before redeeming the code.
+6. **OAuth 2.1.** Authorization Code with PKCE (`S256` only; `code_verifier` 43-128
+   chars). Client ID Metadata Documents replace Dynamic Client Registration, which is
+   **deprecated but kept for backwards compatibility** with ASes that do not support
+   the document flow (2026-07-28 changelog, PR #2858). Key persisted credentials by
+   issuer and re-register when the issuer changes. Validate `iss` before redeeming the
+   code (RFC 9207, SEP-2468). Full ordered flow in `references/oauth-flow.md`.
 7. **Map error codes.** `-32000..-32019` implementation-defined (grandfathered),
    `-32020..-32099` reserved for MCP: `-32020` HeaderMismatch, `-32021` MissingRequiredClient
    Capability, `-32022` UnsupportedProtocolVersion. `server/discover` failures return
@@ -76,6 +79,8 @@ OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP inte
 
 ## References
 - changelog: references/changelog.md
+- error codes: references/error-codes.md
+- oauth flow: references/oauth-flow.md
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
