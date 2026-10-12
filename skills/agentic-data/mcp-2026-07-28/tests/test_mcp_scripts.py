@@ -217,7 +217,7 @@ def test_protocol_check_strict_promotes_unknown_version():
     assert "FAIL" in r.stderr
 
 
-def test_version_negotiate_picks_highest_common():
+def test_version_negotiate_picks_highest_common_from_unsorted():
     r = run("version_negotiate.py", "--client", "2026-07-28,2025-06-18",
             "--server", "2025-11-25,2025-06-18")
     assert r.returncode == 0, r.stderr
@@ -245,3 +245,114 @@ def test_stateless_probe_flags_differing_results():
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 1
     assert "differ" in r.stderr.lower() or "result" in r.stderr.lower()
+
+
+# --- hardened script behaviour (added in EXPAND pass) ---
+
+def test_version_negotiate_json_mode_agrees():
+    r = run("version_negotiate.py", "--client", "2026-07-28",
+            "--server", "2026-07-28", "--json")
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out == {"agreed": "2026-07-28", "refused": None}
+
+
+def test_version_negotiate_json_mode_refuses():
+    r = run("version_negotiate.py", "--client", "2025-06-18",
+            "--server", "2026-07-28", "--json")
+    assert r.returncode == 1
+    out = json.loads(r.stdout)
+    assert out == {"agreed": None, "refused": "-32022"}
+
+
+def test_version_negotiate_drops_unknown_revision():
+    """An unknown revision cannot drive agreement; it is reported and ignored."""
+    r = run("version_negotiate.py", "--client", "2099-01-01,2026-07-28",
+            "--server", "2026-07-28")
+    assert r.returncode == 0
+    assert "unknown" in r.stderr.lower()
+    assert "agreed 2026-07-28" in r.stderr
+
+
+def test_version_negotiate_dedupes_duplicates():
+    r = run("version_negotiate.py", "--client", "2026-07-28,2026-07-28",
+            "--server", "2026-07-28,2026-07-28")
+    assert r.returncode == 0
+    assert "agreed 2026-07-28" in r.stderr
+
+
+def test_protocol_check_json_mode():
+    doc = json.dumps({"result": {
+        "supportedVersions": ["2026-07-28"],
+        "capabilities": {},
+        "serverInfo": {"name": "demo", "version": "1.0"},
+    }})
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS / "protocol_check.py"), "--json"],
+        input=doc, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["valid"] is True
+    assert out["fails"] == 0
+
+
+def test_protocol_check_json_mode_invalid():
+    doc = json.dumps({"result": {"supportedVersions": ["2026-07-28"]}})
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS / "protocol_check.py"), "--json"],
+        input=doc, capture_output=True, text=True)
+    assert r.returncode == 1
+    out = json.loads(r.stdout)
+    assert out["valid"] is False
+    assert out["fails"] >= 1
+
+
+def test_protocol_check_rejects_empty_input():
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS / "protocol_check.py")],
+        input="", capture_output=True, text=True)
+    assert r.returncode == 2
+    assert "empty" in r.stderr.lower()
+
+
+def test_protocol_check_rejects_invalid_json():
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS / "protocol_check.py")],
+        input="not json at all", capture_output=True, text=True)
+    assert r.returncode == 2
+    assert "json" in r.stderr.lower()
+
+
+def test_protocol_check_warns_on_duplicate_versions():
+    doc = json.dumps({"result": {
+        "supportedVersions": ["2026-07-28", "2026-07-28"],
+        "capabilities": {},
+        "serverInfo": {"name": "demo", "version": "1.0"},
+    }})
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS / "protocol_check.py")],
+        input=doc, capture_output=True, text=True)
+    assert r.returncode == 0
+    assert "duplicate" in r.stderr.lower()
+
+
+# --- reference coverage (added in EXPAND pass) ---
+
+def test_reference_files_exist_and_are_substantive():
+    refs = Path(__file__).resolve().parent.parent / "references"
+    for name in ("server-discover.md", "meta-schema.md", "tasks-extension.md"):
+        p = refs / name
+        assert p.is_file(), f"missing reference {name}"
+        body = p.read_text(encoding="utf-8")
+        assert len(body.splitlines()) >= 25, f"{name} is too thin ({len(body.splitlines())} lines)"
+
+
+def test_reference_links_resolve():
+    """SKILL.md links one level deep into references/ and every target exists."""
+    root = Path(__file__).resolve().parent.parent
+    body = (root / "SKILL.md").read_text(encoding="utf-8")
+    import re as _re
+    for raw in _re.findall(r"`?references/([^`\s]+\.md)`?", body):
+        target = (root / "references" / raw.strip()).resolve()
+        assert target.is_file(), f"dangling reference link {raw!r}"
+        target.relative_to((root / "references").resolve())

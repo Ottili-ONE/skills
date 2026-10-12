@@ -25,3 +25,23 @@ Version-sensitive facts are marked with the revision they were verified for.
 ## Conflicts
 - Secondary summaries (dev.to, muhammad-fiaz/mcp.zig) differ on exact HTTP header casing (`Mcp-*` vs `mcp-*`). The primary spec text uses `Mcp-Method`, `Mcp-Name`, `MCP-Protocol-Version`; treat header names as case-insensitive per HTTP and pin the casing in config only after a primary re-fetch. This skill documents the primary casing.
 - No content conflicts between the four changelogs and the three SEP files fetched here; they are consistent.
+
+## Sources added in EXPAND pass (2026-10-12)
+
+| # | URL | What was used | Version / date verified | Conflict |
+|---|-----|---------------|------------------------|----------|
+| 10 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575 §server/discover: the MUST procedure, the result shape (supportedVersions, capabilities, serverInfo), the empty-params request, the -32601/HTTP-404 failure mode | fetched 2026-10-12 (HTTP 200) | none |
+| 11 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575 §per-request metadata: the four reserved `_meta` keys (protocolVersion, clientInfo, clientCapabilities, logLevel), the io.modelcontextprotocol/* namespace, the "servers MUST NOT infer capabilities" rule | fetched 2026-10-12 (HTTP 200) | none |
+| 12 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md | SEP-2663: the three extension methods (tasks/get, tasks/update, tasks/cancel), the task status machine, the resultType field, the poll-interval guidance | fetched 2026-10-12 (HTTP 200) | none |
+
+## Version-sensitive facts added
+- `server/discover` is a **MUST**, not a MAY. Its result MUST contain
+  `supportedVersions`, `capabilities`, `serverInfo`; `serverInfo` MUST contain
+  `name` and `version`. A discover failure returns `-32601` with HTTP 404.
+- The four reserved `_meta` keys are `io.modelcontextprotocol/protocolVersion`,
+  `io.modelcontextprotocol/clientInfo`, `io.modelcontextprotocol/clientCapabilities`,
+  `io.modelcontextprotocol/logLevel` (optional). Omitting any of the first three on
+  a strict server returns `-32021` with HTTP 403.
+- Servers MUST NOT infer `clientCapabilities` from prior requests — this is the
+  explicit P3 pitfall and is checked by the per-request rule in
+  `references/meta-schema.md`.
