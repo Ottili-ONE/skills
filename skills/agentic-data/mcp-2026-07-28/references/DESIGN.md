@@ -40,3 +40,39 @@ client because the initialize handshake was removed.
 - Human-readable detail lines prefixed `FAIL:`/`PASS:`/`WARN:`/`INFO:` go to **stderr**.
 - Scripts never fetch remote URLs during validation; allowed version lists are vendored locally
   and updated via PR review when a spec revision ships.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. `anthropics/skills` ships no MCP skill; the MCP
+specification lives at `modelcontextprotocol/specification` (tag 2026-07-28) and in
+SDKs, not in a skill folder. The Fastio 2026 directory and `skills.cat` have no MCP
+entry. Community skills that mention "MCP" are thin wrappers around the SDK's
+`server`/`client` classes and silently inherit whatever revision the SDK happens to
+ship.
+
+This skill is the only one that pins the *revision* and makes the protocol
+testable:
+- **Revision is pinned in config, never in logic**: primary 2026-07-28, fallbacks
+  2025-11-25 and 2025-06-18. `scripts/version_negotiate.py` returns the agreed
+  version or FAIL — it correctly refuses a 2025-06-18 client against a
+  2026-07-28-only server (exit 1, `-32022` semantics) and agrees when versions
+  overlap.
+- **The MUST/MAY/removed rule table is explicit**: `server/discover` is MUST
+  (mandatory), per-request `_meta` carries `protocolVersion`/`clientCapabilities`/
+  `clientInfo`, the `initialize` handshake and `Mcp-Session-Id` are removed, Tasks
+  moved into an extension, Roots/Sampling/Logging deprecated, stricter OAuth, no
+  protocol-level sessions on Streamable HTTP.
+- **Error codes are an action map**: JSON-RPC 2.0 range plus `-32020..-32099`
+  reserved for MCP; each code maps to a specific action instead of a shrug.
+- **Stateless-replay probe**: `scripts/stateless_probe.py` replays a request with
+  the same `_meta` and asserts an identical result and no session state.
+- **IO contract for all scripts**: machine-readable counts to stdout
+  (CI greps exit codes), `FAIL:`/`PASS:`/`WARN:`/`INFO:` lines to stderr, and no
+  remote fetches during validation (version lists are vendored locally).
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `modelcontextprotocol/specification` (tag 2026-07-28) | the spec | a spec, not a procedure; no scripts |
+| MCP SDKs (TS v2, Go 1.7 pre-release) | implementations | ship whatever revision they ship; no negotiation |
+| `dev.to/jarvisbitztech`, `developersdigest.tech` | change summaries | secondary; not actionable |
