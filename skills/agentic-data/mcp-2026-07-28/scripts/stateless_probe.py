@@ -46,11 +46,19 @@ def main() -> int:
         print("FAIL: results differ across identical replays", file=sys.stderr)
         fails += 1
 
+    def _scan(obj, where):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if "session" in str(k).lower():
+                    print(f"FAIL: {where} carries a session key {k!r}; 2026-07-28 is stateless", file=sys.stderr)
+                    return True
+                if _scan(v, where):
+                    return True
+        return False
+
     for name, pair in (("a", a), ("b", b)):
-        for key in pair:
-            if "session" in key.lower():
-                print(f"FAIL: {name} carries a session key {key!r}; 2026-07-28 is stateless", file=sys.stderr)
-                fails += 1
+        if _scan(pair, name):
+            fails += 1
 
     if fails:
         print(f"0 {fails} 0")
