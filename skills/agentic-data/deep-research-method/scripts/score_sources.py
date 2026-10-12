@@ -122,7 +122,15 @@ def cmd_contradictions(sources: list[dict], pairs_path: Path, min_score: int) ->
 
 
 def cmd_audit(sources: list[dict], claims_path: Path, min_score: int) -> int:
-    claims = json.loads(claims_path.read_text(encoding="utf-8"))
+    raw = claims_path.read_text(encoding="utf-8").strip()
+    if not raw:
+        print("FAIL: claims file is empty", file=sys.stderr)
+        return 1
+    # Claims files are JSONL (one claim per line) or a single JSON array/object.
+    if raw.lstrip().startswith("[") or raw.lstrip().startswith("{"):
+        claims = json.loads(raw)
+    else:
+        claims = [json.loads(line) for line in raw.splitlines() if line.strip()]
     kept_urls = {s["url"] for s in sources if score_source(s) >= min_score and s.get("url")}
     failures: list[str] = []
     claim_list = claims.get("claims", claims) if isinstance(claims, dict) else claims
