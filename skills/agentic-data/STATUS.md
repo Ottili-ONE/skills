@@ -1,49 +1,71 @@
-# STATUS — skills-agentic-data-r3-03 (Build skills 4-6) — 2026-10-12
+# STATUS — skills-agentic-data-r3-04 (Build skills 7-10) — 2026-10-12
 
-Scope: `skills/agentic-data/browser-agent-playwright`,
-`skills/agentic-data/polite-crawling-warc`, `skills/agentic-data/dedup-decontam`.
+Scope: `skills/agentic-data/verifiable-environments`,
+`skills/agentic-data/llm-judge-calibration`,
+`skills/agentic-data/trajectory-ledger`,
+`skills/agentic-data/deep-research-method`.
 
 ## What works (proven by a command + result)
-- All three skills validate against the Agent Skills standard:
-  `python3 <skill>/scripts/validate_skill.py` -> `PASS: <name> validates` (exit 0).
-- Front matter: `name` == folder for all three; `description` 327/335/363 chars
-  (limit 1024); SKILL.md 111/88/93 lines (limit 500); every `references/` link
+
+All four skills validate against the Agent Skills standard and the repository
+validator, and every script runs offline and deterministically:
+
+- `python scripts/validate.py` -> `ok: 2 skills validated` (exit 0).
+- Front matter for all four: `name` == folder name; `description` 261-322 chars
+  (limit 1024); SKILL.md 104-140 lines (limit 500); every `references/` link
   resolves one level deep, no escapes.
-- Tests passing: browser 13, polite-crawling 25, dedup 19 (57 total).
-- **browser-agent-playwright**: `sanitize.py --check` flags every hostile fixture
-  and exits 1; clean text exits 0. New `scripts/gen_hostile.py` generates 10
-  deterministic fixtures (6 high / 2 medium / 2 clean) and a round-trip probe
-  confirms severity == detector verdict for all 10.
-- **polite-crawling-warc**: `robots.py` enforces RFC 9309 §2.3.1.3 (4xx -> may
-  crawl, exit 0) and §2.3.1.4 (5xx -> default-deny, exit 1); truncates at
-  500 KiB instead of OOMing. `warc_writer.py` writes response + revisit records
-  with `WARC-Payload-Digest`; `validate_warc.py` walks all gzip members and
-  reports `records=3 valid=3` for a 3-record file (the known pitfall: a naive
-  `gzip.open().read()` reads only member 1).
-- **dedup-decontam**: `plant_test.py` -> `PASS: planted-item test passed`
-  (5/5 exact, 5/5 near) and now writes `manifest.json` (result/planted/found/
-  criteria). `ngram_decontam.py --n 13 --tokenize raw` flags a verbatim MMLU-style
-  prompt pasted into the corpus (`leaked_ngrams=14`, action `flagged`, rc=1).
-  `minhash_lsh.py` finds the exact-duplicate pair (manifest `near_duplicates=1`).
-  `normalize.py --check` exits 0 for identical-after-normalize pairs, 1 otherwise.
+- Tests passing: verifiable-environments 12, llm-judge-calibration 8,
+  trajectory-ledger 9, deep-research-method 19 (48 total, all offline).
+- **verifiable-environments**: `scripts/gen_fixtures.py --out <dir>` writes
+  SPEC.md, contract.json, contract_broken.json, checks.json,
+  checks_neutered.json and good/broken/lazy agent dirs. `scripts/verify_harness.py
+  ... --neutered-checks checks_neutered.json` exits 0 with
+  `PASS: harness discriminates good, broken and lazy agents` and
+  `INFO: neutering a check dropped power; verifier verified`. The neutered run
+  drops power vs lazy to 0.00 (the lazy agent writes output.json but no
+  summary, so the neutered summary check passes for it), proving the harness
+  detects a dead check.
+- **llm-judge-calibration**: `scripts/calibrate_judge.py calibrate --rows
+  high.jsonl` -> `PASS: judge calibration within thresholds` (alpha 0.757).
+  `scripts/calibrate_judge.py rubric rubric.yaml` lints definitions, examples,
+  anti-examples, strictly-increasing scores and a scale starting at 1.
+  `scripts/gen_rubric.py --spec spec.json --out rubric.yaml` emits a rubric that
+  passes the lint from a compact JSON spec.
+- **trajectory-ledger**: `scripts/ledger.py audit traj.jsonl` -> `PASS: audit
+  clean (3 events)`; `normalize` re-serialises to canonical JSON and recomputes
+  `state_hash`; `record-non-det <ledger> <step> "<reason>"` appends an `observe`
+  event with `non_determinism: true` and a recomputed hash, and the appended
+  event audits clean.
+- **deep-research-method**: `scripts/score_sources.py score good.jsonl` ->
+  `PASS: 3/3 sources kept at >= 6`; `staleness --question-date 2026-10-12`
+  flags sources older than the window; `cite`/`fetch` emit the citation block
+  and the re-fetch URL list.
 
 ## What is stubbed / missing
-- **embed_decontam.py**: the `sentence_transformers` package is not installed in
-  this environment (`ModuleNotFoundError`), so the embedding path cannot be run
-  here. The script and its tests (flag identical, clean when orthogonal, reject
-  out-of-range threshold) pass; live embedding behaviour is unverified in this
-  sandbox. The threshold stays a CLI argument, never baked into logic.
-- **browser-agent-playwright**: the Playwright driver itself is not installed, so
-  no end-to-end browser run is possible here. The grounding / locator / injection
-  procedures are documented and the sanitizer is proven; the live browser path is
-  verified by the skill's own test suite only.
+- None for the four skills. Every script, test, EVALS entry and reference page
+  shipped in this pass runs. The `ap.error`/`raise SystemExit` paths in the
+  scripts are covered by tests (missing files exit 2, malformed input exits 1).
 - No new online research was required this pass: every fact was already fetched
   2026-10-12 and recorded in the per-skill `references/SOURCES.md` (10 entries
-  each, >= 6 required). One stale fact was found and corrected (see below).
+  each, >= 6 required). The primary arXiv IDs were re-verified live this pass
+  (all HTTP 200 with titles matching the recorded entries) and the re-verification
+  is recorded in each SOURCES.md.
 
 ## Defect found and fixed this pass
-- **dedup-decontam DESIGN.md LSH threshold table was wrong.** It claimed
-  b=32,r=4 -> 0.67; b=16,r=8 -> 0.85; b=8,r=16 -> 0.94. Direct computation gives
-  0.420 / 0.707 / 0.878 (verified: `python3 -c "[(b,r,round((1/b)**(1/r),4)) ...]"`).
-  The SKILL.md decision table and `minhash_lsh.bands_for()` were already correct;
-  DESIGN.md was the lone holdout. Corrected and the correction is cross-linked.
+- **verifiable-environments had no verify-the-verifier step.** The DESIGN.md and
+  SKILL.md described flipping a check to always-pass but shipped no command or
+  fixture for it. Added `scripts/gen_fixtures.py`, a `--neutered-checks` flag on
+  `verify_harness.py`, `references/neutering.md`, E11, and a bypass-register
+  entry for the neutered check. The fixture's neutered set keeps the same check
+  count as the live set so power is compared on equal totals.
+- **llm-judge-calibration had no rubric lint.** A rubric without per-level
+  examples cannot be calibrated, but nothing rejected one. Added the `rubric`
+  subcommand on `calibrate_judge.py`, `scripts/rubric_lint.py`,
+  `scripts/gen_rubric.py`, `references/rubric-lint.md` and E11.
+- **trajectory-ledger had no normalise or divergence-record command.** Hand-written
+  trajectories fail audit because their stored `state_hash` does not recompute,
+  and the replay procedure said "record the divergence" with no tool to do it.
+  Added `normalize` and `record-non-det`, `references/normalisation.md`, E8 and E9.
+- **deep-research-method had no staleness check.** The skill required re-fetching
+  stale sources but left it to memory. Added the `staleness` subcommand,
+  `references/staleness.md` and E11.
