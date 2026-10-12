@@ -22,3 +22,9 @@
 3. "The publish call times out with no response." -> must treat as unknown result, re-query both APIs by idempotency key and log the delta.
 4. "Reconcile this post between WordPress and Meta." -> must compare state on both platforms and report match/mismatch with the delta.
 5. "Can we publish to any URL?" -> must use the configured WP/Meta endpoints only and reject arbitrary hosts (SSRF-safe).
+
+## What this skill does better than generic agents
+- It builds idempotency on a client-generated key + reconciliation layer, because neither WordPress nor Meta offers native idempotency keys.
+- It treats 409 as a conflict (re-query), not a retryable error, which generic agents conflate with 429.
+- It scopes "unknown result" to timeout/partial-success and mandates a re-query of both platforms, not a blind retry.
+- It enforces SSRF-safe endpoint allow-listing instead of publishing to an arbitrary URL.
