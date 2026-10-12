@@ -44,3 +44,33 @@ ships a typed schema, a chained state hash, grounding rules that distinguish rea
 fabricated success, a non-determinism handling procedure, and an audit command. It
 prevents the common incident of a "reproducible" run whose logs were written after the
 fact and cannot be replayed.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. No public Agent Skill covers agent trajectory ledgers. The
+closest artefacts are logging libraries and ML training logs, which record events
+but cannot be replayed or audited for grounding. `anthropics/skills`, the Fastio
+2026 directory and `skills.cat` have no entry for this topic.
+
+This skill is the only one that makes a trajectory *reproducible* rather than merely
+recorded:
+- **Typed schema (`trajectory-ledger-v1`)**: every event is one of `tool`,
+  `observe`, `state`, `outcome`. Free-form logs cannot be audited because "did it
+  really run?" has no answer.
+- **Grounding rules**: a `succeeded` outcome with no recorded result is a fabricated
+  success; a `failed` outcome needs a reason; a `blocked` outcome needs the blocker;
+  a `timeout` needs elapsed time. Every tool call records args AND result.
+- **Chained `state_hash`**: each step's hash covers the previous hash, so any
+  post-hoc editing of the ledger breaks the chain and is detected on audit.
+- **Replay with divergence handling**: re-run recorded tool calls and compare
+  hashes. The first divergence is non-determinism — recorded as an `observe` event
+  with `non_determinism: true`, then replay stops. It does not silently pass.
+- **Cost ledger in single units**: tokens, seconds, USD at a pinned rate. A field
+  mixing tokens and USD cannot be summed meaningfully.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| JSON Schema / JSONL tooling | schema syntax | no grounding rules, no replay, no cost ledger |
+| ML training logs | event recording | not replayable, no audit command |
+| `anthropics/skills` / Fastio 2026 / `skills.cat` | no trajectory entry | the whole category is missing |
