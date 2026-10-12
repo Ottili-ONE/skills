@@ -10,6 +10,7 @@ Usage:
   python3 plant_test.py --out /tmp/corpus --seed 7
 """
 import argparse
+import json
 import random
 import sys
 import tempfile
@@ -126,10 +127,27 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
-    exact_found, near_found, pairs = run(Path(args.out), args.seed)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    exact_found, near_found, pairs = run(out, args.seed)
     exact_ok = exact_found == N_EXACT
     near_ok = near_found >= N_NEAR
     print(f"INFO: exact_found={exact_found}/{N_EXACT} near_found={near_found}/{N_NEAR} pairs={pairs}")
+    # SKILL.md step 7: emit a JSON manifest with counts and the pass/fail verdict,
+    # so the pipeline can be audited without re-running. Written atomically.
+    manifest = {
+        "seed": args.seed,
+        "corpus": str(out),
+        "planted": {"exact": N_EXACT, "near": N_NEAR, "target_jaccard": TARGET_JACCARD},
+        "found": {"exact": exact_found, "near": near_found, "lsh_pairs": pairs},
+        "criteria": {"exact": f"{exact_found}/{N_EXACT}", "near": f">={N_NEAR} of {N_NEAR}"},
+        "result": "pass" if (exact_ok and near_ok) else "fail",
+        "exact_ok": exact_ok,
+        "near_ok": near_ok,
+    }
+    tmp = out / "manifest.json.tmp"
+    tmp.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    tmp.replace(out / "manifest.json")
     if exact_ok and near_ok:
         print("PASS: planted-item test passed", file=sys.stderr)
         return 0

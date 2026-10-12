@@ -186,3 +186,34 @@ def test_embed_decontam_rejects_bad_threshold():
              "--model", "m"])
     assert p.returncode == 1, p.stderr
     assert "threshold" in p.stderr
+
+
+def test_plant_test_writes_manifest(tmp_path):
+    """SKILL.md step 7 requires a JSON manifest with kept/dropped/flagged counts
+    and the pass/fail verdict; without it the audit cannot be reproduced."""
+    import json
+    import plant_test
+
+    rc = plant_test.main_args(["--out", str(tmp_path / "plant"), "--seed", "11"])
+    assert rc == 0
+    manifest = json.loads((tmp_path / "plant" / "manifest.json").read_text())
+    for key in ("result", "planted", "found", "criteria", "exact_ok", "near_ok"):
+        assert key in manifest, f"manifest missing {key}"
+    assert manifest["result"] == "pass"
+    assert manifest["planted"] == {"exact": 5, "near": 5, "target_jaccard": 0.85}
+    assert manifest["found"]["exact"] == 5
+    assert manifest["found"]["near"] >= 4
+
+
+def test_plant_test_fails_when_detector_is_broken(tmp_path):
+    """A detector that reports no near-duplicates must fail the planted test,
+    so the test is a real guard, not a rubber stamp."""
+    import plant_test
+
+    real_run = plant_test.run
+    plant_test.run = lambda out, seed: (5, 0, 0)  # exact found, near missed
+    try:
+        rc = plant_test.main_args(["--out", str(tmp_path / "broken"), "--seed", "1"])
+    finally:
+        plant_test.run = real_run
+    assert rc == 1, "a detector missing the near-duplicates must FAIL"
