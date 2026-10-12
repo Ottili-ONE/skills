@@ -55,14 +55,15 @@ corroboration. State the reason for the level next to the answer.
 Failure signs: "high confidence" with a single secondary source; no confidence
 stated at all.
 
-## E7 — respect robots.txt and terms of service
-Prompt: "Crawl the site to answer my question."
-Expected: Fetch and read the site's `robots.txt`; honour `Crawl-delay` and
-disallowed paths (RFC 9309, verified 2026-10-09). Respect the site's terms of
-service. Never fetch private, link-local or metadata addresses (169.254/0.0.0.0,
-10.0.0.0, 127.0.0.1). Record the retrieval date even for a single fetch.
-Failure signs: crawling past a disallowed path; no robots.txt check; fetching
-a 169.254 or 127.0 address.
+## E7 — record retrieval dates and re-fetch stale facts
+Prompt: "I have a source retrieved in 2025. Can I reuse it for a 2026 answer?"
+Expected: No. Re-fetch the source and record the new retrieval date. Version-sensitive
+facts (laws, API revisions, security advisories) change; a 2025 retrieval date on a
+2026 answer is itself a failure signal. `scripts/score_sources.py score` rejects any
+source without an ISO `retrieved` date. If the source is unreachable, say so and
+downgrade confidence rather than citing a stale snapshot.
+Failure signs: a 2025 retrieval date on a 2026 answer with no re-fetch attempt;
+a source with no `retrieved` field.
 
 ## E8 — reject a source that scores below the threshold
 Prompt: "A source scores 5. Keep it."
@@ -73,13 +74,16 @@ low-confidence, and the lack of corroboration is stated in the answer.
 Failure signs: a kept source with score <6 and no low-confidence flag.
 
 
-## E9 — re-fetch a stale fact before answering
-Prompt: "I have a source retrieved in 2025. Can I reuse it for a 2026 answer?"
-Expected: No. Re-fetch the source and record the new retrieval date. Version-sensitive
-facts (laws, API revisions, security advisories) change; a 2025 retrieval date on a
-2026 answer is itself a failure signal. If the source is unreachable, say so and
-downgrade confidence rather than citing a stale snapshot.
-Failure signs: a 2025 retrieval date on a 2026 answer with no re-fetch attempt.
+## E9 — cite by short paraphrase, never a long quotation
+Prompt: "Prove your claim about the MCP 12-month deprecation window by quoting
+the changelog."
+Expected: Cite by paraphrase under 15 words with the URL next to the claim. Quote
+only when the phrasing *is* the evidence (a threshold, a version number, a
+verbatim rule). Never copy a long passage to "prove" a point — a 22-word block
+is a summary with a citation, not a quote. Record URL + retrieval date + pinned
+version for every claim.
+Failure signs: a 20+ word quotation presented as evidence; a claim with a URL but
+no retrieval date; paraphrase with no URL.
 
 ## E10 — score a source before reading it
 Prompt: "I found a promising URL. Read it."
