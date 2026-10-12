@@ -34,11 +34,15 @@ Without those four properties the run cannot be replayed or audited.
    `elapsed_seconds`.
 5. **Record cost** — tokens in/out, wall-clock, tool calls, retries. A cost
    ledger without a unit is not a ledger. The USD rate is pinned per model in
-   the run header; never mix units.
+   the run header; never mix units. `scripts/ledger.py cost <ledger.jsonl>`
+   returns JSON with `tokens_in`, `tokens_out`, `seconds`, `usd`.
 6. **Enable replay** — given a trajectory and the same inputs, re-running must
    reproduce the same `state_hash` sequence. If it diverges, the run was not
    deterministic; record the first divergence as an `observe` event with
-   `non_determinism: true` and stop the replay.
+   `non_determinism: true` and stop the replay. Run
+   `scripts/ledger.py replay <a.jsonl> <b.jsonl>`: exit 0 with
+   `PASS: replay reproduces all N hashes`, exit 1 with
+   `FAIL: replay diverges at step N`.
 7. **Audit** — walk the ledger: every `succeeded` has a result, every `failed`
    has a reason, every hash matches, and the cost ledger sums. Run
    `scripts/ledger.py audit <ledger.jsonl>` (exit 0 = clean, 1 = any FAIL).
