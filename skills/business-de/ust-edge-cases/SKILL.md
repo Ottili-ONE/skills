@@ -71,8 +71,8 @@ five traps, with sources, is in `references/procedures.md` §1–§6.
 
 ## Related skills
 
-- [skr-journal-mapping](../skr-journal-mapping/) — the tax keys this skill validates are assigned by the journal mapper
-- [xrechnung-zugferd](../xrechnung-zugferd/) — e-invoice tax amounts must match the USt rules decided here
+[skr-journal-mapping](../skr-journal-mapping/) — the Steuerschlüssel this skill validates are assigned by the journal mapper
+[gobd-archive](../gobd-archive/) — tax decisions and ruling evidence are correspondence (6y)
 
 ## References
 

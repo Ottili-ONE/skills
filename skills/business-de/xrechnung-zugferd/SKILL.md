@@ -113,8 +113,9 @@ of the calendar year of creation, not on the document's own date.
 
 ## Related skills
 
-- [gobd-archive](../gobd-archive/) — retention and audit export for archived e-invoices (8y vouchers)
-- [datev-extf](../datev-extf/) — machine-readable accounting data formats for downstream systems
+[datev-extf](../datev-extf/) — feed the archived invoice into a DATEV EXTF Buchungsstapel
+[ust-edge-cases](../ust-edge-cases/) — the tax amounts on the invoice are decided here
+[gobd-archive](../gobd-archive/) — archived e-invoices are vouchers (8y); keep the original XML
 
 ## References
 

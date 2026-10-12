@@ -97,8 +97,8 @@ general CMS logic, non-WordPress platforms, or non-Meta social platforms.
 
 ## Related skills
 
-- [webhooks-safe](../webhooks-safe/) — outbound delivery targets are validated against the same allow-list
-- [gobd-archive](../gobd-archive/) — retention for publish records and idempotency keys
+[webhooks-safe](../webhooks-safe/) — outbound delivery targets are validated against the same allow-list and signature rules
+[gobd-archive](../gobd-archive/) — publish records and idempotency keys are correspondence (6y)
 
 ## References
 

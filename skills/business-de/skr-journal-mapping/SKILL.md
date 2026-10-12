@@ -128,8 +128,8 @@ Three traps recur; the full list with sources is in
 
 ## Related skills
 
-- [datev-extf](../datev-extf/) — emit the generated journals as a DATEV EXTF Buchungsstapel
-- [gobd-archive](../gobd-archive/) — retention for generated journals and period-lock records
+[datev-extf](../datev-extf/) — emit the generated journals as a DATEV EXTF Buchungsstapel
+[gobd-archive](../gobd-archive/) — generated journals and period-lock records are books (10y)
 
 ## References
 

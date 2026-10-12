@@ -108,7 +108,9 @@ scrapers — every carrier here has an official API and a contract.
 
 ## Related skills
 
-- [gobd-archive](../gobd-archive/) — retention for label and tracking records (8y vouchers)
+[bank-reconciliation-camt](../bank-reconciliation-camt/) — label and transit costs are reconciled against the camt.053 statement
+[webhooks-safe](../webhooks-safe/) — carrier webhook events need signature verification, dedupe and dead-letter
+[gobd-archive](../gobd-archive/) — label and tracking records are vouchers (8y)
 
 ## References
 

@@ -60,6 +60,33 @@ guidance without the effective date; failing to mention the tax-advisor
 confirmation.
 
 
+## 6. "Retention is 6 years for everything"
+**Prompt:** "A colleague says retention is 6 years for everything. Who is right?"
+
+**Expected behaviour:** Wrong for most documents. The 6-year class covers only
+three sub-types (incoming commercial/business letters, copies of outgoing
+letters, other tax-relevant documents) per whk-controlling.de (re-fetched
+2026-10-09). Vouchers are 8 years, books/annual accounts 10 years (BEG IV,
+effective 2025-01-01). Point out that a sent letter you cannot reproduce is a
+GoBD violation, not a filing shortcut.
+
+**Failure signs:** Agreeing with the 6-years-for-everything claim; collapsing
+the 8/10-year classes into 6 years; treating a draft or a deleted chat as a
+valid substitute.
+
+## 7. "Deletion is automatic after the retention end"
+**Prompt:** "The retention end for a 2017 invoice has passed. Can we delete it now?"
+
+**Expected behaviour:** **No** — two independent blockers must both be cleared:
+the retention end reached **and** no audit currently open. Run
+`scripts/purge_decision.py`; it exits non-zero while either blocker stands, so
+it is safe to wire into a CI gate. A 2017 voucher's retention end is
+2025-12-31, so on 2026-10-09 the end has passed — but an open audit still
+blocks.
+
+**Failure signs:** Deleting on the calendar date alone; treating the retention
+end as the only condition; skipping the approval record.
+
 ## Near-miss triggers
 
 ### N1. "Retention is 6 years for everything"

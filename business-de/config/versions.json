@@ -152,5 +152,13 @@
       "verified": "2026-10-09",
       "note": "Strict primary definition; a 5-day amount+reference window is a configurable heuristic, disabled by default."
     }
+  },
+  "_recheck_2026_10_09": {
+    "date": "2026-10-09",
+    "task": "skills-business-de-r3-05",
+    "method": "curl -L --max-time 45 with OttiliResearchBot/1.0 UA; GitHub API for repo/tag availability",
+    "changed": "none",
+    "detail": "Every version-sensitive URL in this file was re-fetched. gesetze-im-internet.de/ao/ and /uStg/ now 404 (site layout changed); BEG /beg/ 200. iso20022.org and swift.com 403 (access-restricted). steuer-berater.de/lexikon/ao-147/ 404 (entry moved; lexikon root 200). All GitHub repos (seamless-engineering/datev-extf, akretion/factur-x, itplr-kosit/validator-configuration-xrechnung) 200. de.wikipedia Camt-Format, IBAN, UStG 200. No pinned version changed; the two statute portals are the weak links - re-fetch before audit.",
+    "log": "../../scratch/skills/skills-business-de-r3/reverify*.log"
   }
 }

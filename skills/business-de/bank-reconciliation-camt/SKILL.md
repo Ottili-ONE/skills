@@ -89,7 +89,7 @@ older namespace silently. The full list of five traps, with sources, is in
 
 ## Related skills
 
-- [gobd-archive](../gobd-archive/) — retention for reconciled bank statements (10y books)
+[gobd-archive](../gobd-archive/) — reconciled bank statements are vouchers (8y)
 
 ## References
 

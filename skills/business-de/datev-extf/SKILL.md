@@ -81,13 +81,11 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 | Formatversion (field 5) | "13" | yes |
 | Erzeugt am (field 6) | 17 digits YYYYMMDDHHMMSS000 | yes |
 | Herkunft (field 8) | sender id | yes |
-| Beraternummer (field 11) | advisor number | yes |
-| Mandantennummer (field 12) | client number | yes |
+| Beraternummer (field 11) | advisor number, **4-7 digits, >= 1001** | yes |
+| Mandantennummer (field 12) | client number, **1-5 digits, >= 1** | yes |
 | WJ-Beginn (field 13) | fiscal year start YYYYMMDD | yes |
 | Sachkontenlaenge (field 14) | account length, **4-8** (default 4) | yes |
 | Datum vom/bis (fields 15-16) | from/to YYYYMMDD, same WJ, from <= to | yes |
-| Beraternummer (field 11) | 4-7 digits, >= 1001 | yes |
-| Mandantennummer (field 12) | 1-5 digits, >= 1 | yes |
 | WKZ (field 22) | 3 uppercase letters if present | yes |
 | Bezeichnung (field 17) | label | yes |
 | Sachkontenrahmen (field 27) | SKR (03/04) | yes |

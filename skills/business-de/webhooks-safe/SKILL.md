@@ -117,7 +117,8 @@ providers whose signature scheme is unknown.
 
 ## Related skills
 
-- [gobd-archive](../gobd-archive/) — retention for webhook delivery and dedupe state
+[dsgvo-ai-act-labeling](../dsgvo-ai-act-labeling/) — a webhook payload that carries personal data must be disclosed in the Art. 30 register
+[gobd-archive](../gobd-archive/) — delivery and dedupe state is correspondence (6y)
 
 ## References
 

@@ -102,8 +102,7 @@ systems, or member-state-specific law beyond the EU baseline.
 
 ## Related skills
 
-- [gobd-archive](../gobd-archive/) — retention for processing-register entries and human-review evidence
-- [webhooks-safe](../webhooks-safe/) — webhook payloads may carry personal data subject to Art. 30
+[gobd-archive](../gobd-archive/) — processing-register entries and human-review evidence are correspondence (6y)
 
 ## References
 
