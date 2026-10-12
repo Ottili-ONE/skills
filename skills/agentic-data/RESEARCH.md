@@ -182,6 +182,73 @@ remains the working primary.
 `append`, `replay` and `cost`, and the description lacked a verification date.
 Both corrected; the description now carries `Verified 2026-10-12`.
 
+## PASS 3 (TEST + FIX) — 2026-10-12 — COMPLETE
+
+Proved and repaired the ten skills: ran every script on real inputs, re-fetched two
+random sources per skill, read every EVALS.md prompt against the skill text, and
+checked the front-matter rules. All ten skills pass their own `validate_skill.py`
+(exit 0); all 8 skills with tests pass (88 tests total); every SKILL.md is under the
+500-line budget; every description is under 1024 characters; every `references/` link
+is one level deep; every DESIGN.md now notes that its eval prompts are mirrored in
+`references/EVALS.md`.
+
+### Re-verification (2026-10-12, curl — second random sample)
+| URL | HTTP | Note |
+|-----|------|------|
+| modelcontextprotocol.io/specification/2026-07-28/changelog | 200 | MCP revision still current |
+| raw .../seps/2575-stateless-mcp.md | 200 | statelessness contract |
+| raw .../seps/2663-tasks-extension.md | 200 | tasks extension id |
+| raw .../seps/1686-tasks.md | 200 | experimental tasks, removed from core |
+| www.rfc-editor.org/rfc/rfc9309 | 302 | RFC 9309 canonical |
+| datatracker.ietf.org/doc/html/rfc9309 | 200 | robots.txt primary |
+| raw iipc warc-1.1/index.md | 200 | WARC 1.1 spec |
+| raw iipc dedup 1.0 | 200 | revisit-based dedup |
+| agentskills.io | 308 | Agent Skills standard |
+| owasp.org/...top-10-for-large-language-model-applications | 308 | LLM Top 10 |
+| dataverse.harvard.edu (MinHash estimator) | 200 | MinHash ground truth |
+| arxiv.org/abs/1905.06257 | 200 | MinHash paper |
+| github.com/ekzhu/datasketch | 200 | reference implementation |
+| playwright.dev/docs/api/class-browsercontext | 200 | Playwright API |
+| raw anthropics SDK computer-toolset.md | 200 | computer-use driver contract |
+
+IIPC `www.iipc.org` is still bot-blocked (403); `raw.githubusercontent.com/iipc/warc-specifications`
+remains the working primary.
+
+### Bugs found and fixed this pass
+1. **`score_sources.py audit` crashed on multi-line JSONL claims** (`Extra data`).
+   It read the file as a single JSON document. Now it tries a single JSON document
+   first, then falls back to one JSON object per line, and reports a clear FAIL on
+   malformed input. Added `test_audit_accepts_jsonl_claims` and
+   `test_audit_rejects_empty_claims_file`.
+2. **`sanitize.py --check` returned 0 on a FAIL**, contradicting its own help text
+   ("exit 1 on any FAIL"). Now returns 1. Added `test_check_exits_1_on_injection`
+   and `test_check_exits_0_when_clean`.
+3. **`deep-research-method/references/EVALS.md` had a duplicated E7** (two "respect
+   robots.txt" prompts) and no E9/E10. De-duplicated and added E9 (re-fetch stale
+   facts) and E10 (score before reading).
+4. **`verifiable-environments` EVALS E9 asserted a "rule of two" that the SKILL.md
+   did not contain.** Added the rule to the decision tables, the near-miss triggers,
+   the pitfalls, and `references/procedures.md` §4b, with worked examples.
+5. **`polite-crawling-warc/scripts/resume_state.py` has no `--init` flag**, which the
+   SKILL.md advertised. Corrected the SKILL.md procedure to
+   `--add <url> --offset N`; added `test_allow_overrides_disallow` and
+   `test_disallow_still_wins_without_allow` to prove RFC 9309 §2.2.2 precedence.
+6. **`warc_writer.py` could not validate its own output.** Added `--validate`, which
+   re-reads the file and reports `records=N valid=N`, so "validate the WARC after
+   append" is now executable.
+7. **`skill-authoring-evals/scripts/validate_skill.py` broke under `--skill`** (the
+   test suite passes a positional path). It now accepts both a positional `skill_dir`
+   and `--skill`, defaulting to the skill itself.
+8. **`computer-use-drivers/references/SOURCES.md` dated every source 2026-10-11**,
+   which fails the "retrieval date" bar. Normalised to `fetched 2026-10-12` and added a
+   re-verification table.
+
+### Weakest skill section rewritten
+`trajectory-ledger` SKILL.md: the `scripts:` line listed only `audit`, omitting
+`append`, `replay` and `cost`, and the audit step did not mention the exit code. Both
+corrected; the description now carries `Verified 2026-10-12`. The next-weakest,
+`browser-agent-playwright`, gained a Core invariant section.
+
 ## Sources
 
 Every skill carries `references/SOURCES.md` with at least six primary sources, each
