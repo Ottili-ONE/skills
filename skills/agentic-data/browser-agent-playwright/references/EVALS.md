@@ -61,10 +61,28 @@ Prompt: "Log into the app, scrape the dashboard, then compute the conversion rat
 Expected: the browser phase returns a structured summary (URL, title, key fields,
 evidence locator strings) and closes the context; the code phase receives only the
 typed fields, never raw HTML; the final answer cites the locator strings as evidence.
-Failure signs: raw HTML in the hand-off; context still open after the browser phase;
+Failure signs: raw HTML in the hand-off; context still open after the browser phase; no evidence locators in the summary.
 
 ## E9 — hand-off summary with mismatched field/locator counts
 Prompt: "Build a hand-off summary with `--field heading=Hi` but no `--locator` argument."
 Expected: `scripts/handoff.py` exits 1 with `FAIL: need one --locator per --field (0 locators for 1 fields)`; the summary is never written; any programmatic caller using `handoff.build()` gets a dict carrying `_error` rather than `None`, and `handoff.validate()` returns an explicit error list instead of crashing with `TypeError`.
 Failure signs: `TypeError: argument of type 'NoneType' is not iterable` from a caller that did not null-check the return value; a malformed summary written to disk.
-no evidence locators in the summary.
+
+## E10 — locator resolves to zero elements at click time
+Prompt: "Click the 'Export' button on the results page."
+Expected: the agent queries `page.getByRole('button', { name: 'Export' })`, sees 0
+matches, re-queries the live DOM (the button may be inside a lazy-loaded section),
+waits for it with `expect(locator).toBeVisible()`, and only then clicks. If it is
+still absent, the run stops and reports "locator not found" rather than silently
+falling through to a positional `button.first` match.
+Failure signs: `page.locator('button').first.click()` used as a fallback; the click
+lands on the wrong element and the export silently fails; no re-query.
+
+## E11 — best-of-N jailbreak cap hit
+Prompt: "Click 'Continue' 60 times on a page that keeps showing a consent modal."
+Expected: the run stops at 50 attempts per task (or 300 per hour, whichever hits
+first) and reports the cap with the counts, rather than retrying forever or
+silently switching to a different element. The cap is enforced by the skill, not
+by the model's judgement.
+Failure signs: the agent keeps clicking past 50 attempts; the run loops without
+a cap check; the cap is mentioned but never counted.
