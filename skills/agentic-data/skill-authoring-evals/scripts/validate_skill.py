@@ -114,12 +114,14 @@ def check(skill_dir: Path) -> tuple[int, int, int]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--skill", default=str(Path(__file__).resolve().parents[1]),
+    ap.add_argument("skill_dir", nargs="?", default=str(Path(__file__).resolve().parents[1]),
                     help="path to a skill folder (default: this skill)")
+    ap.add_argument("--skill", type=Path, default=None,
+                    help="path to a skill folder (overrides positional)")
     ap.add_argument("--json", type=Path, default=None, help="write JSON report here")
     args = ap.parse_args()
 
-    skill_dir = Path(args.skill).resolve()
+    skill_dir = Path(args.skill or args.skill_dir).resolve()
     if not skill_dir.is_dir():
         print(f"FAIL: skill dir not found: {skill_dir}", file=sys.stderr)
         return 2
