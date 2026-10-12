@@ -101,6 +101,19 @@ def check(doc: dict, strict: bool = False) -> tuple[int, int, int]:
             info("server does not advertise 2026-07-28")
         oks += 1
 
+    # tasks/result was removed in 2026-07-28 (tasks moved to the extension).
+    caps = result.get("capabilities")
+    if isinstance(caps, dict):
+        tasks = caps.get("tasks")
+        if isinstance(tasks, dict):
+            methods = tasks.get("methods") or tasks.get("availableMethods")
+            if isinstance(methods, list) and "tasks/result" in methods:
+                fail("capabilities advertises tasks/result, which was removed in 2026-07-28; use tasks/get from the io.modelcontextprotocol/tasks extension")
+            elif isinstance(methods, list) and "tasks/list" in methods:
+                warn("capabilities advertises tasks/list, which was removed in 2026-07-28")
+        elif tasks is not None:
+            info(f"capabilities.tasks is not an object: {type(tasks).__name__}")
+
     info_obj = result.get("serverInfo")
     if not isinstance(info_obj, dict):
         fail("serverInfo must be an object with name and version")

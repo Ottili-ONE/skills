@@ -80,8 +80,8 @@ OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP inte
 ## References
 - changelog: references/changelog.md
 - error codes: references/error-codes.md
-- worked examples: references/examples.md
 - oauth flow: references/oauth-flow.md
+- worked examples: references/examples.md
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md

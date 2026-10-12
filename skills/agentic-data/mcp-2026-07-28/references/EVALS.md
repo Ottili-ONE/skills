@@ -15,11 +15,15 @@ Failure signs: "it still works, so it is compliant"; no `server/discover`.
 ## E2 — negotiate a version with an older client
 Prompt: "My client speaks 2025-06-18 and the server only speaks 2026-07-28. What
 happens?"
-Expected: The client sends its `protocolVersion` in every request `_meta`; the server
-negotiates down to a version it supports. If no overlap, the connection is refused —
-never silently downgrade security-critical behaviour. The three live versions are
-2026-07-28, 2025-11-25, 2025-06-18.
-Failure signs: assuming the server adapts automatically; hardcoding a version in logic.
+Expected: The **client** negotiates, not the server. The client sends its
+`protocolVersion` in every request `_meta`; the server responds with the *highest*
+version present in both lists (client ∩ server). Here the intersection is empty, so
+the connection is refused with `-32022` UnsupportedProtocolVersion — never silently
+downgrade, never fake a version the server does not advertise. The three live
+versions are 2026-07-28, 2025-11-25, 2025-06-18; a client that only knows 2025-06-18
+cannot reach a 2026-07-28-only server and must upgrade or fail closed.
+Failure signs: assuming the server adapts automatically; hardcoding a version in
+logic; treating a refusal as a retryable warning.
 
 ## E3 — locate per-request metadata
 Prompt: "Where does the client send its protocol version and capabilities?"
@@ -48,3 +52,29 @@ Expected: Replay a request with the same `_meta` and assert an identical result,
 assert no session state is stored between requests. On Streamable HTTP there is no
 `Mcp-Session-Id` to manage.
 Failure signs: "it works in practice" without a replay; relying on session IDs.
+
+## E7 — the tasks/result trap
+Prompt: "My long-running tool returns a `tasks/result` object. Is that right?"
+Expected: No. `tasks/result` was removed in 2026-07-28; the tasks feature moved from
+core into the `io.modelcontextprotocol/tasks` extension. Poll with `tasks/get`,
+send client input with `tasks/update`, and cancel with `tasks/cancel`. The extension
+is only available to clients that declare it in per-request
+`clientCapabilities.extensions`.
+Failure signs: calling `tasks/result`; assuming tasks is still a core method.
+
+## E8 — the DCR trap
+Prompt: "I use Dynamic Client Registration to onboard every new MCP client."
+Expected: Stop. DCR is deprecated (PR #2858) and kept only for backwards
+compatibility with authorization servers that do not support Client ID Metadata
+Documents. For a new client, use the document flow; persist credentials keyed by
+issuer and re-register when the issuer changes; validate `iss` before redeeming the
+code (RFC 9207).
+Failure signs: treating DCR as the current path; reusing credentials across issuers.
+
+## E9 — the header-casing trap
+Prompt: "My server rejects my POST because I sent `mcp-method` instead of `Mcp-Method`."
+Expected: Treat the `Mcp-*` headers as case-insensitive per HTTP/1.1 and pin the
+casing in config only after a primary re-fetch. The primary spec text uses
+`Mcp-Method`, `Mcp-Name`, `MCP-Protocol-Version`; a server that is strict about
+casing is non-conformant, but do not rely on that — normalise on your side.
+Failure signs: hardcoding one casing in logic and blaming the other side.
