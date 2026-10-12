@@ -12,6 +12,7 @@ Usage:
 """
 import argparse
 import gzip
+from pathlib import Path
 import hashlib
 import io
 import sys
@@ -81,31 +82,44 @@ def append_record(path: str, **kwargs) -> int:
     return offset
 
 
-def count_records(path: str) -> int:
+def count_records(path) -> int:
     """Count WARC/1.1 records across ALL gzip members.
 
     `append_record` writes one gzip member per record, so a WARC with N records
     is N concatenated gzip streams. `gzip.open(...).read()` returns only the
     FIRST member's payload -- which silently reported 1 record for a 2-record
     WARC (caught by the E3/E9 live run on 2026-10-08). Iterate members until EOF.
+
+    `path` may be a filesystem path or the integer 0 (stdin), so the validator
+    can be piped a WARC without a temp file.
     """
-    n = 0
-    with open(path, "rb") as fh:
+    import io
+    if path == 0:
+        raw = sys.stdin.buffer.read()
+        fh = io.BytesIO(raw)
+    else:
+        fh = open(path, "rb")
+    try:
+        n = 0
         while True:
             with gzip.GzipFile(fileobj=fh, mode="rb") as gz:
                 data = gz.read()
             n += data.count(b"WARC/1.1")
             # GzipFile leaves the file position at the start of the next member,
             # or at EOF. Stop when the next byte is not a gzip magic header.
-            if fh.read(2) != b"\x1f\x8b":
+            peek = fh.read(2)
+            if peek != b"\x1f\x8b":
                 break
             fh.seek(-2, 1)
-    return n
+        return n
+    finally:
+        if path != 0:
+            fh.close()
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--file", required=True)
+    ap.add_argument("--file")
     ap.add_argument("--type", choices=sorted(VALID_TYPES))
     ap.add_argument("--target-uri")
     ap.add_argument("--payload", default="")
@@ -117,12 +131,39 @@ def main() -> int:
     ap.add_argument("--refers-date")
     ap.add_argument("--profile")
     ap.add_argument("--truncated")
-    ap.add_argument("--validate", action="store_true")
+    ap.add_argument("--validate", metavar="FILE", nargs="?", const="",
+                    help="validate a WARC file and exit; FILE may be positional, --file, or omitted to read stdin")
     args = ap.parse_args()
 
-    if args.validate:
-        n = count_records(args.file)
+    if args.validate is not None:
+        # Accept the file three ways: positional, --file, or stdin. A missing
+        # file must be a FAIL (rc=1), not an argparse error (rc=2): the
+        # validator is part of the resume contract, and a broken resume must be
+        # reported as a validation failure, not a usage error.
+        if args.file:
+            pass
+        elif args.validate:
+            args.file = args.validate
+        elif not sys.stdin.isatty():
+            args.file = 0  # read the WARC from stdin
+        if not args.file:
+            ap.error("--validate requires a WARC file (--file or positional)")
+            return 2
+        # A missing file must be a FAIL (rc=1), not an argparse error (rc=2):
+        # the validator is part of the resume contract, and a broken resume
+        # must be reported as a validation failure, not a usage error.
+        if not Path(args.file).is_file():
+            print(f"FAIL: WARC file not found: {args.file}", file=sys.stderr)
+            return 1
+        try:
+            n = count_records(args.file)
+        except OSError as e:
+            print(f"FAIL: cannot read WARC {args.file}: {e}", file=sys.stderr)
+            return 1
         print(f"records={n}")
+        if n == 0:
+            print("FAIL: WARC file contains no records", file=sys.stderr)
+            return 1
         print("PASS: WARC file readable", file=sys.stderr)
         return 0
 

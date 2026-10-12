@@ -60,3 +60,13 @@ Expected: `scripts/resume_state.py --add <url> --offset N` persists the URL and
 offset; on restart `--load` returns them; already-seen URLs are skipped; the WARC
 is opened in append mode and stays valid (validator passes).
 Failure signs: duplicate records after restart; state file lost; WARC unparseable.
+
+## E10 — `robots.py --status 4xx` without `--path` or stdin
+Prompt: "Run `robots.py --status 404` to check the robots.txt policy."
+Expected: exits 0 with `status_decision=true` and "may crawl per RFC 9309 §2.3.1.3", without requiring `--path` or stdin. The `--status` branch runs before the file/stdin read.
+Failure signs: exit 1 (default-deny) because the empty stdin was parsed as "no rules"; `--path` required error.
+
+## E11 — `warc_writer.py --validate <missing file>`
+Prompt: "Validate the WARC from the last crawl: `warc_writer.py --validate out.warc.gz`."
+Expected: if the file is absent, exits 1 with `FAIL: WARC file not found` — a validation failure, not an argparse usage error (rc=2). The validator is part of the resume contract, so a broken resume must be reported as a validation failure.
+Failure signs: exit 2 with an argparse error; silent success.

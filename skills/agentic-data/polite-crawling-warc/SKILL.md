@@ -1,7 +1,7 @@
 ---
 name: polite-crawling-warc
 description: "Polite web crawling with WARC output: robots.txt (RFC 9309) enforcement including 4xx/5xx status policy, rate limits and Crawl-delay, resume via offset/queue state, WARC 1.1 record hygiene, and defense against hostile inputs. Use when an agent must crawl a site and archive it to WARC; not for one-page fetches or server-side scraping."
-compatibility: WARC 1.1 (ISO 28500), RFC 9309 (2022), Python 3.10+
+compatibility: WARC 1.1 (ISO 28500:2017), RFC 9309 (2022), Python 3.10+
 license: MIT
 ---
 # Polite Crawling with WARC output
@@ -30,6 +30,7 @@ Trigger: crawl a site and archive it to WARC.
 - Re-capturing unchanged content as a full `response` -> storage bloat; emit `revisit` with `identical-payload-digest`.
 - Resume state lost mid-crawl -> re-running duplicates records; persist state atomically (write `.tmp` then rename).
 - robots.txt >500 KiB and the parser tries to load it all -> OOM; read a hard 500 KiB cap and stop.
+- `robots.py --status 404` (no `--path`, no stdin) used to fall into the empty-body branch and exit 1 (default-deny) — the exact opposite of RFC 9309 §2.3.1.3. `--status` now runs BEFORE the file/stdin read and exits 0 for 4xx. Likewise `warc_writer.py --validate <missing>` must exit 1 (validation FAIL), not 2 (argparse usage error), because the validator is part of the resume contract.
 
 ## Pitfalls from research
 - P1: Ignoring robots.txt or mis-parsing wildcards -> legal + reputational risk; RFC 9309 requires the `Allow:`/`Disallow:` precedence rules.
@@ -48,6 +49,7 @@ Trigger: crawl a site and archive it to WARC.
 - [ ] Payload digest present on response/revisit.
 - [ ] Resume state persisted and reused on restart.
 - [ ] 429/5xx handled with backoff, not dropped silently.
+- [ ] `robots.py --status 4xx` exits 0 and `--status 5xx` exits 1 without `--path` or stdin; `warc_writer.py --validate <missing>` exits 1, not 2.
 
 ## Worked examples
 

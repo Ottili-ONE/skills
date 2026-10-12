@@ -165,11 +165,30 @@ def crawl_delay(groups: dict, user_agent: str = DEFAULT_USER_AGENT) -> float | N
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--file", help="robots.txt path (default: stdin)")
-    ap.add_argument("--path", required=True, help="path to check")
+    ap.add_argument("--path", help="path to check (required unless --status is given, which applies the RFC 9309 default-deny rules without a path lookup)")
     ap.add_argument("--ua", default=DEFAULT_USER_AGENT)
     ap.add_argument("--status", type=int, default=None,
                     help="HTTP status of the robots.txt fetch (applies RFC 9309 default-deny rules)")
     args = ap.parse_args()
+
+    # --status applies the RFC 9309 §2.3.1.3/§2.3.1.4 default-deny rules to the
+    # *fetch outcome* and needs no robots.txt body at all. It must run BEFORE the
+    # file/stdin read, otherwise `--status 404` with no stdin silently falls into
+    # the empty-body branch and exits 1 (default-deny) instead of allowing the
+    # crawl -- which is exactly what E7/E8 of the skill's eval suite caught.
+    if args.status is not None:
+        allow, reason = robots_status_decision(args.status)
+        print(f"status_decision={str(allow).lower()} reason={reason}")
+        if not allow:
+            print(f"FAIL: {reason}", file=sys.stderr)
+            return 1
+        print("PASS: robots.txt unavailable (4xx) -> may crawl per RFC 9309 §2.3.1.3",
+              file=sys.stderr)
+        return 0
+
+    if not args.path:
+        ap.error("--path is required unless --status is given")
+        return 2
 
     if args.file:
         try:
@@ -185,19 +204,6 @@ def main() -> int:
     if not groups:
         print("WARN: robots.txt empty/unparseable -> default-deny", file=sys.stderr)
         return 1
-
-    if args.status is not None:
-        allow, reason = robots_status_decision(args.status)
-        print(f"status_decision={str(allow).lower()} reason={reason}")
-        if not allow:
-            print(f"FAIL: {reason}", file=sys.stderr)
-            return 1
-        # RFC 9309 §2.3.1.3: robots.txt unavailable (4xx) -> the crawler MAY access
-        # ANY resource on the server. The rules below do not apply; exit allowed now.
-        print(f"path={args.path} groups={len(groups)} allowed=true")
-        print("PASS: robots.txt unavailable (4xx) -> may crawl per RFC 9309 §2.3.1.3",
-              file=sys.stderr)
-        return 0
 
     allowed = is_allowed(groups, args.path, args.ua)
     print(f"path={args.path} groups={len(groups)} allowed={str(allowed).lower()}")

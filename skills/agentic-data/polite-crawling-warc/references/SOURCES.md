@@ -1,6 +1,7 @@
 # SOURCES — polite-crawling-warc
 
 Retrieved: 2026-10-12 (every URL below was fetched live on that date).
+Re-verified 2026-10-12 (EXPAND pass): the WARC spec repository contains `warc-1.0`, `warc-1.1` and `warc-1.1-annotated` only — **there is no WARC 1.2**. The SKILL.md text "WARC 1.2 (ISO 28500:2017)" was wrong; corrected to WARC 1.1 / ISO 28500:2017. The `compatibility:` line now reads `WARC 1.1 (ISO 28500:2017)`. ISO's own page for 28500 returns 403 to curl, so the spec text remains the primary evidence.
 Version-sensitive facts are marked with the version they were verified for.
 
 | # | URL | What was used | Version / date verified | Conflict |
