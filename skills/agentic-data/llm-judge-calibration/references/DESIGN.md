@@ -46,3 +46,34 @@ A generic agent trusts a single judge run. This skill separates judge from teach
 requires per-level rubric examples, measures agreement on a held-out set, checks position
 bias by shuffling, and schedules drift re-checks. It prevents the common incident of a
 "calibrated" judge whose agreement was measured on the very set the rubric was tuned on.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. `anthropics/skills` ships no evaluation skill. The Fastio
+2026 directory lists `Code-Reviewer` (severity-tagged findings) and `Design Auditor`,
+which are *judges of artefacts*, not calibrated judges of agent output. `skills.cat`
+carries no judge-calibration entry. The public material that exists (OpenAI evals
+repo, DeepSeek's JudgeLM, Prometheus/GLEAM papers) is research code, not a skill.
+
+This skill is the only one that treats the judge itself as an instrument that must
+be calibrated:
+- **Judge/teacher separation**: the judge is never the system under test and never
+  self-judges. A judge that grades its own outputs is circular by construction.
+- **Rubric lint before calibration**: `scripts/rubric_lint.py` rejects rubrics
+  whose definitions, examples or anti-examples are missing, whose scores are not
+  strictly increasing, or whose scale does not start at 1. A rubric without
+  per-level examples cannot be calibrated.
+- **Calibration set with known ground truth**: `scripts/calibrate_judge.py`
+  computes alpha (Krippendorff-style agreement) against a high.jsonl of
+  human-labelled rows and reports pass/fail against thresholds.
+- **Drift control**: the calibration set is versioned; a judge whose scores drift
+  against it is re-calibrated or retired, not trusted.
+- **Robustness probes**: `references/robustness.md` defines the perturbation battery
+  (paraphrase, reorder, negate, insert noise) a judge must survive to be usable.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `github.com/openai/evals` | eval harnesses | no judge calibration, no rubric lint |
+| DeepSeek JudgeLM (arXiv) | a judge model | no calibration procedure, no drift control |
+| Prometheus/GLEAM papers | rubric-based judging | no agent-facing skill, no scripts |
