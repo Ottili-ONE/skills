@@ -96,6 +96,36 @@ click buttons, type into fields, scroll, read what is on screen.
 - [ ] Errors mapped to `ToolsetUsageError` vs `ToolError` correctly.
 - [ ] Desktop isolated: one container/VM per session, no host mounts.
 
+## Worked examples
+
+### Good — tree-first click with confirm()
+Goal: type a password into a login dialog that has no API.
+
+1. Enumerate the tree; find a `textbox` with `name: "Password"`.
+2. Resolve its center in screenshot pixels, scale into a fresh array.
+3. Call `confirm("type into the password field")` — the dialog is
+   destructive-input, so the gate is mandatory.
+4. `type` the value; assert the field's `value` now matches.
+
+Result: the action is grounded in a named tree node and gated.
+
+### Bad — clamped coordinates
+Goal: click a button near the bottom-right corner of the screen.
+
+1. Model returns `(1920, 1080)` on a 1280x720 capture.
+2. The driver clamps to `(1280, 720)` and clicks there.
+3. The click lands on a different element; the model sees no error and
+   retries, compounding the mistake.
+
+Why it fails: clamping hides the error. The rule is to throw `ToolError` —
+never silently move the pointer.
+
+### Bad — screen content in a confirmation string
+`confirm("type the code shown in this dialog: 7F3A9Q")`.
+
+Why it fails: the confirmation string now carries screen content, which is
+untrusted data. Use a fixed phrase only; let the exception path carry the
+content if it must.
 ## References
 - procedures: references/procedures.md
 - platform quirks: references/platform-quirks.md
