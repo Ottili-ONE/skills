@@ -41,3 +41,36 @@ A generic agent paraphrases a single page and calls it an answer. This skill for
 pre-reading quality scoring, mandatory retrieval dates, contradiction surfacing, and an
 explicit confidence ladder. It prevents the common incident of reusing a 2024 fact for a
 2026 question because "it was verified once".
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. The Fastio 2026 directory lists `Paper Search` and `Claude
+Scientific Skills` (paper discovery + summary), and `skills.cat` carries research
+helpers — but none of them enforce citation discipline, retrieval-date recording
+or contradiction resolution. `anthropics/skills` ships no research-method skill.
+A generic agent answers a factual question by paraphrasing one page it happened to
+remember.
+
+This skill is the only one that makes the evidence chain auditable:
+- **Pre-read quality scoring**: authority (0-4) + recency (0-3) + corroboration
+  (0-3) = 0-10; sources scoring below 6 are rejected *before* they are read.
+- **Primary-first ordering**: a secondary source used alone is a FAIL, not a
+  shortcut. Official docs, standards bodies and source repos first; secondary
+  sources confirm only.
+- **Retrieval date on every source**: a source without a URL + retrieval date +
+  pinned version is memory, not evidence. Facts older than the question's window
+  are re-fetched, not reused.
+- **Contradiction resolution is a six-step procedure** (list / frame / weight by
+  quality score / state the conflict / re-weight on new evidence / no-synthesis),
+  with the "fake-middle" near-miss (two sources that agree on a wrong value)
+  called out explicitly. Majority-vote and averaging are both forbidden.
+- **Confidence ladder**: high (primary + >=2 corroborating), medium (primary
+  only), low (secondary only), none (no source). The ladder is stated in the
+  answer, not hidden.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `Paper Search` (Fastio listing) | finds papers | no citation discipline, no contradiction handling |
+| `Claude Scientific Skills` | reads papers | no retrieval dates, no quality scoring |
+| CRAAP test article (retrieved 2026-10-12) | a rubric | not an agent procedure; no scripts |
