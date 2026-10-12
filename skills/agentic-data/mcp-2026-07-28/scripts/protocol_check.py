@@ -5,7 +5,14 @@ Reads a JSON document (file argument or stdin) describing a discover response an
 checks the MUST-level fields. Fully offline and deterministic.
 
 Machine-readable counts go to stdout; FAIL:/PASS:/WARN:/INFO: detail goes to stderr.
-Exit 0 on success, 1 on any FAIL.
+Exit 0 on success, 1 on any FAIL. Exit 2 on usage/input errors.
+
+Edge cases handled:
+  * document wrapped as a JSON-RPC envelope ({"result": {...}}) or bare
+  * missing/empty file, non-JSON input, non-object payload
+  * supportedVersions that is not a list, contains duplicates, or is empty
+  * serverInfo that is not an object, or has extra keys (INFO only)
+  * strict mode (--strict) turns INFO/WARN into FAIL
 """
 
 from __future__ import annotations
@@ -15,52 +22,97 @@ import json
 import sys
 from pathlib import Path
 
-ALLOWED_VERSIONS = {"2026-07-28", "2025-11-25", "2025-06-18"}
-REQUIRED_RESULT_KEYS = {"supportedVersions", "capabilities", "serverInfo"}
-REQUIRED_SERVER_INFO_KEYS = {"name", "version"}
+ALLOWED_VERSIONS = ("2026-07-28", "2025-11-25", "2025-06-18")
+REQUIRED_RESULT_KEYS = ("supportedVersions", "capabilities", "serverInfo")
+REQUIRED_SERVER_INFO_KEYS = ("name", "version")
 
 
 def load(path: str | None) -> dict:
     if path:
-        return json.loads(Path(path).read_text(encoding="utf-8"))
-    return json.loads(sys.stdin.read())
+        p = Path(path)
+        if not p.exists():
+            raise FileNotFoundError(f"input file does not exist: {path}")
+        if p.is_dir():
+            raise IsADirectoryError(f"input path is a directory: {path}")
+        raw = p.read_text(encoding="utf-8")
+    else:
+        raw = sys.stdin.read()
+    if not raw.strip():
+        raise ValueError("input is empty")
+    return json.loads(raw)
 
 
-def check(doc: dict) -> tuple[int, int, int]:
+def check(doc: dict, strict: bool = False) -> tuple[int, int, int]:
+    """Return (fails, warns, oks)."""
     fails = warns = oks = 0
-    result = doc.get("result", doc)
 
-    missing = REQUIRED_RESULT_KEYS - set(result)
-    if missing:
-        print(f"FAIL: server/discover result missing keys: {sorted(missing)}", file=sys.stderr)
+    def fail(msg: str) -> None:
+        nonlocal fails
+        print(f"FAIL: {msg}", file=sys.stderr)
         fails += 1
+
+    def warn(msg: str) -> None:
+        nonlocal warns
+        if strict:
+            fail(msg)
+        else:
+            print(f"WARN: {msg}", file=sys.stderr)
+            warns += 1
+
+    def info(msg: str) -> None:
+        if strict:
+            fail(msg)
+        else:
+            print(f"INFO: {msg}", file=sys.stderr)
+
+    if not isinstance(doc, dict):
+        fail(f"top-level JSON must be an object, got {type(doc).__name__}")
+        return fails, warns, oks
+
+    # Unwrap a JSON-RPC envelope: {"result": {...}} or {"error": ...}
+    if "result" in doc and isinstance(doc["result"], dict):
+        result = doc["result"]
+    elif "error" in doc:
+        fail("document is a JSON-RPC error, not a discover result")
+        return fails, warns, oks
+    else:
+        result = doc
+
+    if not isinstance(result, dict):
+        fail(f"result must be an object, got {type(result).__name__}")
+        return fails, warns, oks
+
+    missing = [k for k in REQUIRED_RESULT_KEYS if k not in result]
+    if missing:
+        fail(f"server/discover result missing keys: {missing}")
     else:
         oks += 1
 
     versions = result.get("supportedVersions")
     if not isinstance(versions, list) or not versions:
-        print("FAIL: supportedVersions must be a non-empty list", file=sys.stderr)
-        fails += 1
+        fail("supportedVersions must be a non-empty list")
     else:
+        if len(versions) != len(set(versions)):
+            warn("supportedVersions contains duplicates")
         unknown = [v for v in versions if v not in ALLOWED_VERSIONS]
         if unknown:
-            print(f"WARN: supportedVersions contains unknown revisions: {unknown}", file=sys.stderr)
-            warns += 1
+            warn(f"supportedVersions contains unknown revisions: {unknown}")
         if "2026-07-28" not in versions:
-            print("INFO: server does not advertise 2026-07-28", file=sys.stderr)
+            info("server does not advertise 2026-07-28")
         oks += 1
 
-    info = result.get("serverInfo")
-    if not isinstance(info, dict):
-        print("FAIL: serverInfo must be an object with name and version", file=sys.stderr)
-        fails += 1
+    info_obj = result.get("serverInfo")
+    if not isinstance(info_obj, dict):
+        fail("serverInfo must be an object with name and version")
     else:
-        lack = REQUIRED_SERVER_INFO_KEYS - set(info)
+        lack = [k for k in REQUIRED_SERVER_INFO_KEYS if k not in info_obj]
         if lack:
-            print(f"FAIL: serverInfo missing keys: {sorted(lack)}", file=sys.stderr)
-            fails += 1
+            fail(f"serverInfo missing keys: {lack}")
         else:
             oks += 1
+        extra = set(info_obj) - set(REQUIRED_SERVER_INFO_KEYS)
+        if extra:
+            info(f"serverInfo has extra keys: {sorted(extra)}")
 
     return fails, warns, oks
 
@@ -68,15 +120,17 @@ def check(doc: dict) -> tuple[int, int, int]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("file", nargs="?", help="JSON file (default: stdin)")
+    ap.add_argument("--strict", action="store_true",
+                    help="treat INFO/WARN as FAIL")
     args = ap.parse_args()
 
     try:
         doc = load(args.file)
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"FAIL: could not read input: {exc}", file=sys.stderr)
-        return 1
+        return 2
 
-    fails, warns, oks = check(doc)
+    fails, warns, oks = check(doc, strict=args.strict)
     print(f"{oks} {fails} {warns}")
     return 1 if fails else 0
 
