@@ -1,7 +1,7 @@
 # OAuth 2.1 flow — mcp-2026-07-28
 
 Verified 2026-10-12 against the 2026-07-28 changelog
-(`docs/specification/2026-07-28/changelog.mdx`, HTTP 200), SEP-991 (Client ID Metadata
+(`https://modelcontextprotocol.io/specification/2026-07-28/changelog`, HTTP 200), SEP-991 (Client ID Metadata
 Documents, raw HTTP 200) and SEP-985 (Protected Resource Metadata, raw HTTP 200).
 The 2026-07-28 revision **deprecates** Dynamic Client Registration (RFC 7591) as a
 client-registration mechanism in favour of OAuth 2.1 Authorization Code + PKCE with
