@@ -14,6 +14,11 @@ import math
 import sys
 from pathlib import Path
 
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
 
 def load_rows(path: Path) -> list[dict]:
     """Read JSONL. Malformed lines are warned and skipped; an empty result is a
@@ -111,21 +116,100 @@ def position_bias(rows: list[dict]) -> float:
     return sum(diffs) / len(diffs) if diffs else 0.0
 
 
+
+def lint_rubric(path: Path) -> tuple[list[str], dict]:
+    """Structural lint of a judge rubric YAML.
+
+    Returns (failures, info). A rubric that fails this cannot be calibrated:
+    score points without examples produce 20+ point spread on re-annotation,
+    and points without anti-examples cannot distinguish adjacent scores.
+    """
+    if not path.is_file():
+        raise SystemExit(f"ERROR: rubric file not found: {path}")
+    if yaml is None:
+        raise SystemExit("ERROR: PyYAML is required to lint rubrics")
+    try:
+        rubric = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise SystemExit(f"ERROR: rubric is not valid YAML: {exc}")
+    if not isinstance(rubric, dict):
+        raise SystemExit("ERROR: rubric must be a mapping at the top level")
+
+    failures: list[str] = []
+    points = rubric.get("points")
+    if not isinstance(points, list) or not points:
+        failures.append("FAIL: rubric has no 'points' list")
+        return failures, {"rubric_id": rubric.get("rubric_id"), "n_points": 0}
+
+    scores_seen: set[int] = set()
+    prev: int | None = None
+    for i, pt in enumerate(points):
+        if not isinstance(pt, dict):
+            failures.append(f"FAIL: point {i} is not a mapping")
+            continue
+        score = pt.get("score")
+        if not isinstance(score, int):
+            failures.append(f"FAIL: point {i} has no integer 'score'")
+            continue
+        if score in scores_seen:
+            failures.append(f"FAIL: duplicate score {score}")
+        scores_seen.add(score)
+        if prev is not None and score <= prev:
+            failures.append(f"FAIL: scores not strictly increasing at point {i} ({prev} -> {score})")
+        prev = score
+        if not str(pt.get("definition", "")).strip():
+            failures.append(f"FAIL: point {score} has no 'definition'")
+        if not str(pt.get("example", "")).strip():
+            failures.append(f"FAIL: point {score} has no 'example'")
+        anti = pt.get("anti_examples")
+        if score != min(scores_seen) and not isinstance(anti, list):
+            failures.append(f"FAIL: point {score} has no 'anti_examples' list")
+    if scores_seen and min(scores_seen) != 1:
+        failures.append(f"FAIL: lowest score is {min(scores_seen)}, expected 1")
+
+    info = {"rubric_id": rubric.get("rubric_id"), "n_points": len(points),
+            "scores": sorted(scores_seen)}
+    return failures, info
+
+
+def cmd_rubric(path: Path) -> int:
+    failures, info = lint_rubric(path)
+    for f in failures:
+        print(f, file=sys.stderr)
+    if failures:
+        print(f"FAIL: rubric has {len(failures)} problem(s)", file=sys.stderr)
+        return 1
+    print(f"PASS: rubric '{info.get('rubric_id')}' has {info['n_points']} "
+          f"contiguous points with definitions, examples and anti-examples",
+          file=sys.stderr)
+    return 0
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--rows", type=Path, required=True, help="JSONL: id, scores[], gold")
-    ap.add_argument("--baseline", type=Path, default=None, help="baseline JSONL for drift")
-    ap.add_argument("--min-agreement", type=float, default=0.6)
-    ap.add_argument("--max-position-bias", type=float, default=0.5)
-    ap.add_argument("--max-drift", type=float, default=0.3)
-    ap.add_argument("--json", type=Path, default=None)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    pr = sub.add_parser("rubric", help="lint a judge rubric YAML")
+    pr.add_argument("rubric", type=Path)
+
+    pc = sub.add_parser("calibrate", help="run agreement, position-bias and drift")
+    pc.add_argument("--rows", type=Path, required=True, help="JSONL: id, scores[], gold")
+    pc.add_argument("--baseline", type=Path, default=None, help="baseline JSONL for drift")
+    pc.add_argument("--min-agreement", type=float, default=0.6)
+    pc.add_argument("--max-position-bias", type=float, default=0.5)
+    pc.add_argument("--max-drift", type=float, default=0.3)
+    pc.add_argument("--json", type=Path, default=None)
     args = ap.parse_args()
+
+    if args.cmd == "rubric":
+        return cmd_rubric(args.rubric)
 
     for opt, val in (("--min-agreement", args.min_agreement),
                     ("--max-position-bias", args.max_position_bias),
                     ("--max-drift", args.max_drift)):
         if not (0.0 <= val <= 1.0):
             raise SystemExit(f"ERROR: {opt}={val} must be in [0, 1]")
+    if not args.rows.is_file():
+        raise SystemExit(f"ERROR: rows file not found: {args.rows}")
     if args.baseline and not args.baseline.is_file():
         raise SystemExit(f"ERROR: baseline file not found: {args.baseline}")
     if args.json and not args.json.parent.is_dir():
@@ -179,7 +263,6 @@ def main() -> int:
         return 1
     print("PASS: judge calibration within thresholds", file=sys.stderr)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
