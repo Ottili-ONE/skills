@@ -49,6 +49,17 @@ OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP inte
 - **Deprecations**: Roots, Sampling, Logging are deprecated (pass roots as tool params or
   resource URIs, call provider APIs directly, log to stderr or OpenTelemetry). HTTP+SSE is
   deprecated; use Streamable HTTP.
+- **`_meta` completeness**: all four reserved keys must be present on every request —
+  `io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientInfo`,
+  `io.modelcontextprotocol/clientCapabilities`, and optionally
+  `io.modelcontextprotocol/logLevel`. Missing any of the first three -> `-32021` (HTTP 403).
+- **Tasks availability**: the `io.modelcontextprotocol/tasks` extension is usable only when
+  BOTH the server advertised it in `server/discover.capabilities.extensions` AND the client
+  declares it in per-request `clientCapabilities.extensions`. Either missing -> the tasks
+  methods return `-32601` or `-32021`.
+- **`resultType` dispatch**: `complete` -> ordinary result; `input_required` -> Multi
+  Round-Trip Request, respond with `tasks/update` + `inputResponses`; `task` -> Tasks
+  extension, poll with `tasks/get`. Absent `resultType` -> short tool, block normally.
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - A server still sending `Mcp-Session-Id` or an `initialize` handshake -> not 2026-07-28.
@@ -57,6 +68,12 @@ OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP inte
 - Using Dynamic Client Registration for a new client -> it is deprecated; use Client ID
   Metadata Documents.
 - Reusing credentials across authorization servers -> credentials are bound to the issuer.
+- Sending `_meta` only on the first request -> `-32021` on the second. Per-request means
+  per-request.
+- Calling `tasks/result` or `tasks/list` -> `-32601`. Use `tasks/get` / `tasks/update`.
+- Treating `input_required` as an error -> it is a legitimate MRTR; respond, do not abort.
+- A server that advertises `tasks` in `server/discover` but the client omits the extension
+  from `clientCapabilities` -> the tasks methods are unavailable (`-32021`).
 
 ## Pitfalls from research
 - P1: Shipping a 2025-06-18 server that breaks on a 2026-07-28 client because the
@@ -76,6 +93,12 @@ OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP inte
 - [ ] OAuth uses Authorization Code + PKCE with Client ID Metadata Documents.
 - [ ] Error codes mapped to actions; `-32022` used for version refusal.
 - [ ] Statelessness proven by a replay test.
+- [ ] `server/discover` result validated by `scripts/protocol_check.py --json` (valid: true).
+- [ ] Version agreement recorded by `scripts/version_negotiate.py --json`.
+- [ ] `_meta` present on every request with all four reserved keys.
+- [ ] Tasks extension declared on both sides before any `tasks/*` call.
+- [ ] `resultType` dispatch table applied: complete / input_required / task.
+- [ ] `scripts/stateless_probe.py` passes on a replay pair.
 
 ## Worked examples
 Good and bad client behaviour, with the detection signal for each, live in
@@ -86,6 +109,9 @@ extension, header-casing trap).
 - changelog: references/changelog.md
 - error codes: references/error-codes.md
 - oauth flow: references/oauth-flow.md
+- server/discover: references/server-discover.md
+- per-request _meta: references/meta-schema.md
+- tasks extension: references/tasks-extension.md
 - worked examples: references/examples.md
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md

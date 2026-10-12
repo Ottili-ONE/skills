@@ -36,7 +36,10 @@ def load_firings(path: str) -> dict[str, bool]:
         parts = line.split()
         if len(parts) < 2:
             raise ValueError(f"bad firing line: {line!r}")
-        out[parts[0]] = parts[1] in ("1", "true", "yes", "fired")
+        val = parts[1].lower()
+        if val not in ("0", "1", "true", "false", "yes", "no", "fired", "not fired"):
+            raise ValueError(f"bad firing value {parts[1]!r} on line {line!r}")
+        out[parts[0]] = val in ("1", "true", "yes", "fired")
     return out
 
 
@@ -97,6 +100,7 @@ def main() -> int:
     bad = 0 if m["pass"] else 1
     if args.json:
         print(json.dumps(m))
+        return 0 if m["pass"] else 1
     print(f"{ok} {bad} 0")
     if m["pass"]:
         print(f"PASS: precision {m['precision']}, recall {m['recall']}", file=sys.stderr)
