@@ -49,6 +49,35 @@ Trigger: crawl a site and archive it to WARC.
 - [ ] Resume state persisted and reused on restart.
 - [ ] 429/5xx handled with backoff, not dropped silently.
 
+## Worked examples
+
+### Good — 4xx robots, crawl proceeds
+`GET /robots.txt` returns 404.
+
+1. RFC 9309 §2.3.1.3: robots unavailable -> may crawl.
+2. Record the decision and crawl, applying Crawl-delay.
+
+Result: the site is archived without an illegal refusal.
+
+### Bad — 5xx robots, crawler proceeds anyway
+`GET /robots.txt` returns 503.
+
+1. The crawler treats 503 as "no robots" and crawls.
+2. That is default-deny territory (§2.3.1.4): the site said it could not
+   be reached, so nothing is crawled until the next attempt.
+
+Why it fails: crawling past a 5xx robots response is a policy violation,
+not a politeness nicety. The rule is default-deny on 5xx/network error.
+
+### Bad — multi-record WARC read as one
+A WARC has 3 records, each appended as its own gzip member.
+
+1. `gzip.open(file).read()` returns only the first member.
+2. The validator reports 1 record and the audit passes on a corrupt file.
+
+Why it fails: the validator must walk every gzip member. The pitfall was
+verified live 2026-10-08 — a 3-record file reads as 1 record unless the
+member walk is explicit.
 ## References
 - procedures: references/procedures.md
 - policy: references/crawl-policy.md
