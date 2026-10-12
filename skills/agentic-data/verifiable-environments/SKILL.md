@@ -101,6 +101,34 @@ for a check, you have not audited it.
 - [ ] No check depends on wall-clock time.
 - [ ] Harness re-run after neutering a check drops power and exits 1.
 
+## Worked examples
+
+### Good — calibrated harness that separates good from broken
+A file-copy task: known-good agent copies the file and exits 0; broken
+agent copies nothing; lazy agent writes an empty file.
+
+1. Checks are observable: file exists AND content matches AND it was
+   written by the allowlisted tool (rule of two, three defences).
+2. Run all three: `pass_good = 1.0`, `pass_broken = 0.0`, `pass_lazy = 0.0`.
+3. Discriminating power `min(1.0-0.0, 1.0-0.0) = 1.0 >= 0.30` -> usable.
+4. Flip one check to always-pass and re-run: power drops, harness exits 1.
+
+Result: the verifier is itself verified.
+
+### Bad — a decorative check
+"Did the agent finish?" as the only check.
+
+Why it fails: a broken agent and a lazy agent both "finish". The pass rate
+is 100% for every agent, so the harness has no discriminating power. The
+rule is `pass_good - pass_lazy >= 0.30` and `pass_good - pass_broken >= 0.30`;
+this harness scores 0.0 on both and must be redesigned.
+
+### Bad — verifier that imports the environment module
+`from environment import run_checks`.
+
+Why it fails: the verifier shares the environment's bugs. A check that
+cannot be gamed is a check nobody has tried to game; every check needs a
+written entry in `references/bypass-register.md`, and this one has none.
 ## References
 - procedures: references/procedures.md
 - sandbox contract: references/sandbox-contract.md
