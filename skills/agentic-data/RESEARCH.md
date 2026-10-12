@@ -249,6 +249,74 @@ remains the working primary.
 corrected; the description now carries `Verified 2026-10-12`. The next-weakest,
 `browser-agent-playwright`, gained a Core invariant section.
 
+## PASS 4 (2026-10-12) — worked examples, script gaps, live re-verification
+
+Goal of this pass: every SKILL.md carries worked good/bad examples (the EXPAND
+brief asked for them and none existed), every `scripts:` line matches the
+`scripts/` directory, and every version-sensitive fact was re-fetched live.
+
+### 1. Worked examples added to all ten SKILL.md
+Each skill now ends with a `## Worked examples` section: one good scenario and
+two bad ones, each with the detection signal. Where the examples were already
+written in a `references/examples.md` (mcp-2026-07-28, skill-authoring-evals),
+SKILL.md points at that file instead of duplicating it — the file stays the
+single source of truth and the SKILL.md body stays under 500 lines.
+
+| Skill | Good example | Bad 1 | Bad 2 |
+|-------|-------------|-------|-------|
+| browser-agent-playwright | grounded click with a locator | first-match XPath after a re-render | text copied from the page into the goal |
+| computer-use-drivers | tree-first click with confirm() | clamped coordinates | screen content in a confirmation string |
+| dedup-decontam | near-duplicate pair kept, exact dropped | threshold set to "whatever makes the test pass" | embedding threshold pinned to a model version |
+| deep-research-method | contradiction resolved by quality weight | unsourced claim dressed as a finding | quoting 22 words to "prove" a point |
+| llm-judge-calibration | separated judge, calibrated threshold | same model judges its own outputs | rubric with definitions only, no examples |
+| mcp-2026-07-28 | (in references/examples.md) | (in references/examples.md) | (in references/examples.md) |
+| polite-crawling-warc | 4xx robots, crawl proceeds | 5xx robots, crawler proceeds anyway | multi-record WARC read as one |
+| skill-authoring-evals | (in references/examples.md) | (in references/examples.md) | (in references/examples.md) |
+| trajectory-ledger | grounded, replayable trajectory | free-form log | succeeded with no evidence |
+| verifiable-environments | calibrated harness that separates good from broken | a decorative "did it finish" check | verifier that imports the environment module |
+
+### 2. Script gaps closed
+- **deep-research-method**: `SKILL.md` listed `score_sources/audit/cite/fetch` but
+  `scripts/score_sources.py` only shipped `score`/`audit`/`contradictions`.
+  Added `cite` (emits URL + retrieval date per kept source) and `fetch`
+  (prints kept URLs to stdout for piping into curl). 6 new tests, 16 pass.
+  New reference: `references/cite-fetch.md`.
+
+### 3. Live re-verification (2026-10-12, curl)
+All primary URLs re-fetched. Changes found:
+
+- `modelcontextprotocol.io/specification/2026-07-28/changelog` (200) — re-read in
+  full. Confirms every fact in `references/changelog.md`: sessions +
+  `Mcp-Session-Id` removed, `initialize`/`notifications/initialized` handshake
+  removed, `server/discover` added (MUST), per-request `protocolVersion` +
+  `clientCapabilities` + `clientInfo` in `_meta`, `resultType`
+  (`complete`/`input_required`) on every result, tasks moved to the
+  `io.modelcontextprotocol/tasks` extension with `tasks/get` + `tasks/update`
+  replacing `tasks/result`, error-code renumbering (`-32001`->`-32020`,
+  `-32003`->`-32021`, `-32004`->`-32022`), DCR deprecated in favour of Client
+  ID Metadata Documents (PR #2858), `includeContext` `thisServer`/`allServers`
+  deprecated, Roots/Sampling/Logging deprecated, HTTP+SSE reclassified
+  Deprecated (already deprecated since 2025-03-26).
+- `modelcontextprotocol.io/community/feature-lifecycle` (200) — the deprecation
+  window is **at least twelve months** between the Deprecated state and
+  eligibility for removal, measured from the revision in which the feature was
+  deprecated. Recorded in `references/changelog.md`.
+- All 26 arXiv IDs cited across the ten `SOURCES.md` files re-fetched: 25 return
+  200 with correct titles. **`arxiv.org/abs/2310.13711` is a wording mismatch** —
+  the live title is "Automatic Sensor-free Affect Detection: A Systematic
+  Literature Review", which is a systematic-review *method* paper, not an
+  affect-detection result. It is used as a method reference in
+  `llm-judge-calibration`, `deep-research-method` and `trajectory-ledger`, which
+  is defensible, but those three SOURCES.md files described it as an
+  affect-detection paper without noting the method angle. Corrected the
+  wording in all three.
+- `www.iso.org/standard/82833.html` (403, bot-blocked) — already recorded as
+  corroborating-only; no change.
+- `github.com/modelcontextprotocol/modelcontextprotocol/blob/main/CHANGELOG.md`
+  (404) — the repo has no CHANGELOG.md; the spec changelog on
+  modelcontextprotocol.io is the authoritative source, which is what the skill
+  already cites. No dead link was pointing at it.
+
 ## Sources
 
 Every skill carries `references/SOURCES.md` with at least six primary sources, each
