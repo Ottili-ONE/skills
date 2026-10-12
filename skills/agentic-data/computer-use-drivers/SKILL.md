@@ -46,13 +46,30 @@ click buttons, type into fields, scroll, read what is on screen.
    disabled member); `ToolError` for failures that can carry screen content.
 
 ## Decision tables
-- **Member result kinds**: `screenshot`/`zoom` -> `BetaScreenshotResult`;
-  `cursor_position` -> `{x, y}` in screenshot pixels; everything else -> nothing or one
-  line of text. The SDK never resizes images; reject images over the model's limits.
-- **Confirm gate**: `type`/`key`/`hold_key` enabled -> `confirm()` required;
-  `mouse_*`/`scroll`/`screenshot` -> no gate.
-- **Platform quirks**: macOS AX is the deepest tree but requires permissions;
-  Windows UIA exposes more but is slower; Linux AT-SPI is flaky on Wayland (use X11).
+
+### D1 — what to do when a member call fails
+| Observation | Likely cause | Action |
+|---|---|---|
+| `ToolsetUsageError` thrown | misuse: bad coordinates, disabled member, missing `confirm` | Stop the run. Never retry the same input — the input is wrong, not the timing. |
+| `ToolError` thrown | backend failure that may carry screen content | Show the model the *rewritten* fixed-phrase message only. Never pass `error.message` through. |
+| Coordinate outside the display | model hallucinated a point | Throw `ToolError`. **Never clamp** — clamping silently clicks the wrong place and the model cannot detect it. |
+| Image over the model's pixel limit | capture too large | Reject with `ToolError`; the SDK never resizes. Reconfigure the capture resolution, do not resize in code. |
+| A member returns `enabled: false` | not overridden in the subclass | The call no-ops. Verify the full 17-member override map with `scripts/validate_driver.py`. |
+
+### D2 — which input path to take
+| Situation | Primary path | Fallback |
+|---|---|---|
+| App exposes an API, SDK or MCP server | Use it | Never drive the GUI |
+| Accessibility tree available | Enumerate `role`/`name`/`value`/`description` | — |
+| Tree present but sparse (some apps) | Tree for identity, pixels only for *position* | Never infer meaning from a screenshot alone |
+| No tree at all (game, canvas) | Do not use this skill | Document skill, canvas renderer, or OCR skill |
+
+### D3 — platform capability matrix
+| Platform | Tree depth | Speed | Permissions | Notes |
+|---|---|---|---|---|
+| macOS (AX) | Deepest | Medium | User/System Preferences grant required | Request at launch; a denied grant is a hard stop, not a fallback |
+| Windows (UIA) | Broad | Slowest | Usually implicit | Best element coverage; slower enumeration |
+| Linux (AT-SPI) | Shallow | Fast | Usually implicit | Flaky on Wayland — use X11 sessions when the tree is empty |
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - Mutating the `input` array in place -> the shared message history is corrupted;
