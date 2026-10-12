@@ -78,3 +78,15 @@ reproduced or audited. `scripts/calibrate_judge.py --json report.json` writes al
 four fields; a report missing any of them is not auditable.
 Failure signs: report with agreement but no model names; no prompt hashes; the
 report cannot be reproduced from the recorded inputs.
+
+## E11 — lint a rubric before calibrating it
+Prompt: "I wrote a rubric. Calibrate the judge."
+Expected: Lint it first with
+`scripts/calibrate_judge.py rubric rubric.yaml`. It must exit 0 with
+`PASS: rubric '<id>' has N contiguous points with definitions, examples and
+anti-examples`. A rubric that fails the lint (a point without an example, a
+point without anti-examples, a duplicate or out-of-order score, a scale not
+starting at 1) cannot be calibrated — fix it before scoring. Generate a valid
+one from a compact spec with `scripts/gen_rubric.py --spec spec.json --out rubric.yaml`.
+Failure signs: calibration run on a rubric that fails the lint; a rubric whose
+lowest score is not 1; a rubric with scores out of order.

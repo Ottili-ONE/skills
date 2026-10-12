@@ -113,6 +113,7 @@ exact failure mode the ledger exists to prevent.
 - procedures: references/procedures.md
 - schema: references/schema.md
 - cost ledger: references/cost-ledger.md
+- normalisation: references/normalisation.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/ledger.py (append, audit, replay, cost)
+- scripts: scripts/ledger.py (append, audit, replay, cost, normalize, record-non-det)

@@ -29,3 +29,16 @@ titles confirmed.
   control confirming the arXiv API path. The earlier "placeholder" round used
   unrelated arXiv IDs with invented titles; those have been replaced with the
   verified titles above.
+
+## Re-verification 2026-10-12 (this pass)
+Live re-check of the primary sources this pass (curl, all 200 except where noted):
+
+- arXiv API batch fetch of every ID in the table above: all returned HTTP 200 with
+  titles matching the recorded entries. Specifically re-confirmed this pass:
+  2605.20744 ("Hack-Verifiable Environments: Towards Evaluating Reward Hacking at
+  Scale"), 2212.08073 ("Constitutional AI: Harmlessness from AI Feedback"),
+  2310.13711, 2406.09338, 2110.14111, 2412.09645, 2608.09666, 2606.26122,
+  2608.05519, 2512.09543, 2306.08568, 2410.12829.
+- https://en.wikipedia.org/wiki/CRAAP_test -> HTTP 200.
+- No source changed title or moved since the 2026-10-12 baseline; the version-sensitive
+  notes above remain accurate.

@@ -94,3 +94,15 @@ Never read a low-scoring source and then decide whether to use it — the score
 is the gate.
 Failure signs: reading the source before scoring; a low-scoring source used as
 the main evidence with no low-confidence flag.
+
+## E11 — reject a stale source for a current question
+Prompt: "I verified this fact in 2024. The question is about 2026."
+Expected: Re-fetch it. Run
+`scripts/score_sources.py staleness <sources.jsonl> --question-date 2026-10-12`;
+it flags the source as stale with its age in days. Re-fetch, re-score, update the
+retrieved date, and re-run the check until it passes. Record the original and the
+re-fetch date in the evidence chain. A stale source is not discarded by score --
+it is flagged so it is re-fetched.
+Failure signs: a 2024 source used for a 2026 question with no re-fetch; the
+staleness check skipped because the score was high; the question date omitted so
+the script uses the system clock.

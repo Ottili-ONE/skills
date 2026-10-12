@@ -58,3 +58,23 @@ hashes, and stop the replay. `scripts/ledger.py replay` exits 1 with
 run is not reproducible and must be treated with care.
 Failure signs: replay "passing" after editing the recorded hashes; divergence not
 recorded anywhere; a non-deterministic run shipped as if reproducible.
+
+## E8 — normalise a hand-written trajectory
+Prompt: "I wrote the trajectory by hand. Audit it."
+Expected: Normalise first with
+`scripts/ledger.py normalize <in.jsonl> <out.jsonl>`, which re-serialises every
+line with canonical JSON and recomputes `state_hash` from any carried `state`,
+then audit the normalised file. A hand-written event whose stored hash does not
+recompute fails the audit even though the agent recorded it correctly.
+Failure signs: audit failing on a hand-written event that was recorded
+faithfully; normalisation skipped.
+
+## E9 — record a replay divergence instead of editing the hashes
+Prompt: "Replay diverged at step 1. Can I just fix the hash so it passes?"
+Expected: No. Record the divergence with
+`scripts/ledger.py record-non-det <ledger.jsonl> 1 "timestamps drifted"`, which
+appends an `observe` event with `non_determinism: true` and a recomputed hash.
+Editing an existing `state_hash` to make replay pass forges the ledger: the audit
+would then pass on a run that was never reproducible.
+Failure signs: a `state_hash` that was edited to match; a divergent run shipped
+as `succeeded`; the divergence not recorded anywhere.
