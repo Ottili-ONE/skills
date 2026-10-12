@@ -1,6 +1,6 @@
 ---
 name: llm-judge-calibration
-description: "Calibrate LLM judges: rubrics, calibration sets, inter-annotator agreement, drift detection and judge/teacher separation. Use when an agent must build or audit an LLM-as-judge scoring pipeline; not for building a single rubric from scratch."
+description: "Calibrate LLM judges: rubrics, calibration sets, inter-annotator agreement, drift detection and judge/teacher separation. Use when an agent must build or audit an LLM-as-judge scoring pipeline; not for building a single rubric from scratch. Verified 2026-10-12."
 compatibility: Python 3.10+, any LLM API; verified 2026-10-09
 license: MIT
 ---
