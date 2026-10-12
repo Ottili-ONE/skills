@@ -67,6 +67,8 @@ def contract(path: Path) -> tuple[int, int, int]:
     fails = warns = oks = 0
     def fail(m):
         nonlocal fails; print(f"FAIL: {m}", file=sys.stderr); fails += 1
+    def warn(m):
+        nonlocal warns; print(f"WARN: {m}", file=sys.stderr); warns += 1
     members = doc.get("members") if isinstance(doc, dict) else None
     if not isinstance(members, list):
         fail("registry must have a 'members' list")
