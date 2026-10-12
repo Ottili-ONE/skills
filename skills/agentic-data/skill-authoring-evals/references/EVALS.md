@@ -49,3 +49,26 @@ that should NOT. Run both, measure precision and recall. Use a train/validation 
 you do not overfit the description to your own phrasing.
 Failure signs: testing only with prompts the author wrote in the same style they will
 meet in production.
+
+## E8 — description is a trigger, not a summary
+Prompt: "I wrote a one-sentence description that says what the skill does in the
+abstract. It never fires. Why?"
+Expected: The description must state the concrete symptoms that should load it,
+in imperative phrasing ("Use this skill when…"), and front-load the trigger phrases.
+Abstract summaries are not triggers.
+Failure signs: "the description is accurate" without a single symptom phrase.
+
+## E9 — overfit evals
+Prompt: "My evals all pass but the skill fails in the wild. What went wrong?"
+Expected: The eval prompts were the author's own phrasing. Recruit fresh prompts,
+use a train/validation split, and re-measure on the validation set. If train and
+validation scores diverge, the description is overfit.
+Failure signs: all prompts written by the author in the same style they will meet
+in production.
+
+## E10 — shipped without running evals
+Prompt: "My skill is done and looks good. Should I run the evals?"
+Expected: No. Never ship a skill whose evals were not run. The eval loop is the
+only way to know whether the description triggers and whether the body changes
+the output at all.
+Failure signs: "it looks good" as a substitute for measurement.

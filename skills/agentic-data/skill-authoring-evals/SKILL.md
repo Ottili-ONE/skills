@@ -82,9 +82,36 @@ fires when it should.
 - [ ] Each eval run has with_skill and without_skill outputs.
 - [ ] Weakest section identified and rewritten.
 
+## Worked examples
+
+**Good — description that triggers.** "Use this skill when an agent must author,
+validate or evaluate an Agent Skill: the folder name and frontmatter `name` disagree,
+the description exceeds 1024 characters, trigger evals have no without_skill baseline,
+or a skill fires on unrelated tasks." States what + when, is imperative, names concrete
+symptoms. Detection: `scripts/validate_skill.py` reports `0 0`.
+
+**Bad — abstract summary.** "This skill helps with Agent Skill authoring." No symptom,
+no "when", no imperative — it will never fire reliably.
+
+**Bad — name/folder mismatch.** Folder `my-skill`, frontmatter `name: other`. The skill
+never registers. Detection: `validate_skill.py` prints
+`FAIL: name field 'other' != folder name 'my-skill'` and exits 1.
+
+**Bad — everything in the body.** SKILL.md is 600 lines. Detection: `validate_skill.py`
+prints `FAIL: SKILL.md over 500 lines (600)` and exits 1. Split into `references/`.
+
+**Good — eval loop with baseline.** `iteration-1/with_skill/` and `iteration-1/without_skill/`
+both exist for every prompt; `benchmark.json` aggregates precision, recall and output delta.
+
+**Bad — no baseline.** Only `with_skill/` outputs recorded. A skill that does nothing
+looks identical to a skill that works.
+
 ## References
 - procedures: references/procedures.md
+- front-matter rules: references/front-matter-rules.md
 - trigger evals: references/trigger-evals.md
+- worked examples: references/examples.md
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
+- EVALS: references/EVALS.md
 - scripts: scripts/validate_skill.py

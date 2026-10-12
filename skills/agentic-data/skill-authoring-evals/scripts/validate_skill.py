@@ -34,7 +34,7 @@ def parse_frontmatter(path: Path) -> tuple[dict, int]:
             return meta, i
         if ":" in line:
             k, _, v = line.partition(":")
-            meta[k.strip()] = v.strip().strip('"').strip("'")
+            meta[k.strip()] = v.strip()
     return meta, 0
 
 
@@ -63,10 +63,13 @@ def check(skill_dir: Path) -> tuple[int, int, int]:
     elif len(meta["name"]) > NAME_MAX:
         print(f"FAIL: name over {NAME_MAX} chars", file=sys.stderr)
         fails += 1
+    elif not NAME_RE.match(meta["name"]):
+        print(f"FAIL: name {meta['name']!r} is not a valid slug", file=sys.stderr)
+        fails += 1
     else:
         oks += 1
 
-    desc = meta.get("description", "")
+    desc = (meta.get("description") or "").strip()
     if not desc:
         print("FAIL: frontmatter missing 'description'", file=sys.stderr)
         fails += 1
