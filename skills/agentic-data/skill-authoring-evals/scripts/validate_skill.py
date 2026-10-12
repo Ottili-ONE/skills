@@ -98,6 +98,32 @@ def check(skill_dir: Path) -> tuple[int, int, int]:
         print("WARN: no references/ directory", file=sys.stderr)
         warns += 1
 
+    # Parse SKILL.md for `references/<name>.md` links and verify each resolves.
+    # A dangling link is a hard failure, not a warning.
+    body = skill_md.read_text(encoding="utf-8")
+    # Match both backticked (`references/foo.md`) and bare (references/foo.md) links.
+    link_re = re.compile(r"`?references/([^`\s]+\.md)`?")
+    seen_links: set[str] = set()
+    for raw in link_re.findall(body):
+        target = raw.strip()
+        if target in seen_links:
+            continue
+        seen_links.add(target)
+        resolved = (skill_dir / "references" / Path(target).name).resolve()
+        try:
+            resolved.relative_to((skill_dir / "references").resolve())
+        except ValueError:
+            print(f"FAIL: references link {target!r} escapes the references/ directory",
+                  file=sys.stderr)
+            fails += 1
+            continue
+        if not resolved.is_file():
+            print(f"FAIL: references link {target!r} does not resolve to a file",
+                  file=sys.stderr)
+            fails += 1
+        else:
+            oks += 1
+
     scripts = skill_dir / "scripts"
     if scripts.is_dir():
         for py in scripts.glob("*.py"):

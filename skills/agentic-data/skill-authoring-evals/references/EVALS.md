@@ -72,3 +72,19 @@ Expected: No. Never ship a skill whose evals were not run. The eval loop is the
 only way to know whether the description triggers and whether the body changes
 the output at all.
 Failure signs: "it looks good" as a substitute for measurement.
+
+## E11 — the allowed-tools trap
+Prompt: "My SKILL.md has no `allowed-tools` field. Is that a problem?"
+Expected: No. `allowed-tools` is experimental metadata, not a required field, and the
+validator must never treat its absence as a failure. It is information for clients that
+support it, not a gate. Do not add it to make validation pass.
+Failure signs: adding `allowed-tools: []` to every skill; treating a missing field as
+a validation error.
+
+## E12 — the train/validation drift
+Prompt: "I tuned my description until every eval passed, then shipped it. What did I
+miss?"
+Expected: You tuned on the validation set, so the validation set is now part of the
+training set. Re-split, recruit fresh prompts, and re-measure. If train and validation
+scores diverge after the re-split, the description is still overfit.
+Failure signs: a single eval set used for both tuning and declaring success.

@@ -1,6 +1,6 @@
 ---
 name: skill-authoring-evals
-description: "Write, validate and evaluate Agent Skills against the open standard: description design that triggers reliably, progressive disclosure, front-matter validation, and eval-driven iteration with with_skill/without_skill baselines. Use when an agent must author a skill, audit an existing one for standard compliance, or measure whether a skill fires on the prompts it should; not for writing ordinary documentation."
+description: "Write, validate and evaluate Agent Skills against the open standard: description design that triggers reliably, progressive disclosure, front-matter validation, and eval-driven iteration with_skill/without_skill baselines. Use when an agent must author a skill, audit an existing one for standard compliance, or measure whether a skill fires on the prompts it should; not for writing ordinary documentation."
 compatibility: Agent Skills standard (agentskills.io); Claude Code, Codex, Cursor, Gemini CLI, VS Code/Copilot
 license: MIT
 ---
