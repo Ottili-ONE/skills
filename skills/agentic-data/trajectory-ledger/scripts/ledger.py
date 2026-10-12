@@ -134,9 +134,75 @@ def cmd_cost(events: list[dict]) -> int:
     return 0
 
 
+
+def cmd_normalize(events: list[dict], out_path: Path) -> int:
+    """Rewrite a ledger with canonical JSON and recomputed state_hash.
+
+    Lets an agent hand-write a trajectory and then have it normalised before
+    audit: every line is re-serialised with sort_keys=True and every event that
+    carries a `state` gets its `state_hash` recomputed. Events that already have
+    a correct hash are left alone. Malformed lines fail the whole run.
+    """
+    out: list[dict] = []
+    for i, ev in enumerate(events):
+        if not isinstance(ev, dict):
+            print(f"FAIL: event {i} is not a JSON object", file=sys.stderr)
+            return 1
+        ev = dict(ev)
+        if "state" in ev:
+            ev["state_hash"] = state_hash(ev["state"])
+        out.append(ev)
+    with out_path.open("w", encoding="utf-8") as fh:
+        for ev in out:
+            fh.write(canonical(ev) + "\n")
+    print(f"PASS: normalised {len(out)} event(s) to {out_path}", file=sys.stderr)
+    return 0
+
+
+def cmd_record_non_det(ledger_path: Path, step: int, reason: str) -> int:
+    """Record a replay divergence as an observe event with non_determinism: true.
+
+    The replay procedure says: on first divergence, record it and stop. This
+    subcommand appends that record so the ledger carries the evidence instead
+    of the run being silently marked non-reproducible.
+    """
+    ev = {
+        "step": step,
+        "timestamp": _now(),
+        "type": "observe",
+        "non_determinism": True,
+        "reason": reason,
+        "state": {"divergence_at_step": step, "reason": reason},
+        "cost": {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0},
+    }
+    ev["state_hash"] = state_hash(ev["state"])
+    failures = check_event(ev, step)
+    if failures:
+        for f in failures:
+            print(f, file=sys.stderr)
+        return 1
+    with ledger_path.open("a", encoding="utf-8") as fh:
+        fh.write(canonical(ev) + "\n")
+    print(f"INFO: recorded non-determinism at step {step}", file=sys.stderr)
+    return 0
+
+
+def _now() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("normalize")
+    p.add_argument("ledger", type=Path)
+    p.add_argument("out", type=Path)
+
+    p = sub.add_parser("record-non-det")
+    p.add_argument("ledger", type=Path)
+    p.add_argument("step", type=int)
+    p.add_argument("reason")
 
     p = sub.add_parser("append")
     p.add_argument("ledger", type=Path)
@@ -171,6 +237,11 @@ def main() -> int:
             fh.write(json.dumps(ev, sort_keys=True, ensure_ascii=False) + "\n")
         print(f"INFO: appended step {ev['step']}", file=sys.stderr)
         return 0
+    if args.cmd == "normalize":
+        events = load_events(args.ledger)
+        return cmd_normalize(events, args.out)
+    if args.cmd == "record-non-det":
+        return cmd_record_non_det(args.ledger, args.step, args.reason)
     events = load_events(args.ledger)
     if args.cmd == "audit":
         return cmd_audit(events)
