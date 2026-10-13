@@ -29,6 +29,15 @@ allowed-tools: []
 | Resource limit needed | Wrap with `ulimit -v` (memory) and `timeout` (wall clock) | `ulimit` is per-shell; set it in the same command that runs the test |
 | Test must run in CI | Use the same wrapper script; CI has no interactive shell | Hardcoding `&` works locally but dies in CI |
 
+## Decision table — flake handling
+| Observation | Action | Threshold |
+|-------------|--------|-----------|
+| Passes alone, fails in suite | Re-run with `--randomly-seed` from the failing run | max 2 reruns |
+| Fails on rerun with same seed | Real failure — stop, do not rerun again | — |
+| Fails on rerun with different seed | Ordering dependency — record seed, fix test | — |
+| Passes on rerun, no seed recorded | Not evidence — re-run with recorded seed | — |
+| Timeout too short (partial log) | Raise timeout, do not claim pass | log must end with the JSON record |
+
 ## Numbered procedure (summary; full recipe in references/long-test-discipline-procedure.md)
 1. **Classify the test** — unit (<1 min), integration (1-15 min), or end-to-end (>15 min). Pick the wrapper accordingly.
 2. **Write the wrapper** — a small shell script that sets `ulimit`, `timeout`, redirects output to a log, and runs the test. Commit it to `scripts/`.
@@ -38,12 +47,38 @@ allowed-tools: []
 6. **Enforce resource limits** — set `ulimit -v` (virtual memory) and `ulimit -u` (processes) before the test.
 7. **Report** — pass/fail with the log path, the seed, and the resource numbers.
 
+## Worked examples
+Good (foreground wrapper, recorded seed, JSON record at end of log):
+```bash
+SEED=42
+timeout 900 /usr/local/bin/heavy pytest tests/test_worker.py \
+  --randomly-seed "$SEED" --lf > logs/test_worker.log 2>&1
+tail -1 logs/test_worker.log
+# {"name":"worker","status":"pass","elapsed_s":42,"seed":42,"rc":0,...}
+```
+Bad (background worker — killed when the shell exits, log never appears):
+```bash
+python -m worker > worker.log 2>&1 &   # AGENTS.md forbids this
+pytest tests/test_integration.py        # worker is dead by now
+```
+Bad (flake "passed" with no seed — not evidence):
+```bash
+pytest tests/test_flaky.py            # green, but was it luck?
+# re-run with a recorded seed or it does not count
+```
+
 ## Pitfalls from research (real incidents)
 - `&`-backgrounded processes are killed when the launching shell exits; the log never appears.
 - A flaky test that passes on rerun hides a real ordering or resource problem.
 - `ulimit` set in one command does not apply to a later command; it must wrap the test.
 - A timeout that is too short leaves a half-written log that looks like a failure but is just a kill.
 - Running the whole suite to "see if it still flakes" burns minutes and gives no evidence.
+
+## Near-miss triggers (act before the incident)
+- "Just run it in the background" — use `run_long_test.sh` in the foreground instead.
+- "It passed once, it'll pass again" — re-run with a recorded seed.
+- "The timeout is probably fine" — check the log ends with the JSON record, not a partial line.
+- "Lower the ulimit to make it fit" — raise the limit or split the test; never weaken the test.
 
 ## Verification checklist (all must pass before you finish)
 - [ ] The test runs in the foreground with a `timeout` wrapper.

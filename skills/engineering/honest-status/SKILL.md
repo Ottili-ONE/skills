@@ -37,12 +37,42 @@ allowed-tools: []
 6. **Add handoff notes** — what to retry first, what is missing, who owns the open question.
 7. **Re-read aloud** — every line must be checkable in under 60 seconds.
 
+## Worked examples
+Good (every DONE has a pointer that opens in <60s):
+```markdown
+## DONE
+- `scripts/check_outbox.py` shipped — `python3 scripts/check_outbox_test.py` (exit 0)
+  evidence: skills/engineering/outbox-idempotency/scripts/check_outbox_test.py#L12
+## VERIFIED
+- Poller ordering rule verified against Docker Postgres 15 —
+  evidence: tests/e2e/outbox-ordering.log (8 KB, 2026-10-13)
+## BLOCKED
+- axe version bump blocked until `registry.npmjs.org/axe-core` returns 4.15 —
+  owner: integrator, question: "is axe 4.15 released yet?"
+```
+Bad (DONE with prose only — this is FALSE_DONE):
+```markdown
+## DONE
+- Outbox checker is working and handles everything.
+```
+Bad (DONE and IN_PROGRESS merged — hides what is actually shippable):
+```markdown
+## DONE
+- Outbox checker written, tests added, needs one more edge case.
+```
+
 ## Pitfalls from research
 - "Done" without a pointer is the most common lie; always require a runnable artifact.
 - A green test for the wrong behaviour is not evidence of correctness.
 - Copying a previous STATUS.md forward preserves its false-done claims.
 - Vague blockers ("investigate later") are never resolved; name an owner and a date.
 - Evidence that only exists in your head is not evidence; write it down.
+
+## Near-miss triggers (act before the incident)
+- "It's basically done" — run `scripts/check_status_evidence.py STATUS.md --root .` before writing.
+- "The test passed earlier" — re-run it now; a pass 3 hours ago is not a pass today.
+- "Just copy last quarter's STATUS.md" — every claim must be re-verified this week.
+- "The blocker will sort itself out" — name an owner and a date, or it is not BLOCKED, it is IN_PROGRESS.
 
 ## Verification checklist (all must pass before you finish)
 - [ ] Every DONE entry has a runnable evidence pointer.

@@ -50,12 +50,43 @@ Helpers: scripts/ (shipped: `check_audit_selectors.py`, `report_result.py`,
 7. Inject a fault on a passing scenario; the system must recover and the scenario must return to PASS.
 8. Commit the scenario file, evidence, and outcome; re-run on every change.
 
+## Worked examples
+Good (one requirement, one scenario, one evidence type, one rollback):
+```yaml
+# scenarios/rls-tenant-isolation.yml
+id: rls_tenant_isolation
+requirement: "A tenant's rows are invisible to another tenant"
+expected: PASS
+evidence: logs/rls-tenant-isolation.log
+rollback: "revert migration r3-07; no data written"
+assertion: "SELECT count(*) FROM orders WHERE tenant_id = 'other' = 0"
+```
+Bad (scenario with no discriminating power — always passes):
+```yaml
+id: ui_renders
+requirement: "The page renders"
+expected: PASS
+assertion: "page loads"          # not observable; every run passes
+```
+Bad (two requirements in one scenario — hides which one failed):
+```yaml
+id: mixed
+requirement: "Create order AND send email"
+# if email fails, is it the create or the send that broke? Unknown.
+```
+
 ## Pitfalls from research
 - Scenarios without a concrete PASS criterion drift into opinion; every scenario needs a checkable assertion.
 - Evidence not attached to a scenario is unverifiable; a pointer must open in under 60 seconds.
 - Fault injection that crashes the system without recovery is destructive, not resilience proof: require recovery and a return to PASS.
 - A scenario that always passes is not a scenario; it has no discriminating power.
 - Reusing one scenario for two requirements hides which requirement failed.
+
+## Near-miss triggers (act before the incident)
+- "I'll just eyeball the result" — write the assertion first, then look.
+- "This scenario is probably fine" — run the fault-injection variant.
+- "The evidence is in my head" — put it in a file; a pointer must open in <60s.
+- "Let's bundle three checks into one scenario" — split them; one scenario = one requirement.
 
 ## Verification checklist (all must pass before you finish)
 - [ ] 1 scenario = 1 requirement = 1 expected outcome = 1 evidence type = 1 rollback plan.
