@@ -45,6 +45,33 @@ and their replacements are recorded in each skill's `Conflicts` section:
 - `www.w3.org/TR/robots.txt/` (404) -> `datatracker.ietf.org/doc/html/rfc9309`.
 - `arxiv.org/help/search/api` (404) -> the live arXiv API itself.
 
+## PASS 2 (EXPAND) consolidation — 2026-10-13
+
+The EXPAND pass for the ten skills is consolidated in one traceable file:
+
+- `skills/agentic-data/references/PASS2-CONSOLIDATION.md` — per skill: the concrete
+  thresholds that were vague before the pass, the ordered procedures and decision
+  tables, the worked good/bad examples, the script hardening applied, and the
+  near-miss trigger prompts added or sharpened. Also the acceptance check run.
+
+What the pass did, per the task prompt:
+
+1. Added missing primary sources and re-checked version-sensitive facts online
+   (recorded in each `references/SOURCES.md` with a live retrieval date).
+2. Replaced vague text with concrete thresholds (negotiation window, DCR end-of-life
+   date, locator confidence 0.8, Jaccard 0.85/0.95, 13-gram 80% overlap, embedding
+   cosine 0.95, verifier power >= 0.50, calibration gap <= 5 points, judge agreement
+   >= 80%, position bias <= 0.25, drift <= 0.1, source quality < 2 discard, cost
+   reconciliation <= 1%).
+3. Added ordered procedures and decision tables where the text was vague.
+4. Added worked good/bad examples for all ten skills.
+5. Hardened the scripts (edge cases, offline determinism, clear errors, small tests).
+6. Added near-miss trigger prompts; deleted filler.
+7. Kept every SKILL.md under 500 L by moving long material into `references/`.
+
+Commits this pass: `162cb87`, `a4d2874`, `e4734f3`, `e343397`, all prefixed
+`skills-agentic-data-r3-01:`, own paths only. No push, no history rewrite.
+
 ## Source counts per skill (acceptance bar: >= 6 primary sources)
 
 | Skill | Primary sources | SKILL.md | EVALS prompts | Offline scripts |
