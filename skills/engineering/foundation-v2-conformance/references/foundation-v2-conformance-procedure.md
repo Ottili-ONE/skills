@@ -12,9 +12,10 @@ approval).
 | @ottili/foundation-button | (part of foundation-ui) | 2026-10-13 | pinned with foundation-ui |
 | @ottili/foundation-tokens | (part of foundation-ui) | 2026-10-13 | token file is the allow-list source |
 
-Corruption history (do not install): 1.0.11.1, 1.0.12, 1.0.1-1.1 are bad version
+Corruption history (do not install): `1.0.1-1.1` and `1.0.12` are bad version
 strings that appear in the registry version list but are not real releases. Only 1.0.10,
-1.0.11, 1.0.13 are real; 1.0.13 is latest.
+1.0.11, 1.0.13 are real; 1.0.13 is latest. (Verified 2026-10-13 against the full version
+list; the earlier claim of a `1.0.11.1` bad version was a typo and is corrected here.)
 
 ## Procedure
 1. Pin the Foundation package versions in package.json with an exact `1.0.13` (no `^`, no
