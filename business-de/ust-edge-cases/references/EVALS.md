@@ -89,3 +89,25 @@ A 0% rate with a non-zero tax amount is rejected outright.
 
 **Failure signs:** treating a 0% key as interchangeable with a taxed key;
 charging a tax amount on a 06/0 line.
+
+## Near-miss triggers
+
+### N1. "Reverse charge applies to goods"
+**Trap:** reverse charge (§3g) is **services only**. A goods supply to a
+customer with a USt-IdNr. is 0% under the general intra-EU rule (§4a) and
+must not be labelled reverse charge. Verified 2026-10-09 against UStG §3g /
+§4a via dejure.org.
+
+### N2. "A USt-IdNr. is enough for reverse charge"
+**Trap:** reverse charge needs **both** a valid customer USt-IdNr. **and** a
+supply of services. A USt-IdNr. alone is not sufficient.
+
+### N3. "Kleinunternehmer invoices carry 19%"
+**Trap:** Kleinunternehmer (§19, prior-year turnover ≤ EUR 20,000) charges no
+VAT and issues a sonstige Rechnung. Invoices under EUR 250 gross are exempt
+from the issuing obligation.
+
+### N4. "Rounding is banker's rounding"
+**Trap:** German tax rounding is half-up to cents. Net EUR 33.33 at 19% →
+6.3326 → 6.33. `scripts/ust_check.py` accepts 6.33 and rejects 6.3326 or
+6.34.

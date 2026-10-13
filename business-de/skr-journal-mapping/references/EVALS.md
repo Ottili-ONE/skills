@@ -89,3 +89,26 @@ auditable.
 
 **Failure signs:** Crashing instead of reporting; writing `ok: true` for an
 invalid line.
+
+## Near-miss triggers
+
+### N1. "Account 4000 is always 19%"
+**Trap:** account 4000 (Vertrieb) defaults to 19%, but an intra-EU supply
+overrides it to 00. Run `scripts/map_skr.py --account 4000 --intra-eu` and
+record the override reason. Verified 2026-10-09 against SKR 03/04.
+
+### N2. "The journal balances, so it is correct"
+**Trap:** a balanced journal can still carry a tax key outside the valid set
+(19/07/00), an account outside SKR ranges, or a tax key without a
+tax-account line. Run `scripts/journal_check.py` and escalate every blocking
+error.
+
+### N3. "Period lock is just a reminder"
+**Trap:** a period lock is a hard control. `scripts/period_lock_check.py`
+exits non-zero when a booking lands in a locked period. Wire it into the
+fiscal close, not a warning.
+
+### N4. "Tax key 99 is a valid special key"
+**Trap:** the valid set is 19/07/00 (plus intra-EU 06/0, 09/0, 13/0 for
+edge cases). `scripts/generate_journal.py` reports `ok: false` for 99 and
+still writes the file so the error is auditable.
