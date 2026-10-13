@@ -63,7 +63,7 @@ Every case gets both directories. A case with only `with_skill/` has no baseline
 
 | Metric | Formula | Target | Below target means |
 |--------|---------|--------|--------------------|
-| **Precision** | should-not-fire prompts that did NOT fire / all should-not-fire | >= 0.9 | description too broad |
+| **Precision** | should-fire prompts that fired / (should-fire that fired + should-not-fire that fired) = TP / (TP + FP) | >= 0.9 | description too broad |
 | **Recall** | should-fire prompts that DID fire / all should-fire | >= 0.9 | description too narrow |
 | **Output delta** | tokens(with_skill) - tokens(without_skill), per case | > 0 for useful cases | skill changed nothing |
 

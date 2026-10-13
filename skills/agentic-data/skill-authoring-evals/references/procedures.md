@@ -52,8 +52,12 @@ report.
    without_skill run is the baseline. Record outputs in
    `iteration-N/<eval>/with_skill/` and `without_skill/`, aggregated in
    `benchmark.json`.
-4. Metrics: precision = should-not-fire prompts that did NOT fire / all
-   should-not-fire; recall = should-fire prompts that DID fire / all should-fire.
+4. Metrics: **precision** = should-fire prompts that fired / (should-fire that
+   fired + should-not-fire that fired) = TP / (TP + FP); **recall** = should-fire
+   prompts that DID fire / all should-fire = TP / (TP + FN). The denominator of
+   precision is the number of *fired* cases, not the number of correct negatives —
+   TN/(TN+FP) is the common mistake. `scripts/eval_metrics.py` implements the
+   correct formula.
    Target precision >= 0.9 and recall >= 0.9. Below 0.8 on either, rewrite the
    description, not the body.
 5. Identify the weakest section (lowest recall or lowest output delta), rewrite

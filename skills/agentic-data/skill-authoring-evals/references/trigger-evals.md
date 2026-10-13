@@ -18,8 +18,11 @@ overfit to the training phrasing — recruit fresh prompts.
 
 ## Metrics
 
-- **Precision** = should-not-fire prompts that did NOT fire / all should-not-fire.
-  Low precision = description too broad.
+- **Precision** = should-fire prompts that fired / (should-fire that fired +
+  should-not-fire that fired) = TP / (TP + FP). **Low precision = description too
+  broad** — the skill fires on prompts it should not. The denominator is the number
+  of *fired* cases, not the number of correct negatives; TN/(TN+FP) is the common
+  mistake and is what `scripts/eval_metrics.py` corrects for.
 - **Recall** = should-fire prompts that DID fire / all should-fire.
   Low recall = description too narrow.
 - Target: precision >= 0.9, recall >= 0.9. Below 0.8 on either, rewrite the
