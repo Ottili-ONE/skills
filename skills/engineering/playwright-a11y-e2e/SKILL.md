@@ -1,13 +1,12 @@
 ---
 name: playwright-a11y-e2e
-description: "End-to-end browser tests with Playwright and axe-core: axe accessibility scans, keyboard-only navigation checks, responsive breakpoint checks, and stable-selector rules. Use when writing or reviewing E2E tests, when an axe assertion fails, or when a selector breaks."
+description: "End-to-end browser tests with Playwright and axe-core: axe accessibility scans, keyboard-only navigation checks, responsive breakpoint checks, and stable-selector rules. Use when writing or reviewing E2E tests, when an axe assertion fails, when a keyboard path is unreachable, or when a selector breaks after a refactor."
 license: MIT-compat
 compatibility: "framework-agnostic; Node.js host; Linux; Playwright browsers installed"
 metadata: {}
 allowed-tools: []
 ---
-# Playwright A11y E2E Skill (body <500 lines; full procedure in
-references/playwright-a11y-e2e-procedure.md) Decision table Goal | Tool | Evidence Accessibility | axe-core via Playwright | axe JSON Keyboard | Playwright keyboard API | video+log Responsive | viewport loop | screenshot set Selectors | getByRole/getByLabel | selector audit Procedure summary refs/procedure Numbered steps follow there Pitfalls - axe on dynamic modals misses aria-hidden flips wait aria-hidden=false - :focus-visible not WCAG criterion do not assert - nth-child breaks every refactor prefer getByRole - keyboard tests skip shadow DOM fail silently Web Components Checklist axe zero A/AA violations keyboard covers interactive responsive breakpoints pass selectors role-based evidence committed referenced EOF
+# Playwright A11y E2E Skill (body <500 lines; full procedure in references/playwright-a11y-e2e-procedure.md)
 
 ## When to use this skill (trigger)
 - You need automated E2E coverage of a web app.
@@ -35,6 +34,26 @@ references/playwright-a11y-e2e-procedure.md) Decision table Goal | Tool | Eviden
 4. Check responsive breakpoints — loop over configured viewports; assert no overflow.
 5. Use stable selectors — prefer role/label/text; never XPath or CSS classes.
 6. Record evidence — axe JSON, screenshots, and a selector audit.
+
+## Near-miss triggers (act before the incident)
+- axe run on a dynamic modal without waiting for `aria-hidden=false` → false violations or missed violations.
+- `:focus-visible` asserted as a WCAG criterion → it is not one; assert focus order instead.
+- `nth-child` or class-only selectors → break on every refactor; use `getByRole`.
+- Keyboard tests that skip shadow DOM → fail silently on Web Components.
+- Viewport loop missing 320px → mobile bugs never caught.
+- axe run without frame handling → content in iframes is never scanned.
+
+## Worked examples
+Good (stable selector + axe):
+```ts
+await page.getByRole('button', { name: 'Close' }).click();
+const results = await axe.scan(page.locator('main'));
+expect(results.violations).toEqual([]);
+```
+Bad (unstable selector):
+```ts
+await page.click('.btn:nth-child(3)');  // breaks when the DOM order changes
+```
 
 ## Pitfalls from research
 - axe on dynamic modals misses content rendered after aria-hidden flips; wait for aria-hidden=false.
