@@ -1,10 +1,11 @@
-# Module Contract First — Full Procedure (retrieved 2026-10-07, host Biest)
+# Module Contract First — Full Procedure
+Retrieval date: 2026-10-12. Host: Biest. SEARCH_ENDPOINT none (URLs fetched directly).
 
 ## Verified tool versions
-- `scripts/check_contract_drift.py` (this repo): v1, offline deterministic, verified on Biest 2026-10-07. Snapshot format: `{"symbols": [...]}` under `module-contracts/<module>.json`.
-- OpenAPI v3.1.0: https://spec.openapis.org/oas/v3.1.0 — retrieved 2026-10-07.
-- JSON Schema Draft 2020-12: https://json-schema.org/draft/2020-12/json-schema-release-notes.html — retrieved 2026-10-07.
-- SemVer 2.0.0: https://semver.org/spec/v2.0.0.html — retrieved 2026-10-07.
+- `scripts/check_contract_drift.py` (this repo): v1, offline deterministic, verified on Biest 2026-10-12.
+- OpenAPI v3.1.0: https://spec.openapis.org/oas/v3.1.0 — retrieved 2026-10-12.
+- JSON Schema Draft 2020-12: https://json-schema.org/draft/2020-12/json-schema-release-notes.html — retrieved 2026-10-12.
+- SemVer 2.0.0: https://semver.org/spec/v2.0.0.html — retrieved 2026-10-12.
 
 ## Preconditions
 - The module has a `module-contracts/` directory; if missing, create it before enumerating.
@@ -18,57 +19,39 @@ This writes `module-contracts/<module>.json` with the sorted list of top-level e
 
 ### Worked example — good
 ```bash
-$ python3 scripts/check_contract_drift.py --enumerate src/payments
-ok: enumerated 4 symbols -> src/payments/module-contracts/payments.json
-$ cat src/payments/module-contracts/payments.json
-{
-  "symbols": [
-    "Charge",
-    "Refund",
-    "PaymentError",
-    "process_payment"
-  ]
-}
+$ python3 scripts/check_contract_drift.py --enumerate src/users
+ok: enumerated 14 symbols -> src/users/module-contracts/users.json
+$ cat src/users/module-contracts/users.json
+{"symbols": ["create_user", "delete_user", "get_user", ...]}
 ```
 
-### Worked example — bad
-A developer hand-edits `payments.json` to add `new_func` but forgets to commit the code change. `--check` then reports full-add drift:
-```
-DRIFT DETECTED
-@@ symbols @@
-- old: ['Charge', 'Refund', 'PaymentError', 'process_payment']
-+ new: ['Charge', 'Refund', 'PaymentError', 'new_func', 'process_payment']
-BLOCKED: merge until snapshot regenerated or reverted
-```
-Fix: regenerate via `--enumerate` and commit both files together.
-
-## Step 2 — Classify the change and bump semver
-| Change | Semver | Action |
-|--------|--------|--------|
-| Add new export, route, table, or message | minor | regenerate snapshot, commit both together |
-| Rename export, change signature, remove export | major | bump major, notify all consumers, regenerate snapshot |
-| Add optional field to a request object | patch | regenerate snapshot only |
-| Change field type or required->optional | major | bump major, regenerate snapshot, update consumers |
-
-## Step 3 — Write the drift test
-`python3 scripts/check_contract_drift.py --check <module-dir>` must run in CI on every PR. Exit 1 on any drift. The snapshot is never hand-edited.
-
-## Step 4 — Enforce boundaries
+## Step 2 — Check for drift
 ```bash
-python3 scripts/check_contract_drift.py --cycles <root>
+python3 scripts/check_contract_drift.py --check <module-dir>
 ```
-Any back-edge is an automatic fail. Extract shared types into an internal-only module.
+Exit 0 means the live surface matches the snapshot. Any added/removed/renamed public symbol prints `DRIFT DETECTED` and exits non-zero. On intentional change, re-run `--enumerate` and commit the new snapshot in the same PR.
 
-### Worked example — cycle detected
+## Step 3 — Check for import cycles
 ```bash
-$ python3 scripts/check_contract_drift.py --cycles src
-CYCLE DETECTED
-a -> b -> c -> a
-Break cycle by extracting shared types into an internal-only module
+python3 scripts/check_contract_drift.py --cycles <module-dir>
 ```
+Detects cycles in the module's import graph. Break a cycle by extracting shared types into an internal-only module that both depend on.
 
-## Step 5 — Document the boundary
-Write a boundary doc listing allowed importers and forbidden import directions.
+## Contract-first rules
+- A *public contract* is any exported symbol, endpoint, or message schema that another module consumes.
+- Changing a contract is a breaking change unless the version is bumped (SemVer 2.0.0: bump MAJOR for breaking, MINOR for additive, PATCH for fixes only).
+- Internal helpers (leading underscore) are not part of the contract and may change freely.
+- A module boundary is the set of files under one directory; do not reach across a boundary except through the contract.
+- Drift tests run in CI on every PR; they are not optional.
 
-## Schema nullability (conflict recorded)
-Sources disagree on whether optional fields should be nullable or omitted entirely. JSON Schema Draft 2020-12 says use `type: ["string", "null"]`; OpenAPI v3.1 moved to `oneOf` with a null type and deprecated `nullable: true`. Resolution: use `oneOf` with a null type in new contracts; never `nullable: true` in v3.x. This affects snapshot content and drift detection thresholds.
+## Pitfalls from research
+- Hand-edited snapshots silently lie: always regenerate with `--enumerate`.
+- A renamed export is a *removal + addition*, not a rename — the drift checker shows both.
+- Additive changes still require a MINOR bump; "it is backwards compatible" is not a free pass.
+- A cycle that spans modules is a design failure, not a lint warning.
+
+## Verification checklist
+- [ ] Every module has a committed `module-contracts/<module>.json` snapshot.
+- [ ] `--check` passes on the current tree.
+- [ ] `--cycles` reports no cycles across module boundaries.
+- [ ] Every contract change in a PR is accompanied by a version bump or an explicit breaking-change note.
