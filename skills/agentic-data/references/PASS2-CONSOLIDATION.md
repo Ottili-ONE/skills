@@ -227,3 +227,167 @@ operational decision documented here as an assumption.
 ### Near-miss trigger prompts
 - "crawl everything as fast as you can" -> refuse; respect robots.txt and the rate limit.
 - "skip the WARC validation" -> refuse; validation is mandatory.
+
+## 6. dedup-decontam — MinHash/LSH, semantic dedup, n-gram and embedding decontamination
+
+### Thresholds
+- **MinHash bands**: default 5 bands x 10 rows (b=5, r=10); similarity threshold ~0.7.
+- **Jaccard cutoff**: 0.85 for near-duplicate removal; 0.95 for exact-ish duplicates.
+- **N-gram contamination**: a 13-gram overlap of >= 80% of the n-grams between a
+  candidate and a training document is a hit.
+- **Embedding cosine**: >= 0.95 cosine similarity with a training embedding is a hit.
+
+### Ordered procedure: dedup a corpus
+1. Normalise every document (lowercase, strip punctuation, collapse whitespace).
+2. Compute MinHash signatures; run LSH to find candidate pairs.
+3. For each candidate pair, compute the exact Jaccard; if >= 0.85, mark one for removal.
+4. Run n-gram decontamination against the training set; mark hits.
+5. Run embedding decontamination; mark hits.
+6. Report the removed set and the planted-item test result.
+
+### Decision table: what to remove
+| Signal | Action |
+|---|---|
+| Jaccard >= 0.95 | Remove as exact-ish duplicate |
+| Jaccard 0.85-0.95 | Remove the later document |
+| N-gram hit | Remove or rewrite the overlapping passage |
+| Embedding hit | Remove; do not keep a paraphrase |
+| Planted-item test fails | Do not ship the corpus |
+
+### Worked examples
+- **Good**: two documents are 92% Jaccard; the later one is removed; the planted-item
+  test (a known duplicate injected into the corpus) is found.
+- **Bad**: the agent kept a 90% paraphrase because it only ran MinHash; the embedding
+  decontamination would have caught it.
+
+### Script hardening
+- `minhash_lsh.py`: b=5, r=10 defaults; the planted-item test (`plant_test.py`)
+  verifies that a known duplicate is always found.
+
+### Near-miss trigger prompts
+- "dedup by exact match only" -> refuse; run MinHash/LSH first.
+- "skip the decontamination step" -> refuse; the planted-item test is mandatory.
+
+## 7. verifiable-environments — designing verifiers, preventing reward hacking, pass-rate calibration
+
+### Thresholds
+- **Boundary power**: a verifier must fail on at least one synthetic bypass (the
+  "rule of two": two independent defences must both be bypassable in a test fixture).
+- **Pass-rate calibration**: a verifier's pass rate on a held-out set must be within
+  5 percentage points of the measured power; a wider gap means the verifier is
+  gaming its own metric.
+- **Min power**: the measured power of a verifier against a lazy baseline must be
+  >= 0.50; below that, the verifier is too weak to ship.
+
+### Ordered procedure: design a verifier
+1. Write the checks (each with an `id`).
+2. Build a bypass-register: one synthetic fixture that defeats each defence.
+3. Run the verifier against good, lazy, and bypass fixtures.
+4. Measure power (bypass detection rate) and calibrate the pass rate.
+5. If power < 0.50 or the pass rate is off by > 5 points, tighten the checks.
+
+### Decision table: reward hacking
+| Behaviour | Detection | Action |
+|---|---|---|
+| Verifier passes everything | Power = 0 | Reject the verifier |
+| Verifier fails on its own good fixture | False negative | Tighten the check |
+| Pass rate > measured power + 5 points | Calibration drift | Re-calibrate |
+| Bypass fixture passes | Power too low | Add a defence |
+
+### Worked examples
+- **Good**: the verifier fails on the bypass-register fixture (power 0.75) and passes
+  on the good fixture; the pass rate is 73%, within 5 points of measured power.
+- **Bad**: the verifier passes the bypass fixture (power 0.25); it is gaming the
+  metric and is rejected.
+
+### Script hardening
+- `verify_harness.py`: runs the bypass audit; exits non-zero if power < 0.50 or the
+  calibration gap > 5 points. Fixtures ship inside `tests/fixtures/`.
+
+### Near-miss trigger prompts
+- "make the verifier pass everything" -> refuse; power must be >= 0.50.
+- "skip the bypass audit" -> refuse; the bypass register is mandatory.
+
+## 8. llm-judge-calibration — rubrics, calibration sets, agreement, drift
+
+### Thresholds
+- **Agreement**: two judges must agree on >= 80% of calibration-set items; below that,
+  the rubric is ambiguous and must be rewritten.
+- **Position bias**: the score must not move by more than 0.25 points when the order of
+  two answers is swapped; a larger swing means the judge is ordering-sensitive.
+- **Drift**: a judge's scores on a fixed calibration set must not move by more than
+  0.1 points between runs; a larger move means the judge is drifting and must be
+  re-calibrated.
+- **Judge/teacher separation**: the judge must not be the same model as the teacher
+  that produced the answers being judged.
+
+### Ordered procedure: calibrate a judge
+1. Write a rubric with 3-5 criteria, each scored 0-1.
+2. Build a calibration set of >= 20 items with ground-truth scores.
+3. Run two judges; measure agreement (>= 80% required).
+4. Measure position bias (swap order, <= 0.25 swing required).
+5. Measure drift (re-run on the fixed set, <= 0.1 move required).
+6. If any threshold fails, rewrite the rubric or re-pick the judge.
+
+### Decision table: drift response
+| Drift observed | Action |
+|---|---|
+| <= 0.1 points | Accept; log the drift |
+| 0.1-0.2 points | Re-calibrate; do not trust recent scores |
+| > 0.2 points | Retire the judge; pick a new one |
+
+### Worked examples
+- **Good**: two judges agree on 85% of the calibration set; position bias is 0.1;
+  drift between two runs is 0.05. The judge ships.
+- **Bad**: the judge's scores moved 0.4 points between runs; the drift threshold caught
+  it and the judge was retired before it corrupted the pipeline.
+
+### Script hardening
+- `calibrate_judge.py`: computes agreement, position bias, and drift from a report;
+  exits non-zero on any threshold failure.
+
+### Near-miss trigger prompts
+- "use the same model to judge its own answers" -> refuse; judge/teacher separation is
+  mandatory.
+- "skip the calibration set" -> refuse; the set is mandatory.
+
+## 9. trajectory-ledger — trajectory schemas, grounding rules, outcome status, cost ledgers
+
+### Thresholds
+- **Grounding**: every action in a trajectory must reference a source (a tool call, a
+  page snapshot, a user statement); an action with no source is ungrounded and must be
+  flagged.
+- **Outcome status**: one of `success`, `failure`, `partial`, `unknown`; a trajectory
+  with no outcome is invalid and must not be recorded.
+- **Cost ledger**: token cost is recorded per action; the total must reconcile with the
+  provider's reported usage within 1%.
+
+### Ordered procedure: record a trajectory
+1. Start a run; record the goal and the initial state.
+2. For every action: record the action, the source it is grounded in, and the token cost.
+3. After each action, record the observed state change.
+4. At the end, set the outcome status (`success` / `failure` / `partial` / `unknown`).
+5. Append the trajectory to the ledger; audit it for grounding and cost reconciliation.
+
+### Decision table: outcome status
+| Situation | Outcome |
+|---|---|
+| Goal met, all actions grounded | `success` |
+| Goal not met, no ungrounded actions | `failure` |
+| Goal partially met | `partial` |
+| Unknown whether the goal was met | `unknown` |
+
+### Worked examples
+- **Good**: the agent records each action with its source; the outcome is `success`;
+  the cost reconciles to within 0.5%.
+- **Bad**: the agent recorded an action with no source; the audit flagged it as ungrounded
+  and the trajectory was rejected.
+
+### Script hardening
+- `ledger.py`: append, audit, replay, and cost; exits non-zero on an ungrounded action
+  or a cost mismatch > 1%.
+
+### Near-miss trigger prompts
+- "record the outcome as success without checking" -> refuse; set the status from the
+  observed state change.
+- "skip the grounding check" -> refuse; every action needs a source.
