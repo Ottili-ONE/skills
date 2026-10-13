@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "verify_harness.py"
-FIX = Path("/srv/ottili/repo/skills/../../scratch/skills/skills-agentic-data-r3/verif_fixtures")
+FIX = ROOT / "tests" / "fixtures"
 
 
 def run(*args: str) -> subprocess.CompletedProcess:

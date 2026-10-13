@@ -1,0 +1,7 @@
+{
+  "network": "deny",
+  "filesystem": "scoped",
+  "exec": "allowlisted",
+  "time_seconds": 300,
+  "secrets": "none"
+}

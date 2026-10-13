@@ -1,0 +1,7 @@
+{
+  "network": "allow",
+  "filesystem": "open",
+  "exec": "allow",
+  "time_seconds": 0,
+  "secrets": "full"
+}

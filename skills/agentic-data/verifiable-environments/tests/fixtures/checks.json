@@ -1,0 +1,18 @@
+{
+  "checks": [
+    {
+      "name": "output_file",
+      "path": "output.json",
+      "exists": true,
+      "json_field": "status",
+      "json_value": "ok",
+      "spec_ref": "The file must exist and its status field must equal ok"
+    },
+    {
+      "name": "summary_file",
+      "path": "summary.md",
+      "exists": true,
+      "spec_ref": "The file must exist."
+    }
+  ]
+}

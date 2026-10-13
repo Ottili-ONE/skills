@@ -1,0 +1,18 @@
+{
+  "checks": [
+    {
+      "name": "output_file",
+      "path": "output.json",
+      "exists": true,
+      "json_field": "status",
+      "json_value": "ok",
+      "spec_ref": "The file must exist and its status field must equal ok"
+    },
+    {
+      "name": "summary_file_neutered",
+      "path": "__neutered_marker__",
+      "exists": false,
+      "spec_ref": "verify-the-verifier: this check is intentionally always-pass"
+    }
+  ]
+}

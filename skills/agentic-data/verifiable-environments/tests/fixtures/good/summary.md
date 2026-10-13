@@ -1,0 +1,1 @@
+The agent wrote output.json with status set to ok and confirmed the result in a summary file as required by the task specification.
