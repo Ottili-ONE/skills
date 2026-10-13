@@ -1,6 +1,6 @@
 ---
 name: deep-research-method
-description: "Conduct verifiable deep research: source-quality scoring, citation discipline, contradiction handling and retrieval-date recording. Use when an agent must answer a factual question from the open web with auditable evidence; not for summarising a single document. Verified 2026-10-12."
+description: "Conduct verifiable deep research: source-quality scoring, citation discipline, contradiction handling and retrieval-date recording. Use when an agent must answer a factual question from the open web with auditable evidence; not for summarising a single document. Verified 2026-10-13."
 compatibility: Python 3.10+, curl; verified 2026-10-09
 license: MIT
 ---
