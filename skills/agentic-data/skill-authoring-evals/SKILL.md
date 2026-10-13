@@ -119,4 +119,4 @@ looks identical to a skill that works.
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
-- scripts: scripts/validate_skill.py
+- scripts: scripts/validate_skill.py, scripts/eval_metrics.py (precision, recall, output delta)
