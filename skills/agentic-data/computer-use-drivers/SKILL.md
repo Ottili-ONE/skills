@@ -1,6 +1,6 @@
 ---
 name: computer-use-drivers
-description: "Drive desktop and remote apps through accessibility trees and background input with safety layers: coordinate scaling, confirm() gates on destructive actions, screen-as-untrusted-data handling, platform quirks (macOS AX, Windows UIA, X11/Wayland). Use when an agent must click, type into or scroll an app it cannot reach through its API; never use raw screen scraping as the primary path."
+description: "Drive desktop and remote apps through accessibility trees and background input with safety layers: coordinate scaling, confirm() gates on destructive actions, screen-as-untrusted-data handling, platform quirks (macOS AX, Windows UIA, X11/Wayland). Use when an agent must click, type into or scroll an app it cannot reach through its API; never use raw screen scraping as the primary path. Verified 2026-10-13."
 compatibility: macOS (AX), Windows (UIA), Linux (X11/Wayland); Python 3.10+
 license: MIT
 ---
@@ -18,7 +18,25 @@ click buttons, type into fields, scroll, read what is on screen.
 ## When not to use
 - The app has an API — use it; screen driving is slower and flakier.
 - Pure OCR of a document — use a document skill instead.
-- Driving a game or canvas-rendered app where there is no accessibility tree.
+- Driving a game, canvas-rendered app, or any surface with no accessibility
+  tree — there is no `role`/`name`/`value` to ground a click, so every action
+  would be blind pixel guessing. Use the game's own input API, a document
+  skill, or an OCR skill; do not drive the GUI.
+- A single screenshot read for orientation — one frame is not a session. This
+  skill is for *operating* an app across steps, not for looking at one image.
+
+**The tree is the gate, not a preference.** If the first enumeration returns no
+usable node (every node `role: "unknown"` with no `name`), stop and say so
+rather than falling back to pixels. The fallback path in D2 exists only when
+the tree is present-but-sparse, never when it is absent.
+
+**Fallback routing** (when the primary path is unavailable):
+
+| Surface | Route to |
+|---|---|
+| Game or canvas app, no tree | Game input API, or document/OCR skill — never this skill |
+| Document scan or screenshot to read | OCR or document skill |
+| App with an API, SDK or MCP server | That API — never the GUI |
 
 ## Procedure (numbered — follow in order)
 1. **Prefer the accessibility tree over pixels.** Enumerate the tree (AX on macOS,
