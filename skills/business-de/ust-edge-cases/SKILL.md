@@ -1,6 +1,6 @@
 ---
 name: ust-edge-cases
-description: "Apply German VAT edge cases correctly: reverse charge (§3g UStG, services only), Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales."
+description: "Apply German VAT edge cases correctly: reverse charge (§13b UStG — the buyer is the tax debtor, services only), Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales."
 license: MIT-compat
 compatibility: "framework-agnostic; German UStG, EU VAT rules, offline"
 metadata: {}
@@ -25,10 +25,13 @@ beyond what the sources below support.
 1. **Identify the edge case** — reverse charge, small business, intra-EU,
    OSS, rounding, or e-invoice interplay (see decision table).
 2. **Apply the rule** — pick the Steuerschlüssel and the tax amount.
-3. **Check the precondition** — reverse charge (§3g) needs both a valid
+3. **Check the precondition** — reverse charge (§13b) needs both a valid
    customer USt-IdNr. **and** a supply of **services** (IT, consulting,
-   construction). §3g covers services, not goods; a goods supply with a buyer
+   construction). §13b covers services, not goods; a goods supply with a buyer
    USt-IdNr. uses the general intra-EU rule (§4a) at 0% without reverse charge.
+   **Article number re-verified 2026-10-09:** the UStG was restructured and
+   §3g is now "Ort der Lieferung von Gas, Elektrizität, Wärme oder Kälte" — the
+   reverse-charge article is §13b ("Leistungsempfänger als Steuerschuldner").
    Kleinunternehmer requires the prior-year turnover ≤ EUR 20,000 (UStG §19
    Abs. 1, read from config). A USt-IdNr. alone is not enough to trigger
    reverse charge.
@@ -53,9 +56,11 @@ issuing obligation. Worked examples and legal sources are in
 
 ## Pitfalls from research
 
-The single trap that catches most agents: **reverse charge (§3g) is services
+The single trap that catches most agents: **reverse charge (§13b) is services
 only** — a goods supply to a customer that supplies a USt-IdNr. is taxed at
-0% under the general intra-EU rule (§4a), not reverse charge. The full list of
+0% under the general intra-EU rule (§4a), not reverse charge. The article
+number was re-verified 2026-10-09 (dejure.org: §3g is now the gas/electricity
+place-of-supply rule). The full list of
 five traps, with sources, is in `references/procedures.md` §1–§6.
 
 

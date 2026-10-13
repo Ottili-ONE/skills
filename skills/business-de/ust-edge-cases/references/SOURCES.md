@@ -60,3 +60,20 @@ portals (gesetze-im-internet.de AO and UStG) are the weak links — mark them
 ## 2026-10-09 re-check (PASS 2)
 
 Every primary URL was re-fetched with `curl -L --max-time 20` and an HTTP code recorded. Results: `gesetze-im-internet.de/beg/` **200**, `fnfe-mpe.org/factur-x/` **200** (Factur-X 1.09.2 / ZUGFeRD 2.5.2), `github.com/seamless-engineering/datev-extf` **200**, `datev.de/` **200**, `bundesbank.de/` **200**, `developer.paypal.com/docs/api/webhooks/` **200**, `docs.stripe.com/webhooks` **200**, `developer.dhl.com/` **200**, `dpd.com/` **200**, `gls-group.com/` **200**, `ups.com/` **200**. Still **404**: `gesetze-im-internet.de/ao/`, `gesetze-im-internet.de/uStg/`, `akretion.github.io/factur-x/`, `bundesbank.de/en/services/other-services/iban`. Still **403** (bot block): `iso20022.org/iso20022/message-definitons`, `swift.com/standards`, `hermes.com/`. No version bump was observed on the pages that resolve; the pins in `config/versions.json` are unchanged except the Factur-X bump above.
+
+## Re-verification 2026-10-09 (PASS 2 deepening) — UStG restructure found
+
+| # | Source | URL | HTTP | Finding |
+|---|---|---|---|---|
+| 8 | dejure.org UStG §3g | https://dejure.org/gesetze/UStG/3g | 200 | **MAJOR:** the UStG has been restructured. §3g is no longer the cross-border reverse-charge article — it is now **"Ort der Lieferung von Gas, Elektrizität, Wärme oder Kälte"** (place of supply of gas/electricity/heating/cooling). The old §3g reverse charge has moved. |
+| 9 | dejure.org UStG §13b | https://dejure.org/gesetze/UStG/13b | 200 | §13b is titled **"Leistungsempfänger als Steuerschuldner"** (recipient as tax debtor) — this is the current home of the reverse-charge rule. |
+| 10 | dejure.org UStG index | https://dejure.org/gesetze/UStG | 200 | Full article index confirms the restructure: §3c Ort der Lieferung beim Fernverkauf, §3d Ort des innergemeinschaftlichen Erwerbs, §3e/§3f/§3g (gas/electricity/heating/cooling), §4a Steuervergütung, §4b Steuerbefreiung beim innergemeinschaftlichen Erwerb. |
+| 11 | IHK Chemnitz e-rechnung (re-fetched) | https://www.ihk.de/chemnitz/e-rechnung | 200 | Confirms the e-invoicing obligation also covers **§13b UStG (Steuerschuldnerschaft des Leistungsempfänger)**. No goods-vs-services split on this page. |
+| 12 | dejure.org UStG §19 | https://dejure.org/gesetze/UStG/19 | 200 | Page resolves; the Kleinunternehmer text is JS-rendered and was not extractable this pass — corroborated by IHK Rhein-Neckar instead. |
+
+## Conflicts / version-sensitive notes (updated 2026-10-09)
+
+- **§3g conflict RESOLVED — and it is a breaking change.** Until 2026-10-09 this skill cited §3g as the reverse-charge article for intra-community services. dejure.org now shows §3g = "Ort der Lieferung von Gas, Elektrizität, Wärme oder Kälte". The reverse-charge rule is **§13b** ("Leistungsempfänger als Steuerschuldner"). **The skill's checker and SKILL.md must be updated to cite §13b**, not §3g. The steuer-berater.de and IHK Chemnitz pages already cited §13b — they were right; the skill was wrong.
+- **§13b is the *domestic* reverse-charge list** (goods, Werklieferungen, etc.) in the pre-restructure numbering; whether the *cross-border services* reverse charge also moved into §13b or into another article is **not independently confirmed** this pass (the dejure.org text layer is JS-rendered and could not be read). Mark the goods-vs-services split as **unverified until the UStG text is re-fetched**. An auditor may expect a different article number.
+- The `gesetze-im-internet.de` UStG page remains 404; dejure.org is the working mirror but its text is JS-rendered.
+- UStG §12 rates (19%/7%), §19 Kleinunternehmer (EUR 20,000), §4a intra-EU and UStDV §23 rounding are corroborated by IHK Rhein-Neckar and de.wikipedia; the primary statute text is still not fetched.
