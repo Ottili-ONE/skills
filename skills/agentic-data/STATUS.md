@@ -49,3 +49,35 @@ item of the task prompt: RESEARCH.md with the ranked list and final names, SOURC
 >= 6 primary sources each (URL + retrieval date + conflicts), and DESIGN.md with a trigger
 description draft, procedure outline, planned scripts and five eval prompts. No push, no
 history rewrite, no paths outside `skills/agentic-data/**` touched this pass.
+
+
+## PASS 3b (independent re-verify) — 2026-10-13
+
+A second, independent verification pass, re-running the checks from scratch
+rather than trusting the earlier record.
+
+- New checkers in `.germo/notes/` (`.germo/` is gitignored, so they live outside
+  the commit scope): `pass3_verify_checker.py` (standard rules + script
+  `--help` smoke), `eval_grounding.py` (every inline claim in every EVALS.md
+  resolves against SKILL.md + references + scripts), `overlap_check.py`
+  (15-word verbatim-run audit between each SKILL.md body and every other file
+  in its own directory), `script_smoke.py` (every skill script on real inputs).
+- `python3 -m pytest skills/agentic-data/ -q` -> **235 passed**, 0 failed.
+- `python3 skills/agentic-data/scripts/acceptance_check.py` ->
+  **ACCEPTANCE: PASS**.
+- Live re-fetch of two random primary URLs per skill (curl, 2026-10-13):
+  all 20 returned HTTP 200; no new dead URLs.
+- Verbatim-copy audit: one primary source per skill fetched and diffed against
+  its SKILL.md body. **Zero** 15-word runs copied from any third party.
+- Standard rules: 0 problems across all ten skills. EVAL grounding: 159
+  distinct inline claims, 0 ungrounded.
+
+### One rewrite this pass
+The weakest section across the ten skills was
+`computer-use-drivers/SKILL.md` → "When not to use": four terse bullets, no
+fallback routing, no gate rule. Rewritten with (a) explicit fallback routing
+for game/canvas, document-scan and API surfaces, (b) a "tree is the gate, not
+a preference" rule that stops on an empty tree instead of falling back to
+pixels, and (c) a `Verified 2026-10-13` date on the front matter.
+Commit `32a247e`. 16 computer-use-drivers tests still pass; standard-rules
+audit still 0 problems.

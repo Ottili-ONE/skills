@@ -526,3 +526,60 @@ The ranked list, final names and the "no replacement made" decision are recorded
 the section above and were not changed by this pass. The competitive audit (PASS 5)
 found no public Agent Skill covering any of the ten topics at skill granularity;
 that finding stands.
+
+
+## PASS 3b (VERIFY — independent re-run) — 2026-10-13
+
+A second, independent verification pass, re-running the checks from scratch
+rather than trusting the earlier record.
+
+### Method
+- New checkers written fresh in `.germo/notes/`:
+  - `pass3_verify_checker.py` — standard rules (name==folder, description
+    <1024 chars and states WHAT+WHEN, body <500 lines, every `references/`
+    link resolves one level deep, EVALS >=5 prompts, SOURCES >=6 URLs with a
+    2026-10-13 date, DESIGN present, every script runs `--help`).
+  - `eval_grounding.py` — extracts every inline code claim from every
+    EVALS.md and checks it resolves against SKILL.md + references + scripts.
+  - `overlap_check.py` — 15-word verbatim-run audit between each SKILL.md
+    body and every other file in its own directory.
+  - `script_smoke.py` — runs every skill script on real inputs per its own
+    EVALS (version negotiation, protocol check, sanitize, robots, rate limit,
+    resume, warc writer, minhash/lsh, plant test, score sources, calibrate
+    judge, ledger append/audit/replay/cost, verify harness).
+- `python3 -m pytest skills/agentic-data/` -> 235 passed, 0 failed.
+- `python3 skills/agentic-data/scripts/acceptance_check.py` ->
+  ACCEPTANCE: PASS - all ten skills meet the task-01 contract.
+- Live re-fetch of two random primary URLs per skill (curl, 2026-10-13):
+  all 20 returned HTTP 200. No new dead URLs.
+- Verbatim-copy audit: one primary source per skill fetched and compared
+  against its SKILL.md body. Zero 15-word runs copied from any third party.
+
+### Results
+- Standard rules: 0 problems across all ten skills.
+- EVAL grounding: 159 distinct inline claims across ten EVALS.md, 0 ungrounded.
+- Verbatim overlap: the only >=15-word runs shared between a SKILL.md body
+  and another file are (a) the skill's own trigger-description draft in
+  DESIGN.md (allowed by the standard) and (b) intentional restatements of a
+  core invariant or near-miss list that the body quotes by design.
+- Every script exercised on real inputs; every one behaves as its EVALS.md
+  claims. Trajectory-ledger's `ledger.py` append/audit/replay/cost round-trip
+  on a hand-built JSONL event; browser-agent-playwright's `handoff.py`
+  `--field`/`--locator` mismatch exits 1 with
+  `FAIL: need one --locator per --field` rather than crashing.
+
+### One rewrite this pass
+The weakest section across the ten skills was
+`computer-use-drivers/SKILL.md` → "When not to use": four terse bullets with
+no fallback routing and no gate rule. Rewritten with (a) explicit fallback
+routing for game/canvas, document-scan and API surfaces, (b) a "tree is the
+gate, not a preference" rule that stops on an empty tree instead of falling back to pixels; and (c) a `Verified 2026-10-13` date on the front matter.
+  16 tests still pass; standard-rules audit still 0 problems.
+
+### Final state
+- 235 tests pass; 0 standard-rule problems; 0 ungrounded EVAL claims;
+  0 verbatim third-party copying.
+- All ten SKILL.md bodies 90-172 lines (< 500).
+- All ten SOURCES.md carry 2026-10-13 retrieval dates; 9-13 distinct URLs each.
+- One commit this pass: `32a247e` (computer-use-drivers rewrite). No push, no
+  history rewrite, no paths outside `skills/agentic-data/**` touched.
