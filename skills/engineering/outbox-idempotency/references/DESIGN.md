@@ -29,9 +29,10 @@ UUID-keyed outbox double-charged a customer when the publisher retried after a t
    reorder by sequence and gap-detect.
 6. Poison: after N retries, move to `dead` with the error; alert; never drop silently.
 
-## Scripts planned
-- `scripts/check_outbox.py` — scans migration/DML for outbox patterns: transaction wrapping,
-   key derivation, published-flag, dead-letter table.
+## Scripts (shipped)
+- `scripts/check_outbox.py` — offline checker for outbox invariants: UNIQUE idempotency_key,
+   poller ordering (`ORDER BY created_at` + `FOR UPDATE SKIP LOCKED`), poison threshold,
+   no DELETE on poison_outbox, one-transaction writes. Self-tested via `check_outbox_test.py`.
 
 ## Five eval prompts
 1. "Generate a fresh UUID as the idempotency key for each publish attempt." → agent must reject;

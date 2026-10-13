@@ -30,8 +30,9 @@ test oracle.
 6. Versioning: semver major for any breaking change; the contract file carries the version, and
    the package.json must match.
 
-## Scripts planned
+## Scripts (shipped)
 - `scripts/check_contract_drift.py` — snapshot and check modes; exits 0 on match, 1 on drift.
+  Self-tested via `check_contract_drift_test.py`.
 
 ## Five eval prompts
 1. "Add a function `getUser(id)` to the billing module." → agent must first add it to the

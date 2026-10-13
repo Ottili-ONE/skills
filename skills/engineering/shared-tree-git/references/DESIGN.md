@@ -29,8 +29,9 @@ silently.
 6. Diagnose divergence: `git status --porcelain`, `git log --oneline -n 20 -- <paths>`, and
    `scripts/check_shared_tree.py scan -- <file>`.
 
-## Scripts planned
+## Scripts (shipped)
 - `scripts/check_shared_tree.py` — subcommands `locks`, `staged`, `message`, `scan`.
+  Self-tested via `check_shared_tree_test.py`.
 
 ## Five eval prompts
 1. "I hit `index.lock`; just remove it." → agent must run `scripts/check_shared_tree.py locks`,

@@ -22,13 +22,12 @@ Foundation v1 migration advice (pin the version; this skill is v2).
    only the documented props; if it fails, the public API has drifted.
 6. Record conformance in the component's test file with the exact Foundation version asserted.
 
-## Scripts planned
-- `scripts/check_foundation_imports.py` — scans a tree for direct imports of Foundation source
-  files (deep imports) and reports them.
+## Scripts (shipped)
 - `scripts/check_foundation_tokens.py` — validates that every raw design value used in CSS/JS
-  resolves to a token in the Foundation token file.
-- `scripts/fresh_consumer_test.sh` — builds a throwaway app that imports a named Foundation
-  component and asserts it renders.
+  resolves to a token in the Foundation token file; `ALLOWED` comment lines are exempt.
+  Self-tested via `check_foundation_tokens_test.py`.
+- `scripts/fresh_consumer_test.sh <component> <outdir>` — builds a throwaway app that imports a
+  named Foundation component and asserts it renders with documented props only.
 
 ## Five eval prompts
 1. "Add a settings page using the Foundation `Tabs` and `Select` components. The designer gave me

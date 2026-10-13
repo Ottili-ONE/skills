@@ -78,7 +78,7 @@ def check() -> list[str]:
         else:
             d = design.read_text(encoding="utf-8").lower()
             for needle in ("trigger", "does better", "procedure outline",
-                           "scripts planned", "five eval prompts"):
+                           "scripts", "five eval prompts"):
                 if needle not in d:
                     errors.append(f"{name}: DESIGN.md missing section '{needle}'")
 

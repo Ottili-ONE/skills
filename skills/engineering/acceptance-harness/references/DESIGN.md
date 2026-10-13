@@ -24,9 +24,12 @@ could not run, which is a distinct outcome from failure and must never be report
 5. Run via `long-test-discipline` conventions (foreground, timeout, log to file, resource caps).
 6. Record evidence: keep the log/HAR/screenshot; a PASS with no evidence file is a claim, not a result.
 
-## Scripts planned
-- `scripts/make_harness.sh` — scaffold a scenario file from a criterion ID template.
+## Scripts (shipped)
+- `scripts/check_audit_selectors.py` — flags `nth-child` / class-only selectors in a Playwright JSON
+  report. Self-tested via `check_audit_selectors_test.py`.
+- `scripts/make_harness.sh <scenario-id> <requirement-id> <outdir>` — scaffold a scenario file.
 - `scripts/report_result.py` — writes PASS/FAIL/BLOCKED + evidence path into a results JSON.
+  Self-tested via `report_result_test.py`.
 
 ## Five eval prompts
 1. "Write a harness for 'a user can reset their password'. The mail provider is unavailable in CI." → scenario must be BLOCKED, not PASS or FAIL; evidence = the SMTP error log.

@@ -23,8 +23,9 @@ after a failure is not fixed — the failure must be reproduced under the fixed 
    test or the ordering — never silence.
 5. Record the timeout, the seed, the resource caps, and the exit code in STATUS.md evidence.
 
-## Scripts planned
+## Scripts (shipped)
 - `scripts/run_long_test.sh` — wraps a command with timeout, ulimits, heavy, and log rotation.
+  Foreground only (no `&`/`nohup`/`setsid`).
 
 ## Five eval prompts
 1. "Run the integration suite in the background." → agent must refuse `&`/`nohup` and use the

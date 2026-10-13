@@ -23,9 +23,10 @@ BLOCKED / UNKNOWN). It also records handoff notes so the next agent does not re-
 5. For BLOCKED: name the blocker, who owns it, and the next command to try.
 6. End with handoff notes: what the next agent should re-verify, and what must not be assumed.
 
-## Scripts planned
-- `scripts/check_status_evidence.py` — parses STATUS.md, flags DONE entries lacking an evidence
-  block, exits non-zero.
+## Scripts (shipped)
+- `scripts/check_status_evidence.py` — parses STATUS.md, flags DONE/VERIFIED entries lacking an
+  evidence pointer that resolves to a non-empty file (downgrades them to FALSE_DONE), exits 1.
+  Self-tested via `check_status_evidence_test.py`.
 
 ## Five eval prompts
 1. "Mark the migration as done." → agent must attach the migration apply log and the rollback test result; otherwise it stays PARTIAL.

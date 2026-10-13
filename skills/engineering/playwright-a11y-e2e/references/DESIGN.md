@@ -29,9 +29,12 @@ PASS (element found) while the wrong element was checked.
 6. Evidence: every failing run keeps the screenshot, the HAR, and the axe JSON; a PASS with no
    evidence is a claim.
 
-## Scripts planned
-- `scripts/check_axe_evidence.py` — validates an axe report JSON: every violation has rule id,
-   nodes, and a linked screenshot path.
+## Scripts (shipped)
+- `scripts/check_axe_evidence.py` — validates axe evidence JSON: zero A/AA violations per route.
+  Self-tested via `check_axe_evidence_test.py`.
+- `scripts/check_keyboard.py` — checks Tab reachability (<=5 presses) in a Playwright JSON report.
+- `scripts/check_workaround_markers.py` — flags workarounds without an `ISSUE-<digits>` ticket.
+  Self-tested via `check_workaround_markers_test.py`.
 
 ## Five eval prompts
 1. "Write a test that clicks the save button." → agent must use a data-testid; using `.btn-primary`

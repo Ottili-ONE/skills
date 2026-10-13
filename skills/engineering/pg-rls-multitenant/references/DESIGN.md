@@ -33,9 +33,9 @@ tenant rows to a reporting role, because the migration omitted the invoker flag.
 7. Views: mark `security_invoker` explicitly; an unmarked view inherits the creator's privileges
    and bypasses RLS.
 
-## Scripts planned
+## Scripts (shipped)
 - `scripts/check_rls_migration.py` — scans a migration for tenant column, policy, FORCE, GRANT,
-   rollback block, view invoker flag; exits 0/1/2.
+   rollback block, view invoker flag; exits 0/1/2. Self-tested via `check_rls_migration_test.py`.
 
 ## Five eval prompts
 1. "Add a `notes` table for the workspace tenant." → migration must include `tenant_id`, policy,
