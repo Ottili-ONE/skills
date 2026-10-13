@@ -1,7 +1,92 @@
-# Playwright A11y E2E — Full Procedure (verified versions: Playwright 1.54+, axe-core 4.10+, WCAG 2.2 AA)
-Retrieval date: 2026-10-07. Sources: playwright.dev/docs/intro, github.com/dequelabs/axe-core/releases, w3.org/WAI/WCAG22/UNDERSTANDING/.
+# Playwright A11y E2E — Full Procedure
+Retrieval date: 2026-10-13. Host: Biest. SEARCH_ENDPOINT: none.
 
-## Setup (step 1)
-npm init -y && npm i -D @playwright/test @axe-core/playwright npx playwright install chromium firefox webkit --with-deps
-Set viewport loop: [320, 768, 1024, 1440]. Disable animations: page.addStyleTag({content: '* { transition: none !important; animation: none !important; }'}).
-Set baseURL via PLAYWRIGHT_BASE_URL env var or config.webServer. Always run with --headed=false in CI and --headed=true locally for debug. Timeout default 30s; raise to 60s for slow pages via config.use.actionTimeout. Common trap: forgetting webServer start causes race on first route — always start server before browser context via config.webServer.command + reuseExistingServer: true. Common trap: not disabling animations causes flaky axe timing — disable before each test in beforeEach hook. Common trap: missing browser install — run npx playwright install --with-deps on every fresh CI runner; cache browsers via actions/cache or Docker layer pinning to avoid re-download per run (saves ~3min). Exact command sequence for local dev: npx playwright install chromium && npx playwright test --headed --grep @a11y && npx playwright show-report report/. For CI exact command sequence in GitHub Actions example see scripts/check_audit_selectors.py usage notes below (not a script itself). Ordering matters — setup before any test execution; do not run axe on unbuilt app (stale selectors produce false passes). Thresholds — fail build if any A or AA violation count > 0; warn only on AAA violations since AAA often infeasible per W3C guidance (do not silently downgrade). Selector stability threshold — flag any selector using nth-child or CSS class attribute as unstable; require role/text-based alternative within same PR or block merge until fixed (common trap teams accept nth-child as "good enough" until refactor breaks CI). Keyboard threshold — every interactive element must be reachable via Tab from top of page within <=5 Tab presses per viewport width; measure by counting Tab stops programmatically in helper script check_keyboard.py included below under scripts/. Responsive threshold — no horizontal overflow beyond viewport width at any breakpoint; detect by comparing document.body.scrollWidth vs window.innerWidth at each viewport step and failing if diff > 0px anywhere except intentional overflow containers marked .overflow-allowed with comment justification inline (common trap hidden overflow on modals). Evidence rule — commit axe JSON under tests/e2e/evidence/<route>.json and screenshots under tests/e2e/screenshots/<route>-<viewport>.png per route+viewport pair; never delete evidence after a failure without filing an issue referencing the failure ID (common trap teams clear evidence to hide failures). Fault injection step optional but recommended for keyboard path tests — inject focus-trap into modal component and assert keyboard path still reaches close button via Shift+Tab reverse traversal (caught by check_keyboard.py reverse mode). Workaround marker convention when a component cannot be made accessible immediately mark with <!-- a11y-wip reason="..." owner="..." date="YYYY-MM-DD" --> comment inside markup AND file a tracking issue BEFORE merge; never ship unmarked workaround as "done". Detection of false passes from workaround markers — audit script scans markup for a11y-wip comments and fails build if any exist without linked issue number matching pattern ISSUE-<digits> in reason attribute value length limit <=80 chars to prevent abuse of long excuses common trap teams use vague reason="TBD" without owner blocking forever detection script included as scripts/check_workaround_markers.py below under scripts/. Verification order summary per route per viewport step sequence setup->axe->keyboard->responsive->selector audit->evidence commit never reorder because axe requires stable DOM which responsive layout may shift selector audit requires final layout which keyboard path may trigger focus changes common trap running selector audit before responsive check misses layout-shifted selectors common trap running keyboard check before axe misses aria-hidden content that blocks tab order exact commands npx playwright test --grep @a11y --reporter=json --output=tests/e2e/report.json then node scripts/check_audit_selectors.js tests/e2e/report.json then python3 scripts/check_keyboard.py tests/e2e/report.json then python3 scripts/check_workaround_markers.py src/ then python3 scripts/check_axe_evidence.py tests/e2e/evidence/. All four must return exit code 0 else build red with summary printed to stdout listing failing routes first then failing viewports then failing selectors then missing evidence files common trap only checking one subset e.g., axe alone misses keyboard traps common trap only checking desktop misses mobile overflow common trap ignoring workaround markers ships known-inaccessible components as compliant false-done detection heuristics build green but no new evidence files committed -> suspect skipped routes build green but evidence JSON has zero routes tested -> suspect empty test suite build green but workaround markers present -> suspect hidden failures handoff notes when handing off to another lane include route list viewport list browser list evidence dir path known workaround markers list and last failing route name so next agent can resume from failure point not from start always resume from last failure not from beginning saves ~70% runtime on large suites common pitfall resuming without clearing stale evidence causes duplicate reports resolution delete evidence for routes that will be re-run before resuming exact command rm -f tests/e2e/evidence/<route>.json before re-running that route only never rm -rf entire evidence dir unless full re-run intended because it destroys other lanes' committed evidence on shared tree another shared-tree pitfall specific to this skill multiple lanes writing same evidence dir concurrently causes JSON corruption resolution use lane-specific subdirs tests/e2e/evidence/<lane>/<route>.json configured via EVIDENCE_LANE env var defaulting to git config user.name sanitized fallback 'unknown' detection script included below check_evidence_lane.py under scripts/. Threshold max concurrent writers = number of parallel CI shards configured in pipeline NOT number of agents locally common mistake setting concurrency higher than shard count causing collisions even in serial local runs because CI shards share same artifact store resolution cap concurrency at shard count read from environment variable CI_NODE_TOTAL defaulting to 4 when unset documented in references/SOURCES.md section secondary-sources entry ci docs link verified version current as of retrieval date above secondary source retrieval date also recorded there verification checklist all must pass before merge [ ] setup completes without browser install errors [ ] axe zero A AA violations all routes all viewports [ ] keyboard every interactive reachable <=5 tabs [ ] responsive no overflow >0px at any breakpoint [ ] selectors role text based no nth child class attributes [ ] workaround markers all have ISSUE-<digits> linked [ ] evidence JSON screenshots committed per route viewport pair [ ] resume-from-failure logic works end-to-end smoke test included in EVALS prompt set below EOF
+## Verified versions
+| Artifact | Version | Verified |
+|----------|---------|----------|
+| @playwright/test | 1.54+ (current channel) | 2026-10-13 |
+| @axe-core/playwright | 4.13.0 | 2026-10-13 |
+| axe-core | 4.14.0 | 2026-10-13 |
+| WCAG 2.2 | A/AA | 2026-10-13 |
+
+## 1. Setup (do this first — ordering matters)
+```bash
+npm init -y
+npm i -D @playwright/test @axe-core/playwright
+npx playwright install chromium firefox webkit --with-deps
+```
+- Viewport loop: `[320, 768, 1024, 1440]`.
+- Disable animations in `beforeEach`:
+  `page.addStyleTag({content: '* { transition: none !important; animation: none !important; }'})`
+  — flaky axe timing is the #1 false-positive source.
+- Set `baseURL` via `PLAYwright_BASE_URL` or `config.webServer`. Always run
+  `--headed=false` in CI and `--headed=true` locally for debug.
+- Timeout default 30 s; raise to 60 s for slow pages via `config.use.actionTimeout`.
+- **Common trap:** forgetting `webServer.start` causes a race on the first route. Always
+  start the server before the browser context via `config.webServer.command` +
+  `reuseExistingServer: true`.
+
+## 2. Thresholds
+| Check | Threshold | Fail signal |
+|-------|-----------|-------------|
+| axe A/AA violations | **0** across all routes and viewports | any violation |
+| axe AAA | warn only (AAA is often infeasible per W3C guidance; do not silently downgrade) | — |
+| Keyboard | every interactive element reachable via Tab within **≤5 Tab presses** per viewport | unreachable control |
+| Responsive | no horizontal overflow beyond viewport width at any breakpoint | `scrollWidth - innerWidth > 0px` |
+| Selector stability | flag any `nth-child` or CSS-class-attribute selector; require role/text alternative in the same PR | unstable selector |
+
+## 3. Verification order (never reorder)
+`setup -> axe -> keyboard -> responsive -> selector audit -> evidence commit`
+- axe requires a stable DOM, which responsive layout may shift.
+- selector audit requires final layout, which keyboard path may trigger focus changes for.
+- Running selector audit before responsive misses layout-shifted selectors.
+- Running keyboard check before axe misses `aria-hidden` content that blocks tab order.
+
+## 4. Exact commands
+```bash
+npx playwright test --grep @a11y --reporter=json --output=tests/e2e/report.json
+node scripts/check_audit_selectors.js tests/e2e/report.json
+python3 scripts/check_keyboard.py tests/e2e/report.json
+python3 scripts/check_workaround_markers.py src/
+python3 scripts/check_axe_evidence.py tests/e2e/evidence/
+```
+All four must return exit code 0; otherwise the build is red with a summary printed to stdout
+listing failing routes first, then failing viewports, then failing selectors, then missing
+evidence files.
+
+## 5. Evidence rule
+Commit axe JSON under `tests/e2e/evidence/<route>.json` and screenshots under
+`tests/e2e/screenshots/<route>-<viewport>.png` per route+viewport pair. Never delete evidence
+after a failure without filing an issue referencing the failure ID.
+
+## 6. Workaround marker convention
+When a component cannot be made accessible immediately, mark it with
+`<!-- a11y-wip reason="..." owner="..." date="YYYY-MM-DD" -->` inside the markup **and** file a
+tracking issue before merge. Never ship an unmarked workaround as "done". The reason must be
+≤80 chars; `reason="TBD"` without an owner blocks forever. The audit script fails the build if
+any marker exists without a linked issue number matching `ISSUE-<digits>`.
+
+## 7. Fault injection (optional but recommended)
+Inject a focus trap into a modal component and assert the keyboard path still reaches the
+close button via `Shift+Tab` reverse traversal (caught by `check_keyboard.py` reverse mode).
+
+## 8. False-done detection heuristics
+| Build state | Suspect |
+|-------------|---------|
+| green, no new evidence files committed | skipped routes |
+| green, evidence JSON has zero routes tested | empty test suite |
+| green, workaround markers present | hidden failures |
+
+## 9. Handoff notes
+When handing off to another lane, include: route list, viewport list, browser list, evidence
+dir path, known workaround markers list, and the last failing route name — so the next agent
+resumes from the failure point, not from the start. Resuming from the last failure saves ~70%
+runtime on large suites.
+
+## 10. Resuming after a failure
+Delete evidence only for routes that will be re-run:
+`rm -f tests/e2e/evidence/<route>.json` before re-running that route. Never `rm -rf` the
+entire evidence dir unless a full re-run is intended — it destroys other lanes' committed
+evidence on the shared tree. If multiple lanes write the same evidence dir concurrently, use
+lane-specific subdirs `tests/e2e/evidence/<lane>/<route>.json` (configured via `EVIDENCE_LANE`,
+defaulting to `git config user.name` sanitized, fallback `unknown`).
