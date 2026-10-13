@@ -1,0 +1,5 @@
+codes:
+  user-not-found:
+    status: 404
+    title: "User not found"
+    retryable: false
