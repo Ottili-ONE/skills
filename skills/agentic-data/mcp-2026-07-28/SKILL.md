@@ -11,6 +11,24 @@ Scaffolding an MCP server or client; debugging a protocol handshake; mapping err
 codes to actions; verifying statelessness or version pinning in a deployment; integrating
 OAuth for an MCP tool consumer. Do NOT use for generic REST APIs or non-MCP integrations.
 
+## When to invoke (concrete triggers — if none match, do not load this skill)
+| Trigger (what the user says or the repo shows) | Load? |
+|---|---|
+| "scaffold an MCP server/client", "write an MCP tool", "add an MCP integration" | YES |
+| "handshake fails", "initialize not found", "Mcp-Session-Id rejected", "400 on POST" | YES |
+| "which protocol version", "negotiate a version", "-32022", "UnsupportedProtocolVersion" | YES |
+| "long-running tool", "tool times out", "poll a task", "tasks/get", "InputRequiredResult" | YES |
+| "set up OAuth for MCP", "PKCE", "Client ID Metadata Document", "DCR" | YES |
+| "is my deployment stateless", "replay test", "repeated call returns different result" | YES |
+| "build a plain REST API", "design a GraphQL schema", "write a gRPC service" | NO |
+| "use an SDK function", "call an existing API" (no MCP involved) | NO |
+| "chat with a model" (no tool protocol) | NO |
+
+**Trigger rule**: the description is pushy by design — a prompt that merely *mentions*
+MCP loads this skill. The table above is the *precision* half: if a prompt matches a row
+in the left column but the task is really about something else, narrow the description,
+not the body.
+
 ## Procedure (numbered — follow in order)
 1. **Pin the revision in config, never in logic.** Primary `2026-07-28`, fallbacks
    `2025-11-25` and `2025-06-18`. Read from env `MCP_PROTOCOL_VERSION` with a pinned
