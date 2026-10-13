@@ -72,7 +72,7 @@ Bad (5xx leakage):
 ## Verification checklist (all must pass before merge)
 - [ ] Every endpoint returns `application/problem+json` on >=400
 - [ ] Catalogue YAML has no duplicate codes
-- [ ] Schema validates all examples in `examples/`
+- [ ] Schema validates all examples in `references/examples/`
 - [ ] `retry_after` present on all retriable errors
 - [ ] No internal fields leaked on 5xx responses
 - [ ] `scripts/check_problem_catalogue.py` passes in CI

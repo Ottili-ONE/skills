@@ -14,7 +14,7 @@ Existing tools (openapi-generator, zod-to-openapi, Fastify error plugins) genera
 5. Maintain a single YAML catalogue; CI runs the checker so no duplicate codes and every code has a matching schema entry.
 
 ## Scripts (shipped)
-- `scripts/check_problem_catalogue.py` — reads `catalogue.yaml` + `openapi.yaml`, exits 0 on match, 1 on drift, 2 on malformed input. Args: `--catalogue`, `--openapi`, `--schema-dir`. Examples in `examples/` (catalogue.json, openapi.yaml, schemas) run green.
+- `scripts/check_problem_catalogue.py` — reads `catalogue.json` + `openapi.yaml` + `--schema-dir`, exits 0 on match, 1 on drift, 2 on malformed input. Self-contained: no third-party schema library (a ~60-line draft 2020-12 subset validator is embedded). Args: `--catalogue`, `--openapi`, `--schema-dir`. Examples in `references/examples/` (good + 4 bad + 1 malformed) run green/red as expected. Self-tested via `check_problem_catalogue_test.py`.
 
 ## Five eval prompts
 1. "My API returns `{"error": "user not found"}` on 404. Is it RFC 9457 compliant?" → No. Missing `type`, `title`, `status`, `detail`, `instance`; `error` is not a valid field name.
