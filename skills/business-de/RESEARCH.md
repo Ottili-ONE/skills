@@ -51,3 +51,39 @@ research (documented in the individual DESIGN.md files):
 3. DHL Parcel DE REST API version and sandbox availability — verify against the developer portal.
 4. EU AI Act Article 50(2) machine-readable marking duty start date (2026-12-02 per secondary
    source) — have a lawyer confirm before an agent relies on it.
+
+## PASS 2 (DEEPEN) — 2026-10-09 findings carried into the build
+
+The BUILD pass produced full skeletons (SKILL.md, SOURCES.md, DESIGN.md, EVALS.md,
+procedures.md, scripts, tests) for all ten skills. PASS 2 deepened them. What
+changed:
+
+### Version-sensitive facts re-verified online (retrieval 2026-10-09)
+
+| Skill | Finding | Source |
+|---|---|---|
+| `xrechnung-zugferd` | The pinned KoSIT config targets **XRechnung 3.0** (CEN Schematron 1.3.16, KoSIT Validator v1.6.3, abu xsbi-0.5.0-SNAPSHOT), not 2.x. CII-SR-475/476 are demoted to "information" (known rule-context bug, replaced by BR-TMP-4/5). | KoSIT CHANGELOG, codeload tarball |
+| `xrechnung-zugferd` | Confirmed the release tarball has **no `guidelines.json`** — the BT-* element-name mapping used by `validate_invoice.py` cannot be independently re-verified from source. Marked `unverified`. | codeload tarball listing |
+| `datev-extf` | Re-read `src/columns.ts`: col 97 = `USt-Schlüssel (Anzahlungen)`, col 102 = `Herkunft-Kz`, col 103 = `Buchungs GUID`, col 125 = `Abw. Skontokonto`. `BUCHUNGSSTAPEL_COLUMN_COUNT = {10:120, 11:122, 12:124, 13:125}`. | raw columns.ts, HTTP 200 |
+| `ust-edge-cases` | **UStG restructured.** §3g is now "Ort der Lieferung von Gas, Elektrizität, Wärme oder Kälte". The reverse-charge article is **§13b** ("Leistungsempfänger als Steuerschuldner"). The skill, its checker and `config/versions.json` were corrected. Residual uncertainty: whether the cross-border *services* reverse charge sits in §13b or another article (dejure.org text is JS-rendered). | dejure.org (HTTP 200) |
+| `webhooks-safe` | Stripe 5-minute replay window; GitHub `X-Hub-Signature-256`; PayPal/Twilio signature schemes remain unverified to a plain-text crawl. | provider docs |
+| `publish-reconcile-wp-meta` | WordPress Basic Auth deprecated in WP 6.7+ core; Meta v19.0 pinned while v20.0/v21.0 exist. | provider docs |
+| `dsgvo-ai-act-labeling` | EUR-Lex ELI pages return **202/0B** (bot block); the digital-strategy path moved to `/en/policies/ai-act` but now serves a 404 page. GDPR/AI Act text could not be re-fetched; marked unverified. | EUR-Lex, EC |
+
+### Bugs found and fixed by the test suite
+
+- **`ordering.py` held-set bug**: `state.get("held", {})` returned a *new* dict when "held" was absent, so held events were never written back and were silently dropped on restart. Fixed with `setdefault`. Caught by a near-miss test.
+- **`reconcile.py` unknown-result gap**: when *both* platforms reported nothing (a timeout on both), the comparison skipped the field and reported a match. That is exactly the case the skill exists for. Fixed: both-None is now an explicit "unknown result" delta.
+- **`validate_invoice.py` config path**: the skill's own `config/versions.json` was invisible to the script because `common.load_config` only looked at the shared `business-de/config/versions.json`. Made `load_config` self-resolving (absolute → CWD → repo root → caller's own skill dir), which fixed all ten skills at once.
+
+### Tests
+
+205 tests across all ten skills, all green. Every skill now has a `test_<skill>_nearmiss.py`
+encoding the traps a strong generic agent walks straight into (near-miss trigger
+prompts), in addition to the BUILD-pass happy-path tests.
+
+### What was NOT replaced
+
+No seed topic was replaced. The two scoping sharpenings from the BUILD pass
+(`webhooks-safe` = inbound ingestion only; `publish-reconcile-wp-meta` = idempotent
+publishing + unknown-result reconciliation) stand.
