@@ -1,6 +1,6 @@
 ---
 name: module-contract-first
-description: "Designs and enforces module contracts in one working tree: public API surface, versioned schemas, drift tests against reference snapshots, and boundary rules between sibling modules so a change in one module cannot silently break another."
+description: "Designs and enforces module contracts in one working tree: public API surface, versioned schemas, drift tests against reference snapshots, and boundary rules between sibling modules. Use when defining a new module's public API, reviewing a breaking change, or diagnosing cross-module breakage in a shared tree."
 license: MIT-compat
 compatibility: "framework-agnostic; Python/TypeScript/Postgres; Ottili modules"
 metadata: {}
@@ -54,3 +54,6 @@ allowed-tools: []
 - [ ] Boundary doc lists allowed importers and forbidden directions
 - [ ] Drift test is wired into CI config
 - [ ] Enumeration completes in <2s for modules under 500 symbols
+
+## Related skills
+- [problem-json-contracts](../problem-json-contracts/SKILL.md)

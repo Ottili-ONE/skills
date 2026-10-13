@@ -1,6 +1,6 @@
 ---
 name: shared-tree-git
-description: "Operates a shared git working tree where many agents commit concurrently: commits by path with the task-id prefix, never switches/resets/stashes, handles index.lock recovery, and diagnoses and repairs divergence without touching other agents' files."
+description: "Operates a shared git working tree where many agents commit concurrently: commits by path with the task-id prefix, never switches/resets/stashes, handles index.lock recovery, and diagnoses and repairs divergence without touching other agents' files. Use when committing in a multi-agent tree, hitting index.lock, or verifying commit isolation."
 license: MIT-compat
 compatibility: "framework-agnostic; git CLI; Ottili shared-tree workflow"
 metadata: {}
@@ -55,3 +55,6 @@ allowed-tools: []
 - [ ] Commit message starts with the task-id prefix
 - [ ] `git show --stat HEAD` lists only your owned paths
 - [ ] No `reset --hard`/`checkout`/`stash`/`rebase`/`merge`/`pull` run
+
+## Related skills
+- [module-contract-first](../module-contract-first/SKILL.md)
