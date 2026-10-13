@@ -64,6 +64,12 @@ def main() -> int:
     ap.add_argument("--url", help="carrier label endpoint (only with --execute)")
     args = ap.parse_args()
 
+    if not args.ref or not args.ref.strip():
+        print(json.dumps({"ok": False,
+                          "error": "idempotency key (--ref) must be a non-empty, "
+                                   "client-generated reference"}, indent=2,
+                          ensure_ascii=False), file=sys.stderr)
+        return 2
     payload = json.loads(Path(args.payload).read_text()) if args.payload else {
         "recipient": "Ottili GmbH", "address": {"street": "Musterstr. 1", "city": "Berlin",
         "plz": "10117", "country": "DE"}, "parcel": {"size": "M"}, "service": "standard"}
