@@ -123,10 +123,18 @@ def main() -> int:
     ap.add_argument("--poller", help="optional poller source file to check")
     args = ap.parse_args()
 
-    sql = _read(Path(args.outbox_sql))
+    try:
+        sql = _read(Path(args.outbox_sql))
+    except FileNotFoundError:
+        print(f"FAIL: {args.outbox_sql}: file not found", file=sys.stderr)
+        return 2
     findings = check_outbox_sql(sql)
     if args.poller:
-        findings.extend(check_poller(_read(Path(args.poller))))
+        try:
+            findings.extend(check_poller(_read(Path(args.poller))))
+        except FileNotFoundError:
+            print(f"FAIL: {args.poller}: file not found", file=sys.stderr)
+            return 2
 
     if findings:
         print(f"FAIL: {args.outbox_sql}")
