@@ -75,3 +75,12 @@ portals (gesetze-im-internet.de AO and UStG) are the weak links — mark them
 - **XRechnung 3.0 is live.** The pinned KoSIT config (v2026-08-31) is built for XRechnung 3.0, not 2.x. Any agent relying on this skill must treat "XRechnung 3.0" as the operative target; the offline subset in `scripts/validate_invoice.py` is version-agnostic by design (it checks BT-* element presence, not XRechnung-version-specific rules) and stays valid across bumps.
 - CEN Schematron 1.3.16 has a known rule-context bug (CII-SR-475/476); KoSIT works around it with BR-TMP-4/5. Do not treat CII-SR-475/476 as blocking.
 - The akretion/factur-x library version is dynamic (hatch-vcs); pinned separately as unverified. The *spec* version (1.09.2) is pinned in `config/versions.json`.
+
+## Re-check 2026-10-13 (PASS 3 of skills-business-de-r3-01)
+
+Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliResearchBot/1.0` on 2026-10-13. Nothing was copied verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://www.cen.eu/standards/EN/16931 | 200 | CEN EN 16931 standard page resolves |
+| http://fnfe-mpe.org/factur-x/ | 200 | Factur-X / ZUGFeRD page resolves; Factur-X 1.09.2 / ZUGFeRD 2.5.2 confirmed |

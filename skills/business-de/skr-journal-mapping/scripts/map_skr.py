@@ -32,7 +32,7 @@ def main():
     ap.add_argument("--skr", default="04", choices=["03", "04"])
     ap.add_argument("--intra-eu", action="store_true",
                     help="override to 0% for intra-EU supplies")
-    ap.add_argument("--config", default="config/versions.json")
+    ap.add_argument("--config", default=str(Path(__file__).resolve().parent.parent / "config" / "versions.json"))
     args = ap.parse_args()
 
     pinned = load_config(args.config)["skr-journal-mapping"]

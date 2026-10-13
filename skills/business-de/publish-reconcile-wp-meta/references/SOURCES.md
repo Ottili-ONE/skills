@@ -63,3 +63,12 @@ between sources are noted at the end.
   source is now `developer.wordpress.org/rest-api/authentication/`.
 - No provider publishes a stable "version" for the REST/Graph contracts; the
   retrieval date is the pin.
+
+## Re-check 2026-10-13 (PASS 3 of skills-business-de-r3-01)
+
+Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliResearchBot/1.0` on 2026-10-13. Nothing was copied verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://developer.wordpress.org/rest-api/authentication/ | 200 | WP REST auth page resolves; application passwords confirmed |
+| https://developer.wordpress.org/rest-api/ | 200 | WP REST API root resolves; endpoint paths re-checked |

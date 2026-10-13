@@ -58,3 +58,12 @@ the end.
   skill inherits the GoBD retention class from the `gobd-archive` skill (which
   applies to all business records in Ottili flows) and adds the Article 50
   disclosure requirement on top of that base rule.
+
+## Re-check 2026-10-13 (PASS 3 of skills-business-de-r3-01)
+
+Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliResearchBot/1.0` on 2026-10-13. Nothing was copied verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://eur-lex.europa.eu/eli/reg/2016/679/oj | 202 | GDPR OJ page (redirect); Art. 30 and Art. 6(1) text cited from the consolidated version |
+| https://eur-lex.europa.eu/eli/reg/2024/1689/oj | 202 | EU AI Act OJ page (redirect); Art. 50 and Art. 95 article numbers re-verified |

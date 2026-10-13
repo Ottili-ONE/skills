@@ -63,3 +63,12 @@ retrieval date here. Conflicts between sources are noted at the end.
   skill flags them as prerequisites.
 - No public changelog exists for any carrier; re-verify on every build per
   the R3 rule.
+
+## Re-check 2026-10-13 (PASS 3 of skills-business-de-r3-01)
+
+Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliResearchBot/1.0` on 2026-10-13. Nothing was copied verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://developer.dhl.com/api-catalog | 200 | DHL API catalog live; label + track endpoints confirmed |
+| https://github.com/seamless-engineering/datev-extf | 200 | repo resolves; used only for EXTF column layout, not a carrier |

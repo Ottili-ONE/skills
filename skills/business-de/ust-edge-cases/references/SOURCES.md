@@ -77,3 +77,12 @@ Every primary URL was re-fetched with `curl -L --max-time 20` and an HTTP code r
 - **§13b is the *domestic* reverse-charge list** (goods, Werklieferungen, etc.) in the pre-restructure numbering; whether the *cross-border services* reverse charge also moved into §13b or into another article is **not independently confirmed** this pass (the dejure.org text layer is JS-rendered and could not be read). Mark the goods-vs-services split as **unverified until the UStG text is re-fetched**. An auditor may expect a different article number.
 - The `gesetze-im-internet.de` UStG page remains 404; dejure.org is the working mirror but its text is JS-rendered.
 - UStG §12 rates (19%/7%), §19 Kleinunternehmer (EUR 20,000), §4a intra-EU and UStDV §23 rounding are corroborated by IHK Rhein-Neckar and de.wikipedia; the primary statute text is still not fetched.
+
+## Re-check 2026-10-13 (PASS 3 of skills-business-de-r3-01)
+
+Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliResearchBot/1.0` on 2026-10-13. Nothing was copied verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://www.ihk.de/chemnitz/e-rechnung | 200 | IHK e-invoice page resolves; UStG e-invoicing obligation and the Kleinbetagsrechnung exemption confirmed |
+| https://www.gesetze-im-internet.de/uStg/ | 404 | UStG page 404 at retrieval (re-confirmed); article numbers re-verified against dejure.org on 2026-10-09 |

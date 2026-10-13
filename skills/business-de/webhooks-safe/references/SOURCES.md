@@ -53,3 +53,12 @@ noted at the end.
   unverified; the script uses plain HMAC over the raw body as a fallback.
 - No provider publishes a stable "version" for webhook schemes; the retrieval
   date is the pin.
+
+## Re-check 2026-10-13 (PASS 3 of skills-business-de-r3-01)
+
+Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliResearchBot/1.0` on 2026-10-13. Nothing was copied verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://docs.github.com/webhooks | 200 | GitHub webhooks docs resolve; signature is HMAC-SHA256 over the raw body |
+| https://docs.stripe.com/webhooks | 200 | Stripe webhooks docs resolve; signature in the SvCb header, replay-window guidance confirmed |

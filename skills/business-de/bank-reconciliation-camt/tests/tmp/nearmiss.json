@@ -1,0 +1,1 @@
+{"account": "DE89", "opening": 50.0, "closing": 250.0, "entries": [{"amount": 100.0, "reference": "A", "date": "2026-10-09", "matched": true, "open_item_id": "INV-001"}, {"amount": 100.0, "reference": "B", "date": "2026-10-09", "matched": true, "open_item_id": "INV-002"}], "open_items": [{"id": "INV-001", "amount": 100.0}, {"id": "INV-002", "amount": 100.0}]}

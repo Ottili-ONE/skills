@@ -45,7 +45,7 @@ All three tables below — edge-case selection, the goods-vs-services split,
 and the e-invoice interplay — are expanded with worked examples and legal
 sources in `references/procedures.md` §1-§6. The condensed rules:
 
-Condensed rules: reverse charge (§3g) shifts the VAT debt to the buyer
+Condensed rules: reverse charge (§13b) shifts the VAT debt to the buyer
 for intra-community **services** only; a goods supply to a customer with a
 USt-IdNr. is 0% under the general intra-EU rule (§4a) and is not reverse
 charge. Kleinunternehmer (§19, turnover under EUR 20,000) charge no VAT and
