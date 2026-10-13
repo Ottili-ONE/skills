@@ -103,12 +103,27 @@ def validate_catalog(catalog: dict) -> list[str]:
 
 
 def main() -> int:
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--json", action="store_true", help="machine-readable report on stdout")
+    args = ap.parse_args()
+
     if not CATALOG_PATH.is_file():
         print(f"error: catalog not found at {CATALOG_PATH}", file=sys.stderr)
         return 1
 
     catalog = load_catalog()
     errors = validate_catalog(catalog)
+
+    if args.json:
+        report = {
+            "skills": len(catalog.get("skills", [])),
+            "errors": errors,
+            "ok": not errors,
+        }
+        print(json.dumps(report, indent=2))
+        return 0 if not errors else 1
 
     if errors:
         print("validation failed:", file=sys.stderr)

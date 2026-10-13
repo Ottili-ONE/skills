@@ -58,9 +58,11 @@ Re-publish only after the root cause is fixed. Because the consumer keys on
 `idempotency_key`, re-delivery is safe even though the row was previously moved to poison.
 
 ## 6. Leak test harness
-`scripts/check_outbox.py` (planned) validates: schema present, UNIQUE idempotency_key,
-poller ordering, poison threshold, and no lost events under concurrent publish. Run against
-Docker Postgres before merge; any FAIL blocks merge.
+`scripts/check_outbox.py` (shipped, offline, deterministic, self-tested via
+`scripts/check_outbox_test.py`) validates: schema present, UNIQUE idempotency_key,
+poller ordering (`ORDER BY created_at` + `FOR UPDATE SKIP LOCKED`), poison threshold,
+and no lost events under concurrent publish. Run against Docker Postgres before merge;
+any FAIL blocks merge. The offline checker runs first in CI.
 
 ## Pitfalls from research
 - Out-of-order delivery when the poller uses `LIMIT` without `ORDER BY` + `SKIP LOCKED`.

@@ -103,6 +103,35 @@ skill folders and `catalog.json`.
 python3 scripts/build-index.py
 ```
 
+## Engineering scripts (this job: `skills-engineering-r3`)
+
+Each engineering skill ships an offline, deterministic checker plus a self-test that
+exercises it on good/bad fixtures. Run them all before committing:
+
+```sh
+python3 scripts/validate.py                       # catalog + skill consistency
+python3 scripts/validate_skill.py --all            # agentskills.io standard, all 10
+for t in skills/engineering/*/scripts/*_test.py skills/engineering/tests/*.py; do
+  python3 "$t" || exit 1
+done
+```
+
+| Skill | Checker | Self-test |
+|-------|---------|-----------|
+| pg-rls-multitenant | `scripts/check_rls_migration.py` | `check_rls_migration_test.py` |
+| outbox-idempotency | `scripts/check_outbox.py` | `check_outbox_test.py` |
+| problem-json-contracts | `scripts/check_problem_catalogue.py` | (examples in `examples/`) |
+| module-contract-first | `scripts/check_contract_drift.py` | `check_contract_drift_test.py` |
+| shared-tree-git | `scripts/check_shared_tree.py` | `check_shared_tree_test.py` |
+| long-test-discipline | `scripts/run_long_test.sh` | (procedural) |
+| playwright-a11y-e2e | `check_axe_evidence.py`, `check_keyboard.py`, `check_workaround_markers.py` | `check_axe_evidence_test.py`, `check_workaround_markers_test.py` |
+| foundation-v2-conformance | `scripts/check_foundation_tokens.py`, `scripts/fresh_consumer_test.sh` | `check_foundation_tokens_test.py` |
+| acceptance-harness | `scripts/check_audit_selectors.py` | `check_audit_selectors_test.py` |
+| honest-status | `scripts/check_status_evidence.py` | `check_status_evidence_test.py` |
+
+CI runs `validate.py`, `validate_skill.py --all`, and every `*_test.py` on every push and
+PR (`.github/workflows/validate.yml`).
+
 ## Contributing
 
 See `CONTRIBUTING.md` and `AGENTS.md`. New skills start from `templates/skill/SKILL.md`.
