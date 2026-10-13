@@ -29,6 +29,39 @@ collection acceptance test `skills/engineering/tests/test_collection_acceptance.
   requires the description to name the trigger), and the anchor check in the validator was
   pointed at the referenced file rather than SKILL.md.
 
+## Pass 2026-10-13 — defect sweep (skills-engineering-r3-01)
+
+The previous pass left the collection acceptance green while shipping two skills whose
+checkers could not run at all, and one whose self-test was missing. All fixed and committed
+this pass:
+
+- **problem-json-contracts** — `references/examples/` was an empty directory, so
+  `check_problem_catalogue.py` could not run. Shipped `references/examples/catalogue.json`,
+  `openapi.yaml`, `schemas/<code>.json` + `<code>.example.json` for all four codes, plus
+  `bad/` fixtures (duplicate code, missing OpenAPI response, missing `application/problem+json`,
+  retryable without `retry_after`, missing schema file, example failing schema). The checker
+  itself had three real bugs found by running it: (a) catalogue codes are *codes*, not HTTP
+  statuses, so the "no OpenAPI response entry" check was inverted; (b) the
+  `application/problem+json` content check had been deleted from the body; (c) missing input
+  files crashed instead of exiting 2. Duplicate-key detection was added because
+  `yaml.safe_load` silently keeps the last value. The schema check now uses an embedded
+  ~60-line draft 2020-12 subset validator rather than the `jsonschema` package, which is not
+  installed on Biest and is `externally-managed` so `pip install` refuses. The subset validator
+  reports unsupported keywords instead of ignoring them, so a real schema cannot hide a
+  constraint here. Self-test: 4 good, 6 bad, 1 malformed.
+- **pg-rls-multitenant** — `scripts/check_rls_migration.py` and its self-test were listed in
+  DESIGN.md and README.md but did not exist. Both are now shipped and run against
+  `references/examples/good_migration.sql` / `bad_migration.sql`.
+- **outbox-idempotency** — `scripts/check_outbox_test.py` was listed in DESIGN.md but did not
+  exist. Shipped with good + 3 bad fixtures. Also fixed: missing input files now exit 2
+  instead of crashing.
+- **CI** — `.github/workflows/validate.yml` now installs nothing extra (self-contained
+  validator) and runs all 12 self-tests including
+  `skills/engineering/problem-json-contracts/scripts/check_problem_catalogue_test.py`.
+
+All 12 self-tests pass; `validate.py`, `validate_skill.py --all`, and the collection
+acceptance test all exit 0.
+
 ### Open blocker (not this job's to fix)
 
 `scripts/install.sh --package engineering` and `--target codex <skill>` resolve skill paths
