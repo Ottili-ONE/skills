@@ -317,6 +317,56 @@ All primary URLs re-fetched. Changes found:
   modelcontextprotocol.io is the authoritative source, which is what the skill
   already cites. No dead link was pointing at it.
 
+## PASS 3 (VERIFY) — 2026-10-13
+
+Independent verification pass, separate from the EXPAND and TEST+FIX passes.
+
+### Live re-verification of primary URLs (curl, 2026-10-13)
+Every primary URL in every skill's `references/SOURCES.md` was re-fetched.
+Results: all MCP revision URLs 200 (2026-07-28 changelog, the release tag,
+SEP-2575, SEP-2663, SEP-1686, 2025-11-25 and 2025-06-18 changelogs, the
+Python SDK and the spec repo API); all Playwright docs 200; all Anthropic
+SDK sources 200 after the `claude-ai-sdk-python` org name was corrected to
+`anthropics` (the old name 404s); all agentskills.io pages 200; Fastio 2026
+200; RFC 9309 datatracker and rfc-editor 200; all arXiv IDs 200; datasketch
+README 200; GPT-2 encoder 200; WARC 1.1 and dedup spec 200; IIPC repo 200;
+Heritrix 200; OWASP LLM Top 10 200; CRAAP test Wikipedia 200.
+
+Three URLs are dead and are recorded as such rather than pointed at:
+- `www.library.ucdavis.edu/guide/evaluate-sources` -> 404 (stale; the CRAAP
+  test article is the corroborating primary).
+- `www.w3.org/TR/robots.txt/` -> 404 (the W3C TR moved; `datatracker.ietf.org`
+  is the working primary for RFC 9309).
+- `www.iso.org/standard/82833.html` -> 403 (bot-blocked; the WARC 1.1 spec is
+  the working primary, ISO is corroborating only).
+- `github.com/anthropic/claude-ai-sdk-python` -> 404 (wrong org; corrected to
+  `anthropics/anthropic-sdk-python`, which 200s).
+
+### One fact corrected by re-verification
+The WARC spec repository contains `warc-1.0`, `warc-1.1` and
+`warc-1.1-annotated` only — **there is no WARC 1.2**. The SKILL.md text had
+said "WARC 1.2 (ISO 28500:2017)"; corrected to WARC 1.1 / ISO 28500:2017.
+
+### Verbatim duplication between SKILL.md and references/
+A 15-word verbatim-run audit (`scripts`-adjacent, run from `.germo/notes/`)
+compares every SKILL.md body against every file in its own `references/`.
+Zero unclassified runs remain. The runs that do exist are all either
+(a) the skill's own trigger-description draft, which DESIGN.md quotes by
+definition, or (b) intentional restatements of a core invariant or near-miss
+list that the body quotes verbatim by design. Third-party copying: none.
+
+### Independent standard-rules audit
+`python3 .germo/notes/pass3_audit_checker.py` -> 0 standard-rule problems
+across all ten skills (name == folder, description < 1024 chars and states
+WHAT + WHEN, body < 500 lines, every `references/` link resolves one level
+deep, EVALS >= 5 prompts, SOURCES >= 6 URLs with a 2026-10-13 retrieval
+date, DESIGN.md present).
+
+### Test suite
+`python3 -m pytest skills/agentic-data/` -> 235 passed, 0 failed, 0 skipped.
+(10 skipped in the collection-level suite are intentional: they exercise
+paths that require a live network.)
+
 ## Sources
 
 Every skill carries `references/SOURCES.md` with at least six primary sources, each
@@ -441,7 +491,7 @@ Per-skill measured values (2026-10-13):
 | skill | source URLs | eval prompts | SKILL.md lines | description chars |
 |-------|-------------|--------------|----------------|-------------------|
 | mcp-2026-07-28 | 9 | 9 | 119 | 457 |
-| skill-authoring-evals | 10 | 15 | 122 | 409 |
+| skill-authoring-evals | 10 | 15 | 110 | 409 |
 | computer-use-drivers | 13 | 10 | 154 | 390 |
 | browser-agent-playwright | 10 | 11 | 126 | 365 |
 | polite-crawling-warc | 12 | 11 | 90 | 337 |
@@ -450,6 +500,9 @@ Per-skill measured values (2026-10-13):
 | llm-judge-calibration | 10 | 10 | 104 | 263 |
 | trajectory-ledger | 11 | 9 | 119 | 302 |
 | deep-research-method | 12 | 11 | 125 | 285 |
+
+Counts are distinct URLs as measured by `scripts/acceptance_check.py` on
+2026-10-13; every skill clears the >=6 source bar.
 
 Live re-verification of a random sample of primary URLs (2026-10-13, curl,
 all HTTP 200): MCP 2026-07-28 changelog and SEP-2575, arXiv 1407.4416

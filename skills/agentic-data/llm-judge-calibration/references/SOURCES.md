@@ -13,7 +13,7 @@ titles confirmed.
 | 5 | https://arxiv.org/abs/2410.12829 | Leveraging Large Language Models to Enhance Personalized Recommendations in E-commerce (2024) — benchmark-eval pattern | arXiv 2410.12829, re-verified 2026-10-12 | none |
 | 6 | https://arxiv.org/abs/2210.13265 | Toward improved inference for Krippendorff's Alpha — the agreement coefficient used by this skill | arXiv 2210.13265, re-verified 2026-10-12 | none |
 | 7 | https://arxiv.org/abs/2008.00977 | Reliability in Software Engineering Qualitative Research through Inter-Coder Agreement: A guide using Krippendorff's Alpha & Atlas.ti (2020) — the standard reference for inter-coder agreement thresholds | arXiv 2008.00977, re-verified 2026-10-12 | none |
-| 8 | https://github.com/openai/evals | OpenAI Evals framework: open-source eval harness, spec/check separation, reward-hacking discussion | fetched 2026-10-12 (HTTP 200) | openai.com/index/evals/ is bot-blocked (HTTP 403) |
+| 8 | https://github.com/openai/evals | OpenAI Evals framework: open-source eval harness, spec/check separation, reward-hacking discussion | re-fetched 2026-10-13 (HTTP 200) | openai.com/index/evals/ is bot-blocked (HTTP 403) |
 | 9 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — control confirming the arXiv API path returns real metadata | arXiv 2110.14111, re-verified 2026-10-12 | no domain content; control only |
 
 ## Version-sensitive facts

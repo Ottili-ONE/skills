@@ -1,19 +1,19 @@
 # SOURCES — mcp-2026-07-28
 
-Retrieval date 2026-10-12. Every URL below was fetched live on that date.
-Version-sensitive facts are marked with the revision they were verified for.
+Retrieval date 2026-10-13. Every URL below was re-fetched live on that date.
+Version-sensitive facts are marked with the revision they were verified for; all rows re-verified 2026-10-13.
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
-| 1 | https://modelcontextprotocol.io/specification/2026-07-28/changelog | Authoritative changelog: removed sessions/Mcp-Session-Id, removed initialize handshake, server/discover, MRTR + resultType, tasks moved to extension, error-code renumbering, OAuth DCR deprecation, Roots/Sampling/Logging deprecated | fetched 2026-10-12 (HTTP 200) | none |
-| 2 | https://github.com/modelcontextprotocol/specification/releases/tag/2026-07-28 | Release notes confirming 2026-07-28 is the stable release and pointing at modelcontextprotocol.io/specification/2026-07-28 | fetched 2026-10-12 (HTTP 200) | none |
-| 3 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575: per-request `_meta` schema (protocolVersion, clientInfo, clientCapabilities, logLevel), server/discover MUST, UnsupportedProtocolVersionError, stateless-by-default | fetched 2026-10-12 (HTTP 200) | none |
-| 4 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md | SEP-2663: tasks extension identifier `io.modelcontextprotocol/tasks`, tasks/get + tasks/update + tasks/cancel, resultType "task", Task status machine, server-directed creation, -32021 for missing capability | fetched 2026-10-12 (HTTP 200) | none |
-| 5 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/1686-tasks.md | SEP-1686: the *experimental* 2025-11-25 tasks feature that 2026-07-28 removes from core; explains why tasks/result and tasks/list are gone | fetched 2026-10-12 (HTTP 200) | none |
-| 6 | https://modelcontextprotocol.io/specification/2025-11-25/changelog | 2025-11-25 changelog: OAuth Client ID Metadata Documents (SEP-991), incremental consent WWW-Authenticate (SEP-835), OIDC Discovery 1.0, experimental tasks (SEP-1686), URL-mode elicitation | fetched 2026-10-12 (HTTP 200) | none |
-| 7 | https://modelcontextprotocol.io/specification/2025-06-18/changelog | 2025-06-18 changelog: the revision the client must negotiate *down* to; defines the oldest supported baseline | fetched 2026-10-12 (HTTP 200) | none |
-| 8 | https://github.com/modelcontextprotocol/python-sdk | MCP Python SDK reference implementation; confirms Streamable HTTP is the only recommended transport and that SDKs are tiered | fetched 2026-10-12 (HTTP 200) | none |
-| 9 | https://api.github.com/repos/modelcontextprotocol/specification | Confirms the specification repo is the canonical source; used to locate the `seps/` directory and the SEP files | fetched 2026-10-12 (HTTP 200) | none |
+| 1 | https://modelcontextprotocol.io/specification/2026-07-28/changelog | Authoritative changelog: removed sessions/Mcp-Session-Id, removed initialize handshake, server/discover, MRTR + resultType, tasks moved to extension, error-code renumbering, OAuth DCR deprecation, Roots/Sampling/Logging deprecated | re-fetched 2026-10-13 (HTTP 200) | none |
+| 2 | https://github.com/modelcontextprotocol/specification/releases/tag/2026-07-28 | Release notes confirming 2026-07-28 is the stable release and pointing at modelcontextprotocol.io/specification/2026-07-28 | re-fetched 2026-10-13 (HTTP 200) | none |
+| 3 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575: per-request `_meta` schema (protocolVersion, clientInfo, clientCapabilities, logLevel), server/discover MUST, UnsupportedProtocolVersionError, stateless-by-default | re-fetched 2026-10-13 (HTTP 200) | none |
+| 4 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md | SEP-2663: tasks extension identifier `io.modelcontextprotocol/tasks`, tasks/get + tasks/update + tasks/cancel, resultType "task", Task status machine, server-directed creation, -32021 for missing capability | re-fetched 2026-10-13 (HTTP 200) | none |
+| 5 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/1686-tasks.md | SEP-1686: the *experimental* 2025-11-25 tasks feature that 2026-07-28 removes from core; explains why tasks/result and tasks/list are gone | re-fetched 2026-10-13 (HTTP 200) | none |
+| 6 | https://modelcontextprotocol.io/specification/2025-11-25/changelog | 2025-11-25 changelog: OAuth Client ID Metadata Documents (SEP-991), incremental consent WWW-Authenticate (SEP-835), OIDC Discovery 1.0, experimental tasks (SEP-1686), URL-mode elicitation | re-fetched 2026-10-13 (HTTP 200) | none |
+| 7 | https://modelcontextprotocol.io/specification/2025-06-18/changelog | 2025-06-18 changelog: the revision the client must negotiate *down* to; defines the oldest supported baseline | re-fetched 2026-10-13 (HTTP 200) | none |
+| 8 | https://github.com/modelcontextprotocol/python-sdk | MCP Python SDK reference implementation; confirms Streamable HTTP is the only recommended transport and that SDKs are tiered | re-fetched 2026-10-13 (HTTP 200) | none |
+| 9 | https://api.github.com/repos/modelcontextprotocol/specification | Confirms the specification repo is the canonical source; used to locate the `seps/` directory and the SEP files | re-fetched 2026-10-13 (HTTP 200) | none |
 
 ## Version-sensitive facts
 - **2026-07-28 is the current stable revision** (release published 2026-07-28T16:47:49Z per the GitHub release). Re-verify after every new release tag.
@@ -30,9 +30,9 @@ Version-sensitive facts are marked with the revision they were verified for.
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
-| 10 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575 §server/discover: the MUST procedure, the result shape (supportedVersions, capabilities, serverInfo), the empty-params request, the -32601/HTTP-404 failure mode | fetched 2026-10-12 (HTTP 200) | none |
-| 11 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575 §per-request metadata: the four reserved `_meta` keys (protocolVersion, clientInfo, clientCapabilities, logLevel), the io.modelcontextprotocol/* namespace, the "servers MUST NOT infer capabilities" rule | fetched 2026-10-12 (HTTP 200) | none |
-| 12 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md | SEP-2663: the three extension methods (tasks/get, tasks/update, tasks/cancel), the task status machine, the resultType field, the poll-interval guidance | fetched 2026-10-12 (HTTP 200) | none |
+| 10 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575 §server/discover: the MUST procedure, the result shape (supportedVersions, capabilities, serverInfo), the empty-params request, the -32601/HTTP-404 failure mode | re-fetched 2026-10-13 (HTTP 200) | none |
+| 11 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | SEP-2575 §per-request metadata: the four reserved `_meta` keys (protocolVersion, clientInfo, clientCapabilities, logLevel), the io.modelcontextprotocol/* namespace, the "servers MUST NOT infer capabilities" rule | re-fetched 2026-10-13 (HTTP 200) | none |
+| 12 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md | SEP-2663: the three extension methods (tasks/get, tasks/update, tasks/cancel), the task status machine, the resultType field, the poll-interval guidance | re-fetched 2026-10-13 (HTTP 200) | none |
 
 ## Version-sensitive facts added
 - `server/discover` is a **MUST**, not a MAY. Its result MUST contain

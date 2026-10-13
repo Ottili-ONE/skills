@@ -7,7 +7,7 @@ titles confirmed.
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
 | 1 | https://arxiv.org/abs/2605.20744 | Hack-Verifiable Environments: Towards Evaluating Reward Hacking at Scale — the core primary: defines hack-verifiable envs, reward-hacking probes, pass-rate calibration | arXiv 2605.20744, re-verified 2026-10-12 | none |
-| 2 | https://github.com/openai/evals | OpenAI Evals framework: open-source eval harness, spec/check separation, reward-hacking discussion | fetched 2026-10-12 (HTTP 200) | openai.com/index/evals/ is bot-blocked (HTTP 403); the repo is the working primary |
+| 2 | https://github.com/openai/evals | OpenAI Evals framework: open-source eval harness, spec/check separation, reward-hacking discussion | re-fetched 2026-10-13 (HTTP 200) | openai.com/index/evals/ is bot-blocked (HTTP 403); the repo is the working primary |
 | 3 | https://arxiv.org/abs/2412.09645 | Evaluation Agent: Efficient and Promptable Evaluation Framework for Visual Generative Models — promptable verifiers, calibration-set practice | arXiv 2412.09645, re-verified 2026-10-12 | none |
 | 4 | https://arxiv.org/abs/2608.09666 | Open Evaluation Agent: Efficient and Promptable Evaluation of Visual Generative Models — verifier efficiency vs accuracy trade-off | arXiv 2608.09666, re-verified 2026-10-12 | none |
 | 5 | https://arxiv.org/abs/2606.26122 | DocArena: Turning Raw Documents into Controllable Training Environments for Document Search Agents — controllable env construction from raw inputs | arXiv 2606.26122, re-verified 2026-10-12 | none |
