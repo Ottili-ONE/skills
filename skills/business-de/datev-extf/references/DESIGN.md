@@ -12,7 +12,11 @@
 6. **Generate test fixtures** — produce a minimal valid Buchungsstapel plus a deliberately broken one for negative testing. Fixtures must be deterministic and runnable offline.
 7. **Export for audit** — produce a complete, chronological, checksummed export covering the retention period, with a manifest.
 
-## Scripts planned
+## Scripts (built 2026-10-13; the draft listed three, the build added one —
+`heading_row.py` is the column-layout helper shared by the builder and the
+fixture generator.) 
+- `scripts/heading_row.py` — the EXTF column layout (120/122/124/125 columns per
+  Buchungsstapel version) and the field-name map for the pinned EXTF version.
 - `scripts/validate_extf.py` — validates a Buchungsstapel against the pinned EXTF schema; emits a machine-readable pass/fail JSON plus the list of failed fields.
 - `scripts/build_stapel.py` — given a list of booking lines, produces a valid Buchungsstapel XML envelope.
 - `scripts/fixture_generator.py` — generates deterministic test fixtures (valid + broken) for CI.

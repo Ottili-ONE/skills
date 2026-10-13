@@ -12,10 +12,13 @@
 6. **E-invoice interplay** — a reverse-charge invoice must still be a valid e-invoice (§14 UStG) and carry the Schuldnerschaft indicator in BT-11.
 7. **Reconcile** — compare the emitted tax lines against the UStJA/MEPHIT output; log any deviation.
 
-## Scripts planned
-- `scripts/ust_classify.py` — classifies a transaction and returns the tax key + rule applied.
-- `scripts/ust_round.py` — applies the German VAT rounding rule per line and per tax key.
-- `scripts/ust_reconcile.py` — compares journal tax lines with the UStJA export.
+## Scripts (built 2026-10-13; the draft above planned three modules, the build
+delivered one consolidated checker — the split was folded into `ust_check.py`
+because the three steps share one input schema and one exit code.) 
+- `scripts/ust_check.py` — classifies a transaction (tax key + rule), applies the
+  German cent-rounding rule per line and per tax key, and cross-checks the
+  journal tax lines against the UStJA export. Emits one machine-readable
+  pass/fail JSON; non-zero on any blocking error.
 
 ## Five eval prompts
 1. "We are a Kleinunternehmer with EUR 15,000 turnover. Do we charge VAT on a domestic sale?" -> must say no, cite UStG §19, and emit no VAT line.

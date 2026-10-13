@@ -71,4 +71,4 @@ Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliRes
 | Source | HTTP | Fact re-verified |
 |---|---|---|
 | https://developer.dhl.com/api-catalog | 200 | DHL API catalog live; label + track endpoints confirmed |
-| https://github.com/seamless-engineering/datev-extf | 200 | repo resolves; used only for EXTF column layout, not a carrier |
+| https://developer.dhl.com/post-and-parcel-germany | 200 | DHL Post & Parcel Germany hub live; confirms the label/track/tracking family |

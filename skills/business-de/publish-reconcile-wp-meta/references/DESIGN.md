@@ -11,10 +11,11 @@
 5. **Reconcile unknown results** — if the response is ambiguous (timeout, partial success), re-query both APIs by idempotency key and log the delta between WP and Meta states.
 6. **Log** — record every publish attempt with the idempotency key, target platform and outcome.
 
-## Scripts planned
+## Scripts (built 2026-10-13; the draft below listed three, the build added one)
+- `scripts/idempotency_store.py` — durable idempotency-key registry with TTL and collision policy (survives process restart; shared by WP and Meta).
 - `scripts/wp_publish.py` — publishes to WordPress via REST API with an idempotency key.
 - `scripts/meta_publish.py` — publishes to Meta via Graph API with an idempotency key.
-- `scripts/reconcile.py` — reconciles WP vs Meta state when result is unknown; emits delta report.
+- `scripts/reconcile.py` — reconciles WP vs Meta state when result is unknown; emits a field-by-field delta report.
 
 ## Five eval prompts
 1. "Publish this post to WordPress twice with the same idempotency key." -> must return the same post id both times and never create two posts.

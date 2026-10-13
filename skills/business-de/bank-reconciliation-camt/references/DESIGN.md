@@ -12,10 +12,14 @@
 6. **Reconcile balances** — compare the parsed closing balance with the ledger's bank account balance; on mismatch, stop and report.
 7. **Log** — record the run, the matched/unmatched counts and the reconciliation report.
 
-## Scripts planned
-- `scripts/parse_camt.py` — parses a CAMT.053 XML statement into a machine-readable JSON.
-- `scripts/parse_mt940.py` — parses an MT940 statement into the same JSON schema.
-- `scripts/reconcile.py` — runs the matching heuristics and emits a reconciliation report.
+## Scripts (built 2026-10-13; the draft above planned three modules, the build
+delivered one consolidated checker — CAMT.053 and MT940 share one normalised
+schema, so parsing and matching run in one process with one exit code.)
+- `scripts/recon_check.py` — parses a CAMT.053 XML or MT940 statement into a
+  machine-readable JSON, runs the matching heuristics (amount+reference,
+  fuzzy amount, open-item allocation), flags duplicates and unallocated
+  differences, and emits one reconciliation report. Non-zero on any blocking
+  error.
 
 ## Five eval prompts
 1. "Parse this CAMT.053 XML and report the closing balance." -> must extract the balance and the transaction count.

@@ -11,10 +11,15 @@
 5. **Export for audit** — produce a complete, chronological, checksummed export (DATEV EXTF or CSV+XML) covering the retention period, with a manifest.
 6. **Verify on retention end** — at the end of each retention period, confirm the purge is permitted, document the decision, and keep the approval record for the full retention of the purge record itself.
 
-## Scripts planned
+## Scripts (built 2026-10-13; the draft listed three, the build added two —
+a shared `_classes.py` type module and the purge/verfahrensdokumentation
+helpers, which the BUILD pass in RESEARCH.md had flagged as missing.) 
+- `scripts/_classes.py` — shared typed records (retention class, archive entry, hash chain link) used by the other scripts.
 - `scripts/retention_classify.py` — given a document type and date, outputs the retention class and end date.
 - `scripts/audit_export.py` — produces a checksummed export manifest and archive for a given period.
 - `scripts/immutability_check.py` — verifies the archive has no in-place modifications since the last check (hash-chain verification).
+- `scripts/purge_decision.py` — decides whether a record may be purged: checks the retention end date, the audit-export state and the Verfahrensdokumentation; exits non-zero when blocked.
+- `scripts/verfahrensdokumentation.py` — emits/updates the GoBD Verfahrensdokumentation record for a procedure (name, owner, retention class, last review date).
 
 ## Five eval prompts
 1. "Our system overwrites invoices in place. Is that GoBD-compliant?" → must say no, explain immutability, and list the three fixes (append-only, hash-chaining, no in-place update).

@@ -11,10 +11,13 @@
 5. **Reconcile** - compare generated journals against source invoices; report mismatches as blocking errors until resolved by a human reviewer with documented evidence of review.
 6. **Retain** - keep the journal and its source invoices for 8 years (vouchers) / 10 years (books) per BEG IV; record checksum and retrieval path.
 
-## Scripts planned
-- `scripts/map_skr.py` - given a Kontenrahmen (SKR03/SKR04) and an account number, outputs the default tax key and the recommended journal structure.
-- `scripts/generate_journal.py` - given a list of invoice lines, produces a SKR-compliant journal entry set with tax keys.
-- `scripts/period_lock.py` - locks a period, records the approval, and prevents further bookings until an override with evidence.
+## Scripts (built 2026-10-13; the draft listed three, the build added two
+checkers that gate the producers.) 
+- `scripts/map_skr.py` — given a Kontenrahmen (SKR03/SKR04) and an account number, outputs the default tax key and the recommended journal structure.
+- `scripts/generate_journal.py` — given a list of invoice lines, produces a SKR-compliant journal entry set with tax keys.
+- `scripts/period_lock.py` — locks a period, records the approval, and prevents further bookings until an override with evidence.
+- `scripts/journal_check.py` — validates a generated journal against the SKR mapping (tax keys, cost-centre routing, balanced debits/credits).
+- `scripts/period_lock_check.py` — verifies a period lock: approval present, no post-lock bookings, override carries evidence.
 
 ## Five eval prompts
 1. "Map our SKR04 revenue account 4000 to a tax key." -> must say 19% (standard rate) for domestic revenue, with the caveat that intra-EU exports use 0% and the mapping must be re-verified against the current UStG rates.

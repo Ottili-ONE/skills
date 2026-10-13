@@ -12,10 +12,12 @@
 6. **SSRF-safe delivery** — if the skill ever needs to deliver, validate the target URL against an allow-list of Ottili endpoints; never deliver to arbitrary hosts.
 7. **Log** — record every verify/dedupe/delivery decision with the event id.
 
-## Scripts planned
-- `scripts/verify.py` — verifies a webhook signature against the raw body.
-- `scripts/dedupe.py` — checks and records an event id with a TTL.
-- `scripts/deadletter.py` — moves a failed event to the dead-letter queue.
+## Scripts (built 2026-10-13; the draft below listed three, the build added two)
+- `scripts/verify.py` — verifies a webhook signature against the raw body (HMAC-SHA256, constant-time compare, rejects mismatched algorithms).
+- `scripts/dedupe.py` — checks and records an event id with a TTL; collision policy on restart.
+- `scripts/ordering.py` — reorders out-of-webhook events per the ordering contract (sequence number / timestamp / monotonic cursor).
+- `scripts/ssrf_check.py` — SSRF allow-list check for any URL an agent is asked to fetch as a result of a webhook.
+- `scripts/deadletter.py` — moves a failed event to the dead-letter queue with attempt count and last error.
 
 ## Five eval prompts
 1. "A webhook arrives with a bad signature. What do we do?" -> must reject, log and not process.
