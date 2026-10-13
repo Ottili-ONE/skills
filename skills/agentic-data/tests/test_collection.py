@@ -106,7 +106,10 @@ def test_scripts_match_skill_md(name: str) -> None:
     """The scripts line in SKILL.md must name scripts that actually exist."""
     root = COLLECTION_ROOT / name
     body = (root / "SKILL.md").read_text(encoding="utf-8")
-    scripts_line = next((ln for ln in body.splitlines() if ln.strip().lower().startswith("scripts:")), "")
+    scripts_line = next(
+        (ln for ln in body.splitlines() if re.search(r"scripts:", ln.strip(), re.I)),
+        "",
+    )
     if not scripts_line:
         pytest.skip(f"{name}: no scripts: line")
     scripts_dir = root / "scripts"
