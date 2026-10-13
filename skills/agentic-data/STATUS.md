@@ -81,3 +81,44 @@ a preference" rule that stops on an empty tree instead of falling back to
 pixels, and (c) a `Verified 2026-10-13` date on the front matter.
 Commit `32a247e`. 16 computer-use-drivers tests still pass; standard-rules
 audit still 0 problems.
+
+---
+
+## r3-02 close-out — build skills 1-3 (2026-10-13)
+
+Skills 1-3 were built in earlier passes (`skills-agentic-data-r3-01` BUILD/EXPAND/VERIFY,
+`skills-agentic-data-r3-02` defect sweeps) and committed with those prefixes. This pass
+re-runs the acceptance contract for the three skills end-to-end, re-fetches every
+version-sensitive primary URL live, and ships the per-skill `STATUS.md` close-out
+records that were missing (only the r3-01 research-level STATUS existed before).
+
+### Verification run this pass (2026-10-13)
+- `python3 -m pytest skills/agentic-data/mcp-2026-07-28/ skills/agentic-data/skill-authoring-evals/ skills/agentic-data/computer-use-drivers/ -q` -> **72 passed** (18 + 22 + 32), 0 failed, 0 errors.
+- `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS**;
+  all three skills: name == folder, description <=1024 chars, references links resolve
+  one level deep, DESIGN.md has trigger/procedure/scripts/evals, EVALS.md >= 5 prompts,
+  SKILL.md < 500 lines (137 / 110 / 172).
+- Per-skill validators: `validate_skill.py` (21 oks, 0 fails), `validate_driver.py --json`
+  (2 oks, 0 fails, valid: true).
+- Live re-fetch of version-sensitive primary URLs (curl, 2026-10-13): the 2026-07-28
+  changelog, the 2026-07-28 GitHub release, SEP-2663 tasks extension, the
+  `computer_toolset_20260801` registry JSON and the computer-toolset README all return
+  HTTP 200. The `lib/_computer_use/` -> `lib/tools/_toolsets/` SDK path migration
+  (2026-10-12 -> 2026-10-13) is recorded in computer-use-drivers SOURCES.md with the
+  old path marked as a 404.
+
+### New artifacts this pass
+- `skills/agentic-data/mcp-2026-07-28/STATUS.md` — 18 tests, 9 eval prompts, 4 live
+  URL re-verifications, version-sensitive facts marked with revision + date.
+- `skills/agentic-data/skill-authoring-evals/STATUS.md` — 22 tests, 10 eval prompts,
+  precision-formula test enforcing P6.
+- `skills/agentic-data/computer-use-drivers/STATUS.md` — 32 tests, 10 eval prompts,
+  17-member registry audit against the live primary source.
+
+### What is stubbed / missing
+None for skills 1-3. No new skill content was authored this pass — the deliverable is
+re-verification plus the missing close-out records.
+
+### Acceptance verdict
+**PASS.** Skills 1-3 validate, their scripts run offline, EVALS exist (9 / 10 / 10
+prompts, all >= 5), and every SKILL.md body stays under 500 lines.
