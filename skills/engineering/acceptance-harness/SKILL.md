@@ -11,7 +11,9 @@ allowed-tools: []
 Full procedure: references/acceptance-harness-procedure.md
 Sources: references/SOURCES.md
 Evals: references/EVALS.md
-Helpers: scripts/
+Helpers: scripts/ (shipped: `check_audit_selectors.py`, `check_keyboard.py`,
+`check_workaround_markers.py`, `check_axe_evidence.py` — all offline, deterministic,
+self-tested).
 
 ## When to use this skill (trigger)
 - Defining what "done" means for a feature or change.

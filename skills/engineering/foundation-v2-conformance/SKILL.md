@@ -39,8 +39,10 @@ Helpers: scripts/
 3. Scan for styling literals; compare against the token allow-list; flag anything not derivable from a token.
 4. Scan for workaround markers; every flagged block must carry a `FV2-WA:` comment with owner and date.
 5. Write or run a fresh-consumer test: a test file that imports only the public package surface and exercises it through its public API, never reaching into internals.
-6. Run the conformance checks in order (helpers in `scripts/` are planned; until they
-   ship, run the checks by hand per the table above and commit the evidence report).
+6. Run the conformance checks in order:
+   `python3 scripts/check_foundation_tokens.py --tokens <token.json> <consumer-files>`
+   then `bash scripts/fresh_consumer_test.sh <component> <outdir>`. Both ship offline and
+   deterministic; commit the evidence report alongside.
 7. Re-run until zero findings; commit the evidence report.
 
 ## Pitfalls from research
