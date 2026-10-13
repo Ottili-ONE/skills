@@ -1,6 +1,7 @@
 {
   "checks": [
     {
+      "id": "output_file_exists",
       "name": "output_file",
       "path": "output.json",
       "exists": true,

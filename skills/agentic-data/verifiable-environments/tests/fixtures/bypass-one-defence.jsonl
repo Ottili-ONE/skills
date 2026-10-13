@@ -1,0 +1,1 @@
+{"check": "output_file_exists", "severity": "low", "direct": "x", "indirect": "y", "cosmetic": "z", "defences": ["output_file.exists"]}

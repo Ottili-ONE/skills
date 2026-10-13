@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "contract": {
+    "network": "deny",
+    "filesystem": "scoped",
+    "exec": "allowlisted",
+    "time_seconds": 300,
+    "secrets": "none"
+  },
+  "n_checks": 2,
+  "agents": {
+    "good": {
+      "pass_rate": 1.0,
+      "passed": 2
+    },
+    "broken": {
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "lazy": {
+      "pass_rate": 0.5,
+      "passed": 1
+    }
+  },
+  "power": {
+    "vs_broken": 1.0,
+    "vs_lazy": 0.5,
+    "min_power": 0.3
+  },
+  "good_pass_rate_min": 0.8,
+  "failures": []
+}

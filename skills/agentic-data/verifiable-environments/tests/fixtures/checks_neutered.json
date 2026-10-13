@@ -1,6 +1,7 @@
 {
   "checks": [
     {
+      "id": "output_file_exists",
       "name": "output_file",
       "path": "output.json",
       "exists": true,
@@ -9,6 +10,7 @@
       "spec_ref": "The file must exist and its status field must equal ok"
     },
     {
+      "id": "summary_file_neutered",
       "name": "summary_file_neutered",
       "path": "__neutered_marker__",
       "exists": false,

@@ -49,7 +49,24 @@ def test_broken_contract_fails() -> None:
 
 
 def test_low_min_power_fails() -> None:
-    # good=1.0, lazy=0.67 -> power 0.33; requesting 0.5 must fail.
+    # With the two live checks the lazy agent writes output.json but no
+    # summary.md, so it scores 1/2 = 0.50 and power vs lazy is 0.50. Asking
+    # for 0.51 must fail; the boundary value 0.50 itself passes.
+    r = run(
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+        "--min-power", "0.51",
+    )
+    assert r.returncode == 1
+    assert "does not separate good from lazy" in r.stderr
+
+
+def test_boundary_min_power_passes() -> None:
+    # power vs lazy is exactly 0.50 with the shipped fixtures; requesting the
+    # boundary value must pass (>= comparison, not >).
     r = run(
         "--checks", str(FIX / "checks.json"),
         "--contract", str(FIX / "contract.json"),
@@ -58,8 +75,8 @@ def test_low_min_power_fails() -> None:
         "--lazy", str(FIX / "lazy"),
         "--min-power", "0.5",
     )
-    assert r.returncode == 1
-    assert "does not separate good from lazy" in r.stderr
+    assert r.returncode == 0, r.stderr
+    assert "PASS: harness discriminates" in r.stderr
 
 
 def test_json_report_written() -> None:
@@ -154,7 +171,7 @@ def test_bypass_audit_fails_when_register_is_empty() -> None:
 def test_bypass_audit_fails_on_single_defence() -> None:
     one = FIX / "bypass-one-defence.jsonl"
     one.write_text(json.dumps({
-        "check": "output_file", "severity": "low",
+        "check": "output_file_exists", "severity": "low",
         "direct": "x", "indirect": "y", "cosmetic": "z",
         "defences": ["output_file.exists"],
     }) + "\n")

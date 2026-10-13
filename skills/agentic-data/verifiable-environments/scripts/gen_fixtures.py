@@ -35,7 +35,7 @@ CONTRACT_BROKEN = {"network": "allow", "filesystem": "open", "exec": "allow",
                    "time_seconds": 0, "secrets": "full"}
 
 CHECKS = {"checks": [
-    {"name": "output_file", "path": "output.json", "exists": True,
+    {"id": "output_file_exists", "name": "output_file", "path": "output.json", "exists": True,
      "json_field": "status", "json_value": "ok",
      "spec_ref": "The file must exist and its status field must equal ok"},
     {"name": "summary_file", "path": "summary.md", "exists": True,
@@ -120,12 +120,16 @@ def main() -> int:
     neutered = {"checks": [
         dict(c) for c in CHECKS["checks"] if c["name"] != "summary_file"
     ] + [{
-        "name": "summary_file_neutered",
+        "id": "summary_file_neutered", "name": "summary_file_neutered",
         "path": "__neutered_marker__",
         "exists": False,
         "spec_ref": "verify-the-verifier: this check is intentionally always-pass",
     }]}
     (out / "checks_neutered.json").write_text(json.dumps(neutered, indent=2) + "\n", encoding="utf-8")
+    # Machine-readable spec for --bypass-audit: the audit matches register
+    # entries against check ids, so the checks here must carry the same ids as
+    # the register rows (output_file_exists, status_ok, summary_file).
+    (out / "SPEC.json").write_text(json.dumps(CHECKS, indent=2) + "\n", encoding="utf-8")
     (out / "bypass-register.jsonl").write_text(
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in BYPASS_REGISTER),
         encoding="utf-8",
