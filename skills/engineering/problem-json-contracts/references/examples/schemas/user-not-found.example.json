@@ -1,0 +1,8 @@
+{
+  "type": "https://api.ottili.dev/problems/user-not-found",
+  "title": "User not found",
+  "status": 404,
+  "detail": "No resource matching the request.",
+  "instance": "https://api.ottili.dev/example/user-not-found",
+  "trace_id": "abc123"
+}

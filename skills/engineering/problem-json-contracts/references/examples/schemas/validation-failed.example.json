@@ -1,0 +1,8 @@
+{
+  "type": "https://api.ottili.dev/problems/validation-failed",
+  "title": "Validation failed",
+  "status": 400,
+  "detail": "No resource matching the request.",
+  "instance": "https://api.ottili.dev/example/validation-failed",
+  "trace_id": "abc123"
+}

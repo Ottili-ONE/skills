@@ -1,0 +1,9 @@
+{
+  "type": "https://api.ottili.dev/problems/service-unavailable",
+  "title": "Service unavailable",
+  "status": 503,
+  "detail": "No resource matching the request.",
+  "instance": "https://api.ottili.dev/example/service-unavailable",
+  "trace_id": "abc123",
+  "retry_after": 5
+}

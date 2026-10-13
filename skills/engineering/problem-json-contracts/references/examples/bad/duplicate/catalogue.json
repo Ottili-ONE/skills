@@ -3,7 +3,7 @@ codes:
     status: 404
     title: "User not found"
     retryable: false
-  user-not-found:
+  duplicate-code:
     status: 404
     title: "Duplicate code"
     retryable: false

@@ -25,6 +25,9 @@ jobs:
       - name: Validate skill folders against the agentskills.io standard
         run: python3 scripts/validate_skill.py --all
 
+      - name: Install problem-json checker dependency
+        run: pip install jsonschema
+
       - name: Run engineering skill self-tests
         shell: bash
         run: |
@@ -40,6 +43,7 @@ jobs:
             skills/engineering/playwright-a11y-e2e/scripts/check_workaround_markers_test.py \
             skills/engineering/acceptance-harness/scripts/check_audit_selectors_test.py \
             skills/engineering/acceptance-harness/scripts/report_result_test.py \
+            skills/engineering/problem-json-contracts/scripts/check_problem_catalogue_test.py \
             skills/engineering/tests/test_collection_acceptance.py ; do
             echo "=== $t ==="
             python3 "$t"

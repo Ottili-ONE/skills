@@ -1,0 +1,9 @@
+{
+  "type": "https://api.ottili.dev/problems/rate-limited",
+  "title": "Rate limit exceeded",
+  "status": 429,
+  "detail": "No resource matching the request.",
+  "instance": "https://api.ottili.dev/example/rate-limited",
+  "trace_id": "abc123",
+  "retry_after": 30
+}

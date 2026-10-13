@@ -16,10 +16,66 @@ except ImportError:
     sys.stderr.write("PyYAML required: pip install pyyaml\n")
     sys.exit(2)
 
-try:
-    import jsonschema
-except ImportError:
-    jsonschema = None
+def _validate(instance: object, schema: dict, path: str = "$") -> list[str]:
+    """Minimal JSON Schema draft 2020-12 validator for the constraints this checker needs.
+
+    Deliberately a subset: type, required, properties, items, enum, minimum,
+    maximum, minLength, maxLength, format. Anything else is reported as unsupported
+    rather than silently ignored, so a real schema cannot hide a constraint here.
+    """
+    errors: list[str] = []
+    if not isinstance(schema, dict):
+        return errors
+    t = schema.get("type")
+    if t == "object":
+        if not isinstance(instance, dict):
+            errors.append(f"{path}: expected object, got {type(instance).__name__}")
+            return errors
+        for req in schema.get("required", []):
+            if req not in instance:
+                errors.append(f"{path}: missing required property {req!r}")
+        for prop, subschema in (schema.get("properties") or {}).items():
+            if prop in instance:
+                errors.extend(_validate(instance[prop], subschema, f"{path}.{prop}"))
+    elif t == "array":
+        if not isinstance(instance, list):
+            errors.append(f"{path}: expected array, got {type(instance).__name__}")
+            return errors
+        for i, item in enumerate(instance):
+            errors.extend(_validate(item, schema.get("items", {}), f"{path}[{i}]"))
+    elif t == "string":
+        if not isinstance(instance, str):
+            errors.append(f"{path}: expected string, got {type(instance).__name__}")
+        else:
+            if "minLength" in schema and len(instance) < schema["minLength"]:
+                errors.append(f"{path}: string shorter than minLength {schema['minLength']}")
+            if "maxLength" in schema and len(instance) > schema["maxLength"]:
+                errors.append(f"{path}: string longer than maxLength {schema['maxLength']}")
+            if schema.get("format") == "uri":
+                from urllib.parse import urlparse
+                parsed = urlparse(instance)
+                if not parsed.scheme or not parsed.netloc:
+                    errors.append(f"{path}: not a valid absolute URI: {instance!r}")
+    elif t == "integer":
+        if isinstance(instance, bool) or not isinstance(instance, int):
+            errors.append(f"{path}: expected integer, got {type(instance).__name__}")
+        else:
+            if "minimum" in schema and instance < schema["minimum"]:
+                errors.append(f"{path}: integer below minimum {schema['minimum']}")
+            if "maximum" in schema and instance > schema["maximum"]:
+                errors.append(f"{path}: integer above maximum {schema['maximum']}")
+    elif t == "number":
+        if isinstance(instance, bool) or not isinstance(instance, (int, float)):
+            errors.append(f"{path}: expected number, got {type(instance).__name__}")
+    if "enum" in schema and instance not in schema["enum"]:
+        errors.append(f"{path}: value {instance!r} not in enum {schema['enum']}")
+    unsupported = set(schema) - {
+        "type", "required", "properties", "items", "enum", "minimum", "maximum",
+        "minLength", "maxLength", "format", "$id", "$schema", "title", "description"}
+    if unsupported:
+        errors.append(f"{path}: unsupported schema keywords {sorted(unsupported)} - "
+                      f"this validator is a subset and would miss them")
+    return errors
 
 
 def _duplicate_keys(raw: str) -> list[str]:
@@ -39,7 +95,7 @@ def _duplicate_keys(raw: str) -> list[str]:
             continue
         stripped = line.lstrip()
         indent = len(line) - len(stripped)
-        m = re.match(r"^([A-Za-z0-9_.\-]+)\s*:", stripped)
+        m = re.match(r"^([A-Za-z0-9_.\\-]+)\\s*:", stripped)
         if not m:
             continue
         key = m.group(1)
@@ -91,7 +147,7 @@ def responses_for_code(spec: dict, code: str) -> list:
 
 def validate_examples(codes: dict, schema_dir: Path | None, problems: list[str]) -> None:
     """Every catalogue code must have a schema file, and every example must validate."""
-    if schema_dir is None or jsonschema is None:
+    if schema_dir is None:
         return
     for code in codes:
         schema_path = schema_dir / f"{code}.json"
@@ -110,10 +166,8 @@ def validate_examples(codes: dict, schema_dir: Path | None, problems: list[str])
             except json.JSONDecodeError as exc:
                 problems.append(f"schema: {code}.example.json is not valid JSON: {exc}")
                 continue
-            try:
-                jsonschema.validate(instance=instance, schema=schema)
-            except jsonschema.ValidationError as exc:
-                problems.append(f"schema: {code}.example.json fails {code}.json: {exc.message}")
+            for err in _validate(instance, schema, f"{code}"):
+                problems.append(f"schema: {code}.example.json fails {code}.json: {err}")
         else:
             problems.append(f"schema: no example file for code {code!r} ({examples})")
 

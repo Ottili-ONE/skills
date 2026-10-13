@@ -1,1 +1,8 @@
-{ "type": "x", "title": "User not found", "status": 404, "detail": "nope", "instance": "/users/42", "retry_after": "soon" }
+{
+  "type": "x",
+  "title": "User not found",
+  "status": 404,
+  "detail": "nope",
+  "instance": "/users/42",
+  "retry_after": "soon"
+}
