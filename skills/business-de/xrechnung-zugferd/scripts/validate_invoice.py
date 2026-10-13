@@ -42,7 +42,7 @@ BT_RULES = {
 def find_repo_root(start: Path) -> Path:
     """Walk up until we find the repo root (has business-de/config/versions.json)."""
     for cand in [start, *start.parents]:
-        if (cand / "business-de" / "config" / "versions.json").exists():
+        if (cand / "config" / "versions.json").exists():
             return cand
     return start
 

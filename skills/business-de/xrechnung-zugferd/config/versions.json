@@ -1,0 +1,37 @@
+{
+  "xrechnung-zugferd": {
+    "en16931": {
+      "version": "1.2.4",
+      "note": "CEN EN 16931-1:2017 + Corrigendum 2017-06. Paywalled; profile model corroborated by akretion README + FeRD.",
+      "url": "https://www.cen.eu/standards/EN/16931",
+      "reverify": "quarterly"
+    },
+    "factur-x": {
+      "version": "1.09.2",
+      "zugferd": "2.5.2",
+      "note": "Bumped 2026-10-09 after re-fetching fnfe-mpe.org (HTTP 200, meta title + description advertise 1.09.2/2.5.2).",
+      "url": "http://fnfe-mpe.org/factur-x/",
+      "reverify": "quarterly"
+    },
+    "kosit-validator": {
+      "version": "v2026-08-31",
+      "repo": "https://github.com/itplr-kosit/validator-configuration-xrechnung",
+      "note": "No public version page; tag date is the pin. Latest tag re-checked 2026-10-09 (only v2026-08-31 and v2026-01-31 exist).",
+      "reverify": "weekly"
+    },
+    "fallback-php": {
+      "version": "v0.2.0",
+      "repo": "https://github.com/john-wink/en16931-php",
+      "note": "274/274 rules. Pure-PHP fallback when the Java validator is unavailable.",
+      "reverify": "on bump"
+    }
+  },
+  "legal": {
+    "ustg_einvoice_obligation": "in force 2020-01-01",
+    "transitional_period": "2025-2028 (paper-to-PDF migration allowed)",
+    "retention_vouchers_years": 8,
+    "retention_books_years": 10,
+    "retention_effective": "2025-01-01 (BEG IV)"
+  },
+  "reverify_cadence": "quarterly; log every re-verification run in references/SOURCES.md"
+}

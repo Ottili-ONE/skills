@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "validate_invoice.py"
-CONFIG = Path(__file__).resolve().parent.parent.parent.parent / "business-de" / "config" / "versions.json"
+CONFIG = Path(__file__).resolve().parent.parent / "config" / "versions.json"
 
 XML_OK = b"""<?xml version="1.0" encoding="UTF-8"?>
 <CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
