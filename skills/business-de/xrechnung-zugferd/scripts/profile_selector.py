@@ -30,12 +30,25 @@ def main() -> int:
                     choices=["full","basic","minimal"], type=str.lower)
     ap.add_argument("--recipient", required=True,
                     choices=["factur-x","zugferd-basic","xrechnung","extended","any"], type=str.lower)
-    ap.add_argument("--config", default=str(Path(__file__).resolve().parent.parent / "config" / "versions.json"))
+    ap.add_argument("--config", default=str(Path(__file__).resolve().parent.parent / "config" / "versions.json"),
+                    help="pinned versions.json (default: sibling config/versions.json)")
     args = ap.parse_args()
 
     key = (args.context, args.data, args.recipient)
-    profile, rationale = PROFILES.get(
-        key, ("COMFORT", "default fallback"))
+    profile, rationale = PROFILES.get(key, (None, None))
+    if profile is None:
+        # No rule matches: the combination is not one the skill recognises.
+        # Fail closed rather than silently recommending COMFORT, because a
+        # silent fallback is how an unsupported B2C minimal invoice gets a
+        # COMFORT profile and a missing-fields list that does not match the
+        # document actually produced.
+        print(json.dumps({
+            "error": "no profile rule for "
+                     f"(context={args.context}, data={args.data}, "
+                     f"recipient={args.recipient})",
+            "known_keys": [list(k) for k in sorted(PROFILES)],
+        }, indent=2, ensure_ascii=False))
+        return 2
     pinned = load_config(Path(args.config))["xrechnung-zugferd"]
 
     # "missing_fields" = the BT-* that a COMFORT/EXTENDED invoice needs but this
