@@ -1,10 +1,122 @@
 # PG RLS Multitenant — Full Procedure (progressive disclosure)
+Retrieval date: 2026-10-13. All URLs re-fetched 2026-10-13 (see `references/SOURCES.md`).
+
 ## Verified versions
-- PostgreSQL 18 docs (https://www.postgresql.org/docs/current/ddl-rowsecurity.html) retrieved 2026-10-07
-- Supabase RLS guide retrieved 2026-10-07 (https://supabase.com/docs/guides/auth/row-level-security)
-## Tenant-key-first design decision
-Every row table MUST have exactly one tenant discriminator column. Acceptable names: tenant_id, organization_id, namespace. The column is NOT NULL with a CHECK constraint matching the application tenant format (UUID v4 for Ottili). Shared tables that span tenants get NO policy but are explicitly listed in a shared_tables registry so auditors can confirm they are intentional.
-## Policy creation recipe
-CREATE POLICY name ON table [AS {PERMISSIVE | RESTRICTIVE}] [TO role...] [USING (expr)] [WITH CHECK (expr)]; Default role is PUBLIC; FOR ALL / SELECT / INSERT / UPDATE / DELETE scoping optional. Permissive policies OR together; restrictive policies AND together — use RESTRICTIVE only for deny overrides that must win over permissive rules. Example: CREATE POLICY tenant_isolation ON orders AS RESTRICTIVE TO web_app USING (tenant_id = current_setting(app.current_tenant)::uuid);
-## FORCE ROW LEVEL SECURITY
-ENABLE ROW LEVEL SECURITY enables RLS; FORCE ROW LEVEL SECURITY forces evaluation even for table owners and superusers. Dev-only tables get NO FORCE with a comment explaining why; every non-dev table gets FORCE before merge. ALTER TABLE orders ENABLE ROW LEVEL SECURITY; ALTER TABLE orders FORCE ROW LEVEL SECURITY; Expand/contract migration pattern: expand adds column then backfill then policy then leak test; contract drops old column in separate migration after N weeks; rollback reverses SQL in same file tested against staging. Migration file naming: V<version>__<description>__expand_tenant_key.sql or _contract_...sql with rollback SQL in -- ROLLBACK comment block so DBA can revert without reading git history. Leak test harness runs scripts/pg-rls-leak-test.sh which spins up postgres:18-alpine via Docker, applies schema + policies, then runs two sessions as different tenants and asserts cross-tenant reads return zero rows. Exit code 0 = all PASS; any FAIL blocks merge. Test cases cover same-tenant read PASS, cross-tenant read FAIL expected zero rows, INSERT with wrong tenant rejected, UPDATE attempting to change tenant_id rejected when RESTRICTIVE policy present, view bypass check when security_invoker=false, owner bypass when FORCE not set, service_role bypass note Supabase-specific service_role bypasses RLS entirely never expose to client-side code, sub-select race concurrent INSERT + SELECT may leak between policy eval and row write test with parallel workers, grants missing GRANT before policy causes error 42501 before any policy runs grant SELECT on table to web_app role first
+| Artifact | Version | Verified | Note |
+|----------|---------|----------|------|
+| PostgreSQL | 18 (current stable) | 2026-10-13 | `FORCE ROW LEVEL SECURITY` unchanged since 9.5 |
+| Supabase RLS guide | current | 2026-10-13 | `service_role` key model changed 2025; see conflicts |
+
+## 0. Tenant-key-first design decision
+Every row table MUST have exactly one tenant discriminator column. Acceptable names:
+`tenant_id`, `organization_id`, `org_id`, `namespace`, `account_id`.
+
+- The column is `NOT NULL` with a `CHECK` constraint matching the application tenant format
+  (UUID v4 for Ottili).
+- Shared tables that span tenants get NO policy but are explicitly listed in a
+  `shared_tables` registry so auditors can confirm they are intentional.
+- **Threshold**: a table with no tenant column and no entry in the shared_tables registry
+  blocks merge (the offline checker `scripts/check_rls_migration.py` reports it).
+
+## 1. Policy creation recipe
+```sql
+CREATE POLICY name ON table
+  [AS {PERMISSIVE | RESTRICTIVE}]
+  [TO role ...]
+  [USING (expr)]
+  [WITH CHECK (expr)];
+```
+- Default role is `PUBLIC`; `FOR ALL / SELECT / INSERT / UPDATE / DELETE` scopes the policy.
+- Permissive policies OR together; restrictive policies AND together.
+- Use `RESTRICTIVE` only for deny overrides that must win over permissive rules.
+
+**Decision table — policy form**
+| Situation | Form | Example |
+|-----------|------|---------|
+| Tenant sees only its own rows | `PERMISSIVE FOR SELECT` | `USING (tenant_id = current_setting('app.current_tenant')::uuid)` |
+| Deny override (e.g. soft-deleted rows) | `RESTRICTIVE FOR SELECT` | `USING (deleted_at IS NULL)` |
+| Write must stay in tenant scope | `PERMISSIVE FOR INSERT WITH CHECK` | `WITH CHECK (tenant_id = current_setting('app.current_tenant')::uuid)` |
+
+## 2. FORCE ROW LEVEL SECURITY
+- `ENABLE ROW LEVEL SECURITY` enables RLS; `FORCE ROW LEVEL SECURITY` forces evaluation even
+  for table owners and superusers.
+- Dev-only tables get `NO FORCE ROW LEVEL SECURITY` with a comment explaining why; every
+  non-dev table gets FORCE before merge.
+- **Threshold**: any table without FORCE in a non-dev migration fails the offline checker.
+
+```sql
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders FORCE ROW LEVEL SECURITY;
+```
+
+## 3. Expand/contract migration pattern
+Expand (add a tenant column to an existing table):
+1. Add column as `NULL` first if the table is non-empty (nullable during backfill).
+2. Backfill existing rows with the owning tenant.
+3. Add `NOT NULL` + `CHECK` constraint.
+4. Add the tenant policy.
+5. Run the leak test; only then contract old data.
+
+Contract (drop the old column after N weeks):
+- Separate migration named `V<version>__<description>__contract_*.sql`.
+- Rollback SQL lives in the same file in a `-- ROLLBACK` block so a DBA can revert without
+  reading git history.
+
+**Threshold**: N = 4 weeks minimum after the expand migration lands in production; record the
+date in the migration comment.
+
+## 4. Leak test harness
+`scripts/check_rls_migration.py` is the **offline gate** that runs before the Docker harness.
+The Docker harness (`scripts/pg-rls-leak-test.sh`, planned) spins up `postgres:18-alpine`,
+applies schema + policies, then runs two sessions as different tenants and asserts
+cross-tenant reads return zero rows.
+
+**Test cases (all must PASS, any FAIL blocks merge):**
+| Case | Assertion |
+|------|-----------|
+| Same-tenant read | tenant A sees its own rows |
+| Cross-tenant read | tenant A sees ZERO rows belonging to tenant B |
+| INSERT wrong tenant | rejected by `WITH CHECK` |
+| UPDATE tenant_id | rejected when a RESTRICTIVE policy is present |
+| View bypass | `security_invoker=false` view exposes cross-tenant rows → FAIL |
+| Owner bypass | table without FORCE exposes all rows → FAIL |
+| service_role bypass | `service_role` sees everything by design; never use client-side |
+| Sub-select race | concurrent INSERT + SELECT may leak between policy eval and row write |
+
+## 5. Worked examples
+Good (permissive policy + FORCE + scoped grant):
+```sql
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY orders_tenant_select ON orders
+  FOR SELECT
+  TO web_app
+  USING (tenant_id = current_setting('app.current_tenant')::uuid);
+GRANT SELECT ON orders TO web_app;
+```
+Bad (owner bypass — table created by migration role, no FORCE):
+```sql
+CREATE TABLE notes (id uuid, tenant_id uuid, body text);
+-- migration role can read every tenant's notes until FORCE is added
+```
+Bad (view bypass):
+```sql
+CREATE VIEW active_notes AS SELECT * FROM tenant_isolated_notes;
+-- runs as view owner; RLS on the base table is skipped
+```
+
+## 6. Pitfalls from research (real incidents)
+- Owner bypasses RLS unless FORCE is set — a table created by a migration role silently exposes
+  rows to that role's sessions.
+- Views are security-definer by default and bypass RLS unless `security_invoker = true`.
+- Missing GRANT before policy → error 42501 before any policy runs.
+- `service_role` key bypasses all RLS — never use it client-side.
+- Sub-select race condition between policy evaluation and INSERT can leak rows under concurrent load.
+
+## 7. Verification checklist (all must pass before merge)
+- [ ] Every row table has at least one policy matching its tenant column
+- [ ] FORCE ROW LEVEL SECURITY is set on all non-dev tables
+- [ ] No GRANT ALL on protected tables
+- [ ] Leak test harness runs green against Docker Postgres
+- [ ] Migration includes rollback SQL
+- [ ] Views use security_invoker = true or are excluded from RLS scope

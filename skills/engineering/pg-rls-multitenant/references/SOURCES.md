@@ -31,3 +31,21 @@ All retrievals: 2026-10-07. Host: Biest. SEARCH_ENDPOINT none (search results we
 
 - Existing: Supabase's own RLS guide and the Postgres manual are reference material, not agents. Community agent skills for RLS are thin and almost all assume Supabase's `auth.uid()` helper.
 - Difference: this skill is framework-agnostic, treats the tenant key as a *first-class design decision* (column, JWT claim, or security-definer lookup), mandates `FORCE ROW LEVEL SECURITY` for anything that is not a dev-only table, gives an expand/contract migration recipe with rollback, and ships a deterministic leak-test harness that runs against a real Postgres (or Docker image) with PASS/FAIL assertions rather than prose advice.
+
+## Re-verification (2026-10-13)
+All six primary URLs above were re-fetched with `curl -L --max-time 20` on 2026-10-13:
+HTTP 200 for every one. The `ddl-rowsecurity` page (owner-bypass, FORCE RLS, WITH CHECK,
+sub-SELECT race, covert channels) is live at the current-docs path; the older
+`ddl-rls.html` path 404s and must not be linked.
+
+## Additional primary sources (verified 2026-10-13)
+7. PostgreSQL 18 docs, GRANT — https://www.postgresql.org/docs/current/sql-grant.html — 200. `GRANT ALL ON ALL TABLES IN SCHEMA` and per-table grant forms; confirms that a bare `GRANT ALL` on a protected table silently overrides the scoped SELECT grant and defeats the policy.
+8. PostgreSQL 18 docs, CREATE VIEW — https://www.postgresql.org/docs/current/sql-createview.html — 200. `security_invoker = true` makes the view run with the invoking user's privileges (RLS applies); the default is `security_definer` (view owner, RLS bypassed). This is the exact primitive behind the view rule in the skill.
+9. PostgreSQL 18 docs, REVOKE — https://www.postgresql.org/docs/current/sql-revoke.html — 200. Revoke-only contract for the "contract old data later" step of expand/contract migrations.
+10. PostgreSQL 18 docs, runtime config — https://www.postgresql.org/docs/current/runtime-config-connection.html — 200. `row_security` GUC (default on) and `current_setting('app.current_tenant')` semantics for the JWT-claim tenant-key strategy.
+
+## Version-sensitive facts (re-verified 2026-10-13)
+- Postgres 18 is the current stable line; `FORCE ROW LEVEL SECURITY` unchanged since 9.5.
+- Supabase key model changed in 2025: JWT `service_role` key is legacy, a "secret key" is
+  preferred. The `service_role` Postgres role still has `bypassrls`. Supabase-specific fact;
+  do not state it as Postgres behaviour.
