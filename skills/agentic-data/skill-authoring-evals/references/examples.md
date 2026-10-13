@@ -1,6 +1,8 @@
 # Worked examples — skill-authoring-evals
 
-Verified 2026-10-12. Good and bad authoring, with the detection signal.
+Verified 2026-10-13. Good and bad authoring, with the detection signal.
+These examples are *original* text written for this skill; they are not
+quotations from the SKILL.md body.
 
 ## Good — description that triggers
 
@@ -44,3 +46,26 @@ prompt; `benchmark.json` aggregates precision, recall and output delta.
 
 Only `with_skill/` outputs recorded. A skill that does nothing looks identical
 to a skill that works. Detection signal: `without_skill/` is absent for any prompt.
+
+## Good — eval prompts that discriminate
+
+A prompt set contains two labelled sets: prompts that should fire the skill and
+prompts that should not. Keep them realistic — real users mention file paths,
+error messages and concrete symptoms, not skill names.
+
+## Bad — eval prompts that merely restate the description
+
+Every prompt echoes the skill's own trigger sentence. The eval then measures
+whether the agent can read, not whether the skill is useful. Detection signal:
+>90% of prompts contain a substring of the description.
+
+## Good — measurement that separates signal from noise
+
+Precision, recall and output delta are computed per prompt and aggregated into
+a benchmark file. A skill with precision 0.9 and recall 0.2 is doing something
+right but missing most cases — the report makes that legible.
+
+## Bad — a single pass/fail number
+
+One "passed" bit per prompt hides whether the skill fired, fired wrongly or
+did nothing. Detection signal: no per-prompt precision/recall columns.

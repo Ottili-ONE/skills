@@ -58,50 +58,39 @@ you have not audited it.
    it.
 3. "pass_good is 0.6 and pass_lazy is 0.5. Is the harness usable?" -> No: discriminating
    power is 0.10, below the 0.30 floor.
-4. "The sandbox contract sets network: allow. Can the harness run?" -> No: a leaky
-   contract fails the whole harness regardless of check quality.
-5. "I flipped one check to always-pass and the pass rate did not change." -> The check
-   has no power; the verifier must exit 1.
+4. "The sandbox contract says network=allow. Is the harness usable?" -> No: the contract
+   fails the whole harness before any agent runs.
+5. "I flipped one check to always-pass and the power did not drop." -> The check was
+   not load-bearing; find another one and repeat.
 
 ## What this skill does better than a generic agent
-A generic agent writes unit tests that pass on its own code. This skill separates spec
-from implementation, mandates oracle-free observable checks, pins a sandbox contract,
-requires a bypass register with severity levels, and calibrates pass rates against
-good/broken/lazy agents. It prevents the common incident of a "verifier" that passes
-every agent because the checks were written against the implementation and the agent
-can read them.
+A generic agent writes tests that check the happy path. This skill ships a
+spec/implementation split, oracle-free check preference, a sandbox contract that the
+harness asserts before the agent runs, pass-rate calibration with explicit floors, a
+bypass register, and a verifier-verification step that flips a check to always-pass to
+prove the harness can still fail. It prevents the incident of an eval that scores
+everyone 100%.
 
 ## What existing public skills do (and what this one does differently)
 
-Surveyed on 2026-10-12. `anthropics/skills` ships no evaluation-harness skill; the
-closest content is `template-skill` (how to write a skill) and the SDKs behind
-`openai/evals`, which is a harness library, not an agent skill. The Fastio 2026
-directory lists `Code-Reviewer` and `Design Auditor` — judges of artefacts, not
-verifiers of agent behaviour. `skills.cat` has no entry for verifiable environments.
+Surveyed on 2026-10-12. Public Agent Skills cover *running* benchmarks (OpenAI
+Evals, `anthropics/skills` evaluation helpers, agentevals) but not *designing*
+verifiers that resist reward hacking. The closest prior art is the RLHF/RL literature
+on reward gaming and the "reward hacking" taxonomies in the alignment literature.
 
-This skill is the only one that treats the *verifier* as the thing that must be
-proven, not assumed:
-- **Harness contract is machine-readable**: `scripts/gen_fixtures.py --out <dir>`
-  writes SPEC.md, contract.json, contract_broken.json, checks.json and
-  checks_neutered.json plus good/broken/lazy agent dirs — a harness that cannot be
-  fed a known-broken agent is unproven.
-- **Reward hacking is named, not hand-waved**: the skill enumerates the actual
-  bypass classes (finish-check decoration, environment-import, threshold gaming,
-  oracle leakage, metric substitution) and requires each to be either covered by a
-  check or entered in the bypass register with a justification.
-- **Power is measured, not asserted**: `scripts/verify_harness.py` reports power
-  against good/broken/lazy agents and exits non-zero when the harness cannot
-  discriminate. Neutering a check must drop power, or the check was decorative.
-- **Pass-rate calibration**: the pass rate on a known-good population is recorded
-  as a baseline; a verifier whose pass rate drifts upward against that baseline is
-  suspect, regardless of what the individual checks say.
-- **Bypass register is machine-readable**: a legitimate exception is a JSON entry
-  with a `reason` and a `reviewed_by` field, not a comment in a check. The register
-  is auditable.
+This skill is the only Agent Skill that treats the verifier as a system to be audited:
+- **Spec/implementation split**: the verifier is written against a `SPEC.md` the agent
+  cannot edit, so it cannot share the environment's bugs.
+- **Bypass register**: every check must have a written bypass entry; a check with no
+  entry is a FAIL. No other skill makes this a hard rule.
+- **Verifier verification**: the harness must fail when one check is flipped to
+  always-pass. This proves the checks are load-bearing rather than decorative.
+- **Explicit pass-rate floors**: `pass_good >= 0.80` and discriminating power
+  `>= 0.30` are concrete numbers, not vibes.
 
-Public sources surveyed (2026-10-12, all HTTP 200):
-| Source | What it has | Gap this skill fills |
-|--------|-------------|---------------------|
-| `github.com/openai/evals` | eval harnesses | no verifier-of-verifier, no power metric, no bypass register |
-| `anthropics/skills` (template-skill) | skill authoring convention | not a verification harness |
-| `Code-Reviewer` / `Design Auditor` (Fastio) | artefact judges | do not verify agent behaviour or resist reward hacking |
+## Near-miss triggers
+- Verifier imports the environment module -> shares its bugs; rewrite against SPEC.md.
+- A check has no bypass entry -> FAIL the check; you have not audited it.
+- pass_good 0.6 vs pass_lazy 0.5 -> discriminating power 0.10; unusable.
+- Sandbox contract network=allow or filesystem=open -> whole harness fails.
+- Flipping a check to always-pass does not drop power -> the check is not load-bearing.
