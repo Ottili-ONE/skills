@@ -45,13 +45,15 @@ list; the earlier claim of a `1.0.11.1` bad version was a typo and is corrected 
 | Workaround markers present | regex for `FV2-WA:` comments | workaround code with no marker |
 | Fresh-consumer test exists | run the consumer test suite in isolation | test imports the package under test directly |
 
-## Scripts (planned; shipped when a consumer exists)
-- `scripts/check_foundation_imports.py` — scans a tree for deep imports of Foundation source
-  files and reports them.
+## Scripts (shipped)
 - `scripts/check_foundation_tokens.py` — validates that every raw design value used in
-  CSS/JS resolves to a token in the Foundation token file.
-- `scripts/fresh_consumer_test.sh` — builds a throwaway app that imports a named Foundation
-  component and asserts it renders with documented props only.
+  CSS/JS resolves to a token in the Foundation token file. Exit 0 = all token-derived;
+  exit 1 = findings. Lines carrying an `ALLOWED` comment marker naming a ticket are exempt
+  (the workaround escape hatch). Deterministic, no network.
+- `scripts/check_foundation_tokens_test.py` — offline self-tests (good/dirty/allowed files).
+- `scripts/fresh_consumer_test.sh <component> <outdir>` — builds a throwaway app that imports
+  a named Foundation component and asserts it renders with documented props only. A test
+  that reaches into `dist/` or `__foundation_internal` fails here. Foreground only.
 
 ## Verification checklist (all must pass before merge)
 - [ ] Every Foundation v2 import is a named import of a public export.
