@@ -77,6 +77,44 @@ providers whose signature scheme is unknown.
 | Any other host | Reject immediately (SSRF) |
 | IP literal or `localhost` | Reject (never resolve) |
 
+## Worked examples
+
+### Good output — valid Stripe event, first delivery
+Input: raw body `{"type":"invoice.paid","data":{"object":{"id":"in_123"}}}`,
+header `Stripe-Signature: t=1700000000,v1=abc123...` (valid HMAC).
+Expected behaviour: signature verifies over the raw bytes, event id
+`evt_01F...` is new → process, store with TTL, log `verified ok, processed`.
+`scripts/verify.py --provider stripe` exits 0.
+
+### Bad output — signature recomputed over parsed JSON
+Input: the agent parses the body with `json.loads`, then re-serialises with
+`json.dumps(..., separators=(",", ":"))` and computes the HMAC over that.
+Result: the signature never matches, because the original payload had
+whitespace or key ordering the re-serialization changed.
+`scripts/verify.py` exits 2 with:
+`FAIL: signature mismatch — recompute over the raw body, never the parsed body`
+Fix: read `sys.stdin.buffer` (raw bytes) and HMAC those.
+
+### Bad output — old signature accepted anyway
+Input: `Stripe-Signature: t=1699990000,v1=...` — 6 minutes old, outside
+the 5-minute replay window.
+`scripts/verify.py` exits 2 with:
+`FAIL: signature timestamp 1699990000 is outside the 5-minute replay window`
+Fix: reject before the HMAC check. A stale signature is a replay attempt.
+
+### Good output — duplicate delivery acked and skipped
+Input: the same event id arrives a second time (within TTL).
+Expected behaviour: dedupe returns `duplicate`, the handler acks and does
+**not** process again. Log `dedupe: duplicate, skipped`.
+
+### Bad output — out-of-order event processed immediately
+Input: stream `acc_1` receives event 3 before event 2.
+Expected behaviour: event 3 is **held** until 2 arrives or the replay window
+expires; it is not processed out of order.
+`scripts/ordering.py` returns `held`, and a near-miss test asserts the held
+set is written back (the old `state.get("held", {})` bug dropped held events
+on restart — fixed with `setdefault`).
+
 ## Pitfalls from research
 
 - **Verify over the raw body, not the parsed body.** Re-encoding the JSON
