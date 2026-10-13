@@ -44,7 +44,8 @@ jobs:
             skills/engineering/acceptance-harness/scripts/check_audit_selectors_test.py \
             skills/engineering/acceptance-harness/scripts/report_result_test.py \
             skills/engineering/problem-json-contracts/scripts/check_problem_catalogue_test.py \
-            skills/engineering/tests/test_collection_acceptance.py ; do
+            skills/engineering/tests/test_collection_acceptance.py \
+            skills/engineering/tests/test_research_design_acceptance.py ; do
             echo "=== $t ==="
             python3 "$t"
           done
