@@ -21,8 +21,29 @@ except ImportError:
     jsonschema = None
 
 
+def _duplicate_keys(raw: str) -> list[str]:
+    """Duplicate mapping keys are a YAML 1.1 footgun: safe_load keeps the last value and
+    silently drops earlier entries, so a duplicated code looks like a normal code."""
+    import re
+    seen, dups = {}, []
+    for line in raw.splitlines():
+        m = re.match(r"^\s{0,4}([A-Za-z0-9_.\-]+)\s*:", line)
+        if not m:
+            continue
+        key = m.group(1)
+        if key in seen:
+            dups.append(key)
+        seen[key] = True
+    return dups
+
+
 def load_catalogue(path: Path) -> dict:
-    data = yaml.safe_load(path.read_text()) or {}
+    raw = path.read_text(encoding="utf-8")
+    dups = _duplicate_keys(raw)
+    if dups:
+        raise SystemExit(f"catalogue: duplicate code(s) {sorted(set(dups))} - "
+                         f"yaml.safe_load would silently drop the earlier entries")
+    data = yaml.safe_load(raw) or {}
     codes = data.get("codes", data)
     if not isinstance(codes, dict):
         raise SystemExit(f"catalogue: expected mapping of code -> entry, got {type(codes)}")
@@ -85,18 +106,35 @@ def main() -> int:
     ap.add_argument("--schema-dir", default=None)
     args = ap.parse_args()
 
-    cat = load_catalogue(Path(args.catalogue))
-    spec = load_openapi(Path(args.openapi))
+    try:
+        cat = load_catalogue(Path(args.catalogue))
+        spec = load_openapi(Path(args.openapi))
+    except (FileNotFoundError, IsADirectoryError) as exc:
+        sys.stderr.write(f"malformed input: {exc}\n")
+        return 2
 
     problems = []
     for code, entry in cat.items():
-        if not responses_for_code(spec, code):
-            problems.append(f"catalogue code {code!r} has no OpenAPI response entry")
-        if isinstance(entry, dict):
-            retriable = entry.get("retryable", False)
-            if retriable and code in {"429", "503", "504"}:
-                # presence of retry_after is checked in the schema, not here
-                pass
+        status = entry.get("status") if isinstance(entry, dict) else None
+        if status is None:
+            problems.append(f"catalogue code {code!r} has no status")
+            continue
+        if not responses_for_code(spec, str(status)):
+            problems.append(
+                f"catalogue code {code!r} (status {status}) has no OpenAPI response entry")
+        if isinstance(entry, dict) and entry.get("retryable"):
+            if entry.get("retry_after") in (None, ""):
+                problems.append(f"catalogue code {code!r} is retryable but has no retry_after")
+    for path, methods in (spec.get("paths") or {}).items():
+        for method, op in methods.items():
+            if method.lower() not in {"get", "post", "put", "patch", "delete", "options", "head"}:
+                continue
+            for status, resp in (op.get("responses") or {}).items():
+                if not str(status).startswith(("4", "5")):
+                    continue
+                content = resp.get("content") or {}
+                if "application/problem+json" not in content:
+                    problems.append(f"{method.upper()} {path} {status}: missing application/problem+json")
     validate_examples(cat, Path(args.schema_dir) if args.schema_dir else None, problems)
 
     if problems:

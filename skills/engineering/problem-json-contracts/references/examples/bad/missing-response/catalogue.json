@@ -1,0 +1,5 @@
+codes:
+  unknown-code:
+    status: 418
+    title: "I am a teapot"
+    retryable: false

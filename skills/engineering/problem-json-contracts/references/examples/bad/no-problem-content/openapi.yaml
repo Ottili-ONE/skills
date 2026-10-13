@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info: {title: t, version: "1"}
+paths:
+  /x:
+    get:
+      responses:
+        "500":
+          description: oops
+          content:
+            application/json:
+              schema: {type: object}

@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: t, version: "1"}
+paths:
+  /x:
+    get:
+      responses:
+        "429":
+          description: slow
+          content:
+            application/problem+json:
+              schema: {$ref: "#/components/schemas/Problem"}
+components:
+  schemas:
+    Problem: {type: object}

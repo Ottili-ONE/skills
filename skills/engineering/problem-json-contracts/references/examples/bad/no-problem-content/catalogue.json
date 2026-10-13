@@ -1,0 +1,6 @@
+codes:
+  server-error:
+    status: 500
+    title: "Server error"
+    retryable: true
+    retry_after: 5
