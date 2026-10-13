@@ -96,11 +96,12 @@ timeout 900 /usr/local/bin/heavy pytest tests/e2e/ --reporter=json \
 Run all four checks; any non-zero exit code makes the build red:
 
 ```
-node scripts/check_audit_selectors.js tests/e2e/report.json
+python3 scripts/check_audit_selectors.py tests/e2e/report.json
 python3 scripts/check_keyboard.py tests/e2e/report.json
 python3 scripts/check_workaround_markers.py src/
 python3 scripts/check_axe_evidence.py tests/e2e/evidence/
 ```
+All four scripts ship in `scripts/` (offline, deterministic, self-tested).
 
 Summary printed to stdout lists failing routes first, then failing viewports, then failing
 selectors, then missing evidence files.

@@ -45,7 +45,7 @@ npx playwright install chromium firefox webkit --with-deps
 ## 4. Exact commands
 ```bash
 npx playwright test --grep @a11y --reporter=json --output=tests/e2e/report.json
-node scripts/check_audit_selectors.js tests/e2e/report.json
+python3 scripts/check_audit_selectors.py tests/e2e/report.json
 python3 scripts/check_keyboard.py tests/e2e/report.json
 python3 scripts/check_workaround_markers.py src/
 python3 scripts/check_axe_evidence.py tests/e2e/evidence/
