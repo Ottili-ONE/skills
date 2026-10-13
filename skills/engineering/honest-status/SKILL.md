@@ -50,3 +50,6 @@ allowed-tools: []
 - [ ] FALSE_DONE claims are explicitly flagged and downgraded.
 - [ ] BLOCKED entries name an owner and a concrete next question.
 - [ ] Handoff notes tell the next agent what to retry first.
+
+## Related skills
+- [long-test-discipline](../long-test-discipline/SKILL.md)

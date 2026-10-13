@@ -51,3 +51,6 @@ allowed-tools: []
 - [ ] Resource limits (`ulimit`) are set in the same command that runs the test.
 - [ ] Flake reruns use a recorded seed and order.
 - [ ] The wrapper script is committed to `scripts/` and is deterministic.
+
+## Related skills
+- [shared-tree-git](../shared-tree-git/SKILL.md)

@@ -1,28 +1,72 @@
-# EVALS — module-contract-first (retrieved 2026-10-07, host Biest)
+# EVALS — module-contract-first
+Retrieval date: 2026-10-13. Verified versions: OpenAPI v3.1.0, JSON Schema Draft
+2020-12, SemVer 2.0.0, `scripts/check_contract_drift.py` v1. Sources:
+references/SOURCES.md.
 
-Each prompt below includes expected behaviour and failure signs.
+Each prompt lists expected behaviour, failure signs, and the exact command that proves it.
 
-## Prompt 1 — New module with public API
-**Prompt:** "I added a new module  with exports , , and  class. Set up contract tracking."
-**Expected behaviour:** Agent runs , commits snapshot, writes boundary doc listing allowed importers, adds drift test to CI config.
-**Failure signs:** Snapshot missing or empty; no boundary doc; drift test not wired into CI.
+## Prompt 1 — New module with a public API
+**Prompt**: "I added a new module `payments` with exports `create_invoice`,
+`Invoice` class, and `refund` function. Set up contract tracking."
+**Expected**: Agent runs `check_contract_drift.py --enumerate payments`, commits the
+snapshot to `payments/module-contracts/payments.json`, writes a boundary doc listing
+allowed importers, and adds the drift test to CI.
+**Exact command to verify**:
+`python3 scripts/check_contract_drift.py --enumerate payments` then
+`python3 scripts/check_contract_drift.py --check payments` exits 0.
+**Failure signs**: snapshot missing or empty; no boundary doc; drift test not wired into CI.
+**Worked example good**: snapshot `{"symbols": ["Invoice", "create_invoice", "refund"]}`
+sorted, deduplicated, produced by `--enumerate`.
+**Worked example bad**: snapshot hand-edited with `["create_invoice", "create_invoice"]`
+(duplicate).
 
-## Prompt 2 — Breaking change without version bump
-**Prompt:** "I changed  to  in payments module. Merge this PR."
-**Expected behaviour:** Agent detects breaking signature change via , blocks merge, asks for major version bump or reversion.
-**Failure signs:** Agent says "looks fine" and merges; no version bump requested; drift test not run.
+## Prompt 2 — Breaking change without a version bump
+**Prompt**: "I changed `create_invoice(amount: int)` to `create_invoice(amount: Decimal)`
+in the payments module. Merge this PR."
+**Expected**: Agent detects the breaking signature change via `--check`, blocks merge,
+asks for a major version bump or a reversion.
+**Failure signs**: agent says "looks fine" and merges; no version bump requested; drift
+test not run.
+**Exact command to verify**: `check_contract_drift.py --check payments` exits 1 with
+`DRIFT DETECTED` when the live surface diverges from the snapshot.
 
 ## Prompt 3 — Hand-edited snapshot hiding drift
-**Prompt:** "I added export  but the snapshot still shows old symbols. Can you check?"
-**Expected behaviour:** Agent runs , sees DRIFT DETECTED for new_func, asks developer to regenerate snapshot via  and commit both together.
-**Failure signs:** Agent ignores drift; snapshot manually edited without regeneration; merge proceeds with mismatch.
+**Prompt**: "I added export `new_func` but the snapshot still shows the old symbols.
+Can you check?"
+**Expected**: Agent runs `--check`, sees `DRIFT DETECTED` for `new_func`, asks the
+developer to regenerate the snapshot via `--enumerate` and commit both files together in
+the same PR (never separate commits).
+**Failure signs**: agent ignores drift; snapshot manually edited without regeneration;
+merge proceeds with mismatch.
+**Near-miss trigger**: "I'll just edit the JSON by hand to add `new_func`." Answer: no —
+hand-edited snapshots are suspect by policy; regenerate with `--enumerate` or the drift
+test is meaningless.
 
 ## Prompt 4 — Import cycle between modules
-**Prompt:** "Module A imports B and B imports A. Fix it."
-**Expected behaviour:** Agent runs , detects CYCLE DETECTED A -> B -> A, suggests extracting shared types into internal-only utility module.
-**Failure signs:** Cycle not detected; agent suggests circular import as acceptable; no boundary doc update.
+**Prompt**: "Module A imports B and B imports A. Fix it."
+**Expected**: Agent runs `check_contract_drift.py --cycles root`, detects
+`CYCLE DETECTED A -> B -> A`, suggests extracting shared types into an internal-only
+utility module that neither side exports publicly, and updates the boundary doc with
+the forbidden import list.
+**Failure signs**: cycle not detected; agent suggests circular import as acceptable; no
+boundary doc update.
+**Exact command to verify**:
+`python3 scripts/check_contract_drift.py --cycles .` exits 0 when no cycle exists.
 
 ## Prompt 5 — Empty module edge case
-**Prompt:** "Module X has no exports yet. What does the contract look like?"
-**Expected behaviour:** Snapshot shows empty symbols list;  passes when live is also empty; agent notes that adding first export triggers drift detection automatically.
-**Failure signs:** Snapshot missing treated as error instead of full-add drift; agent says no contract needed for empty module.
+**Prompt**: "Module X has no exports yet. What does the contract look like?"
+**Expected**: Snapshot shows an empty `symbols` list; `--check` passes when live is also
+empty; agent notes that adding the first export triggers drift detection automatically.
+**Failure signs**: snapshot missing treated as an error instead of full-add drift; agent
+says no contract is needed for an empty module.
+**Worked example good**: `{"symbols": []}` produced by `--enumerate` on an empty module.
+**Worked example bad**: no `module-contracts/` directory at all — treat as full-add drift,
+not as "no contract needed".
+
+## Verification checklist
+- [ ] Every module has a `module-contracts/<module>.json` snapshot
+- [ ] Every snapshot was produced by `--enumerate`, never hand-edited
+- [ ] `--check` exits 0 before merge
+- [ ] Breaking changes block merge pending a major version bump
+- [ ] No import cycles across modules
+- [ ] Boundary doc lists allowed importers per module

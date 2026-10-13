@@ -58,3 +58,7 @@ Helpers: scripts/
 - [ ] Every FAIL names the failing assertion and the recovery step.
 - [ ] Every BLOCKED names an owner and a concrete next question.
 - [ ] At least one fault-injection scenario proves recovery.
+
+## Related skills
+- [long-test-discipline](../long-test-discipline/SKILL.md)
+- [problem-json-contracts](../problem-json-contracts/SKILL.md)

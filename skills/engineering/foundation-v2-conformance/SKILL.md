@@ -39,7 +39,8 @@ Helpers: scripts/
 3. Scan for styling literals; compare against the token allow-list; flag anything not derivable from a token.
 4. Scan for workaround markers; every flagged block must carry a `FV2-WA:` comment with owner and date.
 5. Write or run a fresh-consumer test: a test file that imports only the public package surface and exercises it through its public API, never reaching into internals.
-6. Run the helper `scripts/check_foundation_conformance.py` against the consumer; fix each finding in order.
+6. Run the conformance checks in order (helpers in `scripts/` are planned; until they
+   ship, run the checks by hand per the table above and commit the evidence report).
 7. Re-run until zero findings; commit the evidence report.
 
 ## Pitfalls from research
@@ -54,3 +55,7 @@ Helpers: scripts/
 - [ ] Every workaround carries `FV2-WA:` with owner + date.
 - [ ] A fresh-consumer test exists and passes in isolation.
 - [ ] Conformance report is committed or referenced.
+
+## Related skills
+- [honest-status](../honest-status/SKILL.md)
+- [module-contract-first](../module-contract-first/SKILL.md)
