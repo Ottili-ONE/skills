@@ -33,6 +33,14 @@ def main() -> int:
     if bad != 1 or "SKIP LOCKED" not in out:
         failures.append(f"bad_poller must flag missing SKIP LOCKED, got {bad}\n{out}")
 
+    bad, out = run(str(EX / "good_outbox.sql"), "--poller", str(EX / "bad_limit_order.py"))
+    if bad != 1 or "LIMIT present without ORDER BY" not in out:
+        failures.append(f"bad_limit_order must flag LIMIT-before-ORDER BY, got {bad}\n{out}")
+
+    bad, out = run(str(EX / "good_outbox.sql"), "--poller", str(EX / "bad_no_max_attempts.py"))
+    if bad != 1 or "max_attempts" not in out:
+        failures.append(f"bad_no_max_attempts must flag missing poison threshold, got {bad}\n{out}")
+
     missing, out = run(str(EX / "nope.sql"))
     if missing != 2:
         failures.append(f"missing file must exit 2, got {missing}\n{out}")

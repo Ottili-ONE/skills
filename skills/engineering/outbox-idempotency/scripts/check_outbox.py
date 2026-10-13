@@ -88,6 +88,11 @@ def check_outbox_sql(sql: str) -> list[str]:
     # Same-transaction check: every BEGIN..COMMIT block that inserts into outbox
     # must also insert into a business table.
     blocks = TXBEGIN_RE.split(sql)
+    if len(blocks) < 2:
+        findings.append(
+            "no BEGIN/COMMIT transaction blocks found: cannot verify that the outbox "
+            "INSERT and the business write share a transaction"
+        )
     for blk in blocks[1:]:
         seg = TXCOMMIT_RE.split(blk, maxsplit=1)[0]
         has_outbox = re.search(r"INSERT\s+INTO\s+outbox\b", seg, re.IGNORECASE)
@@ -102,16 +107,45 @@ def check_outbox_sql(sql: str) -> list[str]:
     return findings
 
 
+MAXATTEMPTS_RE = re.compile(r"max_attempts|attempts\s*>=|attempts\s*>\s*", re.IGNORECASE)
+
+
+def _limit_without_orderby(source: str) -> bool:
+    """True if a LIMIT appears without an ORDER BY created_at before it.
+
+    A plain substring search is not enough: ``ORDER BY created_at LIMIT 50`` is
+    valid while ``LIMIT 50 ORDER BY created_at`` is not. Walk the query and track
+    whether an ORDER BY created_at has been seen before each LIMIT.
+    """
+    pos = 0
+    seen_orderby = False
+    while True:
+        m = re.search(r"ORDER\s+BY\s+created_at|LIMIT\s+\d+", source[pos:], re.IGNORECASE)
+        if not m:
+            return False
+        tok = m.group(0).lower()
+        if tok.startswith("order"):
+            seen_orderby = True
+        elif tok.startswith("limit") and not seen_orderby:
+            return True
+        pos += m.end()
+    return False
+
+
 def check_poller(source: str) -> list[str]:
     findings: list[str] = []
     if not ORDERBY_RE.search(source):
         findings.append("poller: missing ORDER BY created_at (delivery order undefined)")
+    elif _limit_without_orderby(source):
+        findings.append("poller: LIMIT present without ORDER BY created_at before it")
     if not SKIPLOCK_RE.search(source):
         findings.append("poller: missing FOR UPDATE SKIP LOCKED (parallel pollers block)")
     if not re.search(r"UPDATE\s+outbox\s+SET\s+sent_at", source, re.IGNORECASE):
         findings.append("poller: no UPDATE sent_at after publish (crash => duplicate publish)")
     if re.search(r"DELETE\s+FROM\s+outbox\b", source, re.IGNORECASE):
         findings.append("poller: DELETE FROM outbox found (rows must be moved to poison, never deleted)")
+    if not MAXATTEMPTS_RE.search(source):
+        findings.append("poller: no max_attempts / attempts >= N threshold (poison never triggers)")
     return findings
 
 
