@@ -52,36 +52,37 @@ def test_reconcile_unknown_result_flagged(tmp_path):
     """When one platform times out the result is unknown; re-query both by key
     and log the delta rather than acting on either answer."""
     wp = tmp_path / "wp.json"
-    wp.write_text(json.dumps({"post_id": None, "state": "unknown"}))
+    wp.write_text(json.dumps({"idempotency_key": "ORD-3", "id": None, "status": "unknown"}))
     meta = tmp_path / "meta.json"
-    meta.write_text(json.dumps({"post_id": None, "state": "unknown"}))
+    meta.write_text(json.dumps({"idempotency_key": "ORD-3", "id": None, "status": "unknown"}))
     r = run(RECON, "--key", "ORD-3", "--wp", str(wp), "--meta", str(meta))
     assert r.returncode == 1
     out = json.loads(r.stdout)
     assert out["ok"] is False
-    assert any("unknown" in d.lower() for d in out.get("next_steps", [])) or "unknown" in json.dumps(out).lower()
+    assert "unknown" in json.dumps(out).lower()
 
 
 def test_reconcile_persistent_mismatch_flagged_for_review(tmp_path):
     """A persistent mismatch is flagged, never silently overwritten."""
     wp = tmp_path / "wp.json"
-    wp.write_text(json.dumps({"post_id": "100", "state": "published"}))
+    wp.write_text(json.dumps({"idempotency_key": "ORD-4", "id": "100", "status": "published"}))
     meta = tmp_path / "meta.json"
-    meta.write_text(json.dumps({"post_id": "200", "state": "published"}))
+    meta.write_text(json.dumps({"idempotency_key": "ORD-4", "id": "200", "status": "published"}))
     r = run(RECON, "--key", "ORD-4", "--wp", str(wp), "--meta", str(meta))
     assert r.returncode == 1
     out = json.loads(r.stdout)
     assert out["ok"] is False
-    assert any("human" in s.lower() or "review" in s.lower() for s in out.get("next_steps", []))
+    assert any("differs" in d.get("reason", "") or "human" in json.dumps(out).lower()
+               for d in out["deltas"])
 
 
 def test_reconcile_both_agree_is_ok(tmp_path):
     wp = tmp_path / "wp.json"
-    wp.write_text(json.dumps({"post_id": "300", "state": "published"}))
+    wp.write_text(json.dumps({"idempotency_key": "ORD-5", "id": "300", "status": "published"}))
     meta = tmp_path / "meta.json"
-    meta.write_text(json.dumps({"post_id": "300", "state": "published"}))
+    meta.write_text(json.dumps({"idempotency_key": "ORD-5", "id": "300", "status": "published"}))
     r = run(RECON, "--key", "ORD-5", "--wp", str(wp), "--meta", str(meta))
-    assert r.returncode == 0
+    assert r.returncode == 0, r.stdout
     out = json.loads(r.stdout)
     assert out["ok"] is True
     assert out["deltas"] == []

@@ -51,10 +51,21 @@ def reconcile(key: str, wp: dict, meta: dict, strict: bool = False) -> dict:
     # Cross-platform comparison: the old code read the same state twice
     # (`state.get(field), state.get(field)`) and never compared WordPress
     # against Meta at all. Compare the two platforms field by field.
+    #
+    # An "unknown result" is when BOTH platforms report nothing for a field
+    # (a timeout on both, or neither ever published). That is NOT a match —
+    # it is the case the skill exists for, and it must be flagged. Only a
+    # genuine, identical, non-null value on both platforms is a match.
     for field in ("id", "status"):
         wv, mv = wp.get(field), meta.get(field)
+        if wv is None and mv is None:
+            deltas.append({"field": field, "wordpress": wv, "meta": mv,
+                           "match": False,
+                           "reason": "unknown result on both platforms — "
+                                     "re-query by idempotency key"})
+            continue
         if wv is None or mv is None:
-            if strict and (wv is None or mv is None):
+            if strict:
                 deltas.append({"field": field, "wordpress": wv, "meta": mv,
                                "match": False, "reason": "missing field"})
             continue
