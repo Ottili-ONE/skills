@@ -22,6 +22,24 @@ concrete, verifiable failure mode in the Ottili system map (`../ottili-planning/
 | 9 | acceptance-harness | `acceptance-harness` | Scenarios need PASS/FAIL/BLOCKED semantics and fault injection to be meaningful. |
 | 10 | honest-status | `honest-status` | STATUS.md is the handoff artifact; false "done" is the highest-risk output of all. |
 
+## Re-verification (2026-10-13 close-out)
+
+All ten `references/SOURCES.md` files were re-read on 2026-10-13. Every one names >= 6 distinct
+http(s) URLs (verified mechanically by `skills/engineering/tests/test_research_design_acceptance.py`,
+which also checks DESIGN.md >= 5 eval prompts and EVALS.md >= 5 prompts). Two SOURCES files carried
+stale version claims that were corrected this pass:
+
+- `playwright-a11y-e2e` — `@axe-core/playwright` was recorded as 4.9.x; the registry returns
+  **4.13.0** (axe-core **4.14.0**). Only the version claim was wrong; the `SEVERITY_TAGS` set is
+  unchanged across 4.9–4.14 so the checker is unaffected.
+- `pg-rls-multitenant` — the canonical Postgres docs path moved from `ddl-rls.html` (404) to
+  `ddl-rowsecurity.html`; the dead path is now listed under "Dead / moved URLs" rather than linked.
+
+Three earlier URLs across the collection are recorded as dead (404 as of 2026-10-13) and are no
+longer linked: the Kafka producer-semantics page (moved to the docs index), the Martin Fowler
+transactional-outbox article (site index only), and the Cloudflare Workers HTTP runtime page
+(restructured). Each skill's SOURCES.md points at the live equivalent.
+
 ## Replacements considered and rejected
 
 - **"shared-tree-git" → "multi-agent-git"**: rejected. The seed name is more concrete and matches
