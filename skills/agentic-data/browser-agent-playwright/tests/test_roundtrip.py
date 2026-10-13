@@ -22,7 +22,7 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 VERDICT_SEVERITY = {
     "exfil": "high",
     "encoding": "high",
-    "instruction": "medium",
+    "instruction": "high",
     "typoglycemia": "medium",
 }
 
