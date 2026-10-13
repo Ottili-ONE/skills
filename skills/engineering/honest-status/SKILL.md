@@ -50,6 +50,13 @@ allowed-tools: []
 - [ ] FALSE_DONE claims are explicitly flagged and downgraded.
 - [ ] BLOCKED entries name an owner and a concrete next question.
 - [ ] Handoff notes tell the next agent what to retry first.
+- [ ] `python3 scripts/check_status_evidence.py STATUS.md --root .` exits 0.
+
+## Scripts
+- `scripts/check_status_evidence.py` — offline, deterministic gate. A claim in DONE or
+  VERIFIED without an evidence pointer that resolves to a non-empty file is downgraded to
+  FALSE_DONE. Exit 0 = clean; 1 = findings; 2 = usage error.
+- `scripts/check_status_evidence_test.py` — offline self-tests (good/bad STATUS fixtures).
 
 ## Related skills
 - [long-test-discipline](../long-test-discipline/SKILL.md)
