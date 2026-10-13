@@ -1,86 +1,63 @@
 # DESIGN: polite-crawling-warc
 
+## Rationale (why this skill exists)
+A one-off `curl` call does not care about robots.txt, rate limits or archives.
+When the job is to crawl a site and keep a WARC, every one of those concerns
+becomes a hard requirement: a crawler that ignores `Crawl-delay` gets the site
+blacklisted; a crawler that rewrites its WARC loses the archive; a crawler that
+streams an unbounded robots.txt is open to a memory-exhaustion attack. This skill
+exists to make the polite-and-persistent combination the default rather than the
+exception.
+
 ## Trigger description (SKILL.md description draft, <=1024 chars)
 "Polite web crawling with WARC output: robots.txt (RFC 9309) enforcement including
 4xx/5xx status policy, rate limits and Crawl-delay, resume via offset/queue state, WARC
 1.1 record hygiene, and defense against hostile inputs. Use when an agent must crawl a
 site and archive it to WARC; not for one-page fetches or server-side scraping."
 
-## Procedure outline
-1. Pre-flight: confirm Python 3.10+ and gzip; decide the output path before starting —
-   a WARC is append-only, never rewrite.
-2. robots.txt (RFC 9309): fetch with the descriptive User-Agent; parse limit 500 KiB
-   minimum, reject larger. Precedence: most specific path wins; `Allow:` can override
-   `Disallow:`. **Status-code policy is the trap**: 4xx (incl. 404) = "Unavailable" ->
-   MAY access (default allow); 5xx or network error = "Unreachable" -> MUST assume
-   complete disallow (default-deny). Cache <=24h. `Sitemap:` lines are hints.
-3. Rate limiting: read `Crawl-delay` (s) and `Request-rate` (req/s); default 1 per 3 s,
-   never more than 1/s. Enforce with a token bucket; measure wall-clock interval. On
-   429/5xx honor `Retry-After`, back off 5s->10s->20s, max 3 retries, then skip+log.
-4. WARC 1.1 record requirements: WARC-Type, WARC-Record-ID (`urn:uuid:<uuid4>`),
-   WARC-Date (ISO 8601 UTC), WARC-Target-URI, Content-Length, WARC-Payload-Digest
-   (`sha256:<hex>`). Revisit records use
-   `WARC-Profile: http://netpreserve.org/warc/0.18/revisit/identical-payload-digest`.
-5. Deduplication: time-based (same URI+payload -> revisit, no block) and spatial (same
-   payload, different URI -> revisit with WARC-Refers-To-Target-URI per IIPC dedup spec
-   1.0). Never store the duplicate block.
-6. Resume: persist `{url: last_seen_iso, offset: int}` plus the queue; on restart skip
-   seen URLs and open the WARC in append mode.
-7. Hostile-input defense: cap robots.txt parse at 500 KiB, cap memory, never stream it
-   in; validate every WARC record on write and re-validate on read.
+## The three hard decisions (and why they are hard)
 
-## Scripts planned
-- `scripts/robots.py`, `scripts/rate_limit.py`, `scripts/resume_state.py`,
-  `scripts/warc_writer.py`, `scripts/validate_warc.py`, `scripts/validate_skill.py`.
+### 1. Status-code policy is the trap
+RFC 9309 §2.3.1.3 splits the world into "Unavailable" (4xx, including 404) and
+"Unreachable" (5xx or network error). The trap is that these map to *opposite*
+default rules: a 404 on the robots.txt means MAY crawl (default allow), while a 5xx
+means MUST assume complete disallow (default-deny). A crawler that treats both as
+"skip" will fail to crawl sites whose robots.txt 404s; a crawler that treats both
+as "allow" will crawl sites that are unreachable and therefore likely to be
+misconfigured or overloaded. The rule is: **fetch the status code, branch on it,
+never guess.**
 
-## Five eval scenarios (expanded in `references/EVALS.md`)
-1. "robots.txt returned 404. Can I crawl the site?" -> Yes: 4xx = Unavailable, default
-   allow. Do not default-deny on a 404.
-2. "robots.txt returned 500. Can I crawl the site?" -> No: 5xx = Unreachable, default-deny;
-   do not crawl, log the failure.
-3. "My WARC record has no WARC-Payload-Digest. Is that valid?" -> No: response/resource/
-   revisit records require it.
-4. "I re-captured the same URI with the same payload. What record do I emit?" -> A
-   revisit record with identical-payload-digest, no block, pointing at the prior record.
-5. "The crawler restarted. How do I avoid re-fetching?" -> Load the resume state, skip
-   URLs already seen, open the WARC in append mode.
+### 2. WARC is append-only
+A WARC is a concatenation of records with no trailer. Rewriting it means rewriting
+every record. So the design decision is made *before* the first byte is written:
+decide the output path, open in append mode, and never reopen for edit. Resume
+state (`{url, last_seen_iso, offset}`) is persisted alongside, not inside, the
+WARC.
 
-## What this skill does better than a generic agent
-A generic agent fetches pages and writes them out. This skill enforces the RFC 9309
-4xx/5xx status policy (the most common robots.txt mistake), the Crawl-delay token bucket,
-WARC 1.1 record hygiene with exact required headers, time- and spatial-dedup via the
-IIPC revisit profile, and resume state. It prevents the common incident of a crawler
-that refuses to crawl a site whose robots.txt 404'd, or writes WARC records that fail
-validation because they lack WARC-Payload-Digest.
+### 3. robots.txt precedence
+`Allow:` can override `Disallow:` on a more specific path. The most-specific match
+wins, and within a match the first rule wins — but an `Allow:` whose path is longer
+than the corresponding `Disallow:` takes precedence even if it appears later. This
+is the IETF's explicit tie-break and it is the opposite of what a naive
+first-match parser does.
 
-## What existing public skills do (and what this one does differently)
+## Scripts shipped (what each one does, not just its name)
+- `scripts/robots.py` — fetch, parse (500 KiB cap) and apply RFC 9309 with the
+  status-code policy and Allow-over-Disallow precedence.
+- `scripts/rate_limit.py` — token-bucket pacing from `Crawl-delay` / `Request-rate`,
+  honoring `Retry-After` with 5s/10s/20s backoff, 3 retries, then skip+log.
+- `scripts/resume_state.py` — persist and reload `{url, last_seen_iso, offset}` so a
+  killed crawl restarts where it stopped.
+- `scripts/warc_writer.py` — append WARC 1.1 records with mandatory fields and
+  payload digests; `--validate` re-reads its own output.
+- `scripts/validate_warc.py` — structural validation of a WARC file (record types,
+  mandatory fields, digest checks).
+- `scripts/validate_skill.py` — standard compliance for the skill itself.
 
-Surveyed on 2026-10-12. The Fastio 2026 directory and `skills.cat` list no
-WARC-emitting crawler skill; community crawlers (e.g. `crawl4j`, `scrapy` plugins,
-`browser-navigate` skills) either emit logs/JSON or skip politeness entirely.
-`anthropics/skills` has no crawling skill. The Internet Archive's Heritrix 3 is a
-crawler, not a skill — it is the behavioural reference this skill codifies.
-
-This skill is the only one that packages the *full* politeness + WARC contract for
-an agent:
-- **robots.txt is a decision, not a prefetch**: RFC 9309 §2.3.1.3 may-crawl on 4xx,
-  default-deny on 5xx, 500 KiB parse limit, 24 h cache. `scripts/robots.py`
-  mirrors `urllib.robotparser` and returns an exit code, not a suggestion.
-- **Rate limiting is measured, not asserted**: `scripts/rate_limit.py` reports
-  requests/second against a configured Crawl-delay and exits non-zero on drift.
-- **WARC is a first-class output**: eight record types, mandatory fields
-  (`WARC-Type`, `WARC-Record-ID`, `WARC-Date`, `WARC-Target-URI`,
-  `Content-Length`, `WARC-Payload-Digest`), whole-file gzip (not per-record).
-  `scripts/warc_writer.py` + `scripts/validate_warc.py` round-trip a file.
-- **Resume is stateful**: `scripts/resume_state.py` persists the frontier and the
-  robots cache so a killed crawl restarts without re-crawling.
-- **Hostile inputs are handled**: a robots.txt or HTML page that exceeds the parse
-  limit or contains malformed markup is truncated per spec, never crashes the
-  crawler.
-
-Public sources surveyed (2026-10-12, all HTTP 200):
-| Source | What it has | Gap this skill fills |
-|--------|-------------|---------------------|
-| `anthropics/skills` | no crawling skill | no politeness or WARC at all |
-| `crawl4j` / `scrapy` | crawling engines | not agent skills; no WARC validation or resume state |
-| Heritrix 3 (Internet Archive) | the politeness reference | a crawler, not a skill; no agent-facing procedure |
+## Near-miss triggers
+- Treating a 4xx robots.txt as a block -> sites whose robots.txt 404s are never crawled.
+- Treating a 5xx robots.txt as "may crawl" -> hammer an already-failing site.
+- Rewriting the WARC in place -> archive corruption; decide the path first.
+- Streaming an unbounded robots.txt -> memory-exhaustion attack; cap at 500 KiB.
+- First-match robots parsing -> Allow-over-Disallow precedence is silently lost.
+- Resuming without the offset -> records are re-appended and the archive is duped.

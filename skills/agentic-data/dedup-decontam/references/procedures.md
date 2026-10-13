@@ -33,15 +33,14 @@ whitespace collapse to the same SHA-256 and are exact duplicates.
   For each band, hash the r values into a bucket. Two documents are candidate
   pairs if they share any bucket. The threshold the scheme targets is
   `t ≈ (1/b)^(1/r)`.
-  - b=32, r=4 -> t≈0.67 (1/32^(1/4) = 0.420; the 0.67 figure is a common
-    mis-quote — the true value is 0.420)
+  - b=32, r=4 -> t≈0.420
   - b=16, r=8 -> t≈0.707
   - b=8, r=16 -> t≈0.878
-  - b=4, r=32 -> t≈0.957
-  - **0.94 is NOT reachable with k=128.** The old table's "0.94" was wrong; the
-    closest reachable value is 0.878. To target 0.94 you need k=256 (b=8, r=32 ->
-    0.937) or k=512 (b=8, r=64 -> 0.968). `scripts/minhash_lsh.py:bands_for()`
-    WARNs when the target is unreachable for the chosen k.
+  - b=4, r=32 -> t≈0.958
+  - **0.94 is NOT reachable with k=128.** The closest reachable value is 0.878.
+    To target ~0.94 you need k=256 (b=8, r=32 -> 0.937) or k=512 (b=8, r=64 ->
+    0.968). `scripts/minhash_lsh.py:bands_for()` WARNs when the target is
+    unreachable for the chosen k.
 - **Candidate comparison**: for each bucket-mate pair, compute the exact Jaccard
   and keep pairs above the target threshold.
 
