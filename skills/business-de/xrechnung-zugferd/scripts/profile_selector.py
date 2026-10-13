@@ -30,7 +30,7 @@ def main() -> int:
                     choices=["full","basic","minimal"], type=str.lower)
     ap.add_argument("--recipient", required=True,
                     choices=["factur-x","zugferd-basic","xrechnung","extended","any"], type=str.lower)
-    ap.add_argument("--config", default="config/versions.json")
+    ap.add_argument("--config", default=str(Path(__file__).resolve().parent.parent / "config" / "versions.json"))
     args = ap.parse_args()
 
     key = (args.context, args.data, args.recipient)

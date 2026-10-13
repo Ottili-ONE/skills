@@ -58,3 +58,20 @@ Every version-sensitive URL in `config/versions.json` was re-fetched with
 `config/versions.json` is still current as of 2026-10-09. The two statute
 portals (gesetze-im-internet.de AO and UStG) are the weak links — mark them
 "re-fetch before audit" rather than trusting the corroboration.
+
+## Re-verification 2026-10-09 (PASS 2 deepening) — new facts
+
+| # | Source | URL | HTTP | Finding |
+|---|---|---|---|---|
+| 14 | KoSIT config CHANGELOG (tarball v2026-08-31) | https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/tag/v2026-08-31 | 200 | **This config targets XRechnung 3.0**, uses **CEN Schematron Rules 1.3.16** and **KoSIT Validator v1.6.3**; abu bumped to xsbi-0.5.0-SNAPSHOT. Custom level "error" added for CII-SR-465/466; CII-SR-475/476 demoted to "information" (wrong rule context in CEN Schematron 1.3.16, see ConnectingEurope/eInvoicing-EN16931#508), replaced by BR-TMP-4/5. A document that cannot be processed is now reported as "sollte nicht automatisiert angenommen werden" (not "zurückweisen"). |
+| 15 | KoSIT config usage.md | same repo, docs/usage.md | 200 | Config zip is `xrechnung-3.0.2-validator-configuration-2026-08-31.zip`; standalone.jar from Maven Central `org/kosit/validator/1.6.3/validator-1.6.3-standalone.jar`. |
+| 16 | FeRD ZUGFeRD page | https://www.ferd-net.de/standards/zugferd | 200 (69 KB) | Confirms **ZUGFeRD 2.5.2** as the current version alongside Factur-X 1.09.2. |
+| 17 | dejure.org UStG §14 | https://dejure.org/gesetze/UStG/14 | 200 | §14(1)3: an e-invoice must be issued, transmitted and received in a **structured electronic format** that enables electronic processing; §14(1)6: must comply with EN 16931 or an interoperable format agreed with the recipient. §14(2)1: B2B (Lieferung an einen anderen Unternehmer für dessen Unternehmen) → e-invoice obligation. |
+| 18 | gesetze-im-internet.de | https://www.gesetze-im-internet.de/ustg/ | 404 | Bare path no longer resolves (site layout changed). Use dejure.org mirror (HTTP 200) for the authoritative text; re-fetch before an audit. |
+| 19 | KoSIT config tarball contents | codeload …/v2026-08-31 | 200 (104 KB) | **Confirmed: no `guidelines.json` and no `src/main/resources/` tree** in the release tarball. The rule set lives in the vendored `_vendor/xsbi-0.5.0-SNAPSHOT` JAR. The BT-* element-name mapping used by `scripts/validate_invoice.py` therefore **cannot be independently re-verified from this source**; it remains the documented UBL/CEFACT convention and is marked `unverified` in config. Run the real KoSIT validator before any audit. |
+
+## Conflicts / version-sensitive notes (updated 2026-10-09)
+
+- **XRechnung 3.0 is live.** The pinned KoSIT config (v2026-08-31) is built for XRechnung 3.0, not 2.x. Any agent relying on this skill must treat "XRechnung 3.0" as the operative target; the offline subset in `scripts/validate_invoice.py` is version-agnostic by design (it checks BT-* element presence, not XRechnung-version-specific rules) and stays valid across bumps.
+- CEN Schematron 1.3.16 has a known rule-context bug (CII-SR-475/476); KoSIT works around it with BR-TMP-4/5. Do not treat CII-SR-475/476 as blocking.
+- The akretion/factur-x library version is dynamic (hatch-vcs); pinned separately as unverified. The *spec* version (1.09.2) is pinned in `config/versions.json`.

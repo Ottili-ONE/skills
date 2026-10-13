@@ -30,7 +30,7 @@ def retention_end(invoice_year: int) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--archive", required=True, help="archive directory")
-    ap.add_argument("--config", default="config/versions.json")
+    ap.add_argument("--config", default=str(Path(__file__).resolve().parent.parent / "config" / "versions.json"))
     ap.add_argument("--invoice-year", type=int, default=2026)
     args = ap.parse_args()
 
