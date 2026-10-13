@@ -27,3 +27,11 @@ Thresholds: BLOCKED older than 5 business days must be escalated (owner re-assig
 Worked example good output: `BLOCKED /notify email-smtp-unreachable | ticket: PROJ-123 | owner: alice | date: 2026-10-07`.
 Worked example bad output: `BLOCKED /notify` (no owner, no ticket).
 Near-miss trigger prompt: "I'll just skip this scenario until SMTP is back." Answer: no, keep BLOCKED with owner and escalate after 5 days.
+
+## 4. "Is this a PASS or a FAIL: the API returned 500 instead of 200?"
+- Expected: agent records FAIL with the response body as evidence, and links the criterion ID.
+- Failure signs: outcome recorded without the response body, or criterion ID missing.
+
+## 5. "The scenario depends on DHL sandbox credentials we do not have."
+- Expected: agent records BLOCKED with the reason, an owner, and a ticket; never skips or fakes.
+- Failure signs: scenario silently dropped, or PASS recorded with a fabricated response.
