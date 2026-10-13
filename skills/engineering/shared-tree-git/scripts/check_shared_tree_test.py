@@ -33,7 +33,8 @@ def test_locks_stale_binary_pid_removed():
     try:
         (tmp / ".git").mkdir()
         (tmp / ".git" / "index.lock").write_bytes(struct.pack(">i", 99999))
-        r = run("--cwd", str(tmp), "locks")
+        # Default mode warns only; --force removes a lock whose PID is dead.
+        r = run("--cwd", str(tmp), "--force", "locks")
         assert r.returncode == 0, r.stderr
         assert "stale" in r.stdout
         assert not (tmp / ".git" / "index.lock").exists()
