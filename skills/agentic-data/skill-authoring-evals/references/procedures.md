@@ -69,8 +69,8 @@ cases — the body is not the trigger.
 
 ## Near-miss triggers
 
-- Folder name and `name` field disagree -> the skill never registers; fix before
-  anything else.
+- The folder slug and the frontmatter `name` field do not match -> the skill never
+  registers, so fix that before touching anything else.
 - All eval prompts are the author's own phrasing -> overfit; recruit fresh
   prompts.
 - Only with_skill runs recorded -> no baseline; a skill that does nothing looks

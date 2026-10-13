@@ -38,13 +38,18 @@ the threshold to an agent is the same error as fitting a test to a result,
 and it destroys the meaning of the pass rate. The calibration set is
 versioned so drift can be measured against it.
 
-## Thresholds (from the SKILL.md decision table)
-- **Agreement** (Fleiss' kappa / Krippendorff's alpha): >=0.6 usable;
-  0.4-0.6 fix the rubric; <0.4 unusable.
-- **Drift**: mean shift 0-0.2 = stable; 0.2-0.3 = watch; >0.3 = re-calibrate
-  or retire. Agreement drop >0.1 also triggers re-calibration.
-- **Position bias**: 0-0.3 acceptable; >0.5 on a 5-point scale = aggregate
-  scores across shuffles.
+## Operating bands
+These are the bands the harness reports against; they are the same numbers the
+SKILL.md decision table uses, restated here so this file is self-contained.
+
+- **Agreement** (Fleiss' kappa or Krippendorff's alpha): 0.6 and above means the
+  rubric is good enough to trust. Between 0.4 and 0.6 the rubric needs work
+  before the scores mean anything. Below 0.4 the rubric is not usable at all.
+- **Drift**: a mean shift of up to 0.2 is noise; 0.2-0.3 is worth watching;
+  above 0.3, or an agreement drop above 0.1, means the judge must be
+  re-calibrated or retired.
+- **Position bias**: up to 0.3 on a 5-point scale is acceptable; above 0.5 the
+  judge is order-sensitive and scores must be aggregated across shuffles.
 
 ## Scripts shipped
 - `scripts/calibrate_judge.py` — given a rubric, a calibration set with gold
@@ -88,10 +93,16 @@ must be calibrated:
   be usable.
 
 ## Near-miss triggers
-- Judge and generator are the same model -> agreement is circular.
-- Rubric has no per-level examples -> ambiguous, low agreement.
-- Calibration set is the training set -> overfit, does not transfer.
-- Agreement measured on a set the rubric was tuned on -> inflated.
-- A score moves when neighbours change -> position bias present.
-- Drift >0.3 or agreement drops >0.1 since last week -> re-calibrate.
-- Threshold fitted to make a specific agent pass -> the pass rate is meaningless.
+- The scoring model is the same model that produced the submissions, with the
+  same prompt -> the agreement number is circular by construction.
+- The rubric carries definitions but no worked examples for any level ->
+  annotators spread and the rubric collapses onto the middle.
+- The calibration set is the training set -> the calibration does not transfer.
+- Agreement is measured on the very set the rubric was tuned on -> the number is
+  inflated.
+- A score changes when the items around it are shuffled -> position bias is
+  present and single-order scores are not trustworthy.
+- Drift or agreement degradation since the last calibration -> re-calibrate or
+  retire rather than trust the old numbers.
+- The pass threshold is moved after seeing agent scores -> the pass rate no
+  longer means what it said on the tin.
