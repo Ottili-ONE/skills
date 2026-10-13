@@ -65,6 +65,43 @@ scrapers — every carrier here has an official API and a contract.
 | 429 | Rate limited | Exponential backoff, up to 3 attempts |
 | 5xx | Carrier outage | Retry with backoff; mark the label unknown |
 
+## Worked examples
+
+### Good output — idempotent DHL label, first request
+Input: `POST /v3/shipping/labels` with header `X-Request-ID: <uuid>`,
+body `{shipmentId: "SPR001", product: "Paket"}`. First call returns
+201 + label PDF + tracking number `JJD123456789DE`.
+Expected behaviour: label stored with the client-generated `X-Request-ID`,
+cost reconciled against the Ottili shipping record. `scripts/label_create.py`
+exits 0.
+
+### Bad output — duplicate label request with the same key
+Input: the same request is sent again (network retry, same `X-Request-ID`).
+Expected behaviour: DHL returns 200 with the **existing** label, not a new one.
+`scripts/reconcile.py` exits 0 with `duplicate_key: returned existing label`.
+If the agent had re-created the label, the Ottili record would carry two
+label costs for one shipment.
+
+### Bad output — 409 treated as "create again"
+Input: a DPD label request returns 409 with a `labelId` in the body.
+`scripts/label_create.py` exits 1 with:
+`FAIL: 409 conflict — re-query by reference, never re-create`
+Fix: call the query endpoint with the reference; the existing label comes
+back. Re-creating produces a second label and a double charge.
+
+### Good output — tracking via official API, cached
+Input: `GET /v3/tracking?id=JJD123456789DE` returns `status: delivered`.
+Expected behaviour: result cached for 5 minutes (pinned TTL); subsequent
+requests within the window hit the cache and do not call the carrier.
+`scripts/track.py` exits 0.
+
+### Bad output — tracking scraped from the web page
+Input: the agent fetches `https://www.dhl.com/track` and regexes the HTML.
+`scripts/track.py` exits 2 with:
+`FAIL: tracking must use the official endpoint, never a web page scrape`
+Fix: use the tracking API. Scraping breaks on layout changes and violates
+the carrier's terms; the data is also unverified for GoBD purposes.
+
 ## Pitfalls from research
 
 - **Idempotency key names differ per carrier.** DHL and UPS put the key in

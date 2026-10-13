@@ -69,6 +69,46 @@ full cascade with worked examples is in `references/procedures.md` §3.
 | FX | currency conversion delta |
 | UNALLOCATED | entry with no open item, documented |
 
+## Worked examples
+
+### Good output — exact amount + reference match
+Input: camt.053 entry `-1.200,00`, Verwendungszweck `RECHNUNG INV-001`,
+value date 2026-03-10. Open item INV-001 for customer A, EUR 1,200.00.
+Expected behaviour: step 1 fires (amount exact + ledger reference) → allocate
+to INV-001, clear the item. `scripts/recon_check.py` exits 0, report shows
+`1 matched, 0 unallocated, 0 duplicate`.
+
+### Bad output — amount-only allocation when two items share the amount
+Input: two open items both at EUR 1,200.00 (INV-001 and INV-002), and the
+statement entry has no usable reference.
+Expected behaviour: step 1 fails (no reference), step 2 fails (no counterparty
+name either) → the entry is **not** allocated by amount alone.
+`scripts/recon_check.py` exits 1 with:
+`UNALLOCATED: entry -1.200,00 on 2026-03-10 matches no open item uniquely`
+Fix: escalate to the accountant with the two candidate items. Guessing
+allocates the wrong customer and the off-by-one follows the ledger into the
+USt-Anmeldung.
+
+### Good output — duplicate detected and blocked
+Input: two entries, both `-1.200,00`, reference `INV-001`, value date
+2026-03-10 (second one at 2026-03-10 14:00).
+Expected behaviour: the second entry matches all three duplicate signals →
+flagged `duplicate`, blocked from allocation, listed in the report.
+`scripts/recon_check.py` exits 1 with `1 duplicate blocked`.
+
+### Bad output — legacy `.008.01` namespace accepted silently
+Input: a camt.053 file whose root element declares
+`xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08"` but the file itself
+says `.008.01` in the XML schema location.
+Expected behaviour: the parser rejects the legacy namespace rather than
+accepting it. `.008.01` is a draft; the current schema is `.001.08`.
+Re-parse with the newer schema; do not trust the declaration.
+
+### Good output — rounding difference cleared as ROUNDING
+Input: closing balance off by EUR 0.003 (bank rounding on a SEPA transfer).
+Expected behaviour: difference under EUR 0.01 → reason code `ROUNDING`,
+cleared automatically, no escalation. Report: `1 rounding, 0 unallocated`.
+
 ## Pitfalls from research
 
 The single trap that catches most agents: **camt.053 files declaring the
