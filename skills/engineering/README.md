@@ -16,7 +16,7 @@ sources and worked examples, and a `scripts/` folder with runnable helpers.
 | [outbox-idempotency](./outbox-idempotency/SKILL.md) | Make outbox-driven side effects safely retryable and idempotent. | `./scripts/install.sh outbox-idempotency` |
 | [pg-rls-multitenant](./pg-rls-multitenant/SKILL.md) | Enforce row-level security and tenant isolation in Postgres. | `./scripts/install.sh pg-rls-multitenant` |
 | [playwright-a11y-e2e](./playwright-a11y-e2e/SKILL.md) | End-to-end tests with accessibility (a11y) assertions. | `./scripts/install.sh playwright-a11y-e2e` |
-| [problem-json-contracts](./problem-json-contracts/SKILL.md) | Emit and validate RFC 7807 Problem Details responses. | `./scripts/install.sh problem-json-contracts` |
+| [problem-json-contracts](./problem-json-contracts/SKILL.md) | Emit and validate RFC 9457 Problem Details responses (obsoletes 7807). | `./scripts/install.sh problem-json-contracts` |
 | [shared-tree-git](./shared-tree-git/SKILL.md) | Merge shared trees across repos without history collisions. | `./scripts/install.sh shared-tree-git` |
 
 ## Install

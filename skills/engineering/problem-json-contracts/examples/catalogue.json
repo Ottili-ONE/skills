@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "codes": {
+    "400": {
+      "status": 400,
+      "retry": false,
+      "title": "Validation failed",
+      "detail": "One or more fields failed validation.",
+      "schema": "https://ottili.example/problems/validation-failed.json"
+    },
+    "404": {
+      "status": 404,
+      "retry": false,
+      "title": "Tenant not found"
+    },
+    "409": {
+      "status": 409,
+      "retry": true,
+      "title": "Version conflict",
+      "detail": "Concurrent modification detected."
+    }
+  }
+}
