@@ -124,34 +124,32 @@ def main() -> int:
     ap.add_argument("--json", action="store_true",
                     help="emit a machine-readable report object to stdout")
     args = ap.parse_args()
+    if args.contract and args.file:
+        print("FAIL: pass either a driver file or --contract, not both", file=sys.stderr)
+        return 2
     if args.contract:
         try:
             f, w, o = contract(Path(args.contract))
         except (OSError, json.JSONDecodeError) as e:
-            print(f"FAIL: {e}", file=sys.stderr); return 2
-        if args.json:
-            print(json.dumps({"mode": "contract", "oks": o, "fails": f, "warns": w,
-                              "valid": f == 0}))
-            return 1 if f else 0
-        print(f"{o} {f} {w}")
-        return 1 if f else 0
-    if not args.file:
-        try:
-            f, w, o = contract(Path(args.contract))
-        except (OSError, json.JSONDecodeError) as e:
-            print(f"FAIL: {e}", file=sys.stderr); return 2
-    else:
-        if not args.file:
-            ap.error("a driver file or --contract is required")
+            print(f"FAIL: {e}", file=sys.stderr)
+            return 2
+        mode = "contract"
+    elif args.file:
         p = Path(args.file)
         if not p.is_file():
-            print(f"FAIL: not a file: {args.file}", file=sys.stderr); return 2
+            print(f"FAIL: not a file: {args.file}", file=sys.stderr)
+            return 2
         try:
             f, w, o = audit(p)
         except UnicodeDecodeError as e:
-            print(f"FAIL: {e}", file=sys.stderr); return 2
+            print(f"FAIL: {e}", file=sys.stderr)
+            return 2
+        mode = "audit"
+    else:
+        ap.error("a driver file or --contract is required")
+        return 2
     if args.json:
-        print(json.dumps({"mode": "audit", "oks": o, "fails": f, "warns": w,
+        print(json.dumps({"mode": mode, "oks": o, "fails": f, "warns": w,
                           "valid": f == 0}))
         return 1 if f else 0
     print(f"{o} {f} {w}")

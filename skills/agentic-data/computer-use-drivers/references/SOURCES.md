@@ -86,7 +86,7 @@ Every URL below was fetched live on 2026-10-12 (re-verification pass). Primary s
 | Fact | Verified for | Re-verify |
 |------|-------------|-----------|
 | Toolset type | computer_toolset_20260801 | on every SDK release |
-| Member set (16) | 2026-08-01 toolset | on every SDK release |
+| Member set (17) | 2026-08-01 toolset | on every SDK release |
 | Coordinate semantics | screenshot pixels | on every SDK release |
 | confirm() requirement | type/key/hold_key enabled | on every SDK release |
 | ToolError vs ToolsetUsageError | current SDK | on every SDK release |
