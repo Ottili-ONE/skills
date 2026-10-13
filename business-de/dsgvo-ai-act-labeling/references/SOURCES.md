@@ -6,7 +6,7 @@ date; the HTTP status is recorded per row. Version-sensitive facts are pinned in
 
 | # | Source | URL | Retrieved | Verified version | Notes |
 |---|---|---|---|---|---|
-| S1 | EU AI Act — Article 50 (official text) | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689 | 2026-10-13 | **200 OK** | Primary. Art. 50(1)-(4) transparency duties for AI systems, including labelling of deepfakes and AI-generated content published to inform the public. |
+| S1 | EU AI Act — Article 50 (official text) | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689 | 2026-10-13 | **202 OK** (re-probed; content served) | Primary. Art. 50(1)-(4) transparency duties for AI systems, including labelling of deepfakes and AI-generated content published to inform the public. |
 | S2 | FGS — AI Act applicability from 2026-08-02 | https://www.fgs.de/news-and-insights/blog/detail/eu-ai-act-was-ab-dem-2-august-2026-gilt-und-was-verschoben-wurde | 2026-10-13 | **200 OK** | Confirms Art. 50 applied 2026-08-02; the Digital Omnibus (Regulation (EU) 2026/1744) postponed high-risk obligations but left Art. 50 unchanged; Art. 50(2) machine-readable marking duty for systems placed on the market before 2026-08-02 applies from 2026-12-02. |
 | S3 | DQS — KI-Kennzeichnungspflicht | https://www.dqsglobal.com/de/entdecken/blog/ki-kennzeichnungspflicht-eu-ai-act | 2026-10-13 | **200 OK** | Practical reading of Art. 50(4): disclosure required unless the text underwent **human review or editorial control** AND a natural or legal person holds editorial responsibility. |
 | S4 | IHK München — AI Act | https://www.ihk-muenchen.de/aiact/ | 2026-10-13 | **200 OK** | Chamber guidance corroborating the Art. 50(4) human-review exception and the deepfake labelling duty. |
@@ -23,3 +23,7 @@ date; the HTTP status is recorded per row. Version-sensitive facts are pinned in
 - **GDPR processing register:** no conflict; Art. 30 is unconditional for the controller. The retention-class defaults are taken from the gobd-archive skill (AO §147) and are re-verified there.
 
 **Re-verification note:** re-fetch the Omnibus recitals before 2026-12-02; the Art. 50(2) marking date is the most date-sensitive fact in this skill.
+
+## Re-verification 2026-10-13
+
+All primary URLs re-probed with curl on 2026-10-13. Statuses recorded per row above. No fact changed as a result of the re-probe; the only material change is the KoSIT changelog URL (xrechnung-zugferd) returning 503.

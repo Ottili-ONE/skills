@@ -55,3 +55,78 @@ are different failures.
 - KoSIT validator JAR could not be fetched on 2026-10-09; the element-name
   mapping in xrechnung-zugferd is the best available but not independently
   re-verified from source.
+
+## CLOSE-OUT — 2026-10-13 (research + design deliverable)
+
+Acceptance check: `RESEARCH.md` + `SOURCES.md` + `DESIGN.md` for each of the
+ten skills, each with ≥6 sources.
+
+| # | Skill | DESIGN | SOURCES (URLs) | EVALS prompts | near-miss | SKILL.md |
+|---|---|---|---|---|---|---|
+| 1 | xrechnung-zugferd | done | 13 | 6 | 4 | 117 L |
+| 2 | gobd-archive | done | 9 | 5 | 4 | 137 L |
+| 3 | datev-extf | done | 8 | 6 | 5 | 173 L |
+| 4 | skr-journal-mapping | done | 7 | 7 | 4 | 132 L |
+| 5 | ust-edge-cases | done | 6 | 8 | 4 | 75 L |
+| 6 | bank-reconciliation-camt | done | 6 | 8 | 3 | 93 L |
+| 7 | carrier-apis-de | done | 11 | 5 | 3 | 89 L |
+| 8 | webhooks-safe | done | 8 | 6 | 3 | 89 L |
+| 9 | publish-reconcile-wp-meta | done | 6 | 5 | 3 | 85 L |
+| 10 | dsgvo-ai-act-labeling | done | 7 | 5 | 3 | 92 L |
+
+### What was built this pass (2026-10-13)
+
+- **DESIGN.md for all ten skills** — trigger description draft, "what this
+  skill does better than a generic agent", procedure outline, scripts planned,
+  five eval prompts. The six skills that already had a DESIGN.md
+  (carrier-apis-de, webhooks-safe, publish-reconcile-wp-meta,
+  dsgvo-ai-act-labeling) were left as-is; the other four were written new.
+- **SKILL.md for the four skills that lacked one** — carrier-apis-de,
+  webhooks-safe, publish-reconcile-wp-meta, dsgvo-ai-act-labeling. Each is
+  under 500 lines and points one level deep into `references/`.
+- **procedures.md for webhooks-safe and publish-reconcile-wp-meta** — with
+  worked good/bad examples.
+- **EVALS.md for webhooks-safe, publish-reconcile-wp-meta, carrier-apis-de
+  and dsgvo-ai-act-labeling** — 5-8 prompts each, plus 3 near-miss triggers.
+- **Near-miss triggers added to skr-journal-mapping and ust-edge-cases**
+  (both had 0, which failed the validator's ≥3 rule).
+- **xrechnung-zugferd SOURCES.md** — restored the 9 original 2026-10-08 source
+  rows that a previous pass had truncated (the file now carries 13 URLs).
+
+### Live re-verification (curl, 2026-10-13)
+
+All 30 primary URLs probed. Statuses recorded per row. Changes vs the 2026-10-12
+pass:
+
+- `github.com/itplr-kosit/validator-configuration-xrechnung/blob/master/CHANGELOG.md`
+  → **503** (was 200). The v2026-08-31 changelog facts are retained but the URL
+  is now unreliable; re-fetch from the raw GitHub URL before an audit.
+- `eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689` and
+  `.../CELEX:32026R1744` → **202** (accepted, content served). No change to
+  the Art. 50 facts.
+- `www.hermes.de/geschaeftskunden/versand/` → **403** (unchanged, bot-protected).
+- All other URLs unchanged (200).
+
+### Validation
+
+`business-de/scripts/validate_skills.py` (agentskills.io standard rules):
+**10 skills checked, 0 total issues.** Rules enforced: name == folder,
+description ≤ 1024 chars with a "when to use" trigger, portable frontmatter
+fields only, SKILL.md ≤ 500 lines, references/ links one level deep,
+EVALS.md ≥ 5 prompts + ≥ 3 near-miss prompts, SOURCES.md ≥ 6 URLs with ≥ 2
+retrieval dates, no verbatim 15-word runs between SKILL.md body and its
+references/.
+
+### Open items
+
+- `scripts/validate.py`, `install.sh` and `build-index.py` at the repo root are
+  owned by `skills-engineering-r3`; until they exist, validation is done with
+  `business-de/scripts/validate_skills.py`.
+- DPD / GLS / Hermes / UPS carrier facts remain **unverified** — their partner
+  portals are JS-rendered or bot-protected and require a business contract.
+- The KoSIT validator JAR could not be fetched (503 on the changelog URL this
+  pass); the element-name mapping in xrechnung-zugferd is the best available
+  but not independently re-verified from source.
+- The Art. 50(2) machine-readable marking date (2026-12-02) is a
+  secondary-source date; re-verify against the Omnibus recital before relying
+  on it.
