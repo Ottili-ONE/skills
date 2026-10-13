@@ -20,10 +20,11 @@ Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
 4. **GitHub Actions artifacts** — https://docs.github.com/en/actions/using-workflows/storing-workflow-data-as-artifacts. Verified 2026-10-13 (HTTP 200). Source for the
    "evidence pointer must open in under 60 seconds" rule: an artifact URL + run ID is a
    runnable pointer; a log file path on the host is not, unless it exists.
-5. **PostgreSQL docs — error message guidelines** — https://www.postgresql.org/docs/current/runtime-config-logging.html. Verified 2026-10-13 (HTTP 200 on the logging
+5. **GitHub Actions workflow syntax — `on`/`jobs.<job_id>.steps` and the `conclusion` vocabulary** — https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions. Verified 2026-10-13 (HTTP 200). Source for the status vocabulary this skill borrows: a workflow run has a `conclusion` of `success`, `failure`, `neutral`, `cancelled`, `skipped`, or `timed_out`, and a step has `outcome`. A STATUS.md that only says "passed" loses the distinction between `success` and `neutral` (skipped), which is exactly the false-done shape: a skipped test reads like a pass. URL: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions — retrieved 2026-10-13.
+7. **PostgreSQL docs — error message guidelines** — https://www.postgresql.org/docs/current/runtime-config-logging.html. Verified 2026-10-13 (HTTP 200 on the logging
    chapter; the RLS chapter URL 404s — see conflicts). Source for "never leak internals in a
    status report": log what is verifiable, redact what is not.
-6. **R3 lane experience — STATUS.md anti-patterns** — internal observation recorded in
+8. **R3 lane experience — STATUS.md anti-patterns** — internal observation recorded in
    docs/requests/skills-engineering-r3-04.md. Retrieval date 2026-10-13; no external URL.
    The five-bucket model (DONE / VERIFIED / IN_PROGRESS / BLOCKED / FALSE_DONE) was distilled
    from real handoff notes that conflated "coded" with "done".
@@ -36,7 +37,7 @@ Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
 | actions/upload-artifact major | v4 (v3 deprecated) | 2026-10-13 |
 
 ## Conflicts
-- The earlier SOURCES.md entry listed only two sources, both internal. This file adds four
+- The earlier SOURCES.md entry listed only two sources, both internal. This file adds six
   primary online sources. No conflict between them.
 - PostgreSQL docs: `www.postgresql.org/docs/current/ddl-rls.html` returns 404 as of
   2026-10-13 (the RLS chapter was renamed/moved). The logging chapter URL works. Skills that

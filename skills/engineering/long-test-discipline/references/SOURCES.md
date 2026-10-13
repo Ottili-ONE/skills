@@ -7,6 +7,19 @@
 - `/usr/bin/time -v` (GNU time): https://www.gnu.org/software/time/manual/html_node/Invoking-time.html — verified 2026-10-07 on Biest host; Max RSS field. Version-sensitive: field name stable across GNU time releases.
 - `/usr/local/bin/heavy`: Ottili foreground test wrapper; verified present on Biest 2026-10-07.
 
+- Linux `setrlimit(2)` — https://man7.org/linux/man-pages/man2/setrlimit.2.html — verified 2026-10-13 (HTTP 200). The kernel primitive behind `ulimit -v` (RLIMIT_AS) and `ulimit -u` (RLIMIT_NPROC); explains why a too-tight RLIMIT_NPROC breaks pytest's fork model and why the cap must be set *before* the test process spawns workers. Stable across kernel releases.
+- pytest `tmp_path` / `tmpdir_factory` — https://docs.pytest.org/en/stable/how-to/fixtures.html — verified 2026-10-13 (HTTP 200). Source for the "never write to /tmp" rule: pytest gives each test an isolated, auto-cleaned scratch directory; a test that writes to /tmp on a shared host collides with other agents' tests and its log is wiped by the cron job. Version-sensitive: API stable across pytest 7/8/9.
+- Docker resource limits — https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-namespaces — verified 2026-10-13 (HTTP 200). Source for the containerized variant of the resource-cap rule: `--memory`, `--memory-swap`, `--pids-limit`, `--cpus` on the test container so a runaway test cannot disturb the shared host. Used when the test runs in a container rather than directly under `ulimit`.
+
+## Version-sensitive facts
+| Fact | Value | Verified |
+|------|-------|----------|
+| pytest major at retrieval | 9.x (8.x API compatible) | 2026-10-07 / re-verified 2026-10-13 |
+| `timeout` exit codes | 124 = timed out, 137 = SIGKILL | 2026-10-07 |
+| `ulimit -v` unit | KiB (virtual memory) | 2026-10-07 |
+| `ulimit -u` unit | number of processes | 2026-10-07 |
+| `/usr/local/bin/heavy` | Ottili foreground wrapper, present on Biest | 2026-10-07 |
+
 ## Conflicts between sources
 - pytest-randomly vs fixed order: pytest-randomly seeds tests per run; some teams prefer deterministic order. Resolution: default seed 42, record seed in log, re-run with `--lf` on flake. See references/long-test-discipline-procedure.md section "Flake handling".
 - `ulimit -u` too low vs shared-host fairness: a tight `-u` protects the host but breaks pytest's fork model. Resolution: default 64 processes, override via `MAX_PROCS` env var; never below the number of workers the test needs. See references/long-test-discipline-procedure.md section "Resource limits".
