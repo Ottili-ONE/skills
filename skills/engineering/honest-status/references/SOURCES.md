@@ -8,6 +8,7 @@ Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
    `SKILL.md`). This skill's STATUS.md format follows the same evidence-pointer discipline:
    every claim must be checkable in under 60 seconds. URL: https://agentskills.io/ — retrieved
    2026-10-13.
+1a. **Agent Skills specification text (canonical)** — https://raw.githubusercontent.com/agentskills/agentskills/main/docs/specification.mdx. Verified 2026-10-13 (HTTP 200). The exact rule text behind the 1024-char description limit, the ≤64-char lowercase-hyphenated name that must equal the folder name, the ≤500-char `compatibility` field, and the ≤500-line SKILL.md guidance. `scripts/validate_skill.py` is written against this file. URL: https://raw.githubusercontent.com/agentskills/agentskills/main/docs/specification.mdx — retrieved 2026-10-13.
 2. **R3 LIVE DIRECTIVES (AGENTS.md)** — the host constraint that defines the false-done
    pattern: "a task without a commit is a failed task" and "commit only your own paths". A
    STATUS.md that reports DONE without a commit pointer is exactly the false-done case this

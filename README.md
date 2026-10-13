@@ -19,7 +19,7 @@ skills/
 ├── business-de/          # German business-domain skills (DATEV, XRechnung/ZUGFeRD, GoBD)
 ├── agentic-data/         # Data-plane agent skills
 └── engineering/          # Engineering playbooks (this job's output)
-scripts/                  # validate.py, install.sh, build-index.py, helpers
+scripts/                  # validate.py, validate_skill.py, install.sh, build-index.py, helpers
 schema/                   # catalog.schema.json
 templates/skill/          # SKILL.md template for new skills
 catalog.json              # Machine-readable catalog of every skill
@@ -77,6 +77,23 @@ python3 scripts/validate.py            # exit 0 on success
 python3 scripts/validate.py --json      # machine-readable report
 ```
 
+### `scripts/validate_skill.py`
+
+Validates Agent Skill folders against the open standard at
+[agentskills.io](https://agentskills.io/specification) (specification text fetched
+2026-10-13 from `raw.githubusercontent.com/agentskills/agentskills/main/docs/specification.mdx`).
+Rules: `SKILL.md` with YAML frontmatter; `name` (≤64 chars, lowercase-hyphenated, must equal the
+folder name); `description` (1–1024 chars, must state what the skill does *and* when to use it);
+`compatibility` ≤500 chars; SKILL.md ≤500 lines; every relative link in the body resolves to a
+file with a valid anchor. Defaults to `skills/engineering/**` (this job's owned tree);
+`--everywhere` scans the whole repository.
+
+```sh
+python3 scripts/validate_skill.py --all            # engineering skills only (default)
+python3 scripts/validate_skill.py --everywhere      # every skill in the repo
+python3 scripts/validate_skill.py <skill-dir>...   # explicit paths
+```
+
 ### `scripts/build-index.py`
 
 Generates `index/INDEX.md` (human-readable) and `index/skills.json` (machine-readable) from the
@@ -89,7 +106,7 @@ python3 scripts/build-index.py
 ## Contributing
 
 See `CONTRIBUTING.md` and `AGENTS.md`. New skills start from `templates/skill/SKILL.md`.
-Run `python3 scripts/validate.py` before committing.
+Run `python3 scripts/validate.py` and `python3 scripts/validate_skill.py --all` before committing.
 
 ## License
 
