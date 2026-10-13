@@ -6,14 +6,14 @@
       "effective": "2024-01-01",
       "source": "https://www.cen.eu/standards/EN/16931",
       "verified": "2026-10-08",
-      "note": "EN 16931-1:2017 with Corrigendum 2017-06 (v1.2.4). Factur-X profile model follows this version. Re-verify before any KoSIT validator upgrade."
+      "note": "EN 16931-1:2017 with Corrigendum 2017-06 (v1.2.4). Factur-X 2.5.2 already back-ports features from EN 16931-1:2026 (in progress, not yet published by CEN). Re-verify against the CEN standard page when EN 16931-1:2026 ships."
     },
     "factur-x": {
-      "version": "1.0.11",
-      "effective": "2024-01-01",
-      "source": "https://github.com/akretion/factur-x",
-      "verified": "2026-10-08",
-      "note": "akretion/factur-x Python lib; version is dynamic (hatch-vcs). Profiles per FNFE-MPE spec. Re-verify against the Factur-X spec page."
+      "version": "1.09.2",
+      "effective": "2026-08-04",
+      "source": "https://www.ferd-net.de/aktuelles-veranstaltungen/aktuelles/news/zugferd-252-veroeffentlicht",
+      "verified": "2026-10-13",
+      "note": "FeRD + FNFE-MPE joint release 2026-08-04: ZUGFeRD 2.5.2 / Factur-X 1.09.2. 2.5.2 is a corrigendum cleaning up inconsistencies in a new EXTENDED-profile functionality carried over from the upcoming EN 16931-1:2026. Next release expected autumn 2026 (gross invoices + further EN 16931-1:2026 features). UPGRADED 2026-10-13 from the previously pinned 1.0.11 (akretion/factur-x), which is now superseded. The EN 16931 base version stays 1.2.4 until EN 16931-1:2026 is published by CEN; re-verify then."
     },
     "kosit-validator": {
       "version": "v2026-08-31",
@@ -160,5 +160,13 @@
     "changed": "none",
     "detail": "Every version-sensitive URL in this file was re-fetched. gesetze-im-internet.de/ao/ and /uStg/ now 404 (site layout changed); BEG /beg/ 200. iso20022.org and swift.com 403 (access-restricted). steuer-berater.de/lexikon/ao-147/ 404 (entry moved; lexikon root 200). All GitHub repos (seamless-engineering/datev-extf, akretion/factur-x, itplr-kosit/validator-configuration-xrechnung) 200. de.wikipedia Camt-Format, IBAN, UStG 200. No pinned version changed; the two statute portals are the weak links - re-fetch before audit.",
     "log": "../../scratch/skills/skills-business-de-r3/reverify*.log"
+  },
+  "_recheck_2026_10_13": {
+    "date": "2026-10-13",
+    "task": "skills-business-de-r3-02",
+    "method": "curl -L --max-time 45 with OttiliResearchBot/1.0 UA; GitHub API for repo/tag availability",
+    "changed": "xrechnung-zugferd.factur-x 1.0.11 -> 1.09.2 (FeRD primary source, 2026-08-04 release)",
+    "detail": "FeRD news page https://www.ferd-net.de/aktuelles-veranstaltungen/aktuelles/news/zugferd-252-veroeffentlicht returned 200 and confirms ZUGFeRD 2.5.2 / Factur-X 1.09.2 published 2026-08-04. KoSIT validator-configuration-xrechnung CHANGELOG (master) confirms the v2026-08-31 tag is compatible with XRechnung 3.0, uses CEN Schematron 1.3.16 and KoSIT Validator v1.6.3. agentskills.io/specification 200. steuer-berater.de/lexikon/gobd 200 (cookie-wall JS only, body text not rendered without consent - content corroborated from the 2026-10-08 pass). No other pinned version changed.",
+    "log": "../../scratch/skills/skills-business-de-r3/research/reverify-2026-10-13.log"
   }
 }

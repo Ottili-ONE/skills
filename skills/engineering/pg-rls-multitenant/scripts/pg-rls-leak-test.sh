@@ -51,28 +51,48 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-docker exec pg-rls-leak-test psql -U postgres -c "CREATE ROLE web_app NOLOGIN;" >/dev/null
+docker exec pg-rls-leak-test psql -U postgres -c "CREATE ROLE web_app LOGIN PASSWORD 'app-pass';" >/dev/null
 docker cp "$WORKDIR/migration.sql" pg-rls-leak-test:/tmp/migration.sql
 docker exec pg-rls-leak-test psql -U postgres -f /tmp/migration.sql >/dev/null
 
 # Seed rows for both tenants via a superuser session (RLS bypassed for the seed;
 # the test is whether the *scoped* sessions can see across tenants).
-docker exec pg-rls-leak-test psql -U postgres -tAc \
+docker exec pg-rls-leak-test psql -U postgres -q -tAc \
   "INSERT INTO "${RLS_TABLE}" (id, tenant_id, body) VALUES
      ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '${TENANT_A}', 'A row'),
      ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '${TENANT_B}', 'B row');" >/dev/null
 
+# CRITICAL: every read below runs as the scoped `web_app` role, NOT as the
+# postgres superuser. A superuser (and the table owner) bypasses RLS by design,
+# so running the assertions as postgres would always report 2/2 and hide every
+# leak. The role must be granted SELECT on the table (the migration does this)
+# and the tenant context must be set per session with `SET app.current_tenant`.
 run_count() {  # $1 = tenant uuid ; prints the row count that tenant can see
-  docker exec pg-rls-leak-test psql -U postgres -tAc \
-    "DO \$\$ BEGIN PERFORM set_config('app.current_tenant', '$1', true); END \$\$;
-     SELECT count(*) FROM "${RLS_TABLE}";" | tr -d '[:space:]'
+  docker exec pg-rls-leak-test psql -U web_app -w -q -tAc \
+    "SET app.current_tenant = '$1'; SELECT count(*) FROM "${RLS_TABLE}";" | tr -d '[:space:]'
 }
 
 cross_count() {  # $1 = tenant uuid ; count of rows whose tenant_id differs
-  docker exec pg-rls-leak-test psql -U postgres -tAc \
-    "DO \$\$ BEGIN PERFORM set_config('app.current_tenant', '$1', true); END \$\$;
+  docker exec pg-rls-leak-test psql -U web_app -w -q -tAc \
+    "SET app.current_tenant = '$1';
      SELECT count(*) FROM "${RLS_TABLE}"
       WHERE tenant_id <> '$1'::uuid;" | tr -d '[:space:]'
+}
+
+# INSERT-scoping assertion: an INSERT with the wrong tenant must be rejected by
+# the policy's WITH CHECK clause. Runs as web_app so the policy is enforced.
+wrong_tenant_insert() {
+  local out
+  out="$(docker exec pg-rls-leak-test psql -U web_app -w -q -tAc \
+    "SET app.current_tenant = '$1';
+     INSERT INTO "${RLS_TABLE}" (id, tenant_id, body)
+       VALUES ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', '$2', 'wrong tenant row');" 2>&1 || true)"
+  if printf '%s' "$out" | grep -qiE 'new row violates row-level security|violates row-level security'; then
+    echo "ok: INSERT with tenant_id=$2 rejected by WITH CHECK for tenant $1"
+  else
+    echo "FAIL: INSERT with tenant_id=$2 was NOT rejected for tenant $1 -- $out" >&2
+    fail=1
+  fi
 }
 
 A_SEEN="$(run_count "$TENANT_A")"
@@ -90,10 +110,14 @@ check() {  # check <label> <actual> <expected>
   fi
 }
 
-check "tenant A sees its own row"         "$A_SEEN"  "1"
-check "tenant B sees its own row"         "$B_SEEN"  "1"
+check "tenant A sees its own row"          "$A_SEEN"  "1"
+check "tenant B sees its own row"          "$B_SEEN"  "1"
 check "tenant A sees zero rows of tenant B" "$A_CROSS" "0"
 check "tenant B sees zero rows of tenant A" "$B_CROSS" "0"
+
+# A permissive SELECT policy alone does not scope writes; WITH CHECK must exist.
+wrong_tenant_insert "$TENANT_A" "$TENANT_B"
+wrong_tenant_insert "$TENANT_B" "$TENANT_A"
 
 if [[ $fail -ne 0 ]]; then
   echo "LEAK DETECTED -- block merge" >&2

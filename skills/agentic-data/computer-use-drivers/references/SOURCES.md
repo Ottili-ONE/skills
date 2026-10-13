@@ -1,6 +1,8 @@
 # SOURCES.md — computer-use-drivers
 
-Every URL below was fetched live on 2026-10-12 (re-verification pass). Primary sources first.
+Every URL below was fetched live on 2026-10-12 and re-verified on 2026-10-13.
+The Python SDK source paths moved from `lib/_computer_use/` to
+`lib/tools/_toolsets/` between those dates; the old paths now return HTTP 404. Primary sources first.
 
 ## 1. Anthropic computer-toolset README (driver contract)
 - URL: https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/computer-toolset.md

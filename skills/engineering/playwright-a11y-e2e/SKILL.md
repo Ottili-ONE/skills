@@ -25,7 +25,7 @@ allowed-tools: []
 | Accessibility conformance | axe-core via Playwright | axe JSON report |
 | Keyboard-only navigation | Playwright keyboard API | video + log |
 | Responsive breakpoints | Playwright viewport loop | screenshot set |
-| Stable selectors | Playwright getByRole/getByLabel | selector audit |
+| Stable selectors | `getByTestId` first; `getByRole`/`getByLabel` for roles | selector audit |
 
 ## Numbered procedure (summary; full recipe in references/playwright-a11y-e2e-procedure.md)
 1. Set up the browser context — install Playwright browsers, set a stable viewport, disable animations.
@@ -38,7 +38,7 @@ allowed-tools: []
 ## Near-miss triggers (act before the incident)
 - axe run on a dynamic modal without waiting for `aria-hidden=false` → false violations or missed violations.
 - `:focus-visible` asserted as a WCAG criterion → it is not one; assert focus order instead.
-- `nth-child` or class-only selectors → break on every refactor; use `getByRole`.
+- `nth-child` or class-only selectors → break on every refactor; use `getByTestId` (or `getByRole`/`getByLabel` for roles).
 - Keyboard tests that skip shadow DOM → fail silently on Web Components.
 - Viewport loop missing 320px → mobile bugs never caught.
 - axe run without frame handling → content in iframes is never scanned.
@@ -46,7 +46,7 @@ allowed-tools: []
 ## Worked examples
 Good (stable selector + axe):
 ```ts
-await page.getByRole('button', { name: 'Close' }).click();
+await page.getByTestId('close').click();
 const results = await axe.scan(page.locator('main'));
 expect(results.violations).toEqual([]);
 ```
@@ -58,7 +58,7 @@ await page.click('.btn:nth-child(3)');  // breaks when the DOM order changes
 ## Pitfalls from research
 - axe on dynamic modals misses content rendered after aria-hidden flips; wait for aria-hidden=false.
 - CSS :focus-visible is not a WCAG criterion; do not assert on it.
-- nth-child selectors break on every refactor; prefer getByRole.
+- nth-child selectors break on every refactor; prefer `getByTestId`, then `getByRole`/`getByLabel`.
 - Keyboard-only tests that skip shadow DOM fail silently on Web Components.
 - Viewport loop must include 320px, 768px, 1024px, 1440px minimum (common trap: only testing desktop).
 - axe run without frame handling misses content in iframes (common trap).

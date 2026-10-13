@@ -11,9 +11,12 @@ allowed-tools: []
 Full procedure: references/acceptance-harness-procedure.md
 Sources: references/SOURCES.md
 Evals: references/EVALS.md
-Helpers: scripts/ (shipped: `check_audit_selectors.py`, `check_keyboard.py`,
-`check_workaround_markers.py`, `check_axe_evidence.py` — all offline, deterministic,
-self-tested).
+Helpers: scripts/ (shipped: `check_audit_selectors.py`, `report_result.py`,
+`make_harness.sh` — all offline, deterministic, self-tested).
+
+> Cross-links: `check_keyboard.py` and `check_axe_evidence.py` live in
+> `../playwright-a11y-e2e/scripts/` (keyboard and axe evidence are E2E concerns,
+> not acceptance-harness concerns). Call them with the relative path above.
 
 ## When to use this skill (trigger)
 - Defining what "done" means for a feature or change.
