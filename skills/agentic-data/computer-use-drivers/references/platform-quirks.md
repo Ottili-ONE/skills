@@ -29,7 +29,8 @@ limits.
 ## The confirm gate
 
 `type`, `key` and `hold_key` require a `confirm` callable. The default is
-`confirm: () => true`. Confirmation text must use **invisible characters** so it
+Confirmation text must have every invisible character **escaped** (zero-width spaces, homoglyphs, control codes) so the approver reads exactly what runs
+ — the model may be relaying screen content. Use a fixed phrase only; never put screen content, a host name or a session token in the confirmation string.
 does not appear in the model's context as visible text. The `execute(ctx, name,
 input)` hook runs *after* `confirm`.
 
