@@ -3,7 +3,7 @@
 Retrieval date: 2026-10-09. Version-sensitive facts are pinned in
 `config/versions.json`; re-verify before relying on a fact.
 
-## 1. Reverse charge (§3g UStG) — services only
+## 1. Reverse charge (§13b UStG) — services only
 
 Applies to supplies of **services** (IT, consulting, construction, and similar)
 that the buyer receives from another EU member state. The seller charges 0%
@@ -12,7 +12,7 @@ and the buyer self-assesses the VAT debt (Schuldnerschaft / Steuerverrechnung).
 Preconditions (all must hold):
 1. Buyer holds a valid USt-IdNr. (verify with
    https://ec.europa.eu/taxation_customs/vies/ — record the check date).
-2. The supply is a **service** in the §3g list (IT, consulting, construction).
+2. The supply is a **service** in the §13b list (IT, consulting, construction).
 3. The supply is intra-community (service rendered from DE to another EU state).
 
 Tax key: **06/0** (or V091 in some DATEV exports). Tax amount: 0.00.
@@ -23,7 +23,7 @@ S 1200  Bank    100.00  06/0
 H 8000  Revenue 100.00  06/0
 reverse_charge=true, supply_type=goods
 ```
-§3g covers services, not goods. A goods supply to a customer with a valid
+§13b covers services, not goods. A goods supply to a customer with a valid
 USt-IdNr. is taxed at 0% under the general intra-EU rule (§4a) and must not
 be labelled reverse charge. This journal would fail the USt-Anmeldung
 plausibility check.
@@ -78,7 +78,7 @@ Example: 100.00 × 19% = 19.00; 33.33 × 19% = 6.3326 → 6.33.
 Verified 2026-10-09 against the IHK Chemnitz page
 (https://www.ihk.de/chemnitz/e-rechnung, Nr. 5781150):
 
-- The issuing obligation **includes** Umsätze nach §3g UStG
+- The issuing obligation **includes** Umsätze nach §13b UStG
   (reverse charge). A reverse-charge invoice is still an e-invoice — it
   carries the EN 16931 structure with tax amount 0.00 and tax key 06/0.
 - **Kleinunternehmen are exempt from issuing** e-invoices (they issue a

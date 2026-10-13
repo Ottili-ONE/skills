@@ -91,7 +91,7 @@ A 0% rate with a non-zero tax amount is rejected outright.
 charging a tax amount on a 06/0 line.
 
 ### N1. "Reverse charge is for goods with a foreign USt-IdNr."
-**Expected behaviour:** **rejected** — §3g is *services only*. A goods supply
+**Expected behaviour:** **rejected** — §13b is *services only*. A goods supply
 with a buyer USt-IdNr. uses §4a. `ust_check.py` exits 2 when
 `supply_type: "goods"` is combined with `reverse_charge: true`.
 

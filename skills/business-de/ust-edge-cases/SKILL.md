@@ -41,18 +41,53 @@ beyond what the sources below support.
 
 ## Decision tables
 
-All three tables below — edge-case selection, the goods-vs-services split,
-and the e-invoice interplay — are expanded with worked examples and legal
-sources in `references/procedures.md` §1-§6. The condensed rules:
+All tables below — edge-case selection, the goods-vs-services split, and the
+e-invoice interplay — are expanded with worked examples and legal sources in
+`references/procedures.md` §1-§6. The condensed rules:
 
-Condensed rules: reverse charge (§13b) shifts the VAT debt to the buyer
-for intra-community **services** only; a goods supply to a customer with a
+Condensed rules: reverse charge (§13b) shifts the VAT debt to the buyer for
+intra-community **services** only; a goods supply to a customer with a
 USt-IdNr. is 0% under the general intra-EU rule (§4a) and is not reverse
 charge. Kleinunternehmer (§19, turnover under EUR 20,000) charge no VAT and
 issue a sonstige Rechnung; invoices under EUR 250 gross are exempt from the
 issuing obligation. Worked examples and legal sources are in
 `references/procedures.md` §1–§6.
 
+## Worked examples
+
+### Good output — intra-EU IT services, reverse charge
+Input: German IT consultancy delivers a SaaS licence to a French customer
+(USt-IdNr. FR12345678901, valid), EUR 5,000.00 net, supply_type `service`.
+Expected output: tax key `06/0`, tax amount `0.00`, journal debits the customer
+and credits the service account, and the invoice carries the reverse-charge
+note "Steuerschuldner ist der Leistungsempfänger (§13b UStG)".
+`scripts/ust_check.py invoice.json` → `OK VAT treatment valid, 1 lines`.
+
+### Good output — intra-EU goods, no reverse charge
+Input: a German wholesaler ships EUR 12,000.00 of goods to a Dutch customer
+with a valid USt-IdNr., supply_type `goods`.
+Expected output: tax key `06/0`, tax amount `0.00`, but `reverse_charge: false`
+and the note reads "Innergemeinschaftliche Lieferung (§4a UStG)" — no
+reverse-charge statement. `ust_check.py` exits 0.
+
+### Bad output — reverse charge claimed on goods (the trap)
+Input: same goods shipment, but the agent sets `reverse_charge: true`.
+`ust_check.py` exits 2 with:
+`FAIL line 1: reverse charge (§13b) applies to services only — supply_type 'goods' cannot use reverse charge; the general intra-EU rule (§4a) applies`
+The agent must re-issue with `reverse_charge: false` and the §4a note.
+
+### Bad output — Kleinunternehmer charging 19%
+Input: a Kleinunternehmer (prior-year turnover EUR 18,000) invoices EUR 300.00
+net with tax key `19` and tax amount EUR 57.00.
+`ust_check.py` exits 2 with:
+`FAIL line 1: Kleinunternehmer cannot charge VAT (key 19)`
+Fix: re-issue as a sonstige Rechnung with tax key `0`, tax amount `0.00`.
+
+### Bad output — unrounded tax amount
+Input: EUR 33.33 net at 19% → stated tax amount EUR 6.3327.
+`ust_check.py` exits 2 with:
+`FAIL line 1: tax amount 6.3327 is not rounded to cents (§23 UStDV)`
+Fix: state `6.33` (half-up) and re-run.
 
 ## Pitfalls from research
 
@@ -60,9 +95,8 @@ The single trap that catches most agents: **reverse charge (§13b) is services
 only** — a goods supply to a customer that supplies a USt-IdNr. is taxed at
 0% under the general intra-EU rule (§4a), not reverse charge. The article
 number was re-verified 2026-10-09 (dejure.org: §3g is now the gas/electricity
-place-of-supply rule). The full list of
-five traps, with sources, is in `references/procedures.md` §1–§6.
-
+place-of-supply rule). The full list of five traps, with sources, is in
+`references/procedures.md` §1–§6.
 
 ## Verification checklist
 
@@ -72,7 +106,6 @@ five traps, with sources, is in `references/procedures.md` §1–§6.
 - [ ] Tax amount computed and rounded to cents
 - [ ] `scripts/ust_check.py` exits 0
 - [ ] E-invoice interplay documented (e-invoice vs sonstige Rechnung)
-
 
 ## Related skills
 

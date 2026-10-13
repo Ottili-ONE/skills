@@ -39,7 +39,7 @@ def test_kleinunternehmer_charging_vat():
 
 
 def test_reverse_charge_on_goods_rejected():
-    # §3g is services only; claiming reverse charge on a goods supply is rejected.
+    # §13b is services only; claiming reverse charge on a goods supply is rejected.
     r = run([{"tax_key": "06/0", "net": 100.0, "tax_amount": 0.0,
               "customer_vat_id": "DE123456789",
               "reverse_charge": True, "supply_type": "goods"}])
@@ -47,7 +47,7 @@ def test_reverse_charge_on_goods_rejected():
 
 
 def test_reverse_charge_on_service_accepted():
-    # §3g reverse charge on a service with a valid buyer USt-IdNr. is valid.
+    # §13b reverse charge on a service with a valid buyer USt-IdNr. is valid.
     r = run([{"tax_key": "06/0", "net": 100.0, "tax_amount": 0.0,
               "customer_vat_id": "DE123456789",
               "reverse_charge": True, "supply_type": "service"}])
