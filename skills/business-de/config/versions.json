@@ -104,9 +104,9 @@
       "law": "UStG §13b",
       "verified": "2026-10-09 (article renumbered)",
       "source": "https://dejure.org/gesetze/UStG/13b",
-      "note": "§13b "Leistungsempfänger als Steuerschuldner" is the CURRENT reverse-charge article. The UStG was restructured: the old §3g (cross-border services reverse charge) is now "Ort der Lieferung von Gas, Elektrizität, Wärme oder Kälte" (dejure.org, 2026-10-09). The buyer bears the VAT debt; the buyer's USt-IdNr. is mandatory. §13b is services only — a goods supply with a buyer USt-IdNr. uses §4a, not reverse charge. Residual uncertainty: whether the cross-border SERVICES reverse charge sits in §13b or another article is unverified (dejure.org text is JS-rendered); confirm with the tax advisor."
+      "note": "§13b (Leistungsempfänger als Steuerschuldner) is the CURRENT reverse-charge article. The UStG was restructured: the old §3g (cross-border services reverse charge) is now the gas/electricity/heating/cooling place-of-supply rule (dejure.org, 2026-10-09). The buyer bears the VAT debt; the buyer's USt-IdNr. is mandatory. §13b is services only — a goods supply with a buyer USt-IdNr. uses §4a, not reverse charge. Residual uncertainty: whether the cross-border SERVICES reverse charge sits in §13b or another article is unverified (dejure.org text is JS-rendered); confirm with the tax advisor."
     },
-    "oss": {
+"oss": {
       "law": "UStG §18",
       "verified": "2026-10-09",
       "source": "https://www.gesetze-im-internet.de/uStg/",
