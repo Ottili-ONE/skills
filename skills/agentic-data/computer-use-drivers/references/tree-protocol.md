@@ -1,6 +1,8 @@
 # Accessibility-tree protocol — the primary path
 
-Verified 2026-10-12 against the Anthropic SDK computer-toolset registry
+Verified 2026-10-13 against the Anthropic SDK Python sources
+(`lib/tools/_toolsets/_computer_registry.py`; HTTP 200). The old
+`lib/_computer_use/computer_toolset.py` path 404s.
 (`https://github.com/anthropic/claude-ai-sdk-python`, HTTP 200) and the
 platform-specific docs linked in `references/platform-quirks.md`.
 The tree is the **primary** path for every action in this skill. Pixels are the

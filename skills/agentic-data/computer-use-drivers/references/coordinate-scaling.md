@@ -1,6 +1,10 @@
 # Coordinate scaling — the model/display pixel contract
 
-Verified 2026-10-12 against the Anthropic SDK computer-toolset spec (HTTP 200).
+Verified 2026-10-13 against the Anthropic SDK Python sources
+(`lib/tools/_toolsets/_computer.py`, HTTP 200): `cursor_position` returns the cursor
+in **screenshot** pixels (confirmed in the SDK docstring at line 146), and the
+scaling rule is a driver obligation — the SDK never checks `input`. The old
+`lib/_computer_use/coordinates.py` path 404s.
 Every coordinate the model sends is in **full-screenshot pixels**. The driver
 translates them to **display pixels** before acting. Getting this wrong is the
 most common silent failure in computer-use drivers.

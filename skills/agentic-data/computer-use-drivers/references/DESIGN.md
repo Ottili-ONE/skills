@@ -9,7 +9,9 @@ without a driver contract."
 
 ## Primary sources used
 - Anthropic computer-toolset README (2026-08-01 toolset, 17 members):
-  https://github.com/anthropics/anthropic-sdk-typescript/blob/main/computer-toolset.md
+  https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer_registry.py
+  (the typescript `computer-toolset.md` path no longer resolves; the Python SDK is
+  the primary source for this skill, re-fetched 2026-10-13, HTTP 200)
   -> driver subclass contract, coordinate scaling, confirm() gate, error phrasing rules.
 - Member registry:
   https://github.com/anthropics/anthropic-sdk-typescript/blob/main/tests/lib/tools/toolsets/computer_toolset_20260801.json
@@ -41,7 +43,7 @@ without a driver contract."
    tree rather than assume the UI is static; never block the model loop on a UI modal.
 
 ## Platform quirks
-- Windows: accessibility tree via UI Automation; coordinates are display pixels;
+- Windows: accessibility tree via UI Automation; coordinates are host/display pixels;
   high-DPI scaling must be applied consistently.
 - macOS: AX API; sandboxed apps may not expose their tree; `screencapture` for images.
 - Linux: AT-SPI2; X11 vs Wayland changes screenshot and input paths.
@@ -67,7 +69,7 @@ of a driver that clamps out-of-bounds coordinates and then clicks the wrong plac
 
 ## What existing public skills do (and what this one does differently)
 
-Surveyed on 2026-10-12. `anthropics/skills` ships no computer-use skill — the
+Surveyed on 2026-10-12; the SDK paths were re-verified 2026-10-13. `anthropics/skills` ships no computer-use skill — the
 capability lives in the SDK (`computer_toolset_20260801`, 17 members), not in a
 skill folder. The Fastio 2026 directory lists `Agent-Browser` (14k stars, ref-based
 element targeting) and generic automation snippets; neither covers a desktop
@@ -90,7 +92,7 @@ This skill is the only one that turns the SDK contract into a *driver* procedure
 - **17-member registry diffed against the SDK**: un-overridden members are sent as
   `enabled: false`; omitting `key` silently incompletes the driver.
 
-Public sources surveyed (2026-10-12, all HTTP 200):
+Public sources surveyed (2026-10-12; the Python SDK paths re-fetched 2026-10-13, all HTTP 200):
 | Source | What it has | Gap this skill fills |
 |--------|-------------|---------------------|
 | `anthropics/skills` | no computer-use skill at all | the SDK contract is not a skill; this one is |

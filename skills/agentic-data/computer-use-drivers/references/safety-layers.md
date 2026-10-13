@@ -1,6 +1,8 @@
 # Safety layers — the three gates
 
-Verified 2026-10-12 against the Anthropic SDK computer-toolset safety docs
+Verified 2026-10-13 against the Anthropic SDK Python sources
+(`lib/tools/_toolsets/_computer.py`; HTTP 200). The old `lib/_computer_use/safety.py`
+path 404s — the three safety layers are in `_computer.py`, not a separate file.
 (HTTP 200). A computer-use driver has three independent safety layers. Each one
 alone is insufficient; they are designed to fail closed.
 

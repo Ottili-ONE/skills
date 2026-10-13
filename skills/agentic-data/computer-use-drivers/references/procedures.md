@@ -1,8 +1,9 @@
 # Procedures — computer-use-drivers
 
-Verified 2026-10-12 against the anthropic-sdk-typescript sources
-(`computer-toolset.md`, `computer-members.ts`, `computer.ts`, `BetaRunnableToolset.ts`).
-Step-by-step instructions that SKILL.md links to on demand.
+Verified 2026-10-13 against the anthropic-sdk-python sources
+(`lib/tools/_toolsets/_computer_registry.py`, `lib/tools/_toolsets/_computer.py`;
+HTTP 200). The old `lib/_computer_use/` paths 404. Step-by-step instructions that
+SKILL.md links to on demand.
 
 ## P1 — set up the driver
 
@@ -11,8 +12,11 @@ Step-by-step instructions that SKILL.md links to on demand.
    backend supports; un-overridden members are sent as `enabled: false` by the SDK.
 3. Write each tool as a **method**, never an arrow-function field — arrow fields
    compile but are not detected as served.
-4. Pass `confirm` through the constructor. The default is `confirm: () => true`;
-   set it to a real approver before enabling `type`/`key`/`hold_key`.
+4. Pass `confirm` through the constructor. The default is `confirm: None`, and a
+   driver that serves any of `type`/`key`/`hold_key` **cannot be built** without a
+   real approver: `ComputerOptions.__init__` raises `ToolsetConfigError` when
+   `required` (served ∩ enabled ∩ CONFIRM_REQUIRED) is non-empty and `confirm` is
+   None. Set it to a real approver before enabling the keyboard members.
 
 ## P2 — scale coordinates
 
@@ -62,15 +66,20 @@ Step-by-step instructions that SKILL.md links to on demand.
 ## P7 — platform specifics
 
 - **macOS**: AX API is the deepest tree but requires permissions; sandboxed apps may
-  not expose their tree; use `screencapture` for images.
+  not expose their tree; use the platform `screencapture` tool for images.
 - **Windows**: UI Automation exposes more but is slower; coordinates are display
   pixels; apply high-DPI scaling consistently.
 - **Linux**: AT-SPI2; X11 vs Wayland changes screenshot and input paths — prefer X11.
 
-## Near-miss triggers
+## Near-miss triggers (platform-specific; the cross-cutting list is in SKILL.md)
 
-- Scaling coordinates in place -> message history corrupted.
-- Omitting `confirm` for `type`/`key`/`hold_key` -> the SDK throws.
-- Catching all exceptions and showing their `.message` to the model -> screen content leaks.
-- Letting the runner close the desktop -> double-close or leaked process.
-- Treating `cursor_position` as returning host pixels -> it returns screenshot pixels.
+- Mutating the `input` array in place corrupts the shared message history — always
+  scale into a fresh array.
+- A driver built with `confirm=None` that serves `type`/`key`/`hold_key` raises
+  `ToolsetConfigError` at construction, not at call time.
+- Showing an exception's `.message` to the model leaks screen content, a host name
+  or a session token — rewrite as a fixed phrase.
+- Letting the runner close the desktop double-closes or leaks the process; the
+  **driver** owns teardown.
+- Reporting `cursor_position` in host pixels makes every click land off-target;
+  it is always screenshot pixels.

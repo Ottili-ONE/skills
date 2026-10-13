@@ -1,6 +1,8 @@
 # Worked examples — computer-use-drivers
 
-Verified 2026-10-12 against the anthropic-sdk-typescript sources.
+Verified 2026-10-13 against the anthropic-sdk-python sources
+(`lib/tools/_toolsets/_computer_registry.py`, `lib/tools/_toolsets/_computer.py`;
+HTTP 200). The old `lib/_computer_use/` paths 404.
 Good and bad driver code, with the detection signal for each.
 
 ## Good — 17-member driver, confirm-gated, new-array scaling
