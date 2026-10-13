@@ -32,6 +32,9 @@ POISON_DELETE_RE = re.compile(r"DELETE\s+FROM\s+poison_outbox", re.IGNORECASE)
 TXBEGIN_RE = re.compile(r"^\s*BEGIN\b", re.IGNORECASE | re.MULTILINE)
 TXCOMMIT_RE = re.compile(r"^\s*COMMIT\b", re.IGNORECASE | re.MULTILINE)
 
+TQ3 = chr(39) * 3   # triple single quote
+TQD = chr(34) * 3   # triple double quote
+
 
 def _read(p: Path) -> str:
     return p.read_text(encoding="utf-8")
@@ -132,19 +135,56 @@ def _limit_without_orderby(source: str) -> bool:
     return False
 
 
+def _strip_comments(source: str) -> str:
+    """Remove # comments and triple-quoted strings so a *mention* of a keyword in
+    prose does not trigger a finding. The actual SQL/Python must still contain the
+    construct for the checker to see it."""
+    out: list[str] = []
+    in_triple: str | None = None
+    for line in source.splitlines():
+        if in_triple:
+            idx = line.find(in_triple)
+            if idx == -1:
+                continue
+            line = line[idx + 3:]
+            in_triple = None
+            if not line.strip():
+                continue
+        for opener in (TQ3, TQD):
+            if opener in line:
+                before, _, after = line.partition(opener)
+                if in_triple is None:
+                    line = before
+                    in_triple = opener
+                    if after.strip():
+                        line = after
+                        in_triple = None
+                else:
+                    line = after
+                    in_triple = None
+                break
+        if in_triple:
+            continue
+        h = line.find("#")
+        if h != -1:
+            line = line[:h]
+        out.append(line)
+    return "\n".join(out)
+
 def check_poller(source: str) -> list[str]:
+    code = _strip_comments(source)
     findings: list[str] = []
-    if not ORDERBY_RE.search(source):
+    if not ORDERBY_RE.search(code):
         findings.append("poller: missing ORDER BY created_at (delivery order undefined)")
-    elif _limit_without_orderby(source):
+    elif _limit_without_orderby(code):
         findings.append("poller: LIMIT present without ORDER BY created_at before it")
-    if not SKIPLOCK_RE.search(source):
+    if not SKIPLOCK_RE.search(code):
         findings.append("poller: missing FOR UPDATE SKIP LOCKED (parallel pollers block)")
-    if not re.search(r"UPDATE\s+outbox\s+SET\s+sent_at", source, re.IGNORECASE):
+    if not re.search(r"UPDATE\s+outbox\s+SET\s+sent_at", code, re.IGNORECASE):
         findings.append("poller: no UPDATE sent_at after publish (crash => duplicate publish)")
-    if re.search(r"DELETE\s+FROM\s+outbox\b", source, re.IGNORECASE):
+    if re.search(r"DELETE\s+FROM\s+outbox\b", code, re.IGNORECASE):
         findings.append("poller: DELETE FROM outbox found (rows must be moved to poison, never deleted)")
-    if not MAXATTEMPTS_RE.search(source):
+    if not MAXATTEMPTS_RE.search(code):
         findings.append("poller: no max_attempts / attempts >= N threshold (poison never triggers)")
     return findings
 
