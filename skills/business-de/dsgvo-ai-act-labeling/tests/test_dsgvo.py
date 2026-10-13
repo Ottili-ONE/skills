@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REG = ROOT / "scripts" / "process_register.py"
 LABEL = ROOT / "scripts" / "disclosure_label.py"
+LABEL_CHECK = ROOT / "scripts" / "label_check.py"
 
 
 def run(script, *args):
@@ -172,3 +173,49 @@ def test_label_unknown_ai_type_blocks():
     p = Path("/tmp/_sys_unknown.json"); p.write_text(json.dumps(sys_def))
     r = run(LABEL, "--system", str(p))
     assert r.returncode != 0
+
+
+def test_label_check_missing_fields_blocks():
+    """A label missing required fields must fail the check."""
+    import tempfile
+    from dsgvo_test_helpers import write_label
+    bad = {"system": "x", "risk_class": "high", "reviewed_at": "2026-01-01T00:00:00Z",
+           "reviewer": "a", "checksum": "deadbeef"}
+    p = write_label(bad)
+    r = run(LABEL_CHECK, "--label", str(p))
+    assert r.returncode == 1, r.stderr
+    out = json.loads(r.stdout)
+    assert any("missing" in e for e in out["errors"])
+
+
+def test_label_check_high_risk_requires_approval():
+    """High-risk + human_review_status != approved is BLOCKING."""
+    from dsgvo_test_helpers import write_label
+    lab = {"system": "x", "risk_class": "high", "art6_status": "ok",
+           "art50_status": "required", "human_review_status": "pending",
+           "reviewed_at": "2026-01-01T00:00:00Z", "reviewer": "a",
+           "checksum": "deadbeef"}
+    p = write_label(lab)
+    r = run(LABEL_CHECK, "--label", str(p))
+    assert r.returncode == 1
+    out = json.loads(r.stdout)
+    assert any("BLOCKING" in e for e in out["errors"])
+
+
+def test_label_check_checksum_tamper_detected():
+    """A modified label body must fail the checksum."""
+    import hashlib
+    from dsgvo_test_helpers import write_label
+    body = {"system": "x", "risk_class": "low", "art6_status": "n/a",
+            "art50_status": "not-required", "human_review_status": "approved",
+            "reviewed_at": "2026-01-01T00:00:00Z", "reviewer": "a"}
+    p = write_label(body)
+    chk = hashlib.sha256(p.read_bytes()).hexdigest()
+    lab = json.loads(p.read_text()); lab["checksum"] = chk; p.write_text(json.dumps(lab))
+    # tamper the content after computing checksum
+    lab2 = json.loads(p.read_text()); lab2["risk_class"] = "high"
+    p.write_text(json.dumps(lab2))
+    r = run(LABEL_CHECK, "--label", str(p))
+    assert r.returncode == 1
+    out = json.loads(r.stdout)
+    assert any("checksum" in e for e in out["errors"])

@@ -106,7 +106,7 @@
       "source": "https://dejure.org/gesetze/UStG/13b",
       "note": "§13b (Leistungsempfänger als Steuerschuldner) is the CURRENT reverse-charge article. The UStG was restructured: the old §3g (cross-border services reverse charge) is now the gas/electricity/heating/cooling place-of-supply rule (dejure.org, 2026-10-09). The buyer bears the VAT debt; the buyer's USt-IdNr. is mandatory. §13b is services only — a goods supply with a buyer USt-IdNr. uses §4a, not reverse charge. Residual uncertainty: whether the cross-border SERVICES reverse charge sits in §13b or another article is unverified (dejure.org text is JS-rendered); confirm with the tax advisor."
     },
-"oss": {
+    "oss": {
       "law": "UStG §18",
       "verified": "2026-10-09",
       "source": "https://www.gesetze-im-internet.de/uStg/",
@@ -151,6 +151,32 @@
       ],
       "verified": "2026-10-09",
       "note": "Strict primary definition; a 5-day amount+reference window is a configurable heuristic, disabled by default."
+    }
+  },
+  "dsgvo-ai-act-labeling": {
+    "ai_act": {
+      "regulation": "Regulation (EU) 2024/1689",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      "verified": "2026-10-09",
+      "note": "EU AI Act. Art. 50 transparency obligations apply from 2026-05-02 (high-risk rules phased to 2026-08-02 / 2027-08-02). Marked unverified until a lawyer confirms the enforcement calendar."
+    },
+    "gdpr": {
+      "regulation": "Regulation (EU) 2016/679",
+      "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+      "verified": "2026-10-09",
+      "note": "GDPR Art. 6 (lawful basis), Art. 30 (processing register). No amendment since entry into force."
+    },
+    "human_review_retention_years": {
+      "value": 10,
+      "verified": "2026-10-09",
+      "source": "https://www.gesetze-im-internet.de/hgb/__57.html",
+      "note": "Business records under HGB/AO retention; label artefacts inherit gobd-archive retention class."
+    },
+    "label_recheck_days": {
+      "value": 365,
+      "verified": "2026-10-09",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      "note": "Re-verification window for an AI label. 365d matches the annual review cycle recommended for high-risk systems; tighten to 90d for systems with Art. 5(1)(f) biometric categorization."
     }
   }
 }
