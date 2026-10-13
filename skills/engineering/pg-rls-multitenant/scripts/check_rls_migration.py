@@ -80,7 +80,9 @@ def main() -> int:
     # GRANT ALL on a specific table (schema-qualified or bare) is banned; the
     # `ON TABLE` form is rare, so match both `ON <table>` and `ON TABLE <table>`.
     for match in GRANT_ALL_RE.finditer(sql):
-        line = sql[: match.end()].rpartition("\n")[2]
+        # match.end() points at the end of "GRANT ALL"; take the whole source
+        # line so the ON <table> target is visible to the classifier below.
+        line = sql[match.start():].partition("\n")[0]
         if re.search(r"ON\s+TABLE\s+\w+|ON\s+\w+(\.\w+)?", line, re.IGNORECASE):
             findings.append(f"GRANT ALL found: {line.strip()}")
 

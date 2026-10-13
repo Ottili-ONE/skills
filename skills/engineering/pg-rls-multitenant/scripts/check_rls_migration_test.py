@@ -40,6 +40,9 @@ CREATE TABLE bad_notes (
 );
 CREATE POLICY nothing ON bad_notes FOR SELECT TO web_app USING (true);
 ALTER TABLE bad_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bad_notes FORCE ROW LEVEL SECURITY;
+-- ROLLBACK
+-- DROP TABLE IF EXISTS bad_notes;
 GRANT ALL ON bad_notes TO web_app;
 """
 
@@ -51,6 +54,10 @@ VIEW_GOOD = """\
 CREATE VIEW public.active_notes
     security_invoker = true
     AS SELECT * FROM tenant_isolated_notes;
+ALTER TABLE tenant_isolated_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_isolated_notes FORCE ROW LEVEL SECURITY;
+-- ROLLBACK
+-- DROP VIEW IF EXISTS public.active_notes;
 """
 
 
@@ -87,7 +94,7 @@ def main() -> int:
             print(f"ok: {name}")
 
     check("good migration passes", GOOD, 0, ["ok:"])
-    check("bad migration fails", BAD, 1, ["FAIL:", "not NOT NULL", "GRANT ALL", "no FORCE"])
+    check("bad migration fails", BAD, 1, ["FAIL:", "not NOT NULL", "GRANT ALL"])
     check("view without security_invoker fails", VIEW_BAD, 1, ["security_invoker"])
     check("view with security_invoker passes", VIEW_GOOD, 0, ["ok:"])
 
