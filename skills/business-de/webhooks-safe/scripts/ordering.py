@@ -40,7 +40,10 @@ def save_state(path: str, state: dict) -> None:
 def decide(stream: str, seq: int, now: int, replay_seconds: int,
            state: dict) -> dict:
     last = state.get("last_seq", 0)
-    held = state.get("held", {})
+    # setdefault, not get: state.get("held", {}) returns a *new* dict when
+    # "held" is absent, and mutating that new dict never writes back to state,
+    # so every held event was silently dropped on the next restart.
+    held = state.setdefault("held", {})
     if seq <= last:
         return {"action": "duplicate_or_old", "seq": seq, "last_seq": last,
                 "reason": "already processed"}

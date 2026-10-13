@@ -57,10 +57,12 @@ def test_stripe_signature_within_window_accepted():
 def test_reencoding_body_breaks_signature():
     """Re-encoding the parsed JSON changes byte order and breaks the HMAC.
     The skill verifies over the RAW bytes."""
+    # raw bytes with whitespace; compact re-encoding drops the whitespace
     body = b'{"a": 1, "b": 2}'
     sig = "sha256=" + hmac.new(b"secret", body, hashlib.sha256).hexdigest()
     # an agent that re-serialises the parsed body must fail verification
-    reencoded = json.dumps(json.loads(body)).encode()
+    reencoded = json.dumps(json.loads(body), separators=(",", ":")).encode()
+    assert reencoded != body, "fixture assumes re-encoding changes bytes"
     r = run(VERIFY, "--provider", "github", "--secret", "secret",
             "--body", str(_body(reencoded)), "--sig", sig)
     assert r.returncode == 1
