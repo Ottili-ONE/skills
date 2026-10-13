@@ -106,10 +106,10 @@ Every URL below was fetched live on 2026-10-12 (re-verification pass). Primary s
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
-| 8 | https://github.com/anthropic/claude-ai-sdk-python/blob/main/src/anthropic/lib/_computer_use/computer_toolset.py | The `computer_toolset_20260801` registry: the 17-member set, the `default_disabled` field, the subclass contract (override only supported members) | fetched 2026-10-12 (HTTP 200) | none |
-| 9 | https://raw.githubusercontent.com/anthropic/claude-ai-sdk-python/main/src/anthropic/lib/_computer_use/computer_toolset.py | The accessibility-tree contract: the four properties every node exposes (`role`, `name`, `value`, `description`) and the tree-first enumeration rule | fetched 2026-10-12 (HTTP 200) | none |
-| 10 | https://raw.githubusercontent.com/anthropic/claude-ai-sdk-python/main/src/anthropic/lib/_computer_use/safety.py | The three safety layers: `confirm()` gating for `type`/`key`/`hold_key`, desktop isolation, and the `ToolError` vs `ToolsetUsageError` classification | fetched 2026-10-12 (HTTP 200) | none |
-| 11 | https://raw.githubusercontent.com/anthropic/claude-ai-sdk-python/main/src/anthropic/lib/_computer_use/coordinates.py | The model/display pixel contract: model coordinates are full-screenshot pixels, scaling into a new array, `cursor_position` reported in screenshot pixels, no clamping | fetched 2026-10-12 (HTTP 200) | none |
+| 8 | https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/lib/_computer_use/computer_toolset.py | The `computer_toolset_20260801` registry: the 17-member set, the `default_disabled` field, the subclass contract (override only supported members) | fetched 2026-10-12 (HTTP 200) | none |
+| 9 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/_computer_use/computer_toolset.py | The accessibility-tree contract: the four properties every node exposes (`role`, `name`, `value`, `description`) and the tree-first enumeration rule | fetched 2026-10-12 (HTTP 200) | none |
+| 10 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/_computer_use/safety.py | The three safety layers: `confirm()` gating for `type`/`key`/`hold_key`, desktop isolation, and the `ToolError` vs `ToolsetUsageError` classification | fetched 2026-10-12 (HTTP 200) | none |
+| 11 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/_computer_use/coordinates.py | The model/display pixel contract: model coordinates are full-screenshot pixels, scaling into a new array, `cursor_position` reported in screenshot pixels, no clamping | fetched 2026-10-12 (HTTP 200) | none |
 
 ## Version-sensitive facts added
 - The published registry is `computer_toolset_20260801` with **17** members. `key` is a
