@@ -49,8 +49,8 @@ to a skill that works. Detection signal: `without_skill/` is absent for any prom
 
 ## Good — eval prompts that discriminate
 
-A prompt set contains two labelled sets: prompts that should fire the skill and
-prompts that should not. Keep them realistic — real users mention file paths,
+A prompt set contains two labelled sets: prompts that SHOULD fire the skill and
+prompts that should NOT. Keep them realistic — real users mention file paths,
 error messages and concrete symptoms, not skill names.
 
 ## Bad — eval prompts that merely restate the description
