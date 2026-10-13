@@ -77,6 +77,37 @@ the 6-year class covers exactly three sub-types:
 A draft, a working file, or a deleted chat message that no system can reproduce
 is **not** a valid substitute for the retained document.
 
+## Worked examples
+
+### Good output — voucher classified and retained
+Input: an invoice dated 2026-03-15, EUR 1,200.00, received by email.
+Expected behaviour: classified as `Buchungsbeleg` (8 years), retention end
+`2034-12-31`, SHA-256 recorded, original file kept unchanged.
+`scripts/retention_classify.py --file inv.pdf` → `class: voucher, until: 2034-12-31`.
+
+### Bad output — print-to-PDF used as the archive artefact
+Input: the agent prints the PDF/A-3 e-invoice to a new PDF "for the archive".
+Expected behaviour: **rejected** — a print-to-PDF drops the structured XML
+attachment, so the artefact is no longer a machine-readable e-invoice and
+fails the GoBD "Wiedergabefähigkeit" test. Keep the original file and record
+its SHA-256.
+
+### Good output — purge blocked because an audit is open
+Input: a 2017 voucher (8-year class, retention end 2025-12-31) is requested
+for deletion on 2026-10-09, but an audit is currently in progress.
+`scripts/purge_decision.py` exits non-zero with:
+`BLOCKED: audit in progress — purge not permitted while an audit is open`
+The retention end is reached but the second blocker is not cleared, so the
+purge stays blocked.
+
+### Bad output — purge record retained only "today + 8 years"
+Input: the agent purges a 2017 voucher and keeps the purge record until
+2034-12-31.
+Expected behaviour: **wrong** — the purge record's retention derives from the
+document it describes, so a 2017 voucher's purge record is retained until
+`2025-12-31`. `scripts/purge_decision.py` computes `record_retention_until`
+from the document year, not from today.
+
 ## Pitfalls from research
 
 - In-place overwrite of an invoice is **not** GoBD-compliant; immutability is a

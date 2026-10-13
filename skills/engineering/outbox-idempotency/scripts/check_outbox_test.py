@@ -34,8 +34,8 @@ def main() -> int:
         failures.append(f"bad_poller must flag missing SKIP LOCKED, got {bad}\n{out}")
 
     bad, out = run(str(EX / "good_outbox.sql"), "--poller", str(EX / "bad_limit_order.py"))
-    if bad != 1 or "LIMIT present without ORDER BY" not in out:
-        failures.append(f"bad_limit_order must flag LIMIT-before-ORDER BY, got {bad}\n{out}")
+    if bad != 1 or "ORDER BY created_at" not in out:
+        failures.append(f"bad_limit_order must flag ORDER BY on wrong column, got {bad}\n{out}")
 
     bad, out = run(str(EX / "good_outbox.sql"), "--poller", str(EX / "bad_no_max_attempts.py"))
     if bad != 1 or "max_attempts" not in out:
