@@ -109,6 +109,51 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
 
 Line 2 of the file is the 125-column heading row; line 1 is the 31-field header.
 
+## Worked examples
+
+### Good output — minimal valid Buchungsstapel
+Input: one domestic sale, EUR 1,000.00 net + 19% VAT, booked 2026-03-15,
+account 4000 (SKR04), tax key 19, Belegnummer INV-001.
+Expected output: a 3-line CSV — header (31 fields, `Kennzeichen=EXTF`,
+`Versionsnummer=700`, `Formatkategorie=21`, `Formatname=Buchungsstapel`,
+`Formatversion=13`), heading row (125 columns), one booking row with
+`col1=1000,00`, `col2=S`, `col7=4000`, `col9=BU-Schluessel`, `col10=1503`
+(15 March, TTMM), `col14=Verkauf INV-001`, `col97=19`, `col103=<GUID>`.
+`scripts/build_stapel.py --out out.csv` produces it; the file round-trips
+through `scripts/fixture_generator.py --check out.csv` with zero errors.
+
+### Bad output — dot instead of comma in the amount
+Input: the same sale, but the agent writes `col1=1000.00` (dot decimal).
+`scripts/fixture_generator.py --check out.csv` exits 2 with:
+`FAIL row 3: col 1 (Umsatz) must use a comma decimal separator, got '1000.00'`
+Fix: rewrite as `1000,00`. DATEV treats the dot as a thousands separator,
+so `1000.00` parses as one thousand, not one thousand — the ledger lands
+the wrong amount and the USt-Anmeldung is off.
+
+### Bad output — year taken from the row instead of the header
+Input: a booking dated 2026-12-29 with `col10=2912` and the header's
+WJ-Beginn is 2026. Correct. But an agent that puts `col10=29122026` (8 digits)
+gets:
+`FAIL row 3: col 10 (Belegdatum) must be TTMM (4 digits), got '29122026'`
+Fix: col 10 is day+month only; the year is the header's WJ. A 2026 booking
+in a 2025 WJ is a different, harder error — it fails the WJ-Plausibilitaet.
+
+### Bad output — Automatikkonto with a BU-Schluessel
+Input: account 1000 (bank, an Automatikkonto) with `col9=BU-12345`.
+`fixture_generator.py --check` exits 2 with:
+`FAIL row 3: col 9 (BU-Schluessel) is forbidden on Automatikkonto 1000`
+Fix: remove the BU-Schluessel; Automatikkonten derive their booking from
+the bank statement, so a manual BU-Schluessel double-assigns the entry and
+the DATEV import warns "Doppelte Buchung".
+
+### Good output — non-Buchungsstapel file handled explicitly
+Input: a Debitoren/Kreditoren export (code 16, 5 columns).
+Expected behaviour: the skill says so explicitly and runs only the
+header-level checks (Kennzeichen, Versionsnummer, Erzeugt am, WJ,
+Sachkontenlaenge, Berater, Mandant) — it does **not** apply the 125-column
+Buchungsstapel rules. Output: `classification: debkred, header_ok: true,
+row_checks: skipped`.
+
 ## Pitfalls from research
 
 - Amounts use a **comma** decimal separator (12,50); a dot (12.50) is a hard
