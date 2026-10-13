@@ -5,8 +5,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+import shutil
 tmp = Path("/tmp/test_contract")
 mod = tmp / "mymod"
+if mod.exists():
+    shutil.rmtree(tmp)
 mod.mkdir(parents=True, exist_ok=True)
 (mod / "__init__.py").write_text("def hello(): pass\nclass Greeter: pass\n")
 mc = mod / "module-contracts"
@@ -27,14 +30,19 @@ r = subprocess.run([sys.executable, "-m", "scripts.check_contract_drift", "--che
 assert r.returncode == 0, f"check failed on matching snapshot: {r.stderr}"
 print("PASS: check passes when live matches snapshot")
 
-# Test 3: check fails when live diverges (new export added)
+# Test 3: check fails when live diverges (new export added), then passes after
+# the snapshot is regenerated with --enumerate (never hand-edited, which is how
+# duplicate entries sneak into snapshots).
 (mod / "new_func.py").write_text("def new_func(): pass\n")
 r = subprocess.run([sys.executable, "-m", "scripts.check_contract_drift", "--check", str(mod)], capture_output=True, text=True, cwd="/srv/ottili/repo/skills/skills/engineering/module-contract-first")
+assert r.returncode == 1, f"check should fail on drift: {r.stderr}"
+assert "DRIFT DETECTED" in (r.stdout + r.stderr), f"check should report drift: {r.stdout + r.stderr}"
+r2 = subprocess.run([sys.executable, "-m", "scripts.check_contract_drift", "--enumerate", str(mod)], capture_output=True, text=True, cwd="/srv/ottili/repo/skills/skills/engineering/module-contract-first")
+assert r2.returncode == 0, f"enumerate failed: {r2.stderr}"
 data2 = json.loads(snap.read_text())
-data2["symbols"].append("new_func")
-snap.write_text(json.dumps(data2, sort_keys=True))
-r2 = subprocess.run([sys.executable, "-m", "scripts.check_contract_drift", "--check", str(mod)], capture_output=True, text=True, cwd="/srv/ottili/repo/skills/skills/engineering/module-contract-first")
-assert r2.returncode == 0, f"check should pass after snapshot update"
+assert data2["symbols"] == sorted(set(data2["symbols"])), f"snapshot has duplicates: {data2}"
+r3 = subprocess.run([sys.executable, "-m", "scripts.check_contract_drift", "--check", str(mod)], capture_output=True, text=True, cwd="/srv/ottili/repo/skills/skills/engineering/module-contract-first")
+assert r3.returncode == 0, f"check should pass after snapshot update: {r3.stderr}"
 print("PASS: check detects drift and passes after snapshot update")
 
 # Test 4: cycles detection (no cycle case)
