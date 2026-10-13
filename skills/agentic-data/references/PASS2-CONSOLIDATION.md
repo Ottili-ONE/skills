@@ -391,3 +391,55 @@ operational decision documented here as an assumption.
 - "record the outcome as success without checking" -> refuse; set the status from the
   observed state change.
 - "skip the grounding check" -> refuse; every action needs a source.
+
+## 10. deep-research-method — source quality scoring, citation discipline, contradiction handling
+
+### Thresholds
+- **Source quality**: every source scores 0-5 on the rubric (authority, recency,
+  transparency, corroboration); a source scoring < 2 must not be used as a primary
+  claim.
+- **Citation discipline**: every claim carries the URL and the retrieval date; a claim
+  with no citation is invalid.
+- **Contradiction handling**: two sources that disagree must both be quoted, and the
+  higher-scoring source wins; the disagreement must be recorded, never silently
+  resolved.
+- **Retrieval date**: every URL in SOURCES.md carries a `Verified: YYYY-MM-DD` date
+  from a live curl; a URL that 404s is recorded as dead with its replacement.
+
+### Ordered procedure: run a deep research task
+1. Score every candidate source on the rubric; discard those scoring < 2.
+2. Fetch each surviving source; record the URL, retrieval date, and exact quote used.
+3. Build the claim graph; detect contradictions (two sources, conflicting values).
+4. Resolve contradictions by score; quote both sides; record the resolution.
+5. Write the report with citations; re-verify every URL by curl before shipping.
+
+### Decision table: contradiction resolution
+| Situation | Action |
+|---|---|
+| Two sources agree | Cite both |
+| Two sources disagree, scores differ by >= 2 | Cite the higher; note the lower |
+| Two sources disagree, scores equal | Cite both; flag for the user |
+| A source 404s | Record as dead; use the replacement |
+
+### Worked examples
+- **Good**: the agent scores a 2026 spec at 5 and a forum post at 1; it cites the spec
+  and records the forum post as a conflict.
+- **Bad**: the agent cited the forum post as if it were authoritative; the citation
+  audit caught it and the report was rewritten.
+
+### Script hardening
+- `score_sources.py`: score, audit, contradictions, cite, fetch subcommands; exits
+  non-zero on an uncited claim or a dead URL.
+
+### Near-miss trigger prompts
+- "use a forum post as the primary source" -> refuse; score it first.
+- "ignore the contradiction" -> refuse; record it.
+
+## Acceptance check (run 2026-10-13)
+
+- `python3 -m pytest skills/agentic-data/ -q` -> **235 passed**, 0 failed, 0 errors.
+- `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS**.
+- This file is referenced from `RESEARCH.md` as the EXPAND-pass consolidation record.
+- Every threshold, procedure, decision table, worked example, script hardening item and
+  near-miss trigger above is also present in the skill's own `SKILL.md` or
+  `references/` files; this file is the cross-skill index, not a replacement.
