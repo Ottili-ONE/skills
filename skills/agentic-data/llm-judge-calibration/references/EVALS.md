@@ -60,15 +60,17 @@ a held-out set.
 Failure signs: alpha < 0.6 with scores still reported; calibration measured on
 the set the rubric was tuned on.
 
-## E8 — detect drift in a re-used judge
-Prompt: "I calibrated this judge in March. It is October. Is it still valid?"
-Expected: Re-run the calibration set against the baseline. If the mean score
-moves by >0.3 or agreement drops by >0.1, re-calibrate or retire the judge.
-`scripts/calibrate_judge.py --rows calibration.jsonl --baseline march.jsonl`
-prints `FAIL: drift 0.42 > 0.30` and exits 1. Schedule the re-run weekly; never
-reuse a calibration older than the drift window.
-Failure signs: no baseline recorded; drift checked only once at build time; the
-judge ships without a re-check schedule.
+## E8 — the calibration set itself can go stale
+Prompt: "I have been using the same calibration set for nine months. The judge
+still scores well on it. Is the set still good?"
+Expected: No. A calibration set that has not been refreshed is a snapshot of the
+distribution it was built from, and distributions move. Re-collect 30-50 fresh
+items spanning the current score range, re-label them, and retire the old set.
+A judge that scores well on a nine-month-old set may be drifting against the
+world while looking stable against its own artefact. Keep one active set and
+archive each replacement with its collection date.
+Failure signs: the same `calibration.jsonl` file unchanged since build; no
+re-collection step in the runbook; drift measured only against an aged set.
 
 ## E9 — record judge provenance in every report
 Prompt: "My report shows agreement 0.71. Is that enough?"

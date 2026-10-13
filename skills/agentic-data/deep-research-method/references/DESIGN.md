@@ -57,9 +57,10 @@ This skill is the only one that makes the evidence chain auditable:
 - **Primary-first ordering**: a secondary source used alone is a FAIL, not a
   shortcut. Official docs, standards bodies and source repos first; secondary
   sources confirm only.
-- **Retrieval date on every source**: a source without a URL + retrieval date +
-  pinned version is memory, not evidence. Facts older than the question's window
-  are re-fetched, not reused.
+- **Retrieval date on every source**: a source without a URL plus a retrieval
+  date plus a pinned version is memory rather than evidence. Stale facts are
+  re-fetched for the current question instead of being reused from an earlier
+  pass.
 - **Contradiction resolution is a six-step procedure** (list / frame / weight by
   quality score / state the conflict / re-weight on new evidence / no-synthesis),
   with the "fake-middle" near-miss (two sources that agree on a wrong value)

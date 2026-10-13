@@ -1,90 +1,81 @@
 # DESIGN: dedup-decontam
 
+## Why this skill exists
+A training corpus that is not deduplicated trains on itself; a corpus that is not
+decontaminated trains on its evaluation set. Both failures are silent: the
+metrics still look fine, and the damage only shows up months later when the
+model fails on a held-out task it was effectively trained on. This skill turns
+deduplication and decontamination into a repeatable pipeline with a
+pass/fail gate.
+
 ## Trigger description (SKILL.md description draft, <=1024 chars)
-"Deduplicate and decontaminate text corpora for LLM training: MinHash/LSH near-duplicate
-detection, n-gram and embedding-based decontamination, planted-item tests with
-pass/fail criteria. Use when preparing a training or evaluation dataset and you must
-remove duplicates and test-set leakage; not for single-document similarity."
+"Deduplicate and decontaminate text corpora for LLM training: MinHash/LSH
+near-duplicate detection, n-gram and embedding-based decontamination, planted-item
+tests with pass/fail criteria. Use when preparing a training or evaluation dataset
+and you must remove duplicates and test-set leakage; not for single-document
+similarity."
 
-## Procedure outline
-1. Normalize ONCE via `scripts/normalize.py` (the single function every comparison runs
-   on): strip BOM/zero-width chars, drop `\r`, lowercase (skip for code), collapse
-   whitespace, canonicalize URLs, SHA-256 the bytes for exact dedup.
-2. MinHash/LSH near-dedup: char-level shingles of size w (5 prose, 8 code); k=128
-   min-hash values (never below 64); Jaccard ≈ matching/k with 95% interval ±12%.
-   Band with b bands of r rows (k=b*r); threshold t ≈ (1/b)^(1/r). b=32,r=4 -> 0.420;
-   b=16,r=8 -> 0.707; b=8,r=16 -> 0.878. Compare candidate pairs exactly and keep those
-    (the old draft's 0.85/0.94 were wrong -- the achievable thresholds for k=128 are
-    0.008/0.125/0.420/0.707/0.878; to reach ~0.94 use k=256, b=8,r=32 -> 0.937).
-   above the target.
-3. n-gram decontamination: build the test-prompt n-gram set (n=13 MMLU/GSM8K-style,
-   n=8 code, n=5 prose) and slide the same window over the corpus. Tokenization must
-   match the benchmark's (GPT-2 BPE vs raw char n-grams differ). Flag, do not silently
-   drop; record the matched n-gram and position.
-4. Embedding decontamination: embed with one model, cosine-similarity against prompts,
-   flag above the pinned threshold (default 0.92 for all-MiniLM-L6-v2). Threshold is
-   model-dependent and a CLI argument, never baked into logic. Calibrate on a held-out
-   clean set.
-5. Planted-item test before shipping: plant 5 exact duplicates and 5 near-duplicates
-   (Jaccard ~0.85). Expected 5/5 exact found, >=4/5 near. If it fails, the detector is
-   broken.
+## The three hard decisions
 
-## Scripts planned
-- `scripts/normalize.py`, `scripts/minhash_lsh.py`, `scripts/ngram_decontam.py`,
-  `scripts/embed_decontam.py`, `scripts/plant_test.py`, `scripts/validate_skill.py`.
+### 1. One normalizer, everywhere
+Every comparison in the pipeline runs on the output of `scripts/normalize.py`.
+Two documents that differ only in a BOM, a zero-width character, a `\r`, case or
+whitespace collapse to the same SHA-256 and are exact duplicates. If two
+components normalize differently, they will disagree about what is a duplicate —
+and the disagreement is invisible because both report "clean". So the normalizer
+is a single function, not a per-step convention.
 
-## Five eval scenarios (expanded in `references/EVALS.md`)
-1. "I decontaminated using character n-grams but the benchmark uses GPT-2 BPE. Is my
-   result valid?" -> No: tokenization mismatch misses matches and over-reports.
-2. "My MinHash uses num_perm=8. What's wrong?" -> Unstable estimate, not reproducible;
-   use k>=64, 128 default, with a fixed seed.
-3. "I found a duplicate and silently removed it. Is that OK?" -> No: flag it, record the
-   matched n-gram and position, and let a human decide.
-4. "The embedding threshold is 0.92 for all-MiniLM-L6-v2. Can I use it with another
-   model?" -> No: thresholds are model-dependent; re-tune on a held-out clean set.
-5. "The planted-item test found 3 of 5 near-duplicates. What do I do?" -> The detector
-   is broken; fix before trusting any real result.
+### 2. Tokenization must match the benchmark
+N-gram decontamination slides a window over the corpus and asks whether any
+window appears in the benchmark's prompt set. The window is only meaningful if
+the tokenization matches the benchmark's. GPT-2 BPE and raw character n-grams
+produce different windows, so character n-grams against a BPE benchmark miss
+matches and over-report. The GPT-2 BPE regex is baked into
+`ngram_decontam._GPT2_PAT` so it cannot drift.
 
-## What this skill does better than a generic agent
-A generic agent removes obvious duplicates and calls it done. This skill pins the
-normalization contract, the MinHash/LSH math with its threshold table, the
-tokenization-matching rule for n-gram decontamination, the model-dependent embedding
-threshold, and a planted-item test with explicit pass/fail criteria. It prevents the
-common incident of a "decontaminated" dataset that still leaks test-set n-grams
-because the tokenization did not match the benchmark's.
+### 3. Thresholds are parameters, not constants
+The embedding similarity threshold is model-dependent: 0.92 is correct for
+all-MiniLM-L6-v2 and almost certainly wrong for any other model. It is a CLI
+argument, calibrated on a held-out clean set, never baked into the logic.
 
-## What existing public skills do (and what this one does differently)
+## MinHash/LSH threshold table (verified by computation, 2026-10-13)
+For k=128 min-hash values split into b bands of r rows (k = b*r), the LSH
+threshold is `t ≈ (1/b)^(1/r)`:
 
-Surveyed on 2026-10-12. No public Agent Skill covers corpus deduplication or
-decontamination; the work lives in research code (datasketch, MinHash libraries,
-benchmark harnesses) and in blog posts. `anthropics/skills`, the Fastio 2026
-directory and `skills.cat` have no entry for this topic. A generic agent that hits
-this problem writes ad-hoc `set()` comparisons and calls it done.
+| k | b | r | t |
+|---|---|---|---|
+| 128 | 32 | 4 | 0.420 |
+| 128 | 16 | 8 | 0.707 |
+| 128 | 8 | 16 | 0.878 |
+| 128 | 4 | 32 | 0.958 |
+| 256 | 8 | 32 | 0.937 |
+| 512 | 8 | 64 | 0.968 |
 
-This skill is the only one that ships the *complete* contract:
-- **One normalization function**: every comparison runs on the same
-  `scripts/normalize.py` output (BOM/zero-width strip, `\r` drop, lowercase unless
-  code, whitespace collapse, URL canonicalization, SHA-256 of bytes). Different
-  normalizations produce different duplicate sets — this is the most common silent
-  failure.
-- **MinHash/LSH with a threshold table**: k=128 permutations (never below 64),
-  Jaccard ≈ matching/k with a ±12% 95% interval, and the achievable thresholds for
-  k=128 (0.008/0.125/0.420/0.707/0.878; ~0.94 needs k=256, b=8, r=32). The old
-  draft's 0.85/0.94 were wrong for k=128.
-- **Tokenization-matching rule for n-gram decontamination**: the GPT-2 BPE regex
-  (`'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+`,
-  re-verified byte-for-byte from `openai/gpt-2` on 2026-10-12) is baked into
-  `ngram_decontam._GPT2_PAT`; using character n-grams against a BPE benchmark
-  misses matches and over-reports.
-- **Model-dependent embedding threshold**: 0.92 is pinned to `all-MiniLM-L6-v2`
-  only; it is a CLI argument, never baked into logic.
-- **Planted-item test with pass/fail criteria**: plant 5 exact + 5 near-duplicates
-  (Jaccard ~0.85); expect 5/5 exact, >=4/5 near. A detector that finds 3/5 is
-  broken and no real result may be trusted until it is fixed.
+**0.94 is not reachable with k=128** — the closest is 0.878. To target ~0.94
+use k=256 (b=8, r=32 -> 0.937). `scripts/minhash_lsh.py:bands_for()` warns when
+the target is unreachable for the chosen k.
 
-Public sources surveyed (2026-10-12, all HTTP 200):
-| Source | What it has | Gap this skill fills |
-|--------|-------------|---------------------|
-| `ekzhu/datasketch` v2.0.0 | MinHash/LSH library | no procedure, no planted-item test, no decontamination |
-| arXiv MinHash papers (1811.04633, 1407.4416, 1710.08436, 2109.03337) | the estimators | no agent-facing contract |
-| `hendrycks/test` (MMLU) | the benchmark | no decontamination code of its own |
+## Scripts shipped
+- `scripts/normalize.py` — the single normalizer (BOM/zero-width strip, `\r` drop,
+  lowercase unless code, whitespace collapse, URL canonicalization, SHA-256).
+- `scripts/minhash_lsh.py` — MinHash with a fixed seed, LSH banding, candidate
+  comparison, and `bands_for()` threshold warnings.
+- `scripts/ngram_decontam.py` — benchmark-matched tokenization, window slide,
+  flag-with-position (never silently drop).
+- `scripts/embed_decontam.py` — embedding cosine similarity with a CLI threshold.
+- `scripts/plant_test.py` — plants 5 exact + 5 near-duplicates and reports the
+  detection rate against the pass/fail criteria.
+- `scripts/validate_skill.py` — standard compliance for the skill itself.
+
+## Planted-item test (run before trusting any result)
+Plant 5 exact duplicates and 5 near-duplicates (Jaccard ~0.85). Expected: 5/5
+exact found, >=4/5 near found. A detector that finds 3/5 near-duplicates is
+broken and no real result may be trusted until it is fixed.
+
+## Near-miss triggers
+- Two normalizations in the same pipeline -> duplicate sets disagree invisibly.
+- Character n-grams against a BPE benchmark -> misses matches, over-reports.
+- num_perm=8 -> unstable, non-reproducible estimate; use k>=64, 128 default.
+- Silently dropping a flagged document -> the leak is gone but so is the audit trail.
+- Baking the embedding threshold into logic -> wrong for a different model.
+- Planted-item test not run -> the detector is unverified; treat every result as suspect.

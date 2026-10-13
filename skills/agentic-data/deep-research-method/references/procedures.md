@@ -40,9 +40,10 @@ confirm a primary, never stand in for one. Relying on a secondary source as the
 sole evidence for a claim is a FAIL and the claim must be downgraded.
 
 ## 4. Record the retrieval date on every source
-Each source records its URL, retrieval date (ISO 8601), pinned version, and the
-score it received. A source without a retrieval date is not evidence. Facts
-verified more than a year ago must be re-fetched for a current question.
+Each source records its URL, its retrieval date in ISO 8601, the pinned version,
+and the score it received. A source with no retrieval date is not evidence, it is
+an unverifiable assertion. Facts that were verified more than a year ago must be
+re-fetched for a current question rather than reused from an earlier pass.
 `scripts/score_sources.py` enforces this on the source list and refuses to score
 a row that is missing a date.
 
