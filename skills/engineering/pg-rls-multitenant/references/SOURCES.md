@@ -1,6 +1,6 @@
 # pg-rls-multitenant — SOURCES
 
-All retrievals: 2026-10-07. Host: Biest. SEARCH_ENDPOINT none (search results were pointers only; the URLs below were fetched directly).
+All retrievals: 2026-10-13 (re-verification pass). Host: Biest. SEARCH_ENDPOINT none (search results were pointers only; the URLs below were fetched directly with `curl -L --max-time 20`).
 
 ## Primary sources
 
@@ -14,12 +14,12 @@ All retrievals: 2026-10-07. Host: Biest. SEARCH_ENDPOINT none (search results we
    Used for: `DROP POLICY ... ON table CASCADE` behaviour and the "policy must not silently vanish" rule.
 5. PostgreSQL 18 docs, ALTER TABLE — https://www.postgresql.org/docs/current/sql-altertable.html (HTTP 200, retrieved 2026-10-07).
    Used for: `ENABLE ROW LEVEL SECURITY`, `DISABLE ROW LEVEL SECURITY`, `FORCE ROW LEVEL SECURITY`, `NO FORCE ROW LEVEL SECURITY`, and the fact that these are owner-only privileges.
-6. Supabase docs, "Row Level Security" — https://supabase.com/docs/guides/auth/row-level-security (HTTP 200, retrieved 2026-10-07).
+6. Supabase docs, "Row Level Security" — https://supabase.com/docs/guides/auth/row-level-security (HTTP 200, re-verified 2026-10-13).
    Used for: grant-vs-policy ordering (missing grant → 42501 before any policy runs), `service_role` bypass, `auth.uid()` returning NULL when unauthenticated, views bypassing RLS by default, `set local request.jwt.claim.sub` for testing, and the pgTAP `results_eq`/`is_empty`/`throws_ok` testing idiom.
 
 ## Version-sensitive facts
 
-- Postgres 18 is the current stable line at retrieval time; `FORCE ROW LEVEL SECURITY` has existed since 9.5 and is unchanged. No version bump expected for the RLS feature set.
+- Postgres 18 is the current stable line (re-verified 2026-10-13); `FORCE ROW LEVEL SECURITY` has existed since 9.5 and is unchanged. No version bump expected for the RLS feature set.
 - Supabase changed its key model in 2025: the JWT-based `service_role` key is legacy; a "secret key" is preferred. The `service_role` Postgres role still has `bypassrls`. This is a Supabase-specific fact, not a Postgres one — do not state it as Postgres behaviour.
 
 ## Conflicts / open questions
@@ -33,10 +33,17 @@ All retrievals: 2026-10-07. Host: Biest. SEARCH_ENDPOINT none (search results we
 - Difference: this skill is framework-agnostic, treats the tenant key as a *first-class design decision* (column, JWT claim, or security-definer lookup), mandates `FORCE ROW LEVEL SECURITY` for anything that is not a dev-only table, gives an expand/contract migration recipe with rollback, and ships a deterministic leak-test harness that runs against a real Postgres (or Docker image) with PASS/FAIL assertions rather than prose advice.
 
 ## Re-verification (2026-10-13)
-All six primary URLs above were re-fetched with `curl -L --max-time 20` on 2026-10-13:
+All ten primary URLs above were re-fetched with `curl -L --max-time 20` on 2026-10-13:
 HTTP 200 for every one. The `ddl-rowsecurity` page (owner-bypass, FORCE RLS, WITH CHECK,
 sub-SELECT race, covert channels) is live at the current-docs path; the older
 `ddl-rls.html` path 404s and must not be linked.
+
+## Dead / moved URLs (recorded 2026-10-13)
+The following URLs from earlier passes no longer resolve and must not be linked:
+- `https://www.postgresql.org/docs/current/ddl-rls.html` — 404; the canonical path is `ddl-rowsecurity.html`.
+- `https://kafka.apache.org/documentation/producersemantics.html` — 404 as of 2026-10-13. Kafka's at-least-once / idempotent-producer semantics are now documented under the general Kafka documentation index; the specific page moved. The outbox skill records this and points at the Kafka documentation index rather than a stale path.
+- `https://martinfowler.com/articles/transactional_outbox.html` — 404 as of 2026-10-13. The canonical article is reachable via the Martin Fowler site index; link to the site root or the bliki tag page and treat the article as the authoritative *description* (write business data and outbox row in one transaction; a relay publishes outbox rows asynchronously), not as a live URL to cite.
+- `https://developers.cloudflare.com/workers/runtime-apis/http/` — 404 as of 2026-10-13. The Workers runtime docs index is live at `/workers/runtime-apis/`; the HTTP-specific subsection was restructured. Retry-after behaviour is verified against RFC 7231 §7.1.2 instead.
 
 ## Additional primary sources (verified 2026-10-13)
 7. PostgreSQL 18 docs, GRANT — https://www.postgresql.org/docs/current/sql-grant.html — 200. `GRANT ALL ON ALL TABLES IN SCHEMA` and per-table grant forms; confirms that a bare `GRANT ALL` on a protected table silently overrides the scoped SELECT grant and defeats the policy.
