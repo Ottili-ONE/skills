@@ -6,6 +6,7 @@ Usage: check_problem_catalogue.py --catalogue CAT.yaml --openapi API.yaml [--sch
 """
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -22,18 +23,36 @@ except ImportError:
 
 
 def _duplicate_keys(raw: str) -> list[str]:
-    """Duplicate mapping keys are a YAML 1.1 footgun: safe_load keeps the last value and
-    silently drops earlier entries, so a duplicated code looks like a normal code."""
-    import re
-    seen, dups = {}, []
-    for line in raw.splitlines():
-        m = re.match(r"^\s{0,4}([A-Za-z0-9_.\-]+)\s*:", line)
+    """Detect mapping keys duplicated inside the same mapping.
+
+    yaml.safe_load keeps the *last* value and silently drops earlier entries, so a
+    duplicated problem code looks like a normal code. Scope is the path of enclosing
+    keys, so a nested ``status`` under ``user-not-found`` does not collide with the
+    top-level ``status``.
+    """
+    seen: dict[tuple[str, ...], int] = {}
+    path: list[str] = []  # enclosing keys at each indent level
+    dups: list[str] = []
+    last_indent = -1
+    for lineno, line in enumerate(raw.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        stripped = line.lstrip()
+        indent = len(line) - len(stripped)
+        m = re.match(r"^([A-Za-z0-9_.\-]+)\s*:", stripped)
         if not m:
             continue
         key = m.group(1)
-        if key in seen:
-            dups.append(key)
-        seen[key] = True
+        while path and indent <= last_indent:
+            path.pop()
+            last_indent -= 2
+        last_indent = indent
+        scope = tuple(path + [key])
+        if scope in seen:
+            dups.append(f"{key} (line {seen[scope]} and {lineno})")
+        else:
+            seen[scope] = lineno
+        path.append(key)
     return dups
 
 
