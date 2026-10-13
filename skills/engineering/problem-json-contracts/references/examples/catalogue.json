@@ -1,0 +1,24 @@
+# Error catalogue for the Ottili examples API.
+# One entry per problem type; every code appears exactly once and maps to exactly one
+# OpenAPI response. Verified against RFC 9457 (2023-06) on 2026-10-13.
+codes:
+  user-not-found:
+    status: 404
+    title: "User not found"
+    retryable: false
+    retry_after: null
+  validation-failed:
+    status: 400
+    title: "Validation failed"
+    retryable: false
+    retry_after: null
+  rate-limited:
+    status: 429
+    title: "Rate limit exceeded"
+    retryable: true
+    retry_after: 30
+  service-unavailable:
+    status: 503
+    title: "Service unavailable"
+    retryable: true
+    retry_after: 5

@@ -1,0 +1,66 @@
+openapi: 3.1.0
+info:
+  title: Ottili examples API
+  version: 1.0.0
+paths:
+  /users/{id}:
+    get:
+      operationId: get-user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The user
+        "400":
+          description: Validation failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: Service unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+components:
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          maxLength: 120
+        status:
+          type: integer
+        detail:
+          type: string
+          maxLength: 500
+        instance:
+          type: string
+          format: uri
+        trace_id:
+          type: string
+        retry_after:
+          type: integer
+          minimum: 1

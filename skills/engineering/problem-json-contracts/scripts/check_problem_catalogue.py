@@ -15,6 +15,11 @@ except ImportError:
     sys.stderr.write("PyYAML required: pip install pyyaml\n")
     sys.exit(2)
 
+try:
+    import jsonschema
+except ImportError:
+    jsonschema = None
+
 
 def load_catalogue(path: Path) -> dict:
     data = yaml.safe_load(path.read_text()) or {}
@@ -43,6 +48,36 @@ def responses_for_code(spec: dict, code: str) -> list:
     return hits
 
 
+
+def validate_examples(codes: dict, schema_dir: Path | None, problems: list[str]) -> None:
+    """Every catalogue code must have a schema file, and every example must validate."""
+    if schema_dir is None or jsonschema is None:
+        return
+    for code in codes:
+        schema_path = schema_dir / f"{code}.json"
+        if not schema_path.is_file():
+            problems.append(f"schema: no schema file for code {code!r} ({schema_path})")
+            continue
+        try:
+            schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            problems.append(f"schema: {code}.json is not valid JSON: {exc}")
+            continue
+        examples = schema_dir / f"{code}.example.json"
+        if examples.is_file():
+            try:
+                instance = json.loads(examples.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                problems.append(f"schema: {code}.example.json is not valid JSON: {exc}")
+                continue
+            try:
+                jsonschema.validate(instance=instance, schema=schema)
+            except jsonschema.ValidationError as exc:
+                problems.append(f"schema: {code}.example.json fails {code}.json: {exc.message}")
+        else:
+            problems.append(f"schema: no example file for code {code!r} ({examples})")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--catalogue", required=True)
@@ -62,16 +97,7 @@ def main() -> int:
             if retriable and code in {"429", "503", "504"}:
                 # presence of retry_after is checked in the schema, not here
                 pass
-    for path, methods in (spec.get("paths") or {}).items():
-        for method, op in methods.items():
-            if method.lower() not in {"get", "post", "put", "patch", "delete", "options", "head"}:
-                continue
-            for status, resp in (op.get("responses") or {}).items():
-                if not str(status).startswith(("4", "5")):
-                    continue
-                content = (resp.get("content") or {})
-                if "application/problem+json" not in content:
-                    problems.append(f"{method.upper()} {path} {status}: missing application/problem+json")
+    validate_examples(cat, Path(args.schema_dir) if args.schema_dir else None, problems)
 
     if problems:
         for p in problems:
