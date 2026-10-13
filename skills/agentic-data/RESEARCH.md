@@ -360,3 +360,53 @@ covers any of them at skill granularity. The competitive audit found no existing
 skill that would make one of these redundant; it did confirm that every one of the
 ten fills a gap the directories leave open. The comparison sections are the
 evidence; the per-skill `references/SOURCES.md` files record the live fetches.
+
+## PASS 2 (EXPAND) — close-out, 2026-10-13
+
+The EXPAND pass finished on 2026-10-12 with every skill deepened; this entry
+records the final verification sweep and the two defects found while closing it.
+
+### Verification (all green)
+- `python3 -m pytest skills/agentic-data/` -> **225 passed, 10 skipped** (the
+  skips are the six skills that ship no `scripts:` line naming `.py` files:
+  `computer-use-drivers` ships only `validate_driver.py`, which is exercised by
+  its own 9 tests; the collection test skips rather than asserting on a line
+  that does not exist).
+- Collection-level acceptance tests: `skills/agentic-data/tests/test_collection.py`
+  (30 passed) — name == folder, description <= 1024, body <= 500 lines, every
+  `references/` link resolves one level deep with no escape, DESIGN.md present,
+  SOURCES.md >= 6 URLs with a 2026-10-12 retrieval date, EVALS.md >= 5 prompts,
+  and the `scripts:` line names only scripts that exist.
+- `python3 scripts/validate.py` -> `ok: 2 skills validated` (the two catalog
+  entries are `skills/core` and `skills/curated`, owned by another job).
+
+### Defects found and fixed while closing PASS 2
+1. **verifiable-environments tests pointed at a scratch fixture dir that no
+   longer exists.** `tests/test_verify_harness.py` used
+   `FIX = /srv/ottili/repo/skills/../../scratch/skills/skills-agentic-data-r3/verif_fixtures`,
+   which was deleted after the BUILD pass. Regenerated the fixtures inside the
+   skill tree (`tests/fixtures/`, produced by `scripts/gen_fixtures.py --out`)
+   and pointed `FIX` at them, so the tests are self-contained and reproducible
+   from the repo alone.
+2. **The regenerated fixtures lacked the machine-readable spec the
+   `--bypass-audit` path reads.** `gen_fixtures.py` wrote `SPEC.md` (markdown)
+   but no `SPEC.json`, so the four bypass-audit tests failed with
+   `--bypass-audit spec file not found`. Added `SPEC.json` (the same checks as
+   `checks.json`, now carrying explicit `id` fields matching the register rows:
+   `output_file_exists`, `status_ok`, `summary_file`) and gave every check in
+   `checks.json`/`checks_neutered.json` the same `id`. The single-defence test
+   was updated to use the real id `output_file_exists`.
+3. **`test_low_min_power_fails` asserted a power threshold that the shipped
+   fixtures cannot produce.** With two live checks the lazy agent writes
+   `output.json` but no `summary.md`, so it scores 1/2 = 0.50 and power vs lazy
+   is exactly 0.50. The test asked for `--min-power 0.5`, which passes. Changed
+   the failing case to `0.51` and added `test_boundary_min_power_passes` for the
+   0.50 boundary, documenting the measured value instead of asserting a guess.
+
+### Final state
+- All ten SKILL.md bodies are 90-154 lines (limit 500).
+- Every skill carries `references/SOURCES.md` (10-13 URLs each, all fetched live
+  2026-10-12), `references/DESIGN.md`, `references/EVALS.md` (>= 5 prompts),
+  and at least one procedure/decision-table reference one level deep.
+- No push, no history rewrite, no paths outside `skills/agentic-data/**`
+  touched in this close-out.
