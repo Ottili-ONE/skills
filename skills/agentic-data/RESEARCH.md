@@ -668,3 +668,48 @@ five eval scenarios:
 `skills-agentic-data-r3-01:` DESIGN completeness sweep 2 (3 files), then
 `skills-agentic-data-r3-01:` test_design_completeness lock-in (1 file). Own
 paths only. No push, no history rewrite.
+
+## PASS 2 EXPAND (re-executed) — 2026-10-14
+
+The EXPAND brief was re-run from the current state rather than re-read from the
+consolidation file. What this execution actually changed, per skill:
+
+| Skill | What was deepened | Artefact |
+|---|---|---|
+| `deep-research-method` | SKILL.md rewritten as a real procedure (6 numbered steps, 4 decision tables, 7 near-miss triggers, 7 pitfalls, 14-item checklist); `references/examples.md` written (3 worked good/bad cases with detection signals) | SKILL.md, examples.md |
+| `skill-authoring-evals` | `eval_metrics.py` gained `delta` (with_skill vs without_skill) and `split` (train/val) subcommands; E16/E17 added | eval_metrics.py, EVALS.md, SKILL.md |
+| `computer-use-drivers` | tree-as-gate: `enumerate_tree()` + `tree_is_usable()` on the fixture, validator refuses a pixel fallback; duplicate test block removed | sample_driver.py, validate_driver.py, test_validate_driver.py |
+| `browser-agent-playwright` | best-of-N attempt cap `bon_cap.py` (50/task, 300/hour) as a real counter with state file; procedure step 5 added | bon_cap.py, test_bon_cap.py, SKILL.md |
+| `polite-crawling-warc` | `rate_limit.py` gained `--check <log>` (measured gap vs Crawl-delay audit); stale `validate_skill.py` link dropped | rate_limit.py, SKILL.md |
+| `dedup-decontam` | `embed_decontam.py` gained `--calibrate-out` (p95/p99 threshold derivation from a held-out clean set); threshold validation restored | embed_decontam.py, SKILL.md, test_dedup_scripts.py |
+
+### Verification
+- `python3 -m pytest skills/agentic-data/ -q` -> **277 passed**, 0 failed, 0 errors
+  (was 260; +17 tests: 7 bon_cap, 4 eval_metrics delta/split, 3 tree-as-gate,
+  2 embed_calibrate, 1 rate-limit audit).
+- `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS**.
+- Reference-link audit (`/tmp/linkcheck.py`): every `references/*.md` named in a
+  SKILL.md body resolves one level deep. **0 broken links** (the audit also caught
+  and fixed two dangling pointers: `deep-research-method` pointed at a non-existent
+  `examples.md`, and `polite-crawling-warc` pointed at a `validate_skill.py` that
+  belongs to other skills).
+
+### Regressions caught and fixed during this pass
+Hardening the scripts broke 8 tests on the first full run. All eight were real
+bugs in the new code, not test bugs:
+- `bon_cap.py` never persisted state when the file did not yet exist, so the cap
+  counter never survived between calls.
+- `rate_limit.py` lost its `main()` tail during the splice (IndentationError).
+- `embed_decontam.py` lost its decontamination body during the splice, so it
+  exited 0 on identical embeddings.
+- `eval_metrics.py` reported "no case id present" before the missing-side errors,
+  so the missing-side test saw the wrong message.
+- `bon_cap.py` counted 50 attempts as under-cap; the cap fires on the 51st.
+- `embed_decontam.py` lost the `--threshold` range check during the splice.
+
+### Commits this pass
+`skills-agentic-data-r3-01:` worked-examples for deep-research-method +
+skill-authoring-evals; eval_metrics delta/split; computer-use-drivers tree-as-gate;
+browser-agent-playwright bon_cap; polite-crawling-warc rate-limit audit;
+embed_decontam calibration; 4 regression fixes. Own paths only. No push, no
+history rewrite.

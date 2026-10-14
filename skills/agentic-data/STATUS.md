@@ -1,4 +1,4 @@
-# STATUS — skills-agentic-data-r3-01 (Research and design of the ten skills) — 2026-10-13
+# STATUS — skills-agentic-data-r3-01 (Research and design of the ten skills) — 2026-10-14
 
 Scope: `skills/agentic-data/**` (all ten skills).
 
@@ -13,8 +13,14 @@ committed with the `skills-agentic-data-r3-01:` / `-r3-02:` / `-r3-04:` prefixes
 re-runs the acceptance contract end-to-end and records the evidence. No new skill content
 is being authored here; the deliverable is verification + honest status.
 
-## Verification run this pass (2026-10-13)
-1. `python3 -m pytest skills/agentic-data/ -q` -> **235 passed** (34.8 s), 0 failed, 0 errors.
+## State at start of this EXPAND re-execution (2026-10-14)
+The ten skills were complete and passing (260 tests, ACCEPTANCE PASS) before this
+execution. The EXPAND brief was re-run from the current state: deepen the skills by
+adding missing primary sources, concrete thresholds, ordered procedures and decision
+tables, worked good/bad examples, hardened scripts and near-miss trigger prompts.
+
+## Verification run this pass (2026-10-14)
+1. `python3 -m pytest skills/agentic-data/ -q` -> **277 passed** (23.6 s), 0 failed, 0 errors.
 2. `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS** — all ten
    skills meet the task-01 contract (name == folder, description <= 1024 chars, body <= 500 L,
    references links resolve one level deep, DESIGN.md has trigger/procedure/scripts/evals,
@@ -42,6 +48,14 @@ is being authored here; the deliverable is verification + honest status.
 ## What is stubbed / missing
 None. The deliverable is complete: RESEARCH.md, ten SOURCES.md, ten DESIGN.md, ten EVALS.md,
 scripts, tests, and the acceptance checker all pass.
+
+## EXPAND re-execution (2026-10-14)
+
+Per-skill deepening plus a reference-link audit that found and fixed two dangling
+pointers (`deep-research-method` -> `examples.md` did not exist; `polite-crawling-warc`
+linked a `validate_skill.py` owned by other skills). Full record in `RESEARCH.md`
+under "PASS 2 EXPAND (re-executed) — 2026-10-14", including the 8 regressions
+caught and fixed while hardening the scripts.
 
 ## Acceptance verdict
 **PASS.** `skills-agentic-data-r3-01` (Research and design of the ten skills) meets every
@@ -92,7 +106,13 @@ re-runs the acceptance contract for the three skills end-to-end, re-fetches ever
 version-sensitive primary URL live, and ships the per-skill `STATUS.md` close-out
 records that were missing (only the r3-01 research-level STATUS existed before).
 
-### Verification run this pass (2026-10-13)
+### State at start of this EXPAND re-execution (2026-10-14)
+The ten skills were complete and passing (260 tests, ACCEPTANCE PASS) before this
+execution. The EXPAND brief was re-run from the current state: deepen the skills by
+adding missing primary sources, concrete thresholds, ordered procedures and decision
+tables, worked good/bad examples, hardened scripts and near-miss trigger prompts.
+
+## Verification run this pass (2026-10-14)
 - `python3 -m pytest skills/agentic-data/mcp-2026-07-28/ skills/agentic-data/skill-authoring-evals/ skills/agentic-data/computer-use-drivers/ -q` -> **72 passed** (18 + 22 + 32), 0 failed, 0 errors.
 - `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS**;
   all three skills: name == folder, description <=1024 chars, references links resolve
