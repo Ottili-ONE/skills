@@ -147,3 +147,37 @@ def test_scripts_match_skill_md(name: str) -> None:
     assert names, f"{name}: scripts: line names no .py files"
     for n in names:
         assert (scripts_dir / n).is_file(), f"{name}: scripts line names missing {n}"
+
+
+@pytest.mark.parametrize("name", SKILL_NAMES)
+def test_evals_near_miss_count(name: str) -> None:
+    """Every skill must carry >=3 near-miss prompts that assert the skill does
+    NOT fire for a neighbouring protocol — the trigger-precision half of the
+    eval contract."""
+    root = COLLECTION_ROOT / name
+    body = (root / "references" / "EVALS.md").read_text(encoding="utf-8")
+    near = len(re.findall(r"^## N\d+", body, flags=re.M))
+    assert near >= 3, f"{name}: only {near} near-miss prompts (need >= 3)"
+
+
+@pytest.mark.parametrize("name", SKILL_NAMES)
+def test_related_links_resolve(name: str) -> None:
+    """Every [name](../name/SKILL.md) link in a Related section must point at a
+    real sibling skill folder."""
+    root = COLLECTION_ROOT / name
+    body = (root / "SKILL.md").read_text(encoding="utf-8")
+    for m in re.finditer(r"\[([a-z0-9]+(?:-[a-z0-9]+)*)\]\(\.\./([a-z0-9]+(?:-[a-z0-9]+)*)/SKILL\.md\)", body):
+        target = COLLECTION_ROOT / m.group(2)
+        assert (target / "SKILL.md").is_file(), f"{name}: Related link to unknown skill {m.group(2)}"
+
+
+def test_readme_lists_all_ten_skills() -> None:
+    body = (COLLECTION_ROOT / "README.md").read_text(encoding="utf-8")
+    for name in SKILL_NAMES:
+        assert f"`{name}`" in body, f"README.md does not mention {name}"
+
+
+def test_handoff_exists() -> None:
+    body = (COLLECTION_ROOT / "HANDOFF.md").read_text(encoding="utf-8")
+    assert "re-verify" in body.lower(), "HANDOFF.md has no re-verification section"
+    assert "next ten" in body.lower(), "HANDOFF.md has no next-ten-skills section"
