@@ -1,7 +1,7 @@
 # SOURCES — browser-agent-playwright
 
 Retrieved: 2026-10-13 (every URL below was fetched live on that date).
-Re-verified 2026-10-13 (PASS 3): Playwright 1.55 -> 1.63.0 on PyPI; the locator API surface (getByRole/getByLabel/getByTestId/getByText/evaluateAll/filter/first/nth) is unchanged across 1.49-1.63, so the `>=1.49` pin holds. The `>=1.49` lower bound is now conservative by ~14 minor releases.
+Re-verified 2026-10-13 (PASS 3): Playwright 1.55 -> 1.63.0 on PyPI. Re-verified again 2026-10-14 (PASS 4 / r3-03 close-out): PyPI latest is now **1.64.0** (released 2026-10-13T23:35:20Z). The locator API surface (getByRole/getByLabel/getByTestId/getByText/evaluateAll/filter/first/nth) was re-confirmed byte-identical in the live docs, so the `>=1.49` pin holds and is now conservative by ~15 minor releases.
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
@@ -24,7 +24,7 @@ Two URLs per skill were re-fetched live on 2026-10-14 with curl (random sample, 
 No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
 
 ## Version-sensitive facts
-- Playwright locator API is stable across 1.49–1.63 as of 2026-10-12; the skill pins `>=1.49` and was verified against 1.63.0 (PyPI latest). The locator surface -- getByRole, getByLabel, getByTestId, getByText, evaluateAll, filter, first, nth -- is byte-identical across this range; the pin is now conservative by ~14 minor releases. Re-check on each driver release.
+- Playwright locator API is stable across 1.49–1.64 as of 2026-10-14; the skill pins `>=1.49` and was verified against 1.64.0 (PyPI latest, fetched 2026-10-14). The locator surface -- getByRole, getByLabel, getByTestId, getByText, evaluateAll, filter, first, nth -- is byte-identical across this range; the pin is now conservative by ~15 minor releases. Re-check on each driver release.
 - `page.evaluate` is documented as running in the page context and therefore hijackable; locator methods are the safe alternative.
 - OWASP LLM Top 10 is version 2025; re-check on the next release.
 
@@ -36,4 +36,22 @@ No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
 Two random sources re-fetched live to confirm nothing had moved:
 - https://playwright.dev/docs/locators — HTTP 200, 268,087 B (locator API surface unchanged).
 - https://genai.owasp.org/llm-top-10/ — HTTP 200, 921,152 B (OWASP LLM Top 10 2025 still the current version).
-PyPI confirms Playwright latest is still 1.63.0, so the `>=1.49` pin holds.
+PyPI confirms Playwright latest is 1.64.0 (2026-10-13 release), so the `>=1.49` pin holds; the SKILL.md front matter and this SOURCES.md were updated to 1.64.0 on 2026-10-14.
+
+
+## Re-verification 2026-10-14 (PASS 4 / r3-03 close-out)
+Live re-fetch of every version-sensitive primary URL for this skill with curl
+(2026-10-14), plus a full API-surface grep of the locator and page docs:
+
+| URL | HTTP | Bytes | Fact re-confirmed |
+|-----|------|-------|-------------------|
+| https://playwright.dev/docs/locators | 200 | 268,087 | getByRole 32, getByLabel 5, getByTestId 9, getByText 14, getByAltText 3, getByTitle 5, getByPlaceholder 3, locator.first 3, locator.last 2, locator.nth 2, filter 30, evaluateAll 2 — locator surface unchanged |
+| https://playwright.dev/docs/api/class-page | 200 | (fetched) | frameLocator 5, waitForLoadState 6, addInitScript 6, route 56, waitForEvent 7 — page API unchanged |
+| https://genai.owasp.org/llm-top-10/ | 200 | 921,164 | OWASP LLM Top 10 (2025) is still the current version; LLM01 Prompt Injection remains #1 |
+| https://github.com/microsoft/playwright | 200 | (fetched) | project home; locator-first + auto-waiting philosophy unchanged |
+| https://pypi.org/pypi/playwright/json | 200 | (fetched) | **latest = 1.64.0**, upload_time 2026-10-13T23:35:20Z — this is the bump that triggered the front-matter update |
+| https://developer.chrome.com/docs/lighthouse/overview | 200 | (fetched) | accessibility-tree grounding rationale unchanged |
+
+No new dead URLs. The only change between the 2026-10-13 and 2026-10-14
+fetches is the Playwright minor version (1.63.0 -> 1.64.0); no documented API in
+this skill moved.
