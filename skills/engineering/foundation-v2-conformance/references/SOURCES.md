@@ -6,17 +6,18 @@ Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
    2026-10-13: `dist-tags.latest` = **1.0.13**, license Apache-2.0, description "Foundation
    design system: SoT §14 tokens, themes, density, and the §47 component inventory." Full
    version list: 1.0.1-1.1, 1.0.10, 1.0.11, 1.0.12, 1.0.13. URL:
-   https://registry.npmjs.org/@ottili/foundation-ui — retrieved 2026-10-13.
+   https://registry.npmjs.org/@ottili/foundation-ui — retrieved 2026-10-14.
 2. **Foundation v2 changelog / releases** — https://github.com/ottili/foundation. Verified
    2026-10-13 (HTTP 200). Source for the public API contract (named exports, `exports` map,
-   no deep imports). URL: https://github.com/ottili/foundation — retrieved 2026-10-13.
-3. **WCAG 2.2** — https://www.w3.org/WAI/standards-guidelines/wcag/. Verified 2026-10-13
+   no deep imports). URL: https://github.com/ottili/foundation — retrieved 2026-10-14.
+3. **WCAG 2.2** — https://www.w3.org/WAI/standards-guidelines/wcag/. Verified 2026-10-14
    (HTTP 200). A/AA success criteria are the conformance bar for Foundation components.
-   URL: https://www.w3.org/WAI/WCAG22/ — retrieved 2026-10-13.
+   URL: https://www.w3.org/WAI/standards-guidelines/wcag/ — retrieved 2026-10-14 (the
+   legacy /WCAG22/ path returns 403; the standards-guidelines path is the live one).
 4. **Agent Skills standard (agentskills.io)** — https://agentskills.io/. Verified 2026-10-13
    (HTTP 200). `description` ≤ 1024 characters; long material in `references/` linked one
    level deep from `SKILL.md`. This skill's conformance report follows the same
-   evidence-pointer discipline. URL: https://agentskills.io/ — retrieved 2026-10-13.
+   evidence-pointer discipline. URL: https://agentskills.io/ — retrieved 2026-10-14.
 5. **anthropics/skills** — https://github.com/anthropics/skills. Verified 2026-10-13
    (HTTP 200). The closest public collection of "component library" skills. Reviewed for
    competitive positioning recorded in DESIGN.md: those skills are generic and name no

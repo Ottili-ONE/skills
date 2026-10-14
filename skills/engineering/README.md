@@ -1,15 +1,15 @@
-# Engineering Playbook Skills
+# Engineering Playbook Skills (r3-05 quality pass)
 
-Ten opinionated, offline-checkable skills for Ottili engineering work. Each skill is a
-folder under `skills/engineering/<name>/` with `SKILL.md` (quick reference), a
-`references/` directory (procedure, EVALS, SOURCES), and a `scripts/` directory of
-deterministic checkers. Install with:
+Ten opinionated, offline-checkable Agent Skills for Ottili engineering work.
+Each skill is a folder `skills/engineering/<name>/` with `SKILL.md` (quick reference),
+`references/` (procedure, EVALS, SOURCES, DESIGN), and `scripts/` (deterministic checkers).
+
+## Install
 
 ```bash
-./scripts/install.sh skills/engineering
+./scripts/install.sh --target codex --force pg-rls-multitenant outbox-idempotency ...
+# or copy any skill folder into your agent's skills directory
 ```
-
-or copy any skill folder into your agent's skills directory.
 
 ## Skills
 
@@ -26,14 +26,14 @@ or copy any skill folder into your agent's skills directory.
 
 ## Quick checks
 
-Validate every skill against the agentskills.io standard:
-
 ```bash
-python3 scripts/validate_skills.py
+python3 scripts/validate_skills.py   # agentskills.io rules + EVALS counts, exit 0
+python3 scripts/validate.py          # catalog consistency, exit 0
+for t in $(find skills/engineering -name '*_test.py' | sort); do python3 "$t" || exit 1; done
 ```
 
-Rebuild the index/catalog:
+## r3-05 quality pass notes
 
-```bash
-python3 scripts/build-index.py
-```
+- Every `references/EVALS.md` carries 5 primary prompts and 3 near-miss prompts (trigger-precision guard).
+- Cross-links in every `## Related skills` section form an acyclic graph with `shared-tree-git` as the unique sink.
+- Version-sensitive facts in SOURCES.md were re-verified against primary sources this pass.
