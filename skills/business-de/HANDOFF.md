@@ -1,7 +1,7 @@
 # business-de — HANDOFF
 
 What to re-verify, when, and what to build next. Owner: `skills/business-de/**`
-(this job: `skills-business-de-r3`). Last full quality pass: 2026-10-14 (PASS 3).
+(this job: `skills-business-de-r3`). Last full quality pass: 2026-10-14 (PASS 5).
 
 ## Re-verify on every spec bump
 
@@ -25,6 +25,28 @@ python3 skills/business-de/scripts/validate_skills.py   # must be 0 issues
 python3 skills/business-de/scripts/run_evals.py         # every EVALS.md script example must exit 0
 cd skills/business-de && python3 -m pytest -q           # full pytest suite
 ```
+
+## PASS 5 (EVALS + cross-links + handoff) — 2026-10-14
+
+Gate results, re-run 2026-10-14:
+
+| Gate | Command | Result |
+|---|---|---|
+| 1 | `python3 scripts/validate_skill.py <10 skill dirs>` | 10 ok, 0 issues |
+| 2 | `python3 skills/business-de/scripts/run_evals.py` | 74 commands run, 0 failed |
+| 3 | `python3 skills/business-de/scripts/audit_triggers_links.py` | 0 problems, graph acyclic, sinks: `gobd-archive` |
+| 4 | `python3 -m pytest -q` (per skill) | all suites green |
+| 5 | every `references/EVALS.md` has >= 5 prompts + >= 3 near-misses | 10/10 |
+| 6 | `skills/business-de/README.md` + `skills/business-de/HANDOFF.md` | both present |
+
+PASS 5 changes: added the missing near-miss prompts (carrier-apis-de +3,
+datev-extf +3, dsgvo-ai-act-labeling +3, gobd-archive +3, publish-reconcile-wp-meta +3,
+skr-journal-mapping +3, webhooks-safe +3, xrechnung-zugferd +2), re-verified every
+version pin in `config/versions.json` against its primary source (recorded in
+`config/REVERIFY_2026-10-15.md`), hardened `scripts/common.py` and three scripts
+against offline-determinism and edge cases, and rewrote the Related sections as a
+downstream-only DAG (audit confirms no cycles).
+
 
 ## PASS 4 (EVALS + cross-links + handoff) — 2026-10-14
 
