@@ -19,45 +19,54 @@ Helpers: scripts/
 - You have added a workaround and need to track it until a proper fix lands.
 - A reviewer asks "is this component actually conformant, or is it bypassing the tokens?"
 
-## When NOT to use this skill
-- Styling that intentionally escapes the design system (experimental prototypes).
-- Legacy code you are not yet migrating (use a workaround marker instead).
-- Packages that are not part of Foundation v2.
-
-## Decision table — conformance checks
-| Check | How | Fail signal |
-|-------|-----|-------------|
-| Token-only styling | grep for raw color/spacing literals in styled components | hex/rgb/px literals outside `/* ALLOWED */` comments |
-| Named imports only | AST/import scan for default or namespace imports of Foundation packages | `import Foo from '@ottili/foundation-button'` |
-| No bypass of abstraction | assert no direct access to `__foundation_internal` or underscore-prefixed exports | any match on `_\w+` export access |
-| Workaround markers present | regex for `WORKAROUND:` or `FV2-WA:` comments | workaround code with no marker |
-| Fresh-consumer test exists | run the consumer test suite in isolation | test imports the package under test directly |
-
-## Numbered procedure
-1. Identify the Foundation v2 packages in scope (from `package.json` dependencies, version pinned).
-2. Scan every consumer file for imports; reject default and namespace imports; require named imports.
-3. Scan for styling literals; compare against the token allow-list; flag anything not derivable from a token.
-4. Scan for workaround markers; every flagged block must carry a `FV2-WA:` comment with owner and date.
-5. Write or run a fresh-consumer test: a test file that imports only the public package surface and exercises it through its public API, never reaching into internals.
-6. Run the conformance checks in order:
-   `python3 scripts/check_foundation_tokens.py --tokens <token.json> <consumer-files>`
-   then `bash scripts/fresh_consumer_test.sh <component> <outdir>`. Both ship offline and
-   deterministic; commit the evidence report alongside.
-7. Re-run until zero findings; commit the evidence report.
+## Worked examples
+Good (named import from the public package, token-derived values, tracked workaround):
+```tsx
+import { Button, Card } from '@ottili/foundation-ui';
+import { tokens } from '@ottili/foundation-ui/tokens';
+export function OrderCard() {
+  return (
+    <Card padding={tokens.spacing.md}>
+      <Button variant="primary">Save</Button>
+    </Card>
+  );
+}
+```
+Bad (deep import into internals — breaks when the package restructures):
+```tsx
+import { Button } from '@ottili/foundation-ui/dist/components/Button';
+// dist/ is not part of the public contract; this import will break on the next release
+```
+Bad (raw literal instead of a token — drifts when the design system changes):
+```tsx
+<div style={{ color: '#ff0000', padding: '99px' }} />
+// no token, no ALLOWED marker; check_foundation_tokens.py fails this
+```
+Good (tracked workaround — marker + ISSUE ticket, checker passes):
+```tsx
+<div style={{ color: '#ff0000' }} /* ALLOWED: FV2-WA ISSUE-1234 */ />
+// the marker names a ticket; the checker exempts the line; the ticket owns the fix
+```
 
 ## Pitfalls from research
-- A "fresh-consumer test" that imports the package source directly is not fresh — it is a unit test in disguise.
-- Workaround markers decay: a marker older than 30 days without a linked ticket is a stale escape hatch, not a tracked workaround.
-- Token allow-lists drift from the published token set; re-derive the allow-list from the package, never from memory.
-- Namespace imports (`import * as Foo`) silently expose private exports and break on minor versions.
+- Deep imports into `dist/` or package internals are not part of the public contract and break on the next release.
+- Raw design values drift silently when the token file changes; the checker catches them only if it runs.
+- An `ALLOWED` marker without an `ISSUE-<digits>` ticket is a stale escape hatch, not a tracked workaround.
+- A fresh-consumer test that reaches into internals is a unit test in disguise and gives no conformance signal.
 
-## Verification checklist
-- [ ] Every Foundation v2 import is a named import of a public export.
-- [ ] No raw styling literals outside token-derived values.
-- [ ] Every workaround carries `FV2-WA:` with owner + date.
-- [ ] A fresh-consumer test exists and passes in isolation.
-- [ ] Conformance report is committed or referenced.
+## Near-miss triggers (act before the incident)
+- "I need a specific prop the component does not export" — raise it with the package owner; do not reach into internals.
+- "It is just a one-off colour" — put it in the token file or file an `ALLOWED` ticket; never ship raw.
+- "The fresh-consumer test is slow" — it is the point; a fast test that reaches into internals proves nothing.
+- "The workaround has been there for months" — check the ISSUE ticket is still open; a closed ticket means the marker is stale.
+
+## Verification checklist (all must pass before you finish)
+- [ ] All imports are from the public package surface, never `dist/` or internals.
+- [ ] All design values resolve to a token or carry an `ALLOWED` marker with an `ISSUE-<digits>` ticket.
+- [ ] Every workaround marker has an open ticket and a review date.
+- [ ] Fresh-consumer test runs against a clean install and fails when the package changes.
+- [ ] `scripts/check_foundation_tokens.py` exits 0 in CI.
 
 ## Related skills
-- [honest-status](../honest-status/SKILL.md)
-- [module-contract-first](../module-contract-first/SKILL.md)
+- [acceptance-harness](../acceptance-harness/SKILL.md)
+

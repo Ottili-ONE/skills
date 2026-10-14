@@ -65,6 +65,46 @@ def main() -> int:
         else:
             print("ok: allowed-comment file passes")
 
+
+        # URL/SVG url() spans must not false-positive as raw colours
+        urlcss = t / "url.css"
+        urlcss.write_text(
+            ".a { background: url(#clip-1); } .b { background: url(https://x.com/img#fff); }",
+            encoding="utf-8",
+        )
+        r = run("--tokens", str(tok), str(urlcss))
+        if r.returncode != 0:
+            print("FAIL: url(#clip-1) and URL hashes should not be findings")
+            print(r.stdout, r.stderr)
+            failures += 1
+        else:
+            print("ok: url()/URL spans excluded from colour scan")
+
+        # --json emits machine-readable output
+        rj = run("--tokens", str(tok), "--json", str(dirty))
+        if rj.returncode != 1:
+            print("FAIL: --json should still exit 1 on findings")
+            print(rj.stdout, rj.stderr)
+            failures += 1
+        else:
+            try:
+                data = json.loads(rj.stdout)
+                assert data["status"] == "fail"
+                assert data["total_findings"] >= 2
+                print("ok: --json emits machine-readable report")
+            except Exception as exc:
+                print("FAIL: --json output not parseable:", exc)
+                failures += 1
+
+        # --max-findings caps per-file findings
+        rmax = run("--tokens", str(tok), "--max-findings", "1", str(dirty))
+        if rmax.returncode != 1:
+            print("FAIL: --max-findings should fail when exceeded")
+            print(rmax.stdout, rmax.stderr)
+            failures += 1
+        else:
+            print("ok: --max-findings fails when exceeded")
+
     if failures:
         print(f"\n{failures} test(s) failed")
         return 1
