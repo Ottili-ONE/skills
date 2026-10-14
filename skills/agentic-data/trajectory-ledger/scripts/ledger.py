@@ -93,10 +93,13 @@ def check_event(ev: dict, idx: int) -> list[str]:
     return failures
 
 
-def cmd_audit(events: list[dict]) -> int:
+def cmd_audit(events: list[dict], strict: bool = False,
+               max_usd: float | None = None, max_seconds: float | None = None) -> int:
     failures: list[str] = []
     for i, ev in enumerate(events):
         failures += check_event(ev, i)
+    if strict:
+        failures += audit_cost_units(events)
     # Step monotonicity: a ledger whose steps are not strictly increasing is
     # not a sequence and cannot be replayed deterministically. Reordering
     # events is the most common silent corruption of a hand-written ledger.
@@ -154,14 +157,43 @@ def cmd_replay(events: list[dict], other_path: Path) -> int:
     return 1
 
 
-def cmd_cost(events: list[dict]) -> int:
+def cmd_cost(events: list[dict], max_usd: float | None = None,
+             max_seconds: float | None = None) -> int:
     total = {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}
     for ev in events:
         c = ev.get("cost", {})
         for k in total:
             total[k] += c.get(k, 0)
     print(json.dumps(total))
+    failures: list[str] = []
+    if max_usd is not None and total["usd"] > max_usd:
+        failures.append(f"FAIL: total cost ${total['usd']:.4f} exceeds --max-usd ${max_usd:.4f}")
+    if max_seconds is not None and total["seconds"] > max_seconds:
+        failures.append(
+            f"FAIL: total time {total['seconds']:.2f}s exceeds --max-seconds {max_seconds:.2f}s"
+        )
+    for f in failures:
+        print(f, file=sys.stderr)
+    if failures:
+        return 1
+    print(f"INFO: cost within budget (usd={total['usd']:.4f}, seconds={total['seconds']:.2f})",
+          file=sys.stderr)
     return 0
+
+
+def audit_cost_units(events: list[dict]) -> list[str]:
+    """A cost ledger without a unit is not a ledger. Every event that carries
+    a cost dict must carry all four units (tokens_in, tokens_out, seconds,
+    usd); a partial cost cannot be summed meaningfully and is rejected."""
+    failures: list[str] = []
+    for i, ev in enumerate(events):
+        c = ev.get("cost")
+        if not isinstance(c, dict):
+            continue
+        for k in ("tokens_in", "tokens_out", "seconds", "usd"):
+            if k not in c:
+                failures.append(f"FAIL: event {i} cost is missing '{k}' (no unit)")
+    return failures
 
 
 
@@ -255,15 +287,23 @@ def main() -> int:
     p.add_argument("ledger", type=Path)
     p.add_argument("event")
 
-    p = sub.add_parser("audit")
-    p.add_argument("ledger", type=Path)
-
     p = sub.add_parser("replay")
     p.add_argument("ledger", type=Path)
     p.add_argument("other", type=Path)
 
     p = sub.add_parser("cost")
     p.add_argument("ledger", type=Path)
+    p.add_argument("--max-usd", type=float, default=None,
+                   help="reject the run if total USD cost exceeds this")
+    p.add_argument("--max-seconds", type=float, default=None,
+                   help="reject the run if total wall-clock exceeds this")
+
+    p = sub.add_parser("audit")
+    p.add_argument("ledger", type=Path)
+    p.add_argument("--strict", action="store_true",
+                   help="also require every cost dict to carry all four units")
+    p.add_argument("--max-usd", type=float, default=None)
+    p.add_argument("--max-seconds", type=float, default=None)
 
     args = ap.parse_args()
     if args.cmd == "append":
@@ -289,9 +329,13 @@ def main() -> int:
         return cmd_normalize(events, args.out)
     if args.cmd == "record-non-det":
         return cmd_record_non_det(args.ledger, args.step, args.reason)
+    if args.cmd == "cost":
+        events = load_events(args.ledger)
+        return cmd_cost(events, max_usd=args.max_usd, max_seconds=args.max_seconds)
     events = load_events(args.ledger)
     if args.cmd == "audit":
-        return cmd_audit(events)
+        return cmd_audit(events, strict=args.strict, max_usd=args.max_usd,
+                         max_seconds=args.max_seconds)
     if args.cmd == "replay":
         return cmd_replay(events, args.other)
     return cmd_cost(events)
