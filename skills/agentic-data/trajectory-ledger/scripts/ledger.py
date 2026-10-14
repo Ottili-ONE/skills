@@ -100,6 +100,21 @@ def cmd_audit(events: list[dict], strict: bool = False,
         failures += check_event(ev, i)
     if strict:
         failures += audit_cost_units(events)
+    if max_usd is not None or max_seconds is not None:
+        total = {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}
+        for ev in events:
+            c = ev.get("cost", {})
+            for k in total:
+                total[k] += c.get(k, 0)
+        if max_usd is not None and total["usd"] > max_usd:
+            failures.append(
+                f"FAIL: total cost ${total['usd']:.4f} exceeds --max-usd ${max_usd:.4f}"
+            )
+        if max_seconds is not None and total["seconds"] > max_seconds:
+            failures.append(
+                f"FAIL: total time {total['seconds']:.2f}s exceeds "
+                f"--max-seconds {max_seconds:.2f}s"
+            )
     # Step monotonicity: a ledger whose steps are not strictly increasing is
     # not a sequence and cannot be replayed deterministically. Reordering
     # events is the most common silent corruption of a hand-written ledger.

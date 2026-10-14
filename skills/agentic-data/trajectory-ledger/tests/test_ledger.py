@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "ledger.py"
-FIX = Path("/srv/ottili/repo/skills/../../scratch/skills/skills-agentic-data-r3/ledger_fixtures")
+FIX = Path(__file__).resolve().parent / "fixtures"
 
 
 def run(*args: str) -> subprocess.CompletedProcess:
@@ -161,9 +161,8 @@ def test_record_non_det_rejects_out_of_order_step() -> None:
 
 
 def test_cost_max_usd_rejects_overrun() -> None:
-    # The shipped fixture has usd=0.0, so --max-usd 0 is the boundary: a
-    # strictly-positive budget is required for a real run.
-    r = run("cost", str(FIX / "traj.jsonl"), "--max-usd", "0")
+    # traj_cost.jsonl totals usd=0.175; a budget of 0.01 must be rejected.
+    r = run("cost", str(FIX / "traj_cost.jsonl"), "--max-usd", "0.01")
     assert r.returncode == 1
     assert "exceeds --max-usd" in r.stderr
 
@@ -200,6 +199,6 @@ def test_audit_strict_accepts_complete_cost() -> None:
 
 
 def test_audit_max_usd_rejects_overrun() -> None:
-    r = run("audit", str(FIX / "traj.jsonl"), "--max-usd", "0")
+    r = run("audit", str(FIX / "traj_cost.jsonl"), "--max-usd", "0.01")
     assert r.returncode == 1
     assert "exceeds --max-usd" in r.stderr
