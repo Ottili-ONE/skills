@@ -39,3 +39,17 @@ No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
   re-verification 2026-10-13); source 2 (github.com/openai/evals) is the working primary and
   returned HTTP 200. All nine arXiv IDs returned the expected metadata, confirming the
   retrieval path and the recorded titles.
+
+
+## Re-verification 2026-10-14 (PASS 2 re-run)
+Live re-check of the primary sources this pass (curl, all HTTP 200):
+- https://arxiv.org/abs/2212.08073 -> 200 ("Constitutional AI: Harmlessness from AI Feedback")
+- https://arxiv.org/abs/2605.20744 -> 200 ("Hack-Verifiable Environments: Towards Evaluating Reward Hacking at Scale")
+- https://github.com/openai/evals -> 200
+- https://www.prisma-statement.org/ -> 200
+- https://www.semanticscholar.org/ -> 200
+- https://creativecommons.org/ -> 200
+- https://en.wikipedia.org/wiki/Citation -> 200
+- https://en.wikipedia.org/wiki/CRAAP_test -> 200
+No source changed title or moved since the 2026-10-13 baseline; the version-sensitive
+notes above remain accurate. Dead/bot-blocked URLs are recorded in the Conflicts section.

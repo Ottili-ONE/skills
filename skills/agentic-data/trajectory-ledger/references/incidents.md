@@ -81,3 +81,8 @@ because it wrote a free-form log and called it a ledger.
 - **Recovery**: re-write against the current schema in `references/schema.md`.
 - **Prevention**: the audit requires the first event to declare
   `schema: trajectory-ledger-v1` and rejects mixed versions.
+
+- **What happened**: a run cost $0.175 but the operator had budgeted $0.01. The `cost` subcommand printed the total and exited 0, so the overrun was invisible until the invoice arrived.
+- **Observable signature**: `cost` exiting 0 with a total above the operator's budget; no gate on the output.
+- **Recovery**: pass `--max-usd` and/or `--max-seconds` to `cost` or `audit`. The script sums the cost, compares it to the operator's budget (which is an argument, never read from the ledger), and exits 1 with `FAIL: total cost $X exceeds --max-usd $Y` if it is over.
+- **Prevention**: the budget is set by the operator before the run and is not derived from the run itself, so a run cannot set its own budget retroactively.

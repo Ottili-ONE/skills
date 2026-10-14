@@ -81,3 +81,8 @@ because it wrote checks that check the happy path.
   that must be caught.
 - **Prevention**: `verify_harness.py --neutered-checks` re-runs the live
   harness against the neutered checks and exits 1 unless power dropped.
+
+- **What happened**: a checks file had a check with `min_words: -5` and another with no `name` field. The harness crashed with a Python traceback deep inside `run_checks` and the operator could not tell which check was bad.
+- **Observable signature**: a traceback instead of a `FAIL: check '<name>' ...` line; the exit code is 1 but the message names no check.
+- **Recovery**: validate the shape of every check before running it. A missing `name`, a missing `path`, a non-boolean `exists`, a negative `min_words`/`max_words`, an empty `keywords` list, or a `json_field` without a `json_value` each produce a per-check FAIL line and exit 1 before any agent output is read.
+- **Prevention**: `assert_check_well_formed()` runs after `load_checks()` and before `run_checks()`. The rule-of-two floor is also configurable with `--min-defences` (default 2).

@@ -82,3 +82,8 @@ because it trusts a single judge run.
   the high mean as a pass.
 - **Prevention**: `scripts/calibrate_judge.py` sets `degenerate` when alpha is
   1.0 and every score is identical.
+
+- **What happened**: a team calibrated a judge on 3 items because that was all they had annotated. Krippendorff's alpha came back at 0.8 and they shipped the judge. On a real 100-item batch the judge was inconsistent and the scores were noise.
+- **Observable signature**: `n_items=3` in the report; alpha computed on fewer than the minimum sample.
+- **Recovery**: require 30-50 items (`--min-items`/`--max-items`, defaults 30/50). Every item must carry a `gold` label, and the set must span at least 2 distinct scores or it is degenerate (alpha=1.0 for a trivial reason). All three checks run before agreement is measured.
+- **Prevention**: `scripts/calibrate_judge.py calibrate` enforces the size window, the gold labels and the score spread before computing alpha.

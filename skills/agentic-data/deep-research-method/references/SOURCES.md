@@ -76,3 +76,17 @@ citation standard itself, and a scholarly search API for corroboration):
 The six incidents in `references/incidents.md` are drawn from these sources plus the
 alignment/reward-hacking literature already cited; each incident names the observable
 signature and the recovery procedure.
+
+
+## Re-verification 2026-10-14 (PASS 2 re-run)
+Live re-check of the primary sources this pass (curl, all HTTP 200):
+- https://arxiv.org/abs/2212.08073 -> 200 ("Constitutional AI: Harmlessness from AI Feedback")
+- https://arxiv.org/abs/2605.20744 -> 200 ("Hack-Verifiable Environments: Towards Evaluating Reward Hacking at Scale")
+- https://github.com/openai/evals -> 200
+- https://www.prisma-statement.org/ -> 200
+- https://www.semanticscholar.org/ -> 200
+- https://creativecommons.org/ -> 200
+- https://en.wikipedia.org/wiki/Citation -> 200
+- https://en.wikipedia.org/wiki/CRAAP_test -> 200
+No source changed title or moved since the 2026-10-13 baseline; the version-sensitive
+notes above remain accurate. Dead/bot-blocked URLs are recorded in the Conflicts section.

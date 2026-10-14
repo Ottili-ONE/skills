@@ -77,3 +77,8 @@ because it trusts memory or a single page.
   paraphrase under 15 words and cite the URL. Never quote to make a point you
   cannot paraphrase.
 - **Prevention**: the 15-word quotation ceiling is a hard rule, not a guideline.
+
+- **What happened**: an answer cited three URLs and claimed "high confidence (3 sources)". All three traced to the same arXiv paper via mirrors and copies. The claim was backed by one upstream, not three, and the corroborating number was an artefact of copying.
+- **Observable signature**: confidence stated as a count of URLs; the `upstream` field absent or identical across the kept sources.
+- **Recovery**: group the kept sources by `upstream` (falling back to `url`) and read the ladder: >=2 distinct upstreams = high, 1 = medium, none kept = low. Run `scripts/score_sources.py confidence <sources.jsonl>` to compute it mechanically.
+- **Prevention**: the confidence ladder is stated in the answer alongside the upstream count, not just the URL count.
