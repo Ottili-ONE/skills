@@ -81,8 +81,9 @@ Why it fails: the validator must walk every gzip member. The pitfall was
 verified live 2026-10-08 — a 3-record file reads as 1 record unless the
 member walk is explicit.
 ## Related skills
-- **`skill-authoring-evals`** — the crawl policy and the WARC validation rules are research products; cite them and state confidence when you audit this skill.
-- **`trajectory-ledger`** — a crawl is a multi-step run whose steps, offsets and costs belong in the ledger; the WARC is the evidence, the ledger is the provenance.
+- [deep-research-method](../deep-research-method/SKILL.md)
+- [trajectory-ledger](../trajectory-ledger/SKILL.md) — a crawl is a multi-step run whose steps, offsets and costs belong in the ledger; the WARC is the evidence, the ledger is the provenance.
+- [skill-authoring-evals](../skill-authoring-evals/SKILL.md) — the crawl policy and the WARC validation rules are research products; cite them and state confidence when you audit this skill.
 
 ## References
 - procedures: references/procedures.md

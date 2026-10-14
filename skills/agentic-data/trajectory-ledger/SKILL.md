@@ -125,8 +125,8 @@ Why it fails: `succeeded` requires `evidence`. The audit exits 1 and the
 run cannot be trusted — a run that claims success without evidence is the
 exact failure mode the ledger exists to prevent.
 ## Related skills
-- **`skill-authoring-evals`** — an eval run is a multi-step trajectory worth recording and auditing.
-- **`mcp-2026-07-28`** — an MCP round-trip is a tool call worth grounding in a trajectory.
+- [mcp-2026-07-28](../mcp-2026-07-28/SKILL.md) — an MCP round-trip is a tool call worth grounding in a trajectory.
+- [skill-authoring-evals](../skill-authoring-evals/SKILL.md) — an eval run is a multi-step trajectory worth recording and auditing.
 
 ## References
 - procedures: references/procedures.md

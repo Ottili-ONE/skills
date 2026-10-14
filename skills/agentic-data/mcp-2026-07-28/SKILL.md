@@ -124,7 +124,7 @@ Good and bad client behaviour, with the detection signal for each, live in
 extension, header-casing trap).
 
 ## Related skills
-- **`skill-authoring-evals`** — an MCP skill is a skill like any other; audit its description and evals the same way.
+- [skill-authoring-evals](../skill-authoring-evals/SKILL.md) — an MCP skill is a skill like any other; audit its description and evals the same way.
 
 ## References
 - changelog: references/changelog.md

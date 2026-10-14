@@ -145,9 +145,8 @@ More worked examples, each ending with the check that would have caught it, live
 in `references/examples.md`.
 
 ## Related skills
-- **`skill-authoring-evals`** — the source-scoring rubric and the trigger-eval methodology are research products; cite them and state confidence.
-- **`polite-crawling-warc`** — WARC archives produced by that pipeline are raw evidence for this workflow.
-- **`verifiable-environments`** — the SPEC a verifier is derived from is a research product with cited sources; a verifier's bypass audit is itself a research claim.
+- [verifiable-environments](../verifiable-environments/SKILL.md) — the SPEC a verifier is derived from is a research product with cited sources; a verifier's bypass audit is itself a research claim.
+- [skill-authoring-evals](../skill-authoring-evals/SKILL.md) — the source-scoring rubric and the trigger-eval methodology are research products; cite them and state confidence.
 
 ## References
 - procedures: references/procedures.md
