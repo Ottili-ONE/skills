@@ -50,8 +50,12 @@ def test_check_reports_status(tmp_path: Path) -> None:
 
 def test_check_when_cap_hit(tmp_path: Path) -> None:
     st = tmp_path / "cap.json"
+    # 50 attempts fill the task budget; the 51st is the one that hits the cap.
     for _ in range(50):
         run(st, "--attempt", "click")
+    r = run(st, "--attempt", "click")
+    assert r.returncode == 1
+    assert "cap hit" in r.stderr
     r = run(st, "--check")
     assert r.returncode == 1
     assert "cap hit" in r.stderr

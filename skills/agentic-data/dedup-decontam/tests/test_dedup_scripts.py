@@ -1,4 +1,5 @@
 """Tests for dedup-decontam scripts. Offline, deterministic."""
+import json
 import sys
 from pathlib import Path
 
@@ -217,3 +218,33 @@ def test_plant_test_fails_when_detector_is_broken(tmp_path):
     finally:
         plant_test.run = real_run
     assert rc == 1, "a detector missing the near-duplicates must FAIL"
+
+
+def test_embed_calibrate_out(tmp_path: Path) -> None:
+    """--calibrate-out derives a threshold from a held-out clean set."""
+    docs = tmp_path / "docs.json"
+    docs.write_text("[[1.0, 0.0], [0.9, 0.1], [0.8, 0.2], [0.7, 0.3]]")
+    ids = tmp_path / "ids.json"
+    ids.write_text('["a", "b", "c", "d"]')
+    prompts = tmp_path / "prompts.json"
+    prompts.write_text("[[1.0, 0.0], [0.6, 0.4]]")
+    pids = tmp_path / "pids.json"
+    pids.write_text('["p1", "p2"]')
+    out = tmp_path / "cal.json"
+    p = run([sys.executable, str(EMBED), "--docs", str(docs), "--doc_ids", str(ids),
+             "--prompts", str(prompts), "--prompt_ids", str(pids),
+             "--model", "all-MiniLM-L6-v2", "--calibrate-out", str(out)])
+    assert p.returncode == 0, p.stderr
+    assert out.is_file()
+    import json
+    rec = json.loads(out.read_text())
+    assert rec["model"] == "all-MiniLM-L6-v2"
+    assert "recommended_threshold" in rec
+    assert "note" in rec
+
+
+def test_embed_calibrate_requires_all_args(tmp_path: Path) -> None:
+    out = tmp_path / "cal.json"
+    p = run([sys.executable, str(EMBED), "--model", "m", "--calibrate-out", str(out)])
+    assert p.returncode == 2
+    assert "requires" in p.stderr

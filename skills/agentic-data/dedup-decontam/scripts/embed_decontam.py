@@ -149,6 +149,10 @@ def main() -> int:
                     help="if set, write a calibration JSON here instead of running decontamination")
     args = ap.parse_args()
 
+    if not (-1.0 <= args.threshold < 1.0):
+        print(f"FAIL: --threshold must be in [-1, 1), got {args.threshold}", file=sys.stderr)
+        return 1
+
     if args.calibrate_out is not None:
         if not (args.docs and args.doc_ids and args.prompts and args.prompt_ids):
             print("FAIL: --calibrate-out requires --docs --doc_ids --prompts --prompt_ids",
