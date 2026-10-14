@@ -1,6 +1,5 @@
 # EVALS — foundation-v2-conformance
-Retrieval date: 2026-10-13. Verified versions: @ottili/foundation-ui 1.0.13
-(latest; Apache-2.0). Sources: references/SOURCES.md.
+Retrieval date: 2026-10-14 (pass 3 re-verification). Verified versions: @ottili/foundation-ui 1.0.13 (latest on registry.npmjs.org, re-fetched 2026-10-14; Apache-2.0). Sources: references/SOURCES.md.
 
 Each prompt lists expected behaviour, failure signs, and what would prove the skill
 changed the outcome compared with no skill at all.
@@ -42,7 +41,7 @@ unit test by the import path; a generic agent writes the latter and calls it a c
 test.
 
 ## E5 — version bump under Freeze
-**Prompt**: "Foundation v2.4.1 is out; should we bump?"
+**Prompt**: "Foundation `@ottili/foundation-ui` 1.0.14 is out; should we bump?"
 **Expected**: agent checks the Freeze notice in `docs/STATUS_ALL.md` and refuses to bump
 without integrator approval recorded there.
 **Failure sign**: agent bumps the version because "it's a patch".
@@ -50,12 +49,15 @@ without integrator approval recorded there.
 skill makes the refusal explicit and names the artifact that would authorize the bump.
 
 ## E6 — bare ALLOWED marker is a stale escape hatch
-**Prompt**: "My PR uses `data-ottili-workaround` to hide a layout bug."
-**Expected**: agent requires a ticket reference (`FV2-WA: ISSUE-<digits>`) in the attribute or
-the accompanying comment, with an owner and a date, or rejects the workaround.
-**Failure sign**: agent accepts the workaround because "it ships".
-**What the skill changes vs no skill**: the skill makes workarounds ticket-bound and
-time-boxed (30 days); without it, workarounds silently become permanent.
+**Prompt**: "My PR has `<div style={{ color: '#ff0000' }} /* ALLOWED */ />` with no ticket."
+**Expected**: `scripts/check_foundation_tokens.py --require-ticket` exits 1 with
+`raw colour #ff0000 not in token set`; the marker is rejected because a bare `ALLOWED` with no
+`FV2-WA: ISSUE-<digits>` and no `owner:` is a stale escape hatch, not a tracked workaround.
+**Failure sign**: agent commits the bare marker because "it was already there".
+**What the skill changes vs no skill**: without the skill a bare `ALLOWED` marker is silently
+exempt from the token check, so a raw colour drifts into production forever. The skill makes
+`--require-ticket` the default posture: the marker only passes when it carries a ticket, an
+owner and a date, and the checker reports the drift instead of ignoring it.
 **Exact command to verify**:
 `python3 scripts/check_foundation_tokens.py --tokens <token.json> --require-ticket <file>`
 must exit 0 for a ticketed marker and exit 1 with `raw colour #ff0000 not in token set` for a
@@ -76,6 +78,6 @@ the drift the skill exists to catch.
 - **N2 — "It's faster to import the inner module directly."** Answer: no. Deep imports bypass the public API and break when internals change; use the named public export.
 - **N3 — "I'll add the workaround inline and clean it up later."** Answer: no. Every workaround must carry `FV2-WA:` with an owner and a date, or it is a permanent drift.
 - **N4 — "The fresh-consumer test is just a unit test with a different name."** Answer: no. A unit test imports the package source; a fresh-consumer test imports the published package as a downstream consumer would.
-- **N5 — "Foundation v2.4.1 is out, let's bump."** Answer: no. Check the Freeze notice in `docs/STATUS_ALL.md` and refuse without integrator approval.
+- **N5 — "Foundation `@ottili/foundation-ui` 1.0.14 is out, let's bump."** Answer: no. Check the Freeze notice in `docs/STATUS_ALL.md` and refuse without integrator approval.
 - **N6 — "The ALLOWED marker has been there for months, it's fine."** Answer: no. Run with `--require-ticket`; a marker without `FV2-WA: ISSUE-<digits>` and `owner:` is a stale escape hatch, not a tracked workaround.
 - **N7 — "The ticket is in the commit message, not the marker."** Answer: no. The marker must carry the ticket inline so the checker can exempt the line; a ticket in prose elsewhere is invisible to the check.
