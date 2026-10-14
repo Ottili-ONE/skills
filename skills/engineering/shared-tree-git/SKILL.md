@@ -21,6 +21,8 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - Single-developer repos with normal git workflow.
 - Repos where `git reset --hard`, `git checkout`, or `git stash` are permitted.
 - Situations where you can simply push to a private branch.
+- A commit that touches only one file you own — the skill still applies (explicit paths + task-id prefix), but the checklist is a 30-second pass, not a ceremony.
+- Amending a commit you made this session that no one has seen — still run `git show --stat HEAD` after; the rule is about the shared tree, not about you.
 
 ## Decision table — git operation
 | Operation | Safe? | When to pick | Pitfall |
@@ -92,4 +94,14 @@ $ git checkout main -- skills/business-de/webhooks-safe/SKILL.md
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
+
+`shared-tree-git` is the foundation every other skill in this playbook builds on
+(every skill's artefacts are committed here with a task-id prefix), so it has no
+outgoing dependencies. The skills that depend on it point back here instead:
+
+- [module-contract-first](../module-contract-first/SKILL.md) — snapshot and boundary doc are committed with a task-id prefix.
 - [honest-status](../honest-status/SKILL.md) — status buckets keep the shared tree readable across agents.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — commit the wrapper script with explicit paths only.
+- [problem-json-contracts](../problem-json-contracts/SKILL.md) — the catalogue and schema are committed with a task-id prefix.
+
+This one-way graph is intentional: it keeps the Related-section graph acyclic.
