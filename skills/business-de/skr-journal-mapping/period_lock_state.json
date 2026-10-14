@@ -1,0 +1,17 @@
+{
+  "periods": {
+    "2026-12": {
+      "locked": true,
+      "history": [
+        {
+          "action": "lock",
+          "at": "2026-10-14",
+          "by": "Tax Advisor"
+        }
+      ],
+      "locked_at": "2026-10-14",
+      "locked_by": "Tax Advisor",
+      "lock_reason": "period-end closure"
+    }
+  }
+}

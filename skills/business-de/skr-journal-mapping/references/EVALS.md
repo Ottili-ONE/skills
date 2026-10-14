@@ -111,6 +111,7 @@ exists in both but 4200 is SKR 04 only). Always pass `--skr 03` or `--skr 04`; t
 key on the source invoice and the period is locked. A journal that balances
 but carries key `19` where the invoice says `07` is a mismatch.
 
+
 ---
 
 ## Run these checks
@@ -121,11 +122,10 @@ All commands are run from the skill directory
 (`cd skills/business-de/skr-journal-mapping`). A single sales line does not
 balance — the generator emits the sales leg only; the balance check must run
 on a *complete* journal (sales leg + bank leg 1100 + tax account 1570).
- ```bash
+
+```bash
 # 2. generate a sales leg -> exit 0
-python3 scripts/generate_journal.py --skr 04 --lines \
-  '[{"account":"4000","side":"S","amount":1200,"tax_key":"19","belegdatum":"20260601"}]' \
-  --output /tmp/journal.json
+python3 scripts/generate_journal.py --skr 04 --lines "$(cat evals_fixtures/sales_leg.json)" --output /tmp/journal.json
 # {"ok": true, "entries": 1, "blocking": 0}
 
 # 2b. balance check on the bare sales leg -> exit 2
@@ -142,9 +142,7 @@ python3 scripts/map_skr.py --account 4000 --skr 04 --intra-eu
 # {"default_tax_key": "00", "rate_percent": 0, "override": "..."}
 
 # 7. invalid tax key 99 -> exit 0, ok:false, file still written
-python3 scripts/generate_journal.py --skr 04 --lines \
-  '[{"account":"4000","side":"S","amount":1200,"tax_key":"99","belegdatum":"20260601"}]' \
-  --output /tmp/j.json
+python3 scripts/generate_journal.py --skr 04 --lines "$(cat evals_fixtures/bad_key.json)" --output /tmp/j.json
 # {"ok": false, "entries": 0, "blocking": 1}
 python3 scripts/journal_check.py --journal /tmp/j.json
 # FAIL tax_key must be 19/07/00, got '99'
@@ -158,7 +156,8 @@ python3 scripts/period_lock.py --period 2026-12 --action lock --approver "Tax Ad
 # {"already_locked": true}
 ```
 
-The tax key depends on the **transaction**, not the account (near-miss N1): `map_skr.py --account 4000 --skr 04 --intra-eu` flips the key to `00`. A
+The tax key depends on the **transaction**, not the account (near-miss N1):
+`map_skr.py --account 4000 --skr 04 --intra-eu` flips the key to `00`. A
 balanced journal can still carry the wrong tax key (N3) — the checker
 validates the key against the account's allowed set independently of the
 balance. Verified 2026-10-14 against `config/versions.json` (SKR04 default,

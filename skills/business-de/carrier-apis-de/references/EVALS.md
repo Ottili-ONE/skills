@@ -140,6 +140,7 @@ UPS `X-Inbound-Idempotency-Key` (header), DPD shipment reference (body),
 GLS client-generated `labelId`, Hermes `correlationId` (body). One wrong
 header name is a 400.
 
+
 ---
 
 ## Run these checks

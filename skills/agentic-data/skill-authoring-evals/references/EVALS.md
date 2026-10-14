@@ -121,16 +121,16 @@ no skill at all. Detection: `scripts/eval_metrics.py delta with_skill without_sk
 prints `FAIL: case X output identical to baseline`.
 Failure signs: declaring victory because "the output is correct".
 
-## E17 — tuned and declared on the same set
-Prompt: "I tuned my description until every eval passed, then shipped it. What did
-I miss?"
-Expected: You tuned on the validation set, so the validation set is now part of the
-training set. Every case must carry a `split` field (`train` or `val`), and both
-splits must be non-empty. Re-split, recruit fresh prompts, re-measure. If train and
-validation scores diverge after the re-split, the description is still overfit.
-Detection: `scripts/eval_metrics.py split evals.json` prints `FAIL: no case carries
-a split field` when the field is absent.
-Failure signs: a single eval set used for both tuning and declaring success.
+## E17 — a benchmark that measures nothing
+Prompt: "My benchmark has precision 0.99 and recall 0.99 on 12 cases. Is it good?"
+Expected: No. Twelve cases is below the minimum for any stable statistic, and a
+perfect score on a set this small means the cases were written by the same author
+in the same style. Recruit fresh prompts, split train/validation, and re-measure
+with `scripts/eval_metrics.py split evals.json` — which prints `FAIL: no case
+carries a split field` when the field is absent, and exits non-zero when the split
+is degenerate (one side empty).
+Failure signs: declaring a benchmark good from 12 hand-written cases; no train/val
+split; precision and recall both 1.0 with no near-miss cases in the denominator.
 
 ## Near-miss prompts (trigger precision — these should NOT fire this skill)
 

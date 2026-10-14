@@ -110,6 +110,7 @@ until 2025-12-31 for vouchers).
 **Trap:** an audit export must be chronological, complete, checksummed and
 carry a manifest (MANIFEST.json). A raw DB dump is not an audit export.
 
+
 ---
 
 ## Run these checks
@@ -131,15 +132,11 @@ python3 scripts/retention_classify.py --type correspondence --year 2026 --json
 #  "warning": "the 6-year class covers only three sub-types; ..."}
 
 # 7. purge 2017 while an audit is open -> exit 1 (blocked)
-python3 scripts/purge_decision.py --type invoice --year 2017 \
-  --approver "M. Mustermann (Steuerberater)" --reason "retention ended" \
-  --open-audit --today 2026-10-14
+python3 scripts/purge_decision.py --type invoice --year 2017 --approver "M. Mustermann (Steuerberater)" --reason "retention ended" --open-audit --today 2026-10-14
 # {"purge_permitted": false, "blockers": ["audit_open"]}
 
 # 7b. purge 2017, no audit -> exit 0
-python3 scripts/purge_decision.py --type invoice --year 2017 \
-  --approver "M. Mustermann (Steuerberater)" --reason "retention ended" \
-  --today 2026-10-14
+python3 scripts/purge_decision.py --type invoice --year 2017 --approver "M. Mustermann (Steuerberater)" --reason "retention ended" --today 2026-10-14
 # {"purge_permitted": true, "blockers": [],
 #  "record_retention_until": "2025-12-31"}
 ```

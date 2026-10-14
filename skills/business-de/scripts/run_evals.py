@@ -27,25 +27,39 @@ INLINE_RE = re.compile(r"`(python3\s+\S.*?)`", re.M)
 FENCE_RE = re.compile(r"```(?:bash|sh)?\n(.*?)\n```", re.S)
 
 
-def extract_commands(text: str) -> list[str]:
-    cmds = INLINE_RE.findall(text)
+def extract_commands(text: str) -> list[tuple[str, int]]:
+    """Return every `python3 ...` command in an EVALS.md with its expected exit.
+
+    Two forms are accepted:
+      * inline code spans: `python3 ...`
+      * fenced ```bash blocks, which may hold several commands and may use
+        a backslash line-continuation. The expected exit for a command is
+        taken from the nearest preceding `# exits N` annotation line;
+        annotations default to 0 when absent.
+    """
+    cmds: list[tuple[str, int]] = []
+    for m in INLINE_RE.finditer(text):
+        cmds.append((m.group(1), 0))
     for block in FENCE_RE.findall(text):
-        # keep only lines that are part of a python3 invocation; strip comments
-        # and `# output` annotation lines, then join continuation lines.
-        # join `\`-continued lines BEFORE stripping comments, so a command
-        # that wraps across several lines in the fenced block becomes one
-        # real shell command (the backslash is the line-continuation marker).
-        raw = block.replace("\
-", " ")
-        lines = [ln.strip() for ln in raw.splitlines()]
-        lines = [ln for ln in lines if ln and not ln.startswith("#")]
-        joined = " ".join(lines)
-        # a fenced block may hold several commands separated by blank lines;
-        # split on the python3 word so each becomes its own command.
-        for piece in re.split(r"(?=python3\s)", joined):
-            piece = piece.strip()
-            if piece.startswith("python3 "):
-                cmds.append(piece)
+        raw = block.replace("\\n", " ")
+        pending = 0
+        for raw_line in raw.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("#"):
+                mm = re.search(r"#\s*exits?\s+(\d+)", line)
+                if mm:
+                    pending = int(mm.group(1))
+                continue
+            if not line.startswith("python3 "):
+                continue
+            want = pending
+            pending = 0
+            line = re.sub(r"\s*#\s*exits?\s+\d+\s*$", "", line)
+            line = re.sub(r"\s*#\s*output.*$", "", line).strip()
+            if line:
+                cmds.append((line, want))
     return cmds
 
 
@@ -100,12 +114,12 @@ def main(argv):
         if not cmds:
             print(f"[{s}] no inline python3 commands in EVALS.md — SKIPPED")
             continue
-        for cmd in cmds:
+        for cmd, want_inline in cmds:
             ran += 1
             # A near-miss prompt may legitimately expect a non-zero exit
             # (``exits 2``). Read the expected code from the prompt block.
             block = next((b for b in blocks if cmd in b), text)
-            want = expected_exit(block)
+            want = want_inline or expected_exit(block)
             # process substitution <(...) is a shell feature; wrap it.
             full = cmd if "<(" not in cmd else f"bash -c '{cmd}'"
             r = subprocess.run(

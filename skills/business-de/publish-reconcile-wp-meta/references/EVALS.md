@@ -132,6 +132,7 @@ informational, not as deltas.
 is unmaintained. The config pins the WP version; the helper must read it and
 warn. A green run that uses Basic Auth on WP 6.7+ is a failure sign.
 
+
 ---
 
 ## Run these checks
@@ -153,15 +154,15 @@ python3 scripts/wp_publish.py --key ORD-1 --dry-run
 # reads the pinned WP version from config; warns on Basic Auth + WP 6.7+
 
 # 9. reconcile matching platforms -> exit 0
-python3 scripts/reconcile.py --key ORD-1 --wp post.json --meta post.json
+python3 scripts/reconcile.py --key ORD-1 --wp evals_fixtures/wp_match.json --meta evals_fixtures/meta_match.json
 # {"ok": true, "deltas": []}
 
 # 9b. reconcile mismatch -> exit 1
-python3 scripts/reconcile.py --key ORD-1 --wp post.json --meta draft.json
+python3 scripts/reconcile.py --key ORD-1 --wp evals_fixtures/wp_match.json --meta evals_fixtures/meta_draft.json
 # {"ok": false, "deltas": [{"field": "status", "match": false}]}
 
 # 9c. reconcile --strict on a missing idempotency key -> exit 1
-python3 scripts/reconcile.py --key ORD-1 --wp nokey.json --meta post.json --strict
+python3 scripts/reconcile.py --key ORD-1 --wp evals_fixtures/wp_nokey.json --meta evals_fixtures/meta_match.json --strict
 # {"ok": false, "strict": true, "deltas": [{"reason": "key mismatch"}]}
 ```
 

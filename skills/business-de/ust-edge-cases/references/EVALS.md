@@ -117,6 +117,7 @@ rounded total: `python3 scripts/ust_check.py --rows
 
 **Failure signs:** rounding the invoice total before the tax split.
 
+
 ---
 
 ## Run these checks
@@ -124,36 +125,37 @@ rounded total: `python3 scripts/ust_check.py --rows
 Every prompt above names a script and an expected exit code. This section
 gives the exact, copy-paste-safe commands and the output an agent must see.
 All commands are run from the skill directory
-(`cd skills/business-de/ust-edge-cases`).
+(`cd skills/business-de/ust-edge-cases`). The `--rows` argument accepts a JSON
+file, a JSON array literal, or `-` for stdin.
 
 ```bash
 # 1. intra-EU B2B supply of goods -> exit 0
-python3 scripts/ust_check.py --rows '[{"tax_key":"06/0","net":100}]' --supply-type goods
+python3 scripts/ust_check.py --rows evals_fixtures/goods.json --supply-type goods --customer-vat-id DE999999999
 # OK VAT treatment valid, 1 lines
 
 # 2. Kleinunternehmer under the threshold -> exit 0
-python3 scripts/ust_check.py --rows '[{"tax_key":"0","net":100}]' --kleinunternehmer --prior-turnover 18000
+python3 scripts/ust_check.py --rows evals_fixtures/ku_under.json --kleinunternehmer --prior-turnover 18000
 # OK VAT treatment valid, 1 lines
 
 # 4. 19% on 33.33 -> 6.33 (line-level 0.5-up, then per tax key)
-python3 scripts/ust_check.py --rows '[{"tax_key":"19","net":33.33}]'
-# OK VAT treatment valid, 1 lines   (tax amount 6.33)
+python3 scripts/ust_check.py --rows evals_fixtures/rate33.json
+# OK VAT treatment valid, 1 lines
 
 # 7. Kleinunternehmer ABOVE the threshold -> exit 2
-python3 scripts/ust_check.py --rows '[{"tax_key":"0","net":100}]' --kleinunternehmer --prior-turnover 25000
-# FAIL line 1: prior turnover 25000 exceeds the Kleinunternehmer threshold 20000
+python3 scripts/ust_check.py --rows evals_fixtures/ku_over.json --kleinunternehmer --prior-turnover 25000
+# FAIL prior-year turnover 25000.0 exceeds Kleinunternehmer threshold 20000.0
 
 # N1. reverse charge claimed on a goods supply -> exit 2
-python3 scripts/ust_check.py --rows '[{"tax_key":"06/0","net":100}]' --reverse-charge --supply-type goods
-# FAIL line 1: reverse charge (SSB) applies to services only (UStG 13b), not goods
+python3 scripts/ust_check.py --rows evals_fixtures/rc_goods.json --reverse-charge --supply-type goods
+# FAIL line 1: reverse charge (§13b) applies to services only -- supply_type 'goods' cannot use reverse charge
 
 # N2. superseded 22,000 threshold -> exit 2
-python3 scripts/ust_check.py --rows '[{"tax_key":"0","net":100}]' --kleinunternehmer --prior-turnover 22000
-# FAIL line 1: prior turnover 22000 exceeds the Kleinunternehmer threshold 20000
+python3 scripts/ust_check.py --rows evals_fixtures/ku_under.json --kleinunternehmer --prior-turnover 22000
+# FAIL prior-year turnover 22000.0 exceeds Kleinunternehmer threshold 20000.0
 
 # N3. round the total first -> exit 2
-python3 scripts/ust_check.py --rows '[{"tax_key":"19","net":100.005,"tax_amount":19.01}]'
-# FAIL line 1: tax amount 19.01 != 19.01 (round line-level, not the total)
+python3 scripts/ust_check.py --rows evals_fixtures/round_total.json
+# FAIL line 1: tax amount 19.01 != 19.00 for key 19
 ```
 
 The threshold is EUR 20,000 (UStG §19 Abs. 1), not the superseded 22,000.

@@ -108,6 +108,7 @@ and record its SHA-256.
 invoice -> 2034-12-31), effective 2025-01-01. The old "10 years for
 everything" applies only to vouchers whose retention started before 2025.
 
+
 ---
 
 ## Run these checks
@@ -122,20 +123,23 @@ exits non-zero on any failure. The full rule set needs the KoSIT validator
 
 ```bash
 # 2. valid B2B invoice -> exit 0
-python3 scripts/validate_invoice.py inv.xml --config config/versions.json
+python3 scripts/validate_invoice.py evals_fixtures/inv-valid.xml --config config/versions.json
 # {"ok": true, "classification": "xml-only", "profile": "COMFORT",
 #  "pinned_spec": "1.2.4", "pinned_validator": "v2026-08-31", "errors": []}
 
 # 3. BT-14/BT-10/BT-20 missing -> exit 1
-python3 scripts/validate_invoice.py inv_missing.xml --config config/versions.json
+python3 scripts/validate_invoice.py evals_fixtures/inv-missing.xml --config config/versions.json
 # {"ok": false, "errors": ["BT-10 missing (cbc:EndpointID)",
 #                          "BT-14 missing (cbc:IssueDate)",
 #                          "BT-15 missing (cbc:DeliveryDate)", ...]}
 
+# 1. PDF-only -> exit 1, classified as pdf-only
+python3 scripts/validate_invoice.py evals_fixtures/plain.pdf --config config/versions.json
+# {"classification": "pdf-only", "ok": false}
+
 # 4. pin the spec and re-verify -> exit 0
-python3 scripts/validate_invoice.py inv.xml --config config/versions.json
-# pinned_spec "1.2.4", pinned_validator "v2026-08-31" -- read from config,
-# never hardcoded
+python3 scripts/validate_invoice.py evals_fixtures/inv-valid.xml --config config/versions.json
+# pinned_spec "1.2.4", pinned_validator "v2026-08-31" -- read from config, never hardcoded
 
 # 7. profile selector -> exit 0
 python3 scripts/profile_selector.py --context B2B --data full --recipient factur-x
