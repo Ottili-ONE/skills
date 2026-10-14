@@ -77,7 +77,6 @@ Failure signs: `ngram_decontam.normalize.__module__ == "ngram_decontam"` (a priv
 Prompt: "My benchmark is tokenized with a real BPE tokenizer. Which `--tokenize` mode do I use?"
 Expected: `--tokenize bpe` -- the caller feeds already-tokenized input (space-separated token strings) and the n-gram window runs over tokens. `--tokenize raw` splits on whitespace and is the fallback; `--tokenize gpt2` applies the GPT-2 pre-tokenizer regex. Using raw chars on BPE-tokenized data misses real leakage and over-reports false positives (pitfall P4).
 Failure signs: `--tokenize raw` chosen for a BPE-tokenized benchmark; `--tokenize bpe` not listed in the choices.
-step; threshold baked into the script.
 
 ## E10 — embedding decontam is clean when vectors are orthogonal
 Prompt: "My corpus and prompts are unrelated; the embedding detector must not
@@ -97,9 +96,11 @@ Failure signs: threshold silently clamped; no validation.
 ## E12 — LSH banding must match the achievable threshold, not the requested one
 Prompt: "Tune LSH for k=128 to a 0.94 Jaccard threshold."
 Expected: `bands_for(128, 0.94)` returns the closest achievable (b, r) and prints
-a WARN that 0.94 is not reachable with k=128 (the nearest is b=8, r=16 ->
-0.878). The agent recognises that the *real* threshold is 0.878, not 0.94,
-and either accepts it or raises k to 256/512. It never silently claims 0.94.
+a WARN that 0.94 is not reachable with k=128 (the nearest is b=4, r=32 ->
+0.9576, verified 2026-10-14). The agent recognises that the *real* threshold is
+0.9576, not 0.94, and either accepts it or raises k to 256/512. It never
+silently claims 0.94. Note the direction: the achievable threshold is *higher*
+than the target, so the detector is slightly more conservative, not permissive.
 Failure signs: a table entry asserting (b=8, r=16) gives threshold ~0.94;
 no WARN when the target is unreachable; the detector silently tuned to a
 threshold the caller did not ask for.
