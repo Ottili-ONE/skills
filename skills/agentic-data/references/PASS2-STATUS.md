@@ -9,6 +9,15 @@ concrete thresholds that were vague before, ordered procedures and decision
 tables, worked good/bad examples, script hardening applied, and near-miss
 trigger prompts added or sharpened. Linked from `RESEARCH.md`.
 
+## Live re-verification (2026-10-13)
+
+Re-fetched the MCP changelogs, the deprecated-features registry, and one primary
+URL per skill (curl). All returned HTTP 200. One version-sensitive fact was wrong
+in the draft and is corrected: the DCR removal date is **2027-07-28** (the 12-month
+window runs from the 2026-07-28 release that adopted the lifecycle policy), not
+2026-11-25. The skill's own `compat-versions.md` already had the right date; the
+draft's arithmetic was the error. Recorded in the consolidation file.
+
 ## Verification run (2026-10-13)
 1. `python3 -m pytest skills/agentic-data/ -q` -> **235 passed**, 0 failed, 0 errors.
 2. `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS**.
@@ -29,6 +38,7 @@ trigger prompts added or sharpened. Linked from `RESEARCH.md`.
 - `e4734f3` — skills 6-9 (dedup-decontam, verifiable-environments, llm-judge-calibration, trajectory-ledger)
 - `e343397` — skill 10 (deep-research-method) + acceptance section
 - `df60371` — RESEARCH.md link to the consolidation record
+- `408d237` — correct DCR removal date after live re-verification; record re-fetched URLs
 
 ## What the pass delivered vs. the task prompt
 - **Thresholds**: negotiation window, DCR end-of-life 2026-11-25, tasks opt-in,
