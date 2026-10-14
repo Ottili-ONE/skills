@@ -57,6 +57,13 @@ items; any DONE item without an `evidence:` line is false-done.
 **Worked example good**: a FALSE_DONE section listing each downgraded claim with the reason.
 **Worked example bad**: a DONE section with prose and no pointers.
 
+## Near-miss prompts (act before the incident)
+- **N1 — "The test passed in my head, is that enough?"** Answer: no — write the log down or the claim is FALSE_DONE.
+- **N2 — "VERIFIED sounds like a cop-out; just call it DONE."** Answer: no — the next agent may merge it and re-run; conflating the two is how work is reported twice.
+- **N3 — "The code is done, so it's DONE."** Answer: no — done means verified, not coded.
+- **N4 — "It's basically done."** Answer: run `python3 scripts/check_status_evidence.py STATUS.md --root .` before writing; a claim without a pointer is FALSE_DONE.
+- **N5 — "Just copy last quarter's STATUS.md."** Answer: no — every claim must be re-verified this week; stale evidence is FALSE_DONE.
+
 ## Verification checklist
 - [ ] 1 bucket per status; DONE and IN_PROGRESS never merged
 - [ ] Every DONE has a runnable evidence pointer

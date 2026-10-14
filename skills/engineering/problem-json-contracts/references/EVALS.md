@@ -70,6 +70,13 @@ clients key on the `type` URI, not the status; keep the code distinct.
 **Worked example good**: `title: "Validation failed"` (18 chars).
 **Worked example bad**: `title: "<200 chars of explanation>"`.
 
+## Near-miss prompts (act before the incident)
+- **N1 — "It's an internal service, nobody checks the status field."** Answer: no — the status field is the machine-readable signal; omit it and every consumer falls back to guessing.
+- **N2 — "The schema file is missing, so the check must fail."** Answer: no — a missing schema is a finding, not a pass; the checker reports it and the catalogue is fixed, not the checker.
+- **N3 — "I'll keep both as 409 and just change the title."** Answer: no — duplicate codes are forbidden; one code per condition, and the title describes the condition, not the symptom.
+- **N4 — "The type URI is our own internal name, that's fine."** Answer: no — the type URI must be absolute (a URL or a URN) so it is globally unambiguous and stable across versions.
+- **N5 — "A 5xx in the body means the client did something wrong."** Answer: no — 5xx is server failure; never map it to a 4xx client error, and always include `retry_after` when retry is possible.
+
 ## Verification checklist
 - [ ] Every endpoint returns `application/problem+json` on >=400
 - [ ] Catalogue has no duplicate codes

@@ -4,7 +4,7 @@ Retrieval date: 2026-10-13. All URLs re-fetched 2026-10-13 (see `references/SOUR
 ## Verified versions
 | Artifact | Version | Verified | Note |
 |----------|---------|----------|------|
-| PostgreSQL | 18 (current stable) | 2026-10-13 | `FORCE ROW LEVEL SECURITY` unchanged since 9.5 |
+| PostgreSQL | 19 (current stable; re-verified 2026-10-14) | 2026-10-14 | `FORCE ROW LEVEL SECURITY` unchanged since 9.5; `/docs/19/` HTTP 200, `/docs/current/` resolves to 19 |
 | Supabase RLS guide | current | 2026-10-13 | `service_role` key model changed 2025; see conflicts |
 
 ## 0. Tenant-key-first design decision
@@ -67,7 +67,7 @@ date in the migration comment.
 
 ## 4. Leak test harness
 `scripts/check_rls_migration.py` is the **offline gate** that runs before the Docker harness.
-The Docker harness (`scripts/pg-rls-leak-test.sh`, planned) spins up `postgres:18-alpine`,
+The Docker harness (`scripts/pg-rls-leak-test.sh`, planned) spins up `postgres:19-alpine`,
 applies schema + policies, then runs two sessions as different tenants and asserts
 cross-tenant reads return zero rows.
 

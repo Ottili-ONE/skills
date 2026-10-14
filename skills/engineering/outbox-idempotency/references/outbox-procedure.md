@@ -4,7 +4,7 @@ Retrieval date: 2026-10-13. Host: Biest. SEARCH_ENDPOINT: none (URLs fetched dir
 ## Verified versions
 | Artifact | Version | Verified |
 |----------|---------|----------|
-| PostgreSQL | 15+ (18 confirmed) | 2026-10-13 |
+| PostgreSQL | 15+ (19 confirmed current stable) | 2026-10-14 | `gen_random_uuid()` since v10, `SKIP LOCKED` since v9.5; `/docs/19/` HTTP 200 re-verified 2026-10-14 |
 | Kafka | 3.7 (poison-pill semantics) | 2026-10-13 |
 | RFC 9110 §9.2.2 (Idempotency-Key) | 2026-10-13 | 2026-10-13 |
 | Martin Fowler, Microservices Patterns | 2024 edition | 2026-10-13 |
