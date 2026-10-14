@@ -7,7 +7,7 @@ metadata: {}
 allowed-tools: []
 ---
 
-Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
+Standard: name/description/length rules — [agentskills.io standard](../references/agentskills-standard.md).
 # Acceptance Harness Skill (body <500 lines)
 
 Full procedure: references/acceptance-harness-procedure.md

@@ -7,7 +7,7 @@ metadata: {}
 allowed-tools: []
 ---
 
-Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
+Standard: name/description/length rules — [agentskills.io standard](../references/agentskills-standard.md).
 # Module Contract First Skill — Quick Reference (body <500 lines; full procedure in references/module-contract-procedure.md)
 
 ## When to use this skill (trigger)

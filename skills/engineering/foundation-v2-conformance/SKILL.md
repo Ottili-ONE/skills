@@ -7,7 +7,7 @@ metadata: {}
 allowed-tools: []
 ---
 
-Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
+Standard: name/description/length rules — [agentskills.io standard](../references/agentskills-standard.md).
 # Foundation v2 Conformance Skill (body <500 lines)
 
 Full procedure: references/foundation-v2-conformance-procedure.md

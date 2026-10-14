@@ -6,7 +6,7 @@ Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
    2026-10-13: `dist-tags.latest` = **1.0.13**, license Apache-2.0, description "Foundation
    design system: SoT §14 tokens, themes, density, and the §47 component inventory." Full
    version list: 1.0.1-1.1, 1.0.10, 1.0.11, 1.0.12, 1.0.13. URL:
-   https://www.npmjs.com/package/@ottili/foundation-ui — retrieved 2026-10-13.
+   https://registry.npmjs.org/@ottili/foundation-ui — retrieved 2026-10-13.
 2. **Foundation v2 changelog / releases** — https://github.com/ottili/foundation. Verified
    2026-10-13 (HTTP 200). Source for the public API contract (named exports, `exports` map,
    no deep imports). URL: https://github.com/ottili/foundation — retrieved 2026-10-13.

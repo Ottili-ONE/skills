@@ -5,7 +5,7 @@ Retrieval date: 2026-10-14 (re-verified). All URLs fetched with curl; HTTP statu
 1. **@axe-core/playwright** — `registry.npmjs.org/@axe-core/playwright`. Verified 2026-10-13:
    `dist-tags.latest` = **4.13.0** (previous SOURCES entry said 4.9.x — stale; corrected here).
    The adapter injects axe-core into the page and returns `violations`/`incomplete`/`passes`
-   arrays. URL: https://www.npmjs.com/package/@axe-core/playwright — retrieved 2026-10-13.
+   arrays. URL: https://registry.npmjs.org/@axe-core/playwright — retrieved 2026-10-13.
 2. **axe-core** — `registry.npmjs.org/axe-core`. Verified 2026-10-13: latest = **4.14.0**.
    Rule list lives at https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md
    — retrieved 2026-10-13 (raw 200).
@@ -16,7 +16,7 @@ Retrieval date: 2026-10-14 (re-verified). All URLs fetched with curl; HTTP statu
    Playwright 1.50+ (verified against the docs landing page, which is the current channel).
 4. **WCAG 2.2** — https://www.w3.org/WAI/standards-guidelines/wcag/. Verified 2026-10-13
    (HTTP 200). A/AA success criteria are the pass/fail bar; the Understanding pages are the
-   authoritative interpretation. URL: https://www.w3.org/WAI/WCAG22/ — retrieved 2026-10-13.
+   authoritative interpretation. URL: https://www.w3.org/TR/WCAG22/ — retrieved 2026-10-13.
 5. **MDN ARIA forms guidance** — https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/forms.
    Verified 2026-10-13 (HTTP 200). Source for "form controls need accessible names" and
    keyboard operability requirements.

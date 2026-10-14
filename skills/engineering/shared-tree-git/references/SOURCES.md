@@ -15,7 +15,7 @@
 - Shared-tree policy (Ottili AGENTS.md ownership globs): https://github.com/ottili/repo/skills/blob/main/AGENTS.md — verified 2026-10-14; most-specific-glob-wins ownership, `docs/R3_OWNERS.json` is the registry.
 
 ## Dead / moved URLs (no longer linked)
-- `https://git-scm.com/docs/git-index` — **404 as of 2026-10-14** (docs restructured). Replaced by `git-scm.com/docs/git-update-index`, above.
+- `https://git-scm.com/docs/git-update-index` — **404 as of 2026-10-14** (docs restructured). Replaced by `git-scm.com/docs/git-update-index`, above.
 - `https://github.com/ottili/repo/skills/blob/main/AGENTS.md` — the canonical copy; the local `AGENTS.md` is the working copy.
 
 ## Conflicts between sources
