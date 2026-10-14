@@ -146,6 +146,12 @@ in `references/examples.md`.
 
 ## Related skills
 
+- **`skill-authoring-evals`** — the source-scoring rubric and the trigger-eval methodology are research products; cite them and state confidence.
+- **`polite-crawling-warc`** — WARC archives are raw evidence for this workflow; a crawl is a multi-step run whose offsets and costs belong in the ledger.
+- **`trajectory-ledger`** — a research run is a multi-step trajectory worth recording and auditing so the claim chain is reproducible.
+- **`dedup-decontam`** — a contaminated corpus (test-set leakage, near-duplicates) is a data-quality failure this skill must detect before scoring sources.
+- **`llm-judge-calibration`** — the gold labels and rubric used to score sources are evidence products: cite them, score them, state confidence.
+- **`verifiable-environments`** — the SPEC a verifier is derived from is a research product with cited sources; a verifier's bypass audit is itself a research claim.
 
 ## References
 - procedures: references/procedures.md
