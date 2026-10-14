@@ -125,11 +125,12 @@ Why it fails: `succeeded` requires `evidence`. The audit exits 1 and the
 run cannot be trusted — a run that claims success without evidence is the
 exact failure mode the ledger exists to prevent.
 ## Related skills
-
-- **`deep-research-method`** — a research run is a multi-step trajectory worth recording and auditing.
-- **`polite-crawling-warc`** — a crawl is a multi-step run whose steps, offsets and costs belong in the ledger.
-
-## References
+- **`deep-research-method`** — a research run is a multi-step trajectory worth recording and auditing so the claim chain is reproducible.
+- **`dedup-decontam`** — the planted-item pass/fail is recorded as a trajectory outcome.
+- **`llm-judge-calibration`** — every calibration run carries cost and must be recorded in the cost ledger.
+- **`skill-authoring-evals`** — an eval run is a multi-step trajectory worth recording and auditing.
+- **`verifiable-environments`** — record the verifier's own runs so calibration is reproducible.
+- **`mcp-2026-07-28`** — an MCP round-trip is a tool call worth grounding in a trajectory.References
 - procedures: references/procedures.md
 - schema: references/schema.md
 - cost ledger: references/cost-ledger.md

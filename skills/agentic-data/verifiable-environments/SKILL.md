@@ -142,13 +142,9 @@ Why it fails: the verifier shares the environment's bugs. A check that
 cannot be gamed is a check nobody has tried to game; every check needs a
 written entry in `references/bypass-register.md`, and this one has none.
 ## Related skills
-
-- **`deep-research-method`** — the SPEC a verifier is derived from is a research product with cited sources.
-- **`polite-crawling-warc`** — a crawl is a good environment to verify: politeness and resume must hold under a bypass audit.
-- **`trajectory-ledger`** — record the verifier's own runs so calibration is reproducible.
-- **`dedup-decontam`** — the planted-item test pattern in this skill is the same shape as a bypass-register check.
-
-## References
+- **`mcp-2026-07-28`** — an MCP server is a good environment to verify: statelessness is provable by replay.
+- **`computer-use-drivers`** — the driver's confirm() gates and coordinate scaling are verifier components that need a bypass audit.
+- **`browser-agent-playwright`** — a browser run is a good environment to verify: every locator and wait must be grounded.References
 - procedures: references/procedures.md
 - verifier design: references/verifier-design.md
 - sandbox contract: references/sandbox-contract.md

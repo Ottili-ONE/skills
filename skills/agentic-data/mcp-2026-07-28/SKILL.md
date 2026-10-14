@@ -124,12 +124,8 @@ Good and bad client behaviour, with the detection signal for each, live in
 extension, header-casing trap).
 
 ## Related skills
-
-- **`skill-authoring-evals`** — an MCP skill is a skill like any other; audit its description and evals the same way.
-- **`verifiable-environments`** — an MCP server is a good environment to verify: statelessness is provable by replay.
-- **`trajectory-ledger`** — an MCP round-trip is a tool call worth grounding in a trajectory.
-
-## References
+- **`computer-use-drivers`** — expose a desktop driver over MCP so the protocol, not raw sockets, carries the tool calls.
+- **`browser-agent-playwright`** — a browser tool exposed over MCP is a client of this protocol, not a reason to drive the DOM directly.References
 - changelog: references/changelog.md
 - error codes: references/error-codes.md
 - oauth flow: references/oauth-flow.md

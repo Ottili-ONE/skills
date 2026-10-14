@@ -103,12 +103,8 @@ The four that matter most:
   did anything at all.
 
 ## Related skills
-
 - **`verifiable-environments`** — the with_skill/without_skill baseline is a verifier pattern: you must detect whether the skill did anything.
-- **`deep-research-method`** — the standard and the trigger-eval methodology are research products; cite the sources you used.
-- **`trajectory-ledger`** — an eval run is a multi-step trajectory worth recording and auditing.
-
-## References
+- **`mcp-2026-07-28`** — an MCP skill is a skill like any other; audit its description and evals the same way.References
 - procedures: references/procedures.md
 - front-matter rules: references/front-matter-rules.md
 - trigger evals: references/trigger-evals.md

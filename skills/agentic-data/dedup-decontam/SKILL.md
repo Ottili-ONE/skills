@@ -106,12 +106,8 @@ Why it fails: the threshold moves with the model. Pin it per model in the
 config and re-derive it on every model change; the script reads the pin,
 never a constant.
 ## Related skills
-
-- **`deep-research-method`** — the corpora and test prompts this skill cleans are produced by the research workflow.
-- **`polite-crawling-warc`** — clean the crawled corpus before it is used for training or eval.
-- **`trajectory-ledger`** — the planted-item pass/fail is recorded as a trajectory outcome.
-
-## References
+- **`llm-judge-calibration`** — a contaminated calibration set is a dedup-decontam failure, not a judge failure.
+- **`verifiable-environments`** — the planted-item test pattern in this skill is the same shape as a bypass-register check.References
 - procedures: references/procedures.md
 - planted-item tests: references/planted-item-tests.md
 - DESIGN: references/DESIGN.md
