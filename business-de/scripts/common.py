@@ -10,6 +10,16 @@ import json
 from pathlib import Path
 
 
+def sha256_of(path: Path) -> str:
+    """Hex SHA-256 of a file, streamed in 64 KiB chunks."""
+    import hashlib
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def find_repo_root(start: Path) -> Path:
     """Walk up until we find the repo root (has business-de/config/versions.json)."""
     for cand in [start, *start.parents]:
