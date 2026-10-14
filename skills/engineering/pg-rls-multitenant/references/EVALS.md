@@ -27,6 +27,34 @@ Each prompt is a realistic request an agent would receive. Expected behaviour sh
 - Failure signs: agent says `service_role` is fine for client use, or treats the Supabase key model as a Postgres feature.
 **What the skill changes vs no skill**: without the skill a table is created by the migration role with no FORCE RLS and that role's sessions see every tenant's rows, or a security-definer view silently bypasses the policy. The skill makes tenant-key-first design, FORCE RLS, `security_invoker` views and automated leak tests the gate, so a missing policy is a FAIL, not a footnote.
 
+## Worked examples
+
+**Good migration** (every clause present, checker passes):
+```sql
+CREATE TABLE tenant_isolated_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL REFERENCES workspaces(id),
+  body text NOT NULL
+);
+ALTER TABLE tenant_isolated_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_isolated_notes FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON tenant_isolated_notes
+  FOR ALL USING (tenant_id = current_setting('app.current_tenant')::uuid);
+GRANT SELECT, INSERT, UPDATE ON tenant_isolated_notes TO app_role;
+-- ROLLBACK: DROP TABLE tenant_isolated_notes;
+```
+**Bad migration** (owner sees every tenant; the checker flags it):
+```sql
+CREATE TABLE tenant_isolated_notes (id uuid PRIMARY KEY, body text);
+-- no tenant_id, no policy, no FORCE RLS, no GRANT, no rollback
+```
+**Good leak-test evidence** (two parallel sessions, one row per tenant):
+```json
+{"tenant_a_rows": 1, "tenant_b_rows": 1, "cross_tenant_rows": 0, "result": "PASS"}
+```
+**Bad evidence** (checker cannot re-run it):
+`"leak test passed"` with no file and no command.
+
 ## Near-miss prompts (act before the incident)
 - **N1 — "The app connects as the owner and it works."** Answer: no. Owner bypasses RLS silently; always connect as a normal role and re-run the leak test.
 - **N2 — "The policy uses `USING (tenant_id = current_setting('app.current_tenant'))` without FORCE."** Answer: no. `ENABLE` alone is not enough; `FORCE ROW LEVEL SECURITY` is mandatory or the owner can still see every row.

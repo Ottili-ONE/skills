@@ -33,9 +33,35 @@ Each prompt below includes expected behaviour and failure signs; run `python3 sc
 **Failure signs**: agent uses `git commit -a`; the wrapper script is not executable; the commit message lacks the task-id prefix.
 **What the skill changes vs no skill**: without the skill an agent runs `git add -A` and the commit silently owns another lane's file, or removes an `index.lock` without checking PID liveness and corrupts the index for a neighbour. The skill makes explicit-path staging, task-id-prefixed messages, lock-PID liveness checks and `git show --stat HEAD` isolation verification the only safe path.
 
+## Worked examples
+
+**Good commit** (explicit paths, task-id prefix, isolation verified):
+```bash
+git add skills/engineering/shared-tree-git/SKILL.md
+git commit -m "skills-engineering-r3-05: expand Related cross-links" -- skills/engineering/shared-tree-git/SKILL.md
+git show --stat HEAD -- skills/engineering/shared-tree-git/   # only that skill's files
+```
+**Bad commit** (owns a neighbour's file):
+```bash
+git add -A
+git commit -m "fix"
+git show --stat HEAD   # also lists skills/engineering/honest-status/SKILL.md
+```
+**Good lock handling** (PID liveness checked first):
+```bash
+python3 scripts/check_shared_tree.py locks
+# -> lock pid=28411 alive=true  => wait, never remove
+```
+**Bad lock handling** (removes a live lock):
+```bash
+rm -f .git/index.lock   # corrupts the index for every agent sharing the tree
+```
+
 ## Near-miss prompts (act before the incident)
 - **N1 — "I hit index.lock."** Answer: run `python3 scripts/check_shared_tree.py locks` first; inspect the PID inside the lock file and check liveness with `ps -p <pid>` or `kill -0 <pid>`. Never remove a live lock.
 - **N2 — "I need to commit everything."** Answer: run `python3 scripts/check_shared_tree.py staged` first; a commit that owns another agent's file is a shared-tree violation even if the message is perfect.
 - **N3 — "The commit message is just a fix."** Answer: run `python3 scripts/check_shared_tree.py message -- "<msg>"`; every commit starts with the task id.
 - **N4 — "I want to clean up this script."** Answer: run `python3 scripts/check_shared_tree.py scan -- <file>`; never `git checkout`, `reset --hard`, `stash` or `rebase` on the shared tree.
 - **N5 — "The other agent's commit only touched a comment, so I'll `git checkout` it away."** Answer: no — even a comment in another agent's file is their path; `git checkout`/`reset --hard`/`stash` are blocked on the shared tree regardless of how small the change looks. Run `python3 scripts/check_shared_tree.py scan -- <file>` first and leave their file alone.
+- **N6 — "I'll `git fetch` and rebase my branch to clean up history."** Answer: no — fetch only your own paths (`git fetch origin main -- <paths>`) and mentally rebase by applying your diff on top of the fresh tree; `git rebase` rewrites shared history and is blocked.
+- **N7 — "The other agent is slow, I'll just wait inside their lock."** Answer: no — report back after 60s with the PID and its cmdline; if the PID is alive but idle, ask the owner on the Biest channel to finish, do not sit silently.

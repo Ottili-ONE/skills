@@ -38,6 +38,26 @@ Each prompt below includes expected behaviour and failure signs.
 **Failure signs**: agent reports only "it passed"; agent uses `&` and cannot time it; no evidence recorded; Max RSS not captured; no JSON record produced.
 **What the skill changes vs no skill**: without the skill an agent runs the test with `&` and loses the log, or re-runs until it is green with no seed. The skill makes the foreground wrapper + recorded seed + JSON record the only acceptable evidence, so a flake is a finding, not a shrug.
 
+## Worked examples
+
+**Good run** (foreground wrapper, seed recorded, JSON summary present):
+```bash
+SEED=12345 timeout 900 /usr/local/bin/heavy pytest tests/test_worker.py::test_long_task -p no:randomly --randomly-seed=12345 > /tmp/run.log 2>&1
+tail -1 /tmp/run.log   # -> {"seed":12345,"wall":42,"exit":0,"max_rss_mb":310}
+```
+**Bad run** (background process, log lost):
+```bash
+pytest tests/test_worker.py &   # killed when the shell exits; no log, no exit code
+```
+**Good resource-cap invocation** (raises the ceiling, never weakens the test):
+```bash
+MAX_PROCS=64 MAX_VMEM_KB=67108864 /usr/local/bin/heavy pytest tests/test_worker.py
+```
+**Bad invocation** (lowers the ceiling and hides the real problem):
+```bash
+ulimit -u 8; pytest tests/test_worker.py   # masks the fork failure instead of fixing it
+```
+
 ## Near-miss prompts (act before the incident)
 - **N1 — "Just run it in the background."** Answer: no. Background processes are killed when the shell exits and the log never appears; use `run_long_test.sh` in the foreground so the log is captured and the exit code is checkable.
 - **N2 — "It passed once, it'll pass again."** Answer: no. Re-run with a recorded seed; a single green run proves nothing about flake rate. Log the seed and the rerun count.

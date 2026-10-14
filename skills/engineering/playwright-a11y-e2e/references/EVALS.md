@@ -32,6 +32,33 @@ skill should produce; failure signs show what would indicate the skill did not f
 - Failure signs: `waitForTimeout` left in place — it is a flake factory.
 **What the skill changes vs no skill**: without the skill an agent clicks `.btn-primary` and the test still passes while checking the wrong element, or weakens an axe assertion to "no critical". The skill mandates `getByTestId`/`getByRole`, unweakened axe rule ids in the evidence artifact, and a keyboard traversal that reaches shadow DOM controls.
 
+## Worked examples
+
+**Good selector + axe evidence**:
+```js
+const save = await page.getByTestId('save');
+await save.click();
+const axe = await runAxe(page);
+expect(axe.violations.filter(v => v.impact === 'critical')).toHaveLength(0);
+// evidence artifact: axe.json records every rule id, not just "0 critical"
+```
+**Bad selector** (passes while checking the wrong element):
+```js
+await page.locator('.btn-primary').click(); // breaks on every refactor
+```
+**Good keyboard traversal** (reaches shadow DOM):
+```js
+for (const el of await page.locator('*').elementHandles()) {
+  const shadow = await el.evaluate(e => e.shadowRoot);
+  if (shadow) await shadow.querySelectorAll('button')[0]?.focus();
+}
+```
+**Bad responsive check** (only 1440px):
+```js
+await page.setViewportSize({ width: 1440, height: 900 });
+// misses every mobile regression; the loop must include 320/768/1024/1440
+```
+
 ## Verification checklist
 - [ ] Every selector is a data-testid
 - [ ] axe run on every navigated page, zero critical/serious
