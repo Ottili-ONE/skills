@@ -32,16 +32,16 @@ def load_catalogue(path):
     if not path or not os.path.isfile(path):
         return {}
     txt = open(path, encoding="utf-8").read()
-    is_yaml = path.endswith((".yaml", ".yml")) or "codes:" in txt.splitlines()[0:2]
-    if is_yaml:
+    cleaned = "\n".join(
+        ln for ln in txt.splitlines() if not ln.lstrip().startswith("#"))
+    looks_json = cleaned.lstrip().startswith(("{", "["))
+    if looks_json:
+        data = json.loads(cleaned)
+    else:
         if yaml is None:
             print("warning: PyYAML unavailable, catalogue not loaded", file=sys.stderr)
             return {}
-        data = yaml.safe_load(txt)
-    else:
-        cleaned = "\n".join(
-            ln for ln in txt.splitlines() if not ln.lstrip().startswith("#"))
-        data = json.loads(cleaned)
+        data = yaml.safe_load(cleaned)
     codes = data.get("codes", data) if isinstance(data, dict) else {}
     out = {}
     for code, spec in codes.items():

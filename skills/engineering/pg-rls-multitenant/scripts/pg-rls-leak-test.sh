@@ -7,6 +7,7 @@
 set -euo pipefail
 
 SQL_FILE="${1:-}"
+TABLE="${2:-tenant_isolated_notes}"
 if [[ -z "$SQL_FILE" || ! -f "$SQL_FILE" ]]; then
   echo "usage: $0 <migration.sql>" >&2
   exit 2
@@ -58,12 +59,12 @@ cat > "$TMPD/probe.sql" <<'PROBE'
 SET ROLE web_app;
 SELECT set_config('app.current_tenant',
   '11111111-1111-4111-8111-111111111111', true);
-SELECT count(*) AS a_sees_own FROM tenant_isolated_notes;
-SELECT count(*) AS a_sees_b FROM tenant_isolated_notes
+SELECT count(*) AS a_sees_own FROM "$TABLE";
+SELECT count(*) AS a_sees_b FROM "$TABLE"
 WHERE tenant_id = '22222222-2222-4222-8222-222222222222';
 PROBE
 
-echo ">> running probe as web_app"
+echo ">> running probe as web_app (table $TABLE)"
 OUT=$(docker exec -i "$CONTAINER" psql -U postgres -d postgres -t -A -F $'\t' \
   -v ON_ERROR_STOP=1 -f - < "$TMPD/probe.sql" 2>&1 || true)
 
