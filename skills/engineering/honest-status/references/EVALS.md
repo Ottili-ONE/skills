@@ -80,10 +80,11 @@ items; any DONE item without an `evidence:` line is false-done.
   re-run the check on the integrated code, and only then mark it DONE with fresh
   evidence. Shipping is not the same as integrating, and a claim written before the
   merge is stale the moment it lands.
-- **N9 — "The evidence file is on my machine, I'll paste the path later."** Answer:
   no — a path that does not resolve on Biest is not a pointer; write the artifact to
   the shared tree first, or the claim is FALSE_DONE.
 
+- **N10 — "The other lane's STATUS.md is the template."** Answer: no — every claim must be re-verified this week; copying another lane's ledger imports its false-done claims and its stale evidence.
+- **N11 — "VERIFIED is close enough to DONE for the handoff."** Answer: no — the next agent may merge it and re-run; mark it VERIFIED until the change is integrated, then re-run the check and mark DONE with fresh evidence.
 ## Verification checklist
 - [ ] 1 bucket per status; DONE and IN_PROGRESS never merged
 - [ ] Every DONE has a runnable evidence pointer
