@@ -159,6 +159,12 @@ never silently move the pointer.
 Why it fails: the confirmation string now carries screen content, which is
 untrusted data. Use a fixed phrase only; let the exception path carry the
 content if it must.
+## Related skills
+
+- **`browser-agent-playwright`** — the browser is the one surface with an accessibility tree this skill does not use; route there instead.
+- **`mcp-2026-07-28`** — expose a desktop driver over MCP so the protocol, not raw sockets, carries the tool calls.
+- **`verifiable-environments`** — the driver's confirm() gates and coordinate scaling are verifier components that need a bypass audit.
+
 ## References
 - procedures: references/procedures.md
 - platform quirks: references/platform-quirks.md

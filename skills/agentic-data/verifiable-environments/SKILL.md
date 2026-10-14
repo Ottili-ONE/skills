@@ -141,6 +141,13 @@ this harness scores 0.0 on both and must be redesigned.
 Why it fails: the verifier shares the environment's bugs. A check that
 cannot be gamed is a check nobody has tried to game; every check needs a
 written entry in `references/bypass-register.md`, and this one has none.
+## Related skills
+
+- **`deep-research-method`** — the SPEC a verifier is derived from is a research product with cited sources.
+- **`polite-crawling-warc`** — a crawl is a good environment to verify: politeness and resume must hold under a bypass audit.
+- **`trajectory-ledger`** — record the verifier's own runs so calibration is reproducible.
+- **`dedup-decontam`** — the planted-item test pattern in this skill is the same shape as a bypass-register check.
+
 ## References
 - procedures: references/procedures.md
 - verifier design: references/verifier-design.md

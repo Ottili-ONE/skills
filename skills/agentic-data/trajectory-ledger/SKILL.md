@@ -124,6 +124,11 @@ reproducible nor auditable. This is an application log, not a ledger.
 Why it fails: `succeeded` requires `evidence`. The audit exits 1 and the
 run cannot be trusted — a run that claims success without evidence is the
 exact failure mode the ledger exists to prevent.
+## Related skills
+
+- **`deep-research-method`** — a research run is a multi-step trajectory worth recording and auditing.
+- **`polite-crawling-warc`** — a crawl is a multi-step run whose steps, offsets and costs belong in the ledger.
+
 ## References
 - procedures: references/procedures.md
 - schema: references/schema.md

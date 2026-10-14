@@ -123,6 +123,12 @@ Good and bad client behaviour, with the detection signal for each, live in
 `references/examples.md` (discover-first negotiation, `-32022` refusal, tasks
 extension, header-casing trap).
 
+## Related skills
+
+- **`skill-authoring-evals`** — an MCP skill is a skill like any other; audit its description and evals the same way.
+- **`verifiable-environments`** — an MCP server is a good environment to verify: statelessness is provable by replay.
+- **`trajectory-ledger`** — an MCP round-trip is a tool call worth grounding in a trajectory.
+
 ## References
 - changelog: references/changelog.md
 - error codes: references/error-codes.md

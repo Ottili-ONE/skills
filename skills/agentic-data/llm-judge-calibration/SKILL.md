@@ -105,6 +105,13 @@ unverifiable.
 Why it fails: without per-level examples annotators spread 20+ points on
 re-annotation and the rubric collapses onto the middle. Every score point
 needs a definition AND at least one example.
+## Related skills
+
+- **`verifiable-environments`** — an LLM judge is a verifier whose calibration set and pass rate need a bypass audit.
+- **`trajectory-ledger`** — every calibration run carries cost and must be recorded in the cost ledger.
+- **`deep-research-method`** — the rubric and the gold labels are evidence products: cite them, score them, state confidence.
+- **`dedup-decontam`** — a contaminated calibration set is a dedup-decontam failure, not a judge failure.
+
 ## References
 - procedures: references/procedures.md
 - calibration protocol: references/calibration-protocol.md

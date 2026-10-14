@@ -116,6 +116,12 @@ Exhausting either cap stops the run and reports the cap, not a silent fallback.
 - [ ] `gen_hostile.py` round-trip: severity == detector verdict for all 10 fixtures.
 - [ ] `handoff.py` build/validate round-trip: a summary written by `--out` re-validates with `--validate`, and a mismatched `--field`/`--locator` count fails cleanly (rc=1) rather than crashing.
 
+## Related skills
+
+- **`mcp-2026-07-28`** — a browser tool exposed over MCP is a client of this protocol, not a reason to drive the DOM directly.
+- **`verifiable-environments`** — a browser run is a good environment to verify: every locator and wait must be grounded.
+- **`polite-crawling-warc`** — for the crawl-and-archive case where a browser is not needed, use the WARC pipeline.
+
 ## References
 - procedures: references/procedures.md
 - locator catalog: references/locator-catalog.md

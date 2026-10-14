@@ -144,6 +144,9 @@ summary.
 More worked examples, each ending with the check that would have caught it, live
 in `references/examples.md`.
 
+## Related skills
+
+
 ## References
 - procedures: references/procedures.md
 - citation discipline: references/citation-discipline.md

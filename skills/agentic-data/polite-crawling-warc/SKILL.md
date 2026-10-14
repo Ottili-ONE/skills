@@ -80,6 +80,10 @@ A WARC has 3 records, each appended as its own gzip member.
 Why it fails: the validator must walk every gzip member. The pitfall was
 verified live 2026-10-08 — a 3-record file reads as 1 record unless the
 member walk is explicit.
+## Related skills
+
+- **`deep-research-method`** — the research workflow consumes WARC archives as raw evidence for source scoring.
+
 ## References
 - procedures: references/procedures.md
 - policy: references/crawl-policy.md
