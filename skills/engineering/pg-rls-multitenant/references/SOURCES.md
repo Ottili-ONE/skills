@@ -34,9 +34,6 @@ All retrievals: 2026-10-14 (re-verification pass). Host: Biest. SEARCH_ENDPOINT 
 
 ## Re-verification (2026-10-14)
 All primary URLs above were re-fetched with `curl -L --max-time 20` on 2026-10-14: HTTP 200 for every one. The `ddl-rowsecurity` page (owner-bypass, FORCE RLS, WITH CHECK, sub-SELECT race, covert channels) is live at the current-docs path; the older `ddl-rls.html` path 404s and must not be linked. The docs landing page reports PostgreSQL 18.6 as the current stable line.
-HTTP 200 for every one. The `ddl-rowsecurity` page (owner-bypass, FORCE RLS, WITH CHECK,
-sub-SELECT race, covert channels) is live at the current-docs path; the older
-`ddl-rls.html` path 404s and must not be linked.
 
 ## Dead / moved URLs (recorded 2026-10-13)
 The following URLs from earlier passes no longer resolve and must not be linked:
