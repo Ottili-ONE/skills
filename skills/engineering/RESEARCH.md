@@ -73,3 +73,57 @@ transactional-outbox article (site index only), and the Cloudflare Workers HTTP 
    the ≤500-line SKILL.md guidance. `skills-ref` is not installed on Biest (pip3 list shows
    nothing), so this script is the validator that runs. It defaults to `skills/engineering/**`
    and gains `--everywhere` for a whole-repo scan. CI runs it in `.github/workflows/validate.yml`.
+
+## PASS 2 (EXPAND) — 2026-10-14
+
+Commits (all `skills-engineering-r3-01:`, own paths only):
+
+| Commit | What |
+|--------|------|
+| `0a64126` | worked good/bad examples + near-miss triggers for acceptance-harness, honest-status, long-test-discipline |
+| `d899fcf` | `check_contract_drift.py --classify` semver-bump subcommand |
+| `0cdbb10` | worked examples + near-miss triggers for module-contract-first |
+| `b109a4c` | worked examples + near-miss triggers for shared-tree-git; re-verify SOURCES (`git-index` 404 → `git-update-index`, +8 live URLs) |
+| `cb80d82` | worked examples + selector decision table for playwright-a11y-e2e; re-verify axe-core 4.14.0 / Playwright 1.64.0 |
+| `023a486` | harden `check_axe_evidence.py` (`incomplete` gate, `inapplicable` info-only, `--require-keys`, `--max-age-days`) + 7 self-tests |
+| `3bf2267` | harden `check_foundation_tokens.py` (URL/hash exclusion, `--json`, `--max-findings`) |
+| `75f02a3` | worked examples + near-miss triggers for foundation-v2-conformance; +3 self-tests |
+| `303d465` | retry decision table + worked examples for problem-json-contracts; re-verify SOURCES (json-schema release-notes 404 → `/release-notes`) |
+| `3bc81e3` | harden `check_outbox.py` (`--json`) + 2 self-tests; expand/contract + leak-test decision tables in pg-rls SKILL.md |
+| `e20809d` | CI runs `run_long_test_test.sh` |
+
+### Live re-verification (2026-10-14, curl)
+All URLs re-fetched; statuses recorded per skill's SOURCES.md:
+
+- `registry.npmjs.org/axe-core` → **4.14.0** (released 2026-10-05). `@axe-core/playwright` → **4.13.0**.
+- `registry.npmjs.org/playwright` → **1.64.0** (new primary source for the playwright skill).
+- `registry.npmjs.org/@ottili/foundation-ui` → **1.0.13** (unchanged; versions 1.0.1–1.1, 1.0.10–1.0.13).
+- `www.postgresql.org/docs/current/ddl-rowsecurity.html` → 200 (canonical RLS page).
+- `www.ietf.org/rfc/rfc9457.txt`, `rfc-editor.org/rfc/rfc9457`, `datatracker.ietf.org/doc/html/rfc9457` → all 200.
+- `spec.openapis.org/oas/v3.1.0` → 200. `semver.org/spec/v2.0.0.html` → 200.
+- `json-schema.org/draft/2020-12/json-schema-release-notes.html` → **404** (moved to
+  `json-schema.org/draft/2020-12/release-notes`, 200). The spec overview is at
+  `json-schema.org/draft/2020-12/draft-bhutton-json-schema-01.html` (200).
+- `git-scm.com/docs/git-index` → **404** (docs restructured). Replaced by
+  `git-scm.com/docs/git-update-index` (200), which documents the index.lock PID header.
+  Confirmed live: `git-commit`, `git-checkout`, `git-add`, `git-status`, `git-rm`,
+  `git-maintenance`, `git-filter-branch`, `git-show`, `git-diff`, `git-update-index`.
+- `www.w3.org/WAI/WCAG22/` → 403 (bot-blocked); `www.w3.org/WAI/standards-guidelines/wcag/` → 200.
+- `docs.pytest.org/en/stable/`, `www.istqb.org/`, `docs.github.com/en/rest/actions/artifacts`,
+  `raw.githubusercontent.com/agentskills/agentskills/main/docs/specification.mdx` → all 200.
+
+### What this pass added per skill
+Every skill now carries: a second decision table where the text was vague (expand/contract,
+leak-test outcomes, retry strategy, selector choice, flake handling), worked good/bad output
+examples, and near-miss trigger prompts. Three checkers gained hardening:
+- `check_axe_evidence.py` — `incomplete` is now a gate key (it was previously ignored),
+  `inapplicable` is explicitly informational, plus `--require-keys` and `--max-age-days`.
+- `check_foundation_tokens.py` — `url(#clip-1)` and `https://x/img#fff` no longer false-positive
+  as raw colours; `--json` and `--max-findings` added.
+- `check_outbox.py` — `--json` machine-readable output added.
+- `check_contract_drift.py` — new `--classify OLD NEW` subcommand that prints the required
+  semver bump (major/minor/patch) from two snapshots.
+
+No SKILL.md exceeds 500 lines (largest is problem-json-contracts at 90). All 12 engineering
+self-tests + the two collection acceptance tests pass; `validate.py`, `validate_skill.py --all`,
+and `build-index.py` are green.
