@@ -34,3 +34,4 @@ BLOCKED / UNKNOWN). It also records handoff notes so the next agent does not re-
 3. "Write a handoff for the outbox work." → agent lists DONE (with evidence), PARTIAL (poison handling), and what to re-verify.
 4. "Is 'tests pass' enough evidence?" → No. Agent must name the command (`pytest -q`) and the summary line.
 5. "The build is green in the dashboard but I did not run it." → agent must mark UNKNOWN and record who ran it, or run it.
+6. "The STATUS.md says DONE but the test was skipped in CI." -> agent must downgrade to BLOCKED or FALSE_DONE, name the skip reason and the owner, and re-run the test or record why it cannot run.

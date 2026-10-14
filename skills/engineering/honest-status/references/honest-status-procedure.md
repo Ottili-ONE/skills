@@ -68,4 +68,4 @@ Every line must be checkable in under 60 seconds.
 - Copying a previous STATUS.md forward preserves its false-done claims.
 - Vague blockers are never resolved; name an owner and a date.
 - Evidence that only exists in your head is not evidence; write it down.
-EOF
+

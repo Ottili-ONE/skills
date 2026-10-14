@@ -22,7 +22,6 @@ test('${COMPONENT} renders with documented props only', () => {
   // A fresh consumer must not reach into internals:
   expect(container.innerHTML).not.toContain('__foundation_internal');
 });
-EOF
 
 cd "$OUTDIR"
 npm init -y >/dev/null 2>&1
