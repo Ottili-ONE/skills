@@ -131,3 +131,20 @@ validation scores diverge after the re-split, the description is still overfit.
 Detection: `scripts/eval_metrics.py split evals.json` prints `FAIL: no case carries
 a split field` when the field is absent.
 Failure signs: a single eval set used for both tuning and declaring success.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — writing a package README
+Prompt: "Write a README for my new Python package."
+Expected: No. This skill is about *Agent Skills* — folders with `SKILL.md`, YAML front matter, the agentskills.io standard. A README is ordinary documentation; it has no front matter, no trigger description, no eval loop. Use a doc skill or write it directly.
+Failure signs: adding YAML front matter to a README; running `validate_skill.py` on it; writing eval prompts for documentation.
+
+## N2 — tuning a model's system prompt
+Prompt: "My model's answers are too verbose. Help me rewrite its system prompt."
+Expected: No. That is prompt engineering for a single task, not skill authoring. A skill changes *which instructions load*, not the model's base behaviour; if the same instructions should apply to every task, they belong in the system prompt, not in a skill.
+Failure signs: putting task-specific instructions into a SKILL.md body and wondering why it fires everywhere.
+
+## N3 — profiling a skill's runtime
+Prompt: "My skill's script takes 40 seconds. Can we profile it?"
+Expected: No. That is performance debugging of a Python script — `cProfile`, `py-spy`, a profiler. This skill audits *standard compliance and trigger accuracy*, not speed. The determinism rule forbids timing-dependent behaviour, but measuring it is a different discipline.
+Failure signs: adding timing assertions to `validate_skill.py`; treating a slow script as a standard violation.
