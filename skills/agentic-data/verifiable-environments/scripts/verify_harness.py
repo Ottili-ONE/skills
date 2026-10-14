@@ -113,6 +113,79 @@ def assert_check_defences(checks: list[dict]) -> list[str]:
     return failures
 
 
+def assert_check_well_formed(checks: list[dict], min_defences: int = 2) -> list[str]:
+    """Validate the structural shape of every check before it is run.
+
+    A malformed check (no name, no path, a negative word count, a keyword
+    list with min_keywords < 1) is caught here with a clear message instead of
+    failing deep inside run_checks on an opaque KeyError.
+    """
+    failures: list[str] = []
+    seen_names: set[str] = set()
+    for c in checks:
+        name = c.get("name")
+        if not name or not isinstance(name, str):
+            failures.append("FAIL: a check is missing a string 'name' field")
+            continue
+        if name in seen_names:
+            failures.append(f"FAIL: check name '{name}' is duplicated")
+        seen_names.add(name)
+        path = c.get("path")
+        if not path or not isinstance(path, str):
+            failures.append(f"FAIL: check '{name}' has no string 'path' field")
+        if "exists" in c and not isinstance(c["exists"], bool):
+            failures.append(f"FAIL: check '{name}' 'exists' must be a boolean")
+        if "min_words" in c:
+            try:
+                if int(c["min_words"]) < 0:
+                    failures.append(f"FAIL: check '{name}' min_words is negative")
+            except (TypeError, ValueError):
+                failures.append(f"FAIL: check '{name}' min_words is not an int")
+        if "max_words" in c:
+            try:
+                if int(c["max_words"]) < 0:
+                    failures.append(f"FAIL: check '{name}' max_words is negative")
+            except (TypeError, ValueError):
+                failures.append(f"FAIL: check '{name}' max_words is not an int")
+        if "keywords" in c:
+            ks = c["keywords"]
+            if not isinstance(ks, list) or not ks:
+                failures.append(f"FAIL: check '{name}' 'keywords' must be a non-empty list")
+            mk = int(c.get("min_keywords", 1))
+            if mk < 1:
+                failures.append(f"FAIL: check '{name}' min_keywords must be >= 1")
+        if "content_equals" in c and not isinstance(c["content_equals"], str):
+            failures.append(f"FAIL: check '{name}' content_equals must be a string")
+        if "json_field" in c and "json_value" not in c:
+            failures.append(f"FAIL: check '{name}' has json_field but no json_value")
+    return failures
+
+
+def assert_min_defences(checks: list[dict], min_defences: int = 2) -> list[str]:
+    """Rule of two with a configurable floor (default 2)."""
+    if min_defences < 1:
+        return ["FAIL: --min-defences must be >= 1"]
+    failures: list[str] = []
+    for c in checks:
+        defences = 0
+        if c.get("exists", True):
+            defences += 1
+        if "content_equals" in c:
+            defences += 1
+        if "json_field" in c:
+            defences += 1
+        if "min_words" in c or "max_words" in c:
+            defences += 1
+        if "keywords" in c:
+            defences += 1
+        if defences < min_defences:
+            failures.append(
+                f"FAIL: check '{c.get('name', 'unnamed')}' has {defences} defence(s); "
+                f"the rule of two requires >= {min_defences} independent defences"
+            )
+    return failures
+
+
 def assert_checks_bypass_register(checks: list[dict], register_path: Path | None) -> list[str]:
     """Every check must have a written bypass entry in the register."""
     failures: list[str] = []
