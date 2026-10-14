@@ -12,7 +12,11 @@ import json
 import sys
 from pathlib import Path
 
-VALID = {"PASS", "FAIL", "BLOCKED"}
+# Outcomes the harness records. PASS/FAIL/BLOCKED are the acceptance outcomes;
+# VERIFIED and FALSE_DONE are status buckets from the honest-status skill that the
+# harness also needs to record (a check that ran but is not yet integrated is
+# VERIFIED, not PASS).
+VALID = {"PASS", "FAIL", "BLOCKED", "VERIFIED", "FALSE_DONE"}
 
 
 def main() -> int:
@@ -27,6 +31,11 @@ def main() -> int:
 
     if args.outcome not in VALID:
         print(f"error: outcome must be one of {sorted(VALID)}", file=sys.stderr)
+        return 2
+
+    # A PASS without a criterion is a feeling, not a result.
+    if args.outcome == "PASS" and not args.criterion:
+        print("error: PASS requires --criterion (an observable assertion)", file=sys.stderr)
         return 2
 
     out = Path(args.output)
