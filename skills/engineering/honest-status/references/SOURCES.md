@@ -37,6 +37,15 @@ Retrieval date: 2026-10-14 (re-verification pass). All URLs re-fetched with curl
 | Progressive disclosure depth | one level (references/) | 2026-10-13 |
 | actions/upload-artifact major | v4 (v3 deprecated) | 2026-10-13 |
 
+## Re-verification 2026-10-14 (pass 3)
+- **axe-core** — https://registry.npmjs.org/axe-core — re-fetched 2026-10-14 (HTTP 200).
+  Latest is **4.14.0**; there is no 4.15 release. The SKILL.md BLOCKED example previously
+  claimed a bump was "blocked until the registry returns 4.15", which named a version that
+  does not exist and would train the next agent to ignore the line. The example now gates the
+  bump on the integrator recording it in `docs/STATUS_ALL.md` instead, and names the
+  decision-maker and the artifact that would authorize the bump. Recorded here so the
+  version-sensitive claim stays checkable.
+
 ## Conflicts
 - The earlier SOURCES.md entry listed only two sources, both internal. This file adds six
   primary online sources. No conflict between them.

@@ -22,8 +22,7 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 
 ## When NOT to use this skill
 - Writing a changelog or release notes (use the project's release process; this skill governs the work ledger, not the product log).
-- Informal chat updates (use the chat thread; a status that is reviewed in the same session with no persistence need not be written down).
-- Status reports that are reviewed in the same session with no persistence need.
+- Informal chat updates reviewed in the same session — a status with no persistence need not be written down.
 - A task that has no evidence at all — the skill does not invent a pointer, it records FALSE_DONE and names the blocker.
 - A single checkbox in a README — that is a doc, not a status ledger; use the ledger only for work that another agent will pick up.
 
@@ -55,8 +54,8 @@ Good (every DONE has a pointer that opens in <60s):
 - Poller ordering rule verified against Docker Postgres 15 —
   evidence: tests/e2e/outbox-ordering.log (8 KB, 2026-10-13)
 ## BLOCKED
-- axe version bump blocked until `registry.npmjs.org/axe-core` returns 4.15 —
-  owner: integrator, question: "is axe 4.15 released yet?"
+- axe-core upgrade blocked until the integrator records the bump in `docs/STATUS_ALL.md` —
+  owner: integrator, question: "which axe-core minor is approved for the Freeze 4 bump?"
 ```
 Bad (DONE with prose only — this is FALSE_DONE):
 ```markdown
@@ -75,6 +74,11 @@ Bad (DONE and IN_PROGRESS merged — hides what is actually shippable):
 - Copying a previous STATUS.md forward preserves its false-done claims.
 - Vague blockers ("investigate later") are never resolved; name an owner and a date.
 - Evidence that only exists in your head is not evidence; write it down.
+- A BLOCKED entry that names a version that does not exist is worse than no blocker — it
+  trains the next agent to ignore the line. Re-fetch the registry before writing a version
+  gate (`registry.npmjs.org/axe-core` returned 4.14.0 on 2026-10-14, so "until it returns
+  4.15" is not a live question); name the decision-maker and the artifact that would
+  authorize the bump instead.
 
 ## Near-miss triggers (act before the incident)
 - "It's basically done" — run `scripts/check_status_evidence.py STATUS.md --root .` before writing.

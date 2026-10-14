@@ -50,9 +50,17 @@ prompts (`tests/test_evals_completeness.py`), every `SOURCES.md` carries a dated
 <=180 days old (`tests/test_sources_freshness.py`), and the Related graph is acyclic with
 `shared-tree-git` as the unique sink (`scripts/check_related_graph.py`).
 
-Repairs this pass: the `honest-status` EVALS.md repeated one boilerplate sentence across
-five prompts — each now states what the skill changes *for that scenario*; two SOURCES.md
-entries were re-fetched live and the retrieval date recorded.
+Repairs this pass (pass 3 of 3, test + fix):
+
+| Area | Defect found | Repair |
+|------|--------------|--------|
+| Boilerplate duplication | Seven of ten EVALS.md files repeated one "What the skill changes vs no skill" sentence across every prompt, so the evals read as a template rather than per-scenario contrasts. | Rewrote all 37 duplicated sentences so each states what the skill changes *for that scenario*; the boilerplate is now unique per prompt everywhere. |
+| Truncated near-miss prompts | `honest-status` N8 ended mid-sentence and N9 was a fragment ("no — a path that does not resolve..."). | Completed N8 and N9; near-miss count is 11. |
+| Duplicate prompt headings | `foundation-v2-conformance` E6 repeated E3's prompt text; `playwright-a11y-e2e` N7/N8 duplicated N1/N2. | Gave each its own prompt and its own near-miss angle; near-miss blocks renumbered N1-N10 with no duplicate text. |
+| Fabricated version | `foundation-v2-conformance` E5/N5 cited "Foundation v2.4.1"; the registry's latest is 1.0.13 (re-fetched 2026-10-14). | Reworded to the real latest and recorded the re-fetch in SOURCES.md. |
+| Fabricated version gate | `honest-status` SKILL.md BLOCKED example claimed an axe bump was "blocked until the registry returns 4.15"; axe-core is at 4.14.0 (re-fetched 2026-10-14), so 4.15 is not a live question. | Reworded the gate to name the integrator and the `docs/STATUS_ALL.md` artifact that would authorize the bump, and added a pitfall against naming a version that does not exist. |
+| Stale retrieval dates | `honest-status`, `outbox-idempotency`, `foundation-v2-conformance`, `module-contract-first` EVALS.md carried 2026-10-13 dates. | Refreshed to 2026-10-14 (pass 3 re-verification). |
+| Source freshness | Re-fetched live on 2026-10-14: axe-core 4.14.0, Playwright 1.64.1, `@ottili/foundation-ui` 1.0.13, WCAG 2.2, PG logging docs, agentskills.io, RFC 9457, OpenAPI 3.1.0 — all HTTP 200, no version moved. | Recorded in each affected SOURCES.md. |
 
 ## How to verify this pass
 
