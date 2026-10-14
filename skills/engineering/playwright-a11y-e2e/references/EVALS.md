@@ -32,3 +32,11 @@ skill should produce; failure signs show what would indicate the skill did not f
 - [ ] axe run on every navigated page, zero critical/serious
 - [ ] Tab order asserted at each breakpoint
 - [ ] Evidence artifact kept on failure (screenshot + axe JSON)
+
+## Near-miss prompts (act before the incident)
+- **N1 — "The axe scan is green, so the page is accessible."** Answer: no. Green axe means zero *reported* violations, not that every control is reachable; run the keyboard check too.
+- **N2 — "Use `:focus-visible` as the WCAG criterion."** Answer: no. `:focus-visible` is a CSS pseudo-class, not a WCAG success criterion; assert focus order and focusable state instead.
+- **N3 — "nth-child or a class selector is fine, the test passes."** Answer: no. Those selectors break on every refactor; use `getByTestId`, then `getByRole`/`getByLabel`.
+- **N4 — "The axe run on a dynamic modal without waiting for `aria-hidden=false`."** Answer: no. You get false violations or missed violations; wait for the state change before scanning.
+- **N5 — "Responsive check only at 1440."** Answer: no. The loop must include 320px, 768px, 1024px and 1440px; mobile bugs are never caught otherwise.
+- **N6 — "Keyboard tests that skip shadow DOM."** Answer: no. They fail silently on Web Components; traverse the shadow root.

@@ -89,5 +89,10 @@ pytest tests/test_flaky.py            # green, but was it luck?
 - [ ] Flake reruns use a recorded seed and order.
 - [ ] The wrapper script is committed to `scripts/` and is deterministic.
 
+## References
+- Full procedure, version table and worked examples: `references/long-test-discipline-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
-- [shared-tree-git](../shared-tree-git/SKILL.md)
+- [shared-tree-git](../shared-tree-git/SKILL.md) — commit the wrapper script with explicit paths only.

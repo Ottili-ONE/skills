@@ -86,5 +86,10 @@ $ git checkout main -- skills/business-de/webhooks-safe/SKILL.md
 - [ ] `git show --stat HEAD` lists only your owned paths
 - [ ] No `reset --hard`/`checkout`/`stash`/`rebase`/`merge`/`pull` run
 
+## References
+- Full procedure, policy table and worked examples: `references/shared-tree-git-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
-- [module-contract-first](../module-contract-first/SKILL.md)
+- [honest-status](../honest-status/SKILL.md) — status buckets keep the shared tree readable across agents.

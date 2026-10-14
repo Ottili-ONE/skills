@@ -102,5 +102,11 @@ await page.keyboard.press('Tab');  // stops at the light DOM; shadow controls un
 - [ ] Selectors are role/label-based, not XPath or CSS-class [stable selectors].
 - [ ] Evidence files (axe JSON, screenshots) are committed or referenced [evidence].
 
+## References
+- Full procedure, axe version table and worked examples: `references/playwright-a11y-e2e-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
-- [acceptance-harness](../acceptance-harness/SKILL.md)
+- [acceptance-harness](../acceptance-harness/SKILL.md) — axe JSON and screenshots are the evidence pointers.
+- [honest-status](../honest-status/SKILL.md) — a green axe scan is not DONE.

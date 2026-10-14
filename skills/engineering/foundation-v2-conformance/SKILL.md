@@ -1,6 +1,6 @@
 ---
 name: foundation-v2-conformance
-description: "Enforce correct usage of the Foundation v2 UI packages: token-only styling, named imports, no bypass of abstraction layers, tracked workaround markers, and fresh-consumer tests that fail when a consumer drifts."
+description: "Enforce correct usage of the Foundation v2 UI packages: token-only styling, named imports, no bypass of abstraction layers, tracked workaround markers, and fresh-consumer tests that fail when a consumer drifts. Use when a UI component is built outside the design system, imports a raw token, bypasses a wrapper, or a fresh-consumer test starts to fail."
 license: MIT-compat
 compatibility: "Node.js or Python host; Foundation v2 packages installed; Linux"
 metadata: {}
@@ -70,4 +70,5 @@ Good (tracked workaround — marker + ISSUE ticket, checker passes):
 - [ ] `scripts/check_foundation_tokens.py` exits 0 in CI.
 
 ## Related skills
-- [acceptance-harness](../acceptance-harness/SKILL.md)
+- [acceptance-harness](../acceptance-harness/SKILL.md) — conformance is an acceptance scenario with PASS evidence.
+- [playwright-a11y-e2e](../playwright-a11y-e2e/SKILL.md) — axe assertions must not be weakened for token drift.

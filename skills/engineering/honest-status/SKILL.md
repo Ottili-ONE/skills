@@ -90,5 +90,11 @@ Bad (DONE and IN_PROGRESS merged — hides what is actually shippable):
   FALSE_DONE. Exit 0 = clean; 1 = findings; 2 = usage error.
 - `scripts/check_status_evidence_test.py` — offline self-tests (good/bad STATUS fixtures).
 
+## References
+- Full procedure, decision table and worked examples: `references/honest-status-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
-- [long-test-discipline](../long-test-discipline/SKILL.md)
+- [long-test-discipline](../long-test-discipline/SKILL.md) — long tests still need honest status buckets.
+- [shared-tree-git](../shared-tree-git/SKILL.md) — commit status with a task-id prefix.

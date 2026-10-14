@@ -55,3 +55,10 @@ skill makes the refusal explicit and names the artifact that would authorize the
 - [ ] Every workaround carries `FV2-WA:` with owner + date.
 - [ ] A fresh-consumer test exists and passes in isolation.
 - [ ] Conformance report is committed or referenced.
+
+## Near-miss prompts (act before the incident)
+- **N1 — "The component works, who cares about the token."** Answer: no. A raw styling literal breaks the theme and the fresh-consumer test; replace it with the token.
+- **N2 — "It's faster to import the inner module directly."** Answer: no. Deep imports bypass the public API and break when internals change; use the named public export.
+- **N3 — "I'll add the workaround inline and clean it up later."** Answer: no. Every workaround must carry `FV2-WA:` with an owner and a date, or it is a permanent drift.
+- **N4 — "The fresh-consumer test is just a unit test with a different name."** Answer: no. A unit test imports the package source; a fresh-consumer test imports the published package as a downstream consumer would.
+- **N5 — "Foundation v2.4.1 is out, let's bump."** Answer: no. Check the Freeze notice in `docs/STATUS_ALL.md` and refuse without integrator approval.

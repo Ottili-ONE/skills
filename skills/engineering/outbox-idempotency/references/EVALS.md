@@ -63,3 +63,10 @@ skip the re-publish.
 - [ ] Replay preserves the original `idempotency_key`
 - [ ] Leak test harness runs green against Docker Postgres
 - [ ] No DELETE on `poison_outbox` rows
+
+## Near-miss prompts (act before the incident)
+- **N1 — "We have retries, so the outbox doesn't need a UNIQUE constraint."** Answer: no. Retries are the reason the constraint exists; without it a crash mid-publish duplicates the event.
+- **N2 — "The business write and the outbox INSERT are in separate transactions, that's fine."** Answer: no. Two transactions can never be atomic; use one transaction or lose the event on crash.
+- **N3 — "Just DELETE the poison row after max_attempts."** Answer: no. Move it to `poison_outbox` and keep it for audit; deletion hides the failure.
+- **N4 — "The poller doesn't need `FOR UPDATE SKIP LOCKED` if there is only one."** Answer: no. A second poller is always added later; the ordering and locking are part of the contract.
+- **N5 — "Replay can reuse the old idempotency key."** Answer: no. Replay preserves the original key so the consumer dedupes correctly; a new key would double-deliver.

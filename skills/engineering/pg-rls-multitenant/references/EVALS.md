@@ -21,3 +21,10 @@ Each prompt is a realistic request an agent would receive. Expected behaviour sh
 ## 5. "We use Supabase. Should we keep using `service_role` in the client?"
 - Expected: Agent states `service_role` bypasses RLS entirely and must never reach client code; it recommends the Supabase secret-key model and a server-side RPC for privileged writes. It records this as Supabase-specific, not Postgres behaviour.
 - Failure signs: agent says `service_role` is fine for client use, or treats the Supabase key model as a Postgres feature.
+
+## Near-miss prompts (act before the incident)
+- **N1 — "The app connects as the owner and it works."** Answer: no. Owner bypasses RLS silently; always connect as a normal role and re-run the leak test.
+- **N2 — "The policy uses `USING (tenant_id = current_setting('app.current_tenant'))` without FORCE."** Answer: no. `ENABLE` alone is not enough; `FORCE ROW LEVEL SECURITY` is mandatory or the owner can still see every row.
+- **N3 — "GRANT ALL ON TABLE notes TO app_role."** Answer: no. Grant only the operations the app needs (SELECT/INSERT/UPDATE); `GRANT ALL` also grants TRUNCATE and ownership-style privileges.
+- **N4 — "The migration has no rollback block."** Answer: no. Record the inverse DDL in the same file so a failed migration can be reverted without dropping data.
+- **N5 — "service_role in the client is fine, it's just a key."** Answer: no. `service_role` bypasses RLS entirely and must never leave the server; use a server-side RPC or the Supabase secret-key model.

@@ -94,5 +94,11 @@ Bad (hand-edited snapshot to make CI green — hides a real breaking change for 
 
 - [problem-json-contracts](../problem-json-contracts/SKILL.md)
 
+## References
+- Full procedure, decision table and worked examples: `references/module-contract-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
-- [problem-json-contracts](../problem-json-contracts/SKILL.md)
+- [problem-json-contracts](../problem-json-contracts/SKILL.md) — contract shapes are also problem-detail shapes.
+- [shared-tree-git](../shared-tree-git/SKILL.md) — snapshot and boundary doc are committed with a task-id prefix.
