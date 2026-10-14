@@ -82,3 +82,21 @@ against the de.wikipedia Camt-Format article). Re-parse with the `.001.08`
 schema; do not silently accept the older namespace.
 
 **Failure signs:** parsing `.008.01` without noting the version drift.
+
+
+## Near-miss triggers
+
+### N1. "The entry is `matched: true`, so it is allocated"
+**Trap:** a self-declared flag is not an allocation. `matched: true`
+without an `open_item_id` is rejected by `recon_check.py` (exit 2). Only
+an `open_item_id` that resolves to a real open item counts.
+
+### N2. "A 0.02 gap is rounding"
+**Trap:** the rounding boundary is EUR 0.01. A 0.02 unallocated total is at
+or above the boundary and needs a `reason_code` (BANK_FEE / FX /
+UNALLOCATED) or the reconciliation is rejected.
+
+### N3. "camt.053.008.01 is just an old file, parse it anyway"
+**Trap:** `.008.01` is a legacy draft namespace. The current version is
+`camt.053.001.08` (verified 2026-10-09). Parsing the legacy namespace
+without noting the drift silently accepts a deprecated schema.
