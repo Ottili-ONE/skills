@@ -242,3 +242,46 @@ def test_reference_files_exist_and_are_substantive():
         p = refs / name
         assert p.is_file(), f"missing reference {name}"
         assert len(p.read_text(encoding="utf-8").splitlines()) >= 25, f"{name} too thin"
+
+
+# --- hardened audit edge cases (EXPAND pass 2) ---
+
+def test_audit_rejects_empty_file(tmp_path: Path) -> None:
+    p = tmp_path / "empty.py"
+    p.write_text("", encoding="utf-8")
+    r = run(str(p))
+    assert r.returncode == 1
+    assert "empty" in r.stderr.lower()
+
+
+def test_audit_rejects_non_text_file(tmp_path: Path) -> None:
+    p = tmp_path / "binary.py"
+    p.write_bytes(b"\x89PNG\r\n\x1a\n\x00" * 8)
+    r = run(str(p))
+    assert r.returncode == 1
+    assert "not readable text" in r.stderr
+
+
+def test_contract_drift_16_members(tmp_path: Path) -> None:
+    """The real near-miss: the published registry has 17 members; a 16-member
+    clone is the drift trap."""
+    members = [m for m in ("screenshot", "zoom", "cursor_position", "mouse_move",
+        "left_mouse_down", "left_mouse_up", "left_click", "left_click_drag",
+        "right_click", "middle_click", "double_click", "triple_click", "scroll",
+        "wait", "type", "key", "hold_key") if m != "triple_click"]
+    reg = tmp_path / "drift.json"
+    reg.write_text(json.dumps({"members": members}), encoding="utf-8")
+    r = run("--contract", str(reg))
+    assert r.returncode == 1
+    assert "drift" in r.stderr.lower()
+    assert "triple_click" in r.stderr
+
+
+def test_contract_accepts_canonical_registry() -> None:
+    r = run("--contract", str(ROOT / "fixtures" / "registry_20260801.json"),
+            "--json")
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["valid"] is True
+    assert out["mode"] == "contract"
+    assert out["fails"] == 0

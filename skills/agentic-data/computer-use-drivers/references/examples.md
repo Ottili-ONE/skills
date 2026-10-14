@@ -122,3 +122,45 @@ f-string carrying screen content in the error path.
 
 Why it fails: the confirmation string now carries screen content, which is untrusted
 data. Use a fixed phrase only; let the exception path carry the content if it must.
+
+## Good — out-of-bounds refusal
+
+Goal: click `(99999, 99999)` on a 1920x1080 display.
+
+1. The driver scales the coordinate, finds it outside the display bounds.
+2. It raises `ToolError` with the fixed phrase "coordinate outside the display".
+3. The model sees a clean error and re-enumerates the tree for the real target.
+
+Detection signal: `validate_driver.py` finds no `clamp`/`max(0, min(` idiom; the
+driver throws rather than silently moving the pointer to a wrong location.
+
+## Bad — clamping
+
+```python
+def mouse_move(self, input_data):
+    x = max(0, min(width - 1, input_data[0][0]))   # silently moves the pointer
+    y = max(0, min(height - 1, input_data[0][1]))
+```
+
+Why it fails: the click lands somewhere valid but wrong, and the model cannot
+detect the move — there is no error to retry from. Detection: `validate_driver.py`
+fails with "clamping detected — never clamp".
+
+## Good — 17-member registry audit
+
+`fixtures/registry_20260801.json` lists all 17 members of
+`computer_toolset_20260801`. The driver defines a method per member; members the
+driver does not override are sent as `enabled: false`. No invented members.
+
+Detection signal: `validate_driver.py --contract fixtures/registry_20260801.json`
+reports `{"mode": "contract", "oks": 1, "fails": 0, "warns": 0, "valid": true}`.
+
+## Bad — member-set drift
+
+A driver defines `screenshot`, `mouse_move`, `left_click` and 13 others, but the
+registry it ships lists only 16 names (it is missing `triple_click`). The SDK
+rejects the missing member at runtime.
+
+Detection signal: `validate_driver.py --contract` reports
+`FAIL: member set drift: got [...]; expected [...]`. The published contract has
+17 members — audit the registry, do not assume.

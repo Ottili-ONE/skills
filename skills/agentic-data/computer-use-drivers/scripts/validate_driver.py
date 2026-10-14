@@ -24,7 +24,14 @@ UNGATED = set(CANONICAL) - GATED
 
 
 def audit(path: Path) -> tuple[int, int, int]:
-    src = path.read_text(encoding="utf-8")
+    try:
+        src = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        print(f"FAIL: {path} is not readable text: {exc}", file=sys.stderr)
+        return 1, 0, 0
+    if not src.strip():
+        print(f"FAIL: {path} is empty", file=sys.stderr)
+        return 1, 0, 0
     fails = warns = oks = 0
     def fail(m): 
         nonlocal fails; print(f"FAIL: {m}", file=sys.stderr); fails += 1
@@ -62,7 +69,6 @@ def audit(path: Path) -> tuple[int, int, int]:
     else:
         fail("no coordinate scaling found at all — every pointer method must scale")
 
-    # Clamping is the silent failure: it moves the pointer and the model cannot detect it.
     # Clamping is the silent failure: it moves the pointer and the model cannot
     # detect it. Match both the literal word and the max(0, min(...)) idiom.
     if re.search(r"\bclamp\b|max\s*\(\s*0\s*,\s*min\s*\(", src, re.IGNORECASE):
