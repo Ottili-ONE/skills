@@ -103,13 +103,36 @@ validates the key against the account's allowed set independently of the
 balance. A balanced journal with key `99` on 4000 is a blocking error.
 
 ### N4. "SKR 03 and SKR 04 share the same accounts"
-**Trap:** the account ranges differ between the charts (e.g. 4100 intra-EU
-exists in both but 4200 is SKR 04 only). Always pass `--skr 03` or `--skr 04`; the default is a failure sign.
+**Trap:** the account ranges differ between the charts — the asset side is
+1xxx in both but the intra-EU receivable is 4100 in SKR04 and 4120 in SKR03.
+Always pass `--skr 03` or `--skr 04`; the default is a failure sign.
 
 ### N5. "Reconcile means the numbers add up"
 **Trap:** reconciliation also means the tax key on the journal matches the
 key on the source invoice and the period is locked. A journal that balances
 but carries key `19` where the invoice says `07` is a mismatch.
+
+### N6. "Map account 8000, it is a revenue account"
+**Trap:** 8000 is an *expense* account (Aufwand), not revenue (Ertrag, 4000).
+The tax key defaults differ by account class and the tax-account pairing is
+different. Mapping an expense account with a revenue template silently
+produces a backwards journal. `map_skr.py --account 8000 --skr 04` exits 0
+but the emitted key set is the expense one — check the class, not the exit
+code.
+
+### N7. "Unlock the period, it is done"
+**Trap:** unlocking is not free — it needs the same approver as the lock.
+`period_lock.py --period 2026-12 --action unlock` with no `--approver`
+exits 1 ("period is not locked" / approver required). A period that was
+never locked also cannot be unlocked; the state machine is explicit about
+both directions.
+
+### N8. "The journal has one line, that is a complete booking"
+**Trap:** a single sales line does not balance — the generator emits the
+sales leg only. `journal_check.py` on a bare sales leg exits 2
+("journal does not balance"). A complete journal needs the sales leg + the
+bank leg (1100) + the tax account (1570). The generator's job is the leg
+you asked for; the checker's job is the whole journal.
 
 
 ---
