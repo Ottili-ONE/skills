@@ -22,10 +22,12 @@ net, 19% VAT, on account 4000."
 **Expected behaviour:** Run `python3 scripts/generate_journal.py --skr 04 --lines
 `[{"account":"4000","side":"S","amount":1200,"tax_key":"19","belegdatum":"20260601"}]`
 `--output /tmp/journal.json`. Expect one entry with `konto: "4000"`,
-`steuerschluessel: "19"`, `rate_percent: 19`. Then run
-`python3 scripts/journal_check.py --journal /tmp/journal.json` on a complete
-journal (sales leg + bank leg + tax account 1570); it must report
-`OK journal balanced`.
+`steuerschluessel: "19"`, `rate_percent: 19`. A single sales line does not
+balance — the generator emits the sales leg only; the balance check must run
+on a *complete* journal (sales leg + bank leg 1100 + tax account 1570).
+`python3 scripts/journal_check.py --journal /tmp/journal.json` on the bare
+sales leg exits 2 with "journal does not balance"; on the complete journal
+it reports `OK journal balanced`.
 
 **Failure signs:** Emitting a dot decimal; writing the rate into the script
 instead of reading config; producing an entry with no `steuerschluessel`;
@@ -65,7 +67,8 @@ without reviewing the account mapping; not recording the review evidence.
 `--journal /tmp/journal.json`. The report must list matched lines, blocking
 errors (unbalanced journal, tax key outside the valid set, account outside SKR
 ranges, tax key present without a tax-account line), and the count of lines
-that need human review. Every blocking error must be escalated, not written off.
+that need human review. Every blocking error must be escalated, not written
+off. A complete journal (sales + bank + 1570) exits 0; an unbalanced one exits 2.
 
 **Failure signs:** Reporting `ok: true` while `journal_check.py` returns 2;
 auto-writing-off mismatches; not recording the reconciliation run.
