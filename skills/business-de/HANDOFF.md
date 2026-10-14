@@ -22,36 +22,34 @@ Corroborate those facts with the mirrors already recorded before an audit.
 
 ```bash
 python3 skills/business-de/scripts/validate_skills.py   # must be 0 issues
-cd skills/business-de && python3 -m pytest -q           # 216 tests
+python3 skills/business-de/scripts/run_evals.py         # every EVALS.md script example must exit 0
+cd skills/business-de && python3 -m pytest -q           # full pytest suite
 ```
-## PASS 3 (DEEPEN) — 2026-10-14
 
-Three commits, all `skills-business-de-r3-01:`, own paths only.
+## PASS 4 (EVALS + cross-links + handoff) — 2026-10-14
 
-1. **Re-verification of every version-sensitive fact.** Re-fetched 11 primary
-   URLs on 2026-10-14. Confirmed: Factur-X 1.09.2 / ZUGFeRD 2.5.2, KoSIT config
-   tag v2026-08-31, UStG §14 and §13b via dejure.org, whk-controlling GoBD
-   classes. Re-confirmed the two statute portals (`gesetze-im-internet.de/ustg/`
-   and `/ao/`) are still 404 — the dejure.org mirrors carry the authoritative
-   text. Added a `Re-check 2026-10-14` block to all ten `references/SOURCES.md`
-   files. Net effect on pinned versions: none.
-2. **Worked good/bad examples added to all ten skills** in
-   `references/procedures.md`. Previously five skills had none
-   (`gobd-archive`, `dsgvo-ai-act-labeling`, `publish-reconcile-wp-meta`,
-   `ust-edge-cases`, `skr-journal-mapping`); the other five had only partial
-   coverage. Every skill now has at least two GOOD/BAD pairs covering its
-   highest-error-rate operation.
-3. **Script hardening.** Two real bugs fixed and caught by new tests:
-   - `carrier-apis-de/scripts/track.py` — the live branch built the request
-     envelope but then sent the bare base URL, silently dropping the carrier
-     tracking path. Now `main()` uses the URL returned by `build_request()`.
-   - `webhooks-safe/scripts/verify.py` — PayPal/Twilio verification accepted a
-     bare HMAC with no replay window. Now `--now` is required for
-     stripe/paypal/twilio and a signature with no timestamp is rejected.
-   Added `carrier-apis-de/tests/carrier_test_helpers.py` as an import anchor.
+Four commits, all `skills-business-de-r3-05:`, own paths only.
 
-Gate: `validate_skills.py` → 10 skills, 0 issues. `pytest` → 216 passed
-(was 212).
+1. **README refresh.** `skills/business-de/README.md` rewritten: one-line value
+   per skill, install hints, layout diagram, version-pin rule, cross-link
+   contract and the gate commands. The old README carried a stale test count
+   (131) and no cross-link notes.
+2. **EVALS grounding pass.** Every prompt that names a script was re-run
+   against the real script in dry-run mode and its expected exit code
+   recorded. Two prompts were broken: `skr-journal-mapping` #2/#5/#7 quoted
+   `scripts/...` without `python3`, so `run_evals.py` could not extract a
+   command; `ust-edge-cases` N1/N2/N3 quoted the bare script name. Both fixed
+   and the expected output captured. `carrier-apis-de` N3 was corrected: the
+   cent trap is real (12.50 vs 1250 → exit 1) and now states the exact delta.
+3. **Cross-link audit.** Every `## Related skills` section re-read. One
+   circular edge was found and broken: `dsgvo-ai-act-labeling` linked to
+   `webhooks-safe` (which links back). It now links only to `gobd-archive`,
+   the retention sink. `gobd-archive` remains a pure sink. Verified acyclic by
+   walking the graph by hand.
+4. **This file.** Re-verify table, gate commands, and the next-ten list.
+
+Gate: `validate_skills.py` → 10 skills, 0 issues. `run_evals.py` → all
+extracted commands exit 0.
 
 ## Ideas for the next ten skills (with rationale)
 
@@ -77,5 +75,5 @@ Gate: `validate_skills.py` → 10 skills, 0 issues. `pytest` → 216 passed
 9. **`gobd-archive` → immutability proof (WORM/HASH chain)** — retention classes are
    decided; the *proof* of non-alteration is not. Rationale: auditor asks for it.
 10. **`publish-reconcile-wp-meta` → multi-site reconciliation** — today it is
-    WP-vs-Meta only; the next step is a third platform. Rationale: the field-by-field
-    engine generalises cleanly.
+    WP-vs-Meta only; the next step is a third platform. Rationale: the
+    field-by-field engine generalises cleanly.
