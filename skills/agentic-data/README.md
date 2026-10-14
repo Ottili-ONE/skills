@@ -1,68 +1,34 @@
-# skills/agentic-data — ten Agent Skills for agentic data work
+# Agentic Data Skills (R3)
 
-Each folder is a self-contained Agent Skill (agentskills.io standard): `SKILL.md`
-with YAML frontmatter, plus `references/` (SOURCES, EVALS, procedures) and
-`scripts/` (small, deterministic, runnable offline).
+Ten researched Agent Skills for coding and operations agents working on the Ottili
+platform. Each skill is a folder with `SKILL.md` (front-matter + body), optional
+`scripts/`, `references/`, `assets/`, and `tests/`.
 
-Install with the repo script:
+## Skills
 
-```bash
-./install.sh skills/agentic-data/browser-agent-playwright
-# or install all ten:
-./install.sh skills/agentic-data/*
-```
+| Skill | One-line value | Trigger |
+|---|---|---|
+| `mcp-2026-07-28` | Stateless MCP server/client on the 2026-07-28 revision with OAuth 2.1/PKCE and version negotiation | scaffold an MCP server, handshake fails, tasks/get |
+| `browser-agent-playwright` | Grounded browser automation with web-first waits and prompt-injection defense | scrape, test, or automate a site with a real browser |
+| `computer-use-drivers` | Drive desktop apps via accessibility trees with confirm() gates on destructive actions | click/type/scroll an app that has no API |
+| `polite-crawling-warc` | Polite site crawling archived to WARC 1.1 with robots.txt (RFC 9309) enforcement | crawl a site and archive it to WARC |
+| `dedup-decontam` | MinHash/LSH dedup + n-gram decontamination for training corpora | prepare a corpus for LLM training/eval |
+| `deep-research-method` | Evidence-backed research: source scoring 0-10, citation, contradiction resolution | answer a question from the web, audit a source |
+| `llm-judge-calibration` | Calibrate LLM judges: rubrics, calibration sets, agreement, drift detection | build/audit an LLM-as-judge scoring pipeline |
+| `trajectory-ledger` | Durable, append-only ledger of agent trajectories with replay and audit | record/audit/replay an agent run |
+| `verifiable-environments` | Reproducible sandboxes: pinned images, hashes, attestation, drift detection | run code in a reproducible environment |
+| `skill-authoring-evals` | Author Agent Skills with evals: spec rules, validators, near-miss prompts | write or audit a skill |
 
-Validate before shipping:
+## Install hints
 
-```bash
-python3 scripts/validate_skill.py skills/agentic-data/<name>
-python3 scripts/validate.py --json          # catalog consistency
-```
+- Single skill: `python3 ../../scripts/install-skill.py skills/agentic-data/<name>`
+- All ten: `python3 ../../scripts/install-skill.py skills/agentic-data/*`
+- Validate one: `python3 ../../scripts/validate_skill.py skills/agentic-data/<name>`
+- Validate all: `python3 ../../scripts/validate_skill.py --all`
+- Related-graph check (acyclic): `python3 ../../scripts/check_related_graph.py --skills skills/agentic-data`
 
-## The ten skills
+## Layout
 
-- **browser-agent-playwright** — Drive a browser with Playwright: DOM/ARIA
-  grounding, robust locators, network waits, prompt-injection defense, safe
-  hand-off. Use when an agent must scrape, test or automate a site.
-- **computer-use-drivers** — Drive desktop/remote apps through accessibility
-  trees and background input with coordinate scaling, confirm() gates and
-  platform quirks. Use when the target app has no API.
-- **dedup-decontam** — Deduplicate datasets and decontaminate them against
-  eval/train corpora with MinHash/LSH and n-gram overlap. Use before training
-  or before publishing a dataset.
-- **deep-research-method** — Score, fetch, cite and reconcile web sources into
-  an auditable evidence chain with a confidence ladder. Use for factual
-  questions that depend on documents you must find and weigh.
-- **llm-judge-calibration** — Build, lint and calibrate LLM-as-judge rubrics so
-  that model scores are stable, auditable and cheap. Use when grading model
-  output at scale.
-- **mcp-2026-07-28** — Implement or audit an MCP server/client against the
-  2026-07-28 model spec: tool discovery, resources, prompts, OAuth flow,
-  error codes, version negotiation. Use when building or probing an MCP
-  server.
-- **polite-crawling-warc** — Crawl politely (robots.txt, rate limits, resume
-  state) and write WARC files that validate against the WARC spec. Use for
-  large, resumable web archives.
-- **skill-authoring-evals** — Author Agent Skills and write evals for them:
-  front-matter rules, trigger precision, eval schemas and metrics. Use when
-  creating or reviewing a skill.
-- **trajectory-ledger** — Record, replay and audit multi-step agent runs as a
-  typed, hashed, costed JSONL ledger. Use when a result must be reproducible
-  or auditable.
-- **verifiable-environments** — Design verifiers that resist reward hacking:
-  spec-derived checks, oracle-free tests, pass-rate calibration, sandboxing,
-  failure-mode auditing. Use when building or auditing an eval harness.
-
-## Cross-links
-
-Related skills are named in each `SKILL.md`'s *Related* section. The graph is
-acyclic; `skill-authoring-evals` is the meta-skill (it authors and evaluates
-skills) and depends on nothing else in this set.
-
-## Where to go next
-
-- `HANDOFF.md` — what to re-verify and when, plus ideas for the next ten skills.
-- Each skill's `references/EVALS.md` — realistic prompts, expected behaviour,
-  failure signs and near-miss prompts.
-- Each skill's `references/SOURCES.md` — primary sources with URLs and retrieval
-  dates.
+Each skill folder: `SKILL.md`, `references/EVALS.md`, `references/SOURCES.md`,
+optional `scripts/`, `assets/`, `tests/`. Long material lives in `references/`
+linked one level deep from `SKILL.md` (progressive disclosure).
