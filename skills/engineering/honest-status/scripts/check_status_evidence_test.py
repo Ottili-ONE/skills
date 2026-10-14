@@ -28,6 +28,24 @@ GOOD = """\
 - [ ] ~~axe zero violations~~ - no evidence file committed; downgraded from DONE
 """
 
+# A VERIFIED claim with no evidence pointer is FALSE_DONE: VERIFIED means the
+# check ran and passed but the change is not yet integrated, so it still needs a
+# runnable pointer to the check output.
+UNVERIFIED_VERIFIED = """\
+## VERIFIED
+- [x] leak test green locally - status: VERIFIED (not merged)
+"""
+
+# IN_PROGRESS without a blocker and BLOCKED without an owner/question are stranded
+# claims: nobody knows what is stuck or who to ask.
+STRANDED = """\
+## IN_PROGRESS
+- [ ] tenant_id backfill
+
+## BLOCKED
+- [ ] dark mode contrast
+"""
+
 BAD = """\
 ## DONE
 - [x] axe scan passes
@@ -213,7 +231,45 @@ def test_unreadable_status() -> None:
     return 0
 
 
+def test_unverified_verified_is_false_done() -> None:
+    """A VERIFIED claim that is not a checked item with evidence is FALSE_DONE."""
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        (t / "leak.log").write_text("ok", encoding="utf-8")
+        f = t / "STATUS.md"
+        f.write_text(UNVERIFIED_VERIFIED, encoding="utf-8")
+        r = run(str(f), "--root", str(t))
+        if r.returncode != 1 or "VERIFIED" not in (r.stdout + r.stderr):
+            print("FAIL: unchecked VERIFIED should be flagged")
+            print(r.stdout, r.stderr)
+            return 1
+        print("ok: unchecked VERIFIED is downgraded")
+        return 0
+
+
+def test_stranded_in_progress_and_blocked() -> None:
+    """IN_PROGRESS needs a blocker; BLOCKED needs an owner and a question."""
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        f = t / "STATUS.md"
+        f.write_text(STRANDED, encoding="utf-8")
+        r = run(str(f), "--root", str(t))
+        if r.returncode != 1:
+            print("FAIL: stranded IN_PROGRESS/BLOCKED should fail")
+            print(r.stdout, r.stderr)
+            return 1
+        out = r.stdout + r.stderr
+        if "no blocker named" not in out or "no owner named" not in out:
+            print("FAIL: stranded claims should name the missing fields")
+            print(out)
+            return 1
+        print("ok: stranded IN_PROGRESS/BLOCKED are flagged")
+        return 0
+
+
 EDGE_TESTS = [
+    ("unverified verified is false done", test_unverified_verified_is_false_done),
+    ("stranded in-progress and blocked", test_stranded_in_progress_and_blocked),
     ("next-line evidence", test_next_line_evidence),
     ("empty evidence file", test_empty_evidence_file),
     ("FALSE_DONE contradiction", test_false_done_checked_contradiction),

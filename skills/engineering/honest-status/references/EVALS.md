@@ -63,6 +63,14 @@ items; any DONE item without an `evidence:` line is false-done.
 - **N3 — "The code is done, so it's DONE."** Answer: no — done means verified, not coded.
 - **N4 — "It's basically done."** Answer: run `python3 scripts/check_status_evidence.py STATUS.md --root .` before writing; a claim without a pointer is FALSE_DONE.
 - **N5 — "Just copy last quarter's STATUS.md."** Answer: no — every claim must be re-verified this week; stale evidence is FALSE_DONE.
+- **N6 — "VERIFIED has no evidence, but it's not DONE so it doesn't matter."**
+  Answer: yes it matters — VERIFIED is a bucket like any other and needs a runnable
+  pointer; without one it is FALSE_DONE by the same rule.
+- **N7 — "The blocker is obvious, I don't need to write it down."** Answer: no —
+  the next agent cannot read your head; an IN_PROGRESS without a `blocker:` line and a
+  BLOCKED without an `owner:` line are stranded and the checker flags them.
+- **N8 — "I'll move it to DONE when it ships."** Answer: no — merge the change first,
+  re-run the check on the integrated code, and only then mark it DONE with fresh evidence.
 
 ## Verification checklist
 - [ ] 1 bucket per status; DONE and IN_PROGRESS never merged

@@ -46,18 +46,20 @@ def parse_status(text: str) -> dict[str, list[dict]]:
         # A bare "evidence: <path>" line attaches to the most recent claim in the
         # current bucket (it follows the claim it qualifies).
         mev = re.match(r"^\s*evidence:\s*(?P<evidence>\S+)\s*$", line, re.IGNORECASE)
-        if mev and current in ("DONE", "VERIFIED", "FALSE_DONE") and buckets[current]:
+        if mev and buckets[current]:
             buckets[current][-1]["evidence"] = mev.group("evidence")
             continue
-        if current in ("DONE", "VERIFIED", "FALSE_DONE"):
-            m = CLAIM_RE.match(line)
-            if m:
-                ev = EVIDENCE_RE.search(m.group("text"))
-                buckets[current].append(
-                    {"checked": m.group("checked").lower() == "x",
-                     "text": m.group("text").strip(),
-                     "evidence": ev.group("evidence").strip() if ev else ""}
-                )
+        # Every bucket accepts claims. DONE/VERIFIED/FALSE_DONE additionally require
+        # an evidence pointer (checked in main); IN_PROGRESS/BLOCKED additionally
+        # require a blocker/owner so a stranded claim is visible.
+        m = CLAIM_RE.match(line)
+        if m:
+            ev = EVIDENCE_RE.search(m.group("text"))
+            buckets[current].append(
+                {"checked": m.group("checked").lower() == "x",
+                 "text": m.group("text").strip(),
+                 "evidence": ev.group("evidence").strip() if ev else ""}
+            )
     return buckets
 
 
@@ -80,6 +82,12 @@ def main() -> int:
     findings: list[dict] = []
     for bucket in ("DONE", "VERIFIED"):
         for claim in buckets[bucket]:
+            # VERIFIED means "the check ran and passed, but the change is not yet
+            # integrated". It is a real status, not a synonym for DONE, so it must
+            # carry its own evidence pointer — otherwise it is FALSE_DONE.
+            if bucket == "VERIFIED" and not claim["checked"]:
+                findings.append({"bucket": bucket, "claim": claim["text"][:60],
+                                 "reason": "VERIFIED claim must be a checked item with an evidence pointer"})
             ev = claim["evidence"]
             if not ev:
                 findings.append({"bucket": bucket, "claim": claim["text"][:60],
@@ -95,6 +103,19 @@ def main() -> int:
             elif p.is_dir() and not any(p.iterdir()):
                 findings.append({"bucket": bucket, "claim": claim["text"][:60],
                                  "reason": f"evidence dir is empty: {ev}"})
+    # IN_PROGRESS must name a blocker, BLOCKED must name an owner and a question.
+    # Without them the claim is stranded: nobody knows what is stuck or who to ask.
+    for claim in buckets["IN_PROGRESS"]:
+        if not re.search(r"blocker:", claim["text"], re.IGNORECASE):
+            findings.append({"bucket": "IN_PROGRESS", "claim": claim["text"][:60],
+                             "reason": "no blocker named"})
+    for claim in buckets["BLOCKED"]:
+        if not re.search(r"owner:", claim["text"], re.IGNORECASE):
+            findings.append({"bucket": "BLOCKED", "claim": claim["text"][:60],
+                             "reason": "no owner named"})
+        elif not re.search(r"question:", claim["text"], re.IGNORECASE):
+            findings.append({"bucket": "BLOCKED", "claim": claim["text"][:60],
+                             "reason": "no next question named"})
     # A [x] claim under FALSE_DONE is a contradiction: the bucket means "downgraded
     # because no evidence exists", so a checked claim there is still claiming done.
     for claim in buckets["FALSE_DONE"]:
