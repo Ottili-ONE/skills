@@ -79,3 +79,60 @@ broken and no real result may be trusted until it is fixed.
 - Silently dropping a flagged document -> the leak is gone but so is the audit trail.
 - Baking the embedding threshold into logic -> wrong for a different model.
 - Planted-item test not run -> the detector is unverified; treat every result as suspect.
+
+## What this skill does better than a generic agent
+A generic agent runs `sort | uniq` and calls it dedup. This skill distinguishes
+exact, near-duplicate, and semantic duplicates, and separates corpus dedup from
+benchmark decontamination — two problems that share almost no code in practice.
+
+- **Normalization before hashing**: byte-identical files are the minority; the
+  skill normalizes case, whitespace, zero-width characters and BOM before any
+  hash, so "Hello world" and "Hello  world" collapse to one record.
+- **Planted-item gate**: every run ships a set of known duplicates planted into
+  the input. If the pipeline does not find them, the result is untrustworthy
+  and the run FAILs. This catches silent threshold drift, not just bugs.
+- **Tokenizer-aware n-gram decontamination**: GPT-2 BPE tokenizes differently
+  from a raw character window; using the wrong tokenizer under-reports
+  leakage by an order of magnitude (recorded failure from the MMLU leakage
+  reports, 2024).
+- **Thresholds are pinned and calibrated, not copied**: MinHash threshold 0.8
+  is a starting point for Jaccard; the embedding cosine 0.92 is specific to
+  all-MiniLM-L6-v2 and does not transfer. The skill says so explicitly instead
+  of letting the agent reuse a number from a blog post.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. Public collections (`anthropics/skills`, the Fastio 2026
+directory, `skills.cat`) carry no dedup/decontamination skill at all — the topic
+lives in research repositories (`datasketch`, `minhash-lsh`, `datamussel`,
+`gpt-2- leakage-detection`) and in conference papers, not in agent skill form.
+Where community scripts exist they are either a single `datasketch` call with no
+normalization, or a benchmark-specific checker with the tokenizer hard-coded.
+
+This skill is the first to combine all four operations in one procedure and to
+make the result auditable:
+- **Exact + near + semantic in one run**, with a manifest that says *why* each
+  item was kept or dropped (exact hash, Jaccard score, n-gram match, cosine
+  score) instead of a bare boolean.
+- **Planted-item tests as a gate**, not a demo: the pipeline refuses to report
+  results until it finds the items it planted.
+- **Decontamination is separated from dedup** and carries its own tokenizer
+  requirement, because conflating them is the mistake that produces a
+  "clean" corpus that still contains MMLU questions.
+- **Offline and deterministic**: MinHash uses a seeded random projection so the
+  same input produces the same output on any machine; no network, no model
+  downloads during dedup.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| `ekzhu/datasketch` | MinHash/LSH library | a library, not a procedure; no normalization, no planted-item gate |
+| `datamussel/datamussel` | near-dedup pipeline | single-method; no decontamination, no tokenizer rule |
+| MMLU leakage reports (arXiv 2024) | the incident | incident write-ups, no runnable procedure |
+
+## Five eval scenarios (expanded in `references/EVALS.md`)
+1. "I ran dedup and got a smaller corpus. How do I know it actually worked?" -> Run the planted-item gate: plant 20 known duplicates, assert the pipeline finds >=95% of them before trusting the output.
+2. "My training set may contain MMLU questions. Check it." -> Build the n=13 n-gram set from the MMLU prompts using GPT-2 BPE tokenization, slide the same window over each training document, flag matches with the matched n-gram and position; never silently drop.
+3. "What threshold do I use for MinHash?" -> k=128, w=5, target Jaccard 0.8 as a starting point; verify on a planted set, never assume the default is right for your corpus.
+4. "Is 0.92 the right cosine threshold for my embeddings?" -> No: 0.92 is calibrated for all-MiniLM-L6-v2 and does not transfer. Calibrate on a held-out clean set and pin the result in config.
+5. "What must I record for every dropped item?" -> The reason: exact hash, Jaccard score, matched n-gram, or cosine score. A dropped item with no reason is a failure.

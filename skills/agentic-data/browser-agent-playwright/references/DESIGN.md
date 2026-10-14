@@ -99,3 +99,4 @@ Public skills surveyed (2026-10-12, all HTTP 200):
 | `anthropics/skills` | desktop computer-use only | no browser DOM grounding |
 | `playwright-mcp` (community) | navigate/click/screenshot | no injection defence, no locator fallbacks |
 | Fastio 2026 directory | generic automation snippets | no WARC/crawl context, no trust ladder |
+

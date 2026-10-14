@@ -106,3 +106,16 @@ must be calibrated:
   retire rather than trust the old numbers.
 - The pass threshold is moved after seeing agent scores -> the pass rate no
   longer means what it said on the tin.
+
+## Five eval scenarios (expanded in `references/EVALS.md`)
+1. "My rubric has one 0-5 column and I score 100 items by eye. What breaks?" -> Inter-rater
+   agreement is unmeasurable; calibrate on a 20-item subset first and require >=80% exact
+   agreement before scaling.
+2. "The judge gives everything a 4. What do I do?" -> Ceiling effect: collapse the spread,
+   re-train the rubric on edge cases, and report the squeeze in the calibration report.
+3. "Judge A and Judge B disagree on 30% of items. Is the rubric the problem?" -> Measure
+   Krippendorff's alpha; if <0.67 the rubric is too ambiguous, not the judges.
+4. "My calibration set was built last month. Do I still trust it?" -> Re-run 10% of it; if
+   the judge's scores drift by more than 0.1 the set is stale and must be rebuilt.
+5. "Can I use the same model as judge and teacher?" -> No: judge/teacher separation is
+   mandatory; a model judging its own outputs inflates pass rates by an unknown amount.
