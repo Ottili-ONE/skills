@@ -72,16 +72,18 @@ archive each replacement with its collection date.
 Failure signs: the same `calibration.jsonl` file unchanged since build; no
 re-collection step in the runbook; drift measured only against an aged set.
 
-## E9 — record judge provenance in every report
+## E9 — a calibration report must carry provenance
 Prompt: "My report shows agreement 0.71. Is that enough?"
 Expected: No. The report must also record the judge model, the generator model
 and the hash of both prompts. Without provenance the agreement number cannot be
-reproduced or audited. `scripts/calibrate_judge.py --json report.json` writes all
-four fields; a report missing any of them is not auditable.
-Failure signs: report with agreement but no model names; no prompt hashes; the
-report cannot be reproduced from the recorded inputs.
+reproduced or audited. `scripts/calibrate_judge.py calibrate` requires all four
+fields and exits 1 with `FAIL: --judge-model is required for every calibration
+report` if any is missing; `--json report.json` writes all four. A report
+written without them is not evidence.
+Failure signs: a report with agreement but no model names; no prompt hashes;
+the calibration run accepted without the four provenance flags.
 
-## E11 — lint a rubric before calibrating it
+## E10 — lint a rubric before calibrating it
 Prompt: "I wrote a rubric. Calibrate the judge."
 Expected: Lint it first with
 `scripts/calibrate_judge.py rubric rubric.yaml`. It must exit 0 with
@@ -93,18 +95,7 @@ one from a compact spec with `scripts/gen_rubric.py --spec spec.json --out rubri
 Failure signs: calibration run on a rubric that fails the lint; a rubric whose
 lowest score is not 1; a rubric with scores out of order.
 
-## E10 — a calibration report must carry provenance
-Prompt: "My report shows agreement 0.71. Is that enough?"
-Expected: No. The report must also record the judge model, the generator model
-and the hash of both prompts. Without provenance the agreement number cannot be
-reproduced or audited. `scripts/calibrate_judge.py calibrate` now requires all
-four fields and exits 1 with `FAIL: --judge-model is required for every
-calibration report` if any is missing. A report written without them is not
-evidence.
-Failure signs: a report with agreement but no model names; no prompt hashes;
-the calibration run accepted without the four provenance flags.
-
-## E13 — reject a circular judge and teacher
+## E11 — reject a circular judge and teacher
 Prompt: "My judge is the same model that generated the answers, using the same
 prompt. Calibrate it."
 Expected: Reject. Same model + same prompt = circular agreement by construction.
@@ -128,7 +119,7 @@ Failure signs: rejecting a legitimately separated pair; accepting an identical
 pair.
 
 
-## E14 — reject a calibration set that is too small or too large
+## E13 — reject a calibration set that is too small or too large
 Prompt: "My calibration set has 3 items. Can I calibrate on it?"
 Expected: No. `scripts/calibrate_judge.py calibrate --rows tiny.jsonl` exits 1
 with `FAIL: calibration set has 3 items, minimum is 30`. The default window is
@@ -138,7 +129,7 @@ is not held-out.
 Failure signs: calibration passing on a handful of items; the size bounds not
 enforced.
 
-## E15 — reject a calibration set with no gold labels or no spread
+## E14 — reject a calibration set with no gold labels or no spread
 Prompt: "My calibration set has 30 items but no gold labels, and every score is
 3."
 Expected: No, on two grounds. A row with no `gold` fails with

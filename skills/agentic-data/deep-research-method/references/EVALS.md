@@ -30,14 +30,22 @@ minority view noted. Never average into a fake middle.
 Failure signs: "sources disagree" with no resolution; the lower-quality view
 winning.
 
-## E4 — record retrieval dates
+## E4 — record retrieval dates and re-fetch stale facts
 Prompt: "I verified this fact last year. Is that good enough?"
 Expected: No. Record the retrieval date on every source. A fact verified in
 2025 used for a 2026 question must be re-fetched, because the answer may have
 changed. `scripts/score_sources.py score` rejects any source without an ISO
-retrieval date.
+retrieval date. Run `scripts/score_sources.py staleness <sources.jsonl>
+--question-date <date> --max-age-days <n>`; it flags a source whose retrieval
+date is older than the window with its age in days and exits 1. Re-fetch, re-score,
+update the retrieved date, and re-run until it passes. Keep the original
+retrieval date in the evidence chain alongside the re-fetch date. If the source
+is unreachable, say so and downgrade confidence rather than citing a stale
+snapshot.
 Failure signs: a source with no `retrieved` field; a 2024 fact reused without
-re-checking.
+re-checking; a 2025 retrieval date on a 2026 answer with no re-fetch attempt;
+the staleness check skipped because the score was high; the question date
+omitted so the script uses the system clock.
 
 ## E5 — audit the claim-to-source coverage
 Prompt: "Make sure every claim in my answer cites a kept source."
@@ -55,17 +63,7 @@ corroboration. State the reason for the level next to the answer.
 Failure signs: "high confidence" with a single secondary source; no confidence
 stated at all.
 
-## E7 — record retrieval dates and re-fetch stale facts
-Prompt: "I have a source retrieved in 2025. Can I reuse it for a 2026 answer?"
-Expected: No. Re-fetch the source and record the new retrieval date. Version-sensitive
-facts (laws, API revisions, security advisories) change; a 2025 retrieval date on a
-2026 answer is itself a failure signal. `scripts/score_sources.py score` rejects any
-source without an ISO `retrieved` date. If the source is unreachable, say so and
-downgrade confidence rather than citing a stale snapshot.
-Failure signs: a 2025 retrieval date on a 2026 answer with no re-fetch attempt;
-a source with no `retrieved` field.
-
-## E8 — reject a source that scores below the threshold
+## E7 — reject a source that scores below the threshold
 Prompt: "A source scores 5. Keep it."
 Expected: No. The threshold is >=6; a 5 is discarded before it is read, unless it
 is the *only* source for a sub-question, in which case it is kept, flagged
@@ -74,7 +72,7 @@ low-confidence, and the lack of corroboration is stated in the answer.
 Failure signs: a kept source with score <6 and no low-confidence flag.
 
 
-## E9 — cite by short paraphrase, never a long quotation
+## E8 — cite by short paraphrase, never a long quotation
 Prompt: "Prove your claim about the MCP 12-month deprecation window by quoting
 the changelog."
 Expected: Cite by paraphrase under 15 words with the URL next to the claim. Quote
@@ -85,7 +83,7 @@ version for every claim.
 Failure signs: a 20+ word quotation presented as evidence; a claim with a URL but
 no retrieval date; paraphrase with no URL.
 
-## E10 — score a source before reading it
+## E9 — score a source before reading it
 Prompt: "I found a promising URL. Read it."
 Expected: Score it first with `scripts/score_sources.py score`. A source that
 scores below 6 is discarded before it is read, unless it is the only source for a
@@ -95,7 +93,7 @@ is the gate.
 Failure signs: reading the source before scoring; a low-scoring source used as
 the main evidence with no low-confidence flag.
 
-## E11 — reject a stale source for a current question
+## E10 — reject a stale source for a current question
 Prompt: "I verified this fact in 2024. The question is about 2026."
 Expected: Re-fetch it. Run
 `scripts/score_sources.py staleness <sources.jsonl> --question-date 2026-10-12`;
@@ -107,7 +105,7 @@ Failure signs: a 2024 source used for a 2026 question with no re-fetch; the
 staleness check skipped because the score was high; the question date omitted so
 the script uses the system clock.
 
-## E12 — count corroboration by upstream, not by URL
+## E11 — count corroboration by upstream, not by URL
 Prompt: "I have three sources: the primary spec, a blog summarising it, and a
 news article that also quotes the spec. Is that three independent sources?"
 Expected: No. The blog and the news article share the spec as their upstream, so
@@ -120,7 +118,7 @@ primary they were derived from.
 Failure signs: corroboration counted as 3 when the URLs share an upstream; the
 `corroboration` subcommand not run at all; no `upstream` field recorded.
 
-## E13 — every kept source must carry provenance
+## E12 — every kept source must carry provenance
 Prompt: "I kept a source. What must be recorded with it?"
 Expected: URL + retrieval date + pinned version, all three. A source without a
 retrieval date is memory, not evidence; a source without a pinned version
@@ -131,7 +129,7 @@ a per-source failure naming the missing field.
 Failure signs: a kept source with no `retrieved` or no `version`; the
 provenance check skipped because the score was high.
 
-## E14 — detect the fake middle
+## E13 — detect the fake middle
 Prompt: "Two sources give the same exact number. Are they independent?"
 Expected: Check whether they share an upstream. If both derive from the same
 primary, they are one source and the agreement is an artefact of copying, not
@@ -141,7 +139,7 @@ upstream before counting it.
 Failure signs: two URLs with different domains agreeing exactly on a numeric
 value and neither linking the primary; corroboration counted as 2.
 
-## E15 — recover from a real incident
+## E14 — recover from a real incident
 Prompt: "A previous answer cited a 2024 page for a 2026 question and the fact
 was wrong. How do I prevent this next time?"
 Expected: Follow the incident in `references/incidents.md` (I1): every source's
@@ -156,7 +154,7 @@ Failure signs: the staleness check skipped; a stale source cited without a
 re-fetch attempt; an incident signature matched and ignored.
 
 
-## E16 — compute confidence from upstreams, not from URL count
+## E15 — compute confidence from upstreams, not from URL count
 Prompt: "I have three kept sources for a claim. What confidence can I claim?"
 Expected: It depends on how many *distinct upstreams* they trace to.
 `scripts/score_sources.py confidence <sources.jsonl>` groups the kept sources
@@ -167,7 +165,7 @@ score medium, not high -- that is the fake middle. The command emits
 Failure signs: confidence being read off the URL count; the upstream grouping
 being skipped.
 
-## E17 — the confidence subcommand rejects an empty kept set
+## E16 — the confidence subcommand rejects an empty kept set
 Prompt: "I ran `confidence` on a file where every source scored below 6."
 Expected: Reject. `scripts/score_sources.py confidence bad.jsonl` exits 1 with
 `FAIL: no kept sources to compute confidence from`, because a claim with no
