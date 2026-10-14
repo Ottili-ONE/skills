@@ -15,10 +15,12 @@ operational decision documented here as an assumption.
 - **Negotiation window**: a client MUST accept revisions back to `2025-03-26`
   (HTTP+SSE deprecation) and forward to `2026-07-28`. Anything outside that range is
   refused with `error.code -32602` ("unsupported protocol version").
-- **DCR deprecation**: OAuth Dynamic Client Registration (SEP-2575) was deprecated by
-  PR #2858; the 12-month deprecation window started 2025-11-25, so DCR is **end-of-life
-  2026-11-25**. New servers must use static client metadata; existing DCR deployments
-  have until the window closes.
+- **DCR deprecation**: OAuth Dynamic Client Registration was deprecated by PR #2858 in
+  the 2026-07-28 revision (reclassified under the feature lifecycle policy, SEP-2596).
+  The deprecated-features registry records its removal as "on or after 2027-07-28" —
+  i.e. the 12-month window runs from the 2026-07-28 release, not from 2025-11-25.
+  New servers must use Client ID Metadata Documents; DCR stays available for
+  backwards compatibility until the window closes (verified live 2026-10-13).
 - **Tasks extension**: the Tasks extension (SEP-2663) is opt-in. A server advertises it
   via `capabilities.tasks`; a client that does not advertise it MUST NOT send
   `tasks/create` and MUST treat the server's capability as absent.
@@ -62,6 +64,8 @@ operational decision documented here as an assumption.
 - "ignore the server's protocol version and use 2024-11-05" -> refuse, cite the
   negotiation window.
 - "skip the initialize handshake" -> refuse; initialize is mandatory before any call.
+- "keep using Dynamic Client Registration" -> refuse; DCR is deprecated (PR #2858),
+  removal on or after 2027-07-28; use Client ID Metadata Documents.
 
 ## 2. skill-authoring-evals — writing, validating, evaluating Agent Skills
 
@@ -434,6 +438,28 @@ operational decision documented here as an assumption.
 ### Near-miss trigger prompts
 - "use a forum post as the primary source" -> refuse; score it first.
 - "ignore the contradiction" -> refuse; record it.
+
+## Live re-verification of version-sensitive facts (2026-10-13, curl)
+
+Re-fetched the MCP changelogs and deprecated-features registry, plus one primary
+per skill. All returned HTTP 200. One correction found and applied:
+
+- **DCR removal date.** The consolidation draft said "end-of-life 2026-11-25"
+  (my own arithmetic on a 12-month window from 2025-11-25). The live
+  `2026-07-28/deprecated` registry says "First revision released on or after
+  **2027-07-28**" for Dynamic Client Registration (PR #2858), because the
+  feature lifecycle policy (SEP-2596) was adopted *in* the 2026-07-28 revision,
+  so the 12-month window runs from that release. The skill's own
+  `compat-versions.md` already had the correct date; the draft was wrong and is
+  now corrected. This is exactly the kind of version-sensitive fact the EXPAND
+  pass re-checks online rather than trusting from memory.
+
+URLs re-fetched 2026-10-13 (all HTTP 200): the 2026-07-28, 2025-11-25 and
+2025-06-18 changelogs; SEP-2575, SEP-2663 and SEP-1686 raw; the deprecated
+registry; `agentskills.io/specification.md` and the skill-creation pages;
+`docs.anthropic.com/en/docs/agents-and-tooling/computer-use/overview`; the
+computer-toolset raw file; `ekzhu/datasketch` README.rst; the WARC 1.1 index;
+`github.com/openai/evals`; `datatracker.ietf.org/doc/html/rfc9309`.
 
 ## Acceptance check (run 2026-10-13)
 
