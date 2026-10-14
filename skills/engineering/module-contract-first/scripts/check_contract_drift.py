@@ -71,6 +71,51 @@ def _diff_lines(old: dict, new: dict) -> list:
     return lines
 
 
+def _classify(old: dict, new: dict) -> str:
+    """Return the minimum SemVer bump for a contract change.
+
+    Decision table (per references/module-contract-procedure.md):
+      removed symbol            -> major (breaking)
+      added symbol             -> minor (additive)
+      type/requiredness change -> major (breaking)
+      identical                -> patch (no bump needed)
+    """
+    old_syms = set(old.get("symbols", []))
+    new_syms = set(new.get("symbols", []))
+    removed = old_syms - new_syms
+    added = new_syms - old_syms
+    if removed:
+        return "major"
+    if added:
+        return "minor"
+    if old != new:
+        return "major"
+    return "patch"
+
+
+def cmd_classify(args: argparse.Namespace) -> int:
+    """Compare two snapshots and print the required semver bump."""
+    old = _load_snapshot(Path(args.old))
+    new = _load_snapshot(Path(args.new))
+    if not old:
+        print("error: old snapshot missing or empty", file=sys.stderr)
+        return 2
+    if not new:
+        print("error: new snapshot missing or empty", file=sys.stderr)
+        return 2
+    bump = _classify(old, new)
+    removed = sorted(set(old.get("symbols", [])) - set(new.get("symbols", [])))
+    added = sorted(set(new.get("symbols", [])) - set(old.get("symbols", [])))
+    print(json.dumps({
+        "bump": bump,
+        "removed": removed,
+        "added": added,
+        "old_count": len(old.get("symbols", [])),
+        "new_count": len(new.get("symbols", [])),
+    }, indent=2, sort_keys=True))
+    return 0
+
+
 def cmd_enumerate(args: argparse.Namespace) -> int:
     target = _resolve_target(args)
     surface = {"symbols": _walk_py(target)}
@@ -187,6 +232,7 @@ def main() -> int:
     parser.add_argument("--enumerate", metavar="DIR")
     parser.add_argument("--check", metavar="DIR")
     parser.add_argument("--cycles", metavar="DIR")
+    parser.add_argument("--classify", nargs=2, metavar=("OLD","NEW"))
     parser.add_argument("--snapshot-dir", default=None)
     args = parser.parse_args()
     if args.enumerate:
@@ -195,6 +241,9 @@ def main() -> int:
         return cmd_check(args)
     if args.cycles:
         return cmd_cycles(args)
+    if args.classify:
+        args.old, args.new = args.classify
+        return cmd_classify(args)
     parser.print_help()
     return 1
 
