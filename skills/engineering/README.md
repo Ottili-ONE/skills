@@ -42,6 +42,18 @@ procedure docs), and optionally `scripts/`.
 - `playwright-a11y-e2e` and `foundation-v2-conformance` both check UI conformance;
   run the e2e suite after the conformance gate passes.
 
+## Pass 3 (2026-10-14) status
+
+All ten skills validate green on `scripts/validate_skills.py` (agentskills.io standard) and
+`scripts/validate.py` (catalog). Every `EVALS.md` carries >=5 prompts and >=3 near-miss
+prompts (`tests/test_evals_completeness.py`), every `SOURCES.md` carries a dated line
+<=180 days old (`tests/test_sources_freshness.py`), and the Related graph is acyclic with
+`shared-tree-git` as the unique sink (`scripts/check_related_graph.py`).
+
+Repairs this pass: the `honest-status` EVALS.md repeated one boilerplate sentence across
+five prompts — each now states what the skill changes *for that scenario*; two SOURCES.md
+entries were re-fetched live and the retrieval date recorded.
+
 ## How to verify this pass
 
 Every check is offline and deterministic; run all of them before claiming the
