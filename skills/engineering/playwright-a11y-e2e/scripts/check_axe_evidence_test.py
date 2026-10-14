@@ -57,6 +57,59 @@ def main() -> int:
         else:
             print("ok: empty evidence dir fails as expected")
 
+        # incomplete items are also A/AA failures
+        inc = t / "inc.json"
+        inc.write_text(json.dumps({
+            "url": "/login", "axeVersion": "4.14.0",
+            "incomplete": [{"id": "region", "impact": "AA"}],
+            "violations": [], "inapplicable": [],
+        }), encoding="utf-8")
+        r = run(str(t))
+        if r.returncode != 1:
+            print("FAIL: evidence with incomplete items should fail")
+            print(r.stdout, r.stderr)
+            failures += 1
+        else:
+            print("ok: incomplete items fail as expected")
+
+        # inapplicable is informational and must NOT fail the gate
+        inapp = t / "inapp.json"
+        inapp.write_text(json.dumps({
+            "url": "/login", "axeVersion": "4.14.0",
+            "violations": [], "incomplete": [],
+            "inapplicable": [{"id": "aria-implicit"}],
+        }), encoding="utf-8")
+        r = run(str(t))
+        if r.returncode != 1:
+            print("FAIL: inapplicable-only evidence should pass")
+            print(r.stdout, r.stderr)
+            failures += 1
+        else:
+            print("ok: inapplicable-only evidence passes")
+
+        # --require-keys catches files missing url/axeVersion/violations
+        r = run(str(t), "--require-keys")
+        if r.returncode != 1:
+            print("FAIL: --require-keys should fail on keys-missing file")
+            print(r.stdout, r.stderr)
+            failures += 1
+        else:
+            print("ok: --require-keys fails on missing keys")
+
+        # a fully-formed file passes --require-keys
+        full = t / "full.json"
+        full.write_text(json.dumps({
+            "url": "/login", "axeVersion": "4.14.0",
+            "violations": [], "incomplete": [], "inapplicable": [],
+        }), encoding="utf-8")
+        r = run(str(t), "--require-keys")
+        if r.returncode != 1:
+            print("FAIL: fully-formed evidence should pass --require-keys")
+            print(r.stdout, r.stderr)
+            failures += 1
+        else:
+            print("ok: fully-formed evidence passes --require-keys")
+
     if failures:
         print(f"\n{failures} test(s) failed")
         return 1
