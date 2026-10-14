@@ -119,6 +119,24 @@ Sachkontenlaenge (5-8) or shorten the account.
 **Trap:** the broken fixture must *actually* fail — `12.50` produces
 `amount-dot-decimal`. A fixture that still validates is not a negative test.
 
+### N6. "The tax key is in column 125, that is where DATEV puts it"
+**Trap:** column 97 (1-based) is the USt-Schlüssel; column 125 is the
+*text* field. A row with the key at index 124 instead of 96 still has 125
+cells, so the column-count check passes and the validator reports
+`tax_key_missing` — the key is simply in the wrong place. Verified:
+`python3 scripts/validate_extf.py` on such a row exits 1 with
+`tax_key_missing`.
+
+### N7. "The row has 124 columns, just pad the last one"
+**Trap:** EXTF expects exactly 125 columns. 124 *and* 126 both fail with
+`booking-column-count` — the validator does not tolerate off-by-one. Build
+the row from the documented layout, never by eyeballing the CSV.
+
+### N8. "Belegdatum is the full date 2026-06-01"
+**Trap:** column 10 is TTMM (day+month, 4 digits: `0206`). The year comes
+from the header field 21 (WJ-Start), not from the row. A full ISO date in
+column 10 is 8 digits in a 4-digit field and fails the date check.
+
 
 ---
 
