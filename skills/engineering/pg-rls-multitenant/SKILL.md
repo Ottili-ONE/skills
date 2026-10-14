@@ -98,6 +98,3 @@ ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
 ## Related skills
 - [outbox-idempotency](../outbox-idempotency/SKILL.md)
 - [problem-json-contracts](../problem-json-contracts/SKILL.md)
-## Related skills
-- [outbox-idempotency](../outbox-idempotency/SKILL.md)
-- [problem-json-contracts](../problem-json-contracts/SKILL.md)
