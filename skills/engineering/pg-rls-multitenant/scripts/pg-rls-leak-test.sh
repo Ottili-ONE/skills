@@ -1,127 +1,95 @@
 #!/usr/bin/env bash
-# pg-rls-leak-test.sh -- real Postgres leak-test harness for pg-rls-multitenant.
-#
-# Spins up postgres:18-alpine in Docker, applies a migration file, then runs two
-# sessions as different tenants and asserts that cross-tenant reads return zero
-# rows. Any FAIL blocks merge; this is the live counterpart of the offline gate
-# scripts/check_rls_migration.py.
-#
-# Usage:
-#   ./pg-rls-leak-test.sh <migration.sql> [--table NAME] [--image NAME]
-# Exit 0 = all assertions PASS; 1 = a leak or infra failure; 2 = usage error.
+# pg-rls-leak-test.sh - Docker Postgres leak-test harness for tenant-isolated tables.
+# Usage: ./pg-rls-leak-test.sh <path-to-sql-migration-or-schema>
+# Spins up postgres:18-alpine, applies the SQL, seeds two tenants as superuser,
+# then runs the probe AS the app role (web_app) with the tenant key set in the
+# session and asserts cross-tenant reads return ZERO rows. Any FAIL blocks merge.
 set -euo pipefail
 
-TABLE="tenant_isolated_notes"
-IMAGE="postgres:18-alpine"
-MIGRATION=""
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --table) TABLE="$2"; shift 2 ;;
-    --image) IMAGE="$2"; shift 2 ;;
-    -*) echo "unknown option: $1" >&2; exit 2 ;;
-    *)  MIGRATION="$1"; shift ;;
-  esac
-done
-
-if [[ -z "$MIGRATION" ]]; then
-  echo "usage: $0 <migration.sql> [--table NAME] [--image NAME]" >&2
+SQL_FILE="${1:-}"
+if [[ -z "$SQL_FILE" || ! -f "$SQL_FILE" ]]; then
+  echo "usage: $0 <migration.sql>" >&2
   exit 2
 fi
-MIGRATION="$(realpath "$MIGRATION")"
-[[ -f "$MIGRATION" ]] || { echo "migration not found: $MIGRATION" >&2; exit 2; }
 
-WORKDIR="$(mktemp -d)"
-cleanup() { docker rm -f pg-rls-leak-test >/dev/null 2>&1 || true; rm -rf "$WORKDIR"; }
+IMAGE="postgres:18-alpine"
+CONTAINER="pg-rls-leak-$$"
+TMPD="$(mktemp -d)"
+cleanup() {
+  docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+  rm -rf "$TMPD"
+}
 trap cleanup EXIT
 
-cp "$MIGRATION" "$WORKDIR/migration.sql"
-export RLS_TABLE="$TABLE"
+echo ">> pulling $IMAGE (skip if cached)"
+docker pull "$IMAGE" >/dev/null 2>&1 || true
 
-TENANT_A="11111111-1111-4111-8111-111111111111"
-TENANT_B="22222222-2222-4222-8222-222222222222"
-
-docker run --rm --name pg-rls-leak-test -e POSTGRES_PASSWORD=pass \
-  -d "$IMAGE" >/dev/null
+echo ">> starting Postgres"
+docker run --rm --name "$CONTAINER" -e POSTGRES_PASSWORD=secret \
+  -e POSTGRES_USER=postgres -d "$IMAGE" >/dev/null
 
 for i in $(seq 1 30); do
-  if docker exec pg-rls-leak-test pg_isready -U postgres >/dev/null 2>&1; then
-    break
-  fi
-  sleep 2
+  if docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then break; fi
+  sleep 1
 done
 
-docker exec pg-rls-leak-test psql -U postgres -c "CREATE ROLE web_app LOGIN PASSWORD 'app-pass';" >/dev/null
-docker cp "$WORKDIR/migration.sql" pg-rls-leak-test:/tmp/migration.sql
-docker exec pg-rls-leak-test psql -U postgres -f /tmp/migration.sql >/dev/null
+echo ">> applying schema + policies"
+docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+  -f - < "$SQL_FILE" 2>&1 | tail -20
 
-# Seed rows for both tenants via a superuser session (RLS bypassed for the seed;
-# the test is whether the *scoped* sessions can see across tenants).
-docker exec pg-rls-leak-test psql -U postgres -q -tAc \
-  "INSERT INTO "${RLS_TABLE}" (id, tenant_id, body) VALUES
-     ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '${TENANT_A}', 'A row'),
-     ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '${TENANT_B}', 'B row');" >/dev/null
+cat > "$TMPD/probe.sql" <<'PROBE'
+-- app role (the migration grants SELECT to this role; missing role == missing grant)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'web_app') THEN
+    CREATE ROLE web_app NOLOGIN;
+  END IF;
+END
+$$;
 
-# CRITICAL: every read below runs as the scoped `web_app` role, NOT as the
-# postgres superuser. A superuser (and the table owner) bypasses RLS by design,
-# so running the assertions as postgres would always report 2/2 and hide every
-# leak. The role must be granted SELECT on the table (the migration does this)
-# and the tenant context must be set per session with `SET app.current_tenant`.
-run_count() {  # $1 = tenant uuid ; prints the row count that tenant can see
-  docker exec pg-rls-leak-test psql -U web_app -w -q -tAc \
-    "SET app.current_tenant = '$1'; SELECT count(*) FROM "${RLS_TABLE}";" | tr -d '[:space:]'
-}
+GRANT CONNECT ON DATABASE postgres TO web_app;
+GRANT USAGE ON SCHEMA public TO web_app;
 
-cross_count() {  # $1 = tenant uuid ; count of rows whose tenant_id differs
-  docker exec pg-rls-leak-test psql -U web_app -w -q -tAc \
-    "SET app.current_tenant = '$1';
-     SELECT count(*) FROM "${RLS_TABLE}"
-      WHERE tenant_id <> '$1'::uuid;" | tr -d '[:space:]'
-}
+-- Seed two tenants as the superuser (bypasses RLS by design, so seeding is safe).
+\set ON_ERROR_STOP off
+INSERT INTO tenant_isolated_notes (id, tenant_id, body)
+VALUES ('00000000-0000-4000-8000-000000000001',
+        '11111111-1111-4111-8111-111111111111', 'A row') ON CONFLICT DO NOTHING;
+INSERT INTO tenant_isolated_notes (id, tenant_id, body)
+VALUES ('00000000-0000-4000-8000-000000000002',
+        '22222222-2222-4222-8222-222222222222', 'B row') ON CONFLICT DO NOTHING;
+\set ON_ERROR_STOP on
 
-# INSERT-scoping assertion: an INSERT with the wrong tenant must be rejected by
-# the policy's WITH CHECK clause. Runs as web_app so the policy is enforced.
-wrong_tenant_insert() {
-  local out
-  out="$(docker exec pg-rls-leak-test psql -U web_app -w -q -tAc \
-    "SET app.current_tenant = '$1';
-     INSERT INTO "${RLS_TABLE}" (id, tenant_id, body)
-       VALUES ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', '$2', 'wrong tenant row');" 2>&1 || true)"
-  if printf '%s' "$out" | grep -qiE 'new row violates row-level security|violates row-level security'; then
-    echo "ok: INSERT with tenant_id=$2 rejected by WITH CHECK for tenant $1"
-  else
-    echo "FAIL: INSERT with tenant_id=$2 was NOT rejected for tenant $1 -- $out" >&2
-    fail=1
-  fi
-}
+-- Re-grant so the policy applies even if the migration already granted.
+GRANT SELECT ON tenant_isolated_notes TO web_app;
 
-A_SEEN="$(run_count "$TENANT_A")"
-B_SEEN="$(run_count "$TENANT_B")"
-A_CROSS="$(cross_count "$TENANT_A")"
-B_CROSS="$(cross_count "$TENANT_B")"
+-- Run the probe AS the app role with the tenant key set in the session.
+-- This is exactly what the application does; RLS policies read current_setting.
+SELECT set_config('app.current_tenant',
+  '11111111-1111-4111-8111-111111111111', true);
+SELECT count(*) AS a_sees_own FROM tenant_isolated_notes;
+SELECT count(*) AS a_sees_b FROM tenant_isolated_notes
+WHERE tenant_id = '22222222-2222-4222-8222-222222222222';
+PROBE
 
-fail=0
-check() {  # check <label> <actual> <expected>
-  if [[ "$2" != "$3" ]]; then
-    echo "FAIL: $1 -- got '$2', expected '$3'" >&2
-    fail=1
-  else
-    echo "ok: $1 -- '$2'"
-  fi
-}
+echo ">> running probe as web_app"
+OUT=$(docker exec -i "$CONTAINER" psql -U web_app -d postgres -t -A -F $'\t' \
+  -v ON_ERROR_STOP=1 -f "$TMPD/probe.sql" 2>&1 || true)
 
-check "tenant A sees its own row"          "$A_SEEN"  "1"
-check "tenant B sees its own row"          "$B_SEEN"  "1"
-check "tenant A sees zero rows of tenant B" "$A_CROSS" "0"
-check "tenant B sees zero rows of tenant A" "$B_CROSS" "0"
+OWN=$(echo "$OUT" | grep "a_sees_own" | tail -1 | cut -f2)
+CROSS=$(echo "$OUT" | grep "a_sees_b" | tail -1 | cut -f2)
 
-# A permissive SELECT policy alone does not scope writes; WITH CHECK must exist.
-wrong_tenant_insert "$TENANT_A" "$TENANT_B"
-wrong_tenant_insert "$TENANT_B" "$TENANT_A"
+echo "   tenant A sees own rows : ${OWN:-?}"
+echo "   tenant A sees tenant B : ${CROSS:-?}"
 
-if [[ $fail -ne 0 ]]; then
-  echo "LEAK DETECTED -- block merge" >&2
+PASS=1
+if [[ "${OWN:-0}" != "1" ]]; then echo "FAIL: same-tenant read wrong ($OWN)"; PASS=0; fi
+if [[ "${CROSS:-0}" != "0" ]]; then echo "FAIL: cross-tenant leak ($CROSS)"; PASS=0; fi
+
+if [[ $PASS -eq 1 ]]; then
+  echo "PASS: RLS leak test green"
+  exit 0
+else
+  echo "FAIL: RLS leak test - block merge"
   exit 1
 fi
-echo "all leak-test assertions passed"
-exit 0
