@@ -97,12 +97,12 @@ $ git checkout main -- skills/business-de/webhooks-safe/SKILL.md
 
 `shared-tree-git` is the foundation every other skill in this playbook builds on
 (every skill's artefacts are committed here with a task-id prefix), so it has no
-outgoing dependencies and appears only as the *target* of other skills' links:
+outgoing dependencies. It appears only as the *target* of other skills' links:
 
-- [module-contract-first](../module-contract-first/SKILL.md) — snapshot and boundary doc are committed with a task-id prefix.
-- [honest-status](../honest-status/SKILL.md) — status buckets keep the shared tree readable across agents.
-- [long-test-discipline](../long-test-discipline/SKILL.md) — commit the wrapper script with explicit paths only.
-- [problem-json-contracts](../problem-json-contracts/SKILL.md) — the catalogue and schema are committed with a task-id prefix.
+- module-contract-first — snapshot and boundary doc are committed with a task-id prefix.
+- honest-status — status buckets keep the shared tree readable across agents.
+- long-test-discipline — commit the wrapper script with explicit paths only.
+- problem-json-contracts — the catalogue and schema are committed with a task-id prefix.
 
-These are informational pointers only (no outgoing dependency): the one-way graph
+These are informational mentions only (no outgoing dependency): the one-way graph
 keeps the Related-section graph acyclic.
