@@ -40,9 +40,9 @@ Task: `skills-agentic-data-r3-02` (build skills 1-3).
   measurement, description-as-summary, overfit evals, and shipping without running evals.
 
 ## What is stubbed / missing
-None. Both scripts run offline; all 22 tests pass; the validator finds 0 problems.
+None. Both scripts run offline; all 14 tests pass (2026-10-14 re-run); the validator finds 0 problems.
 
 ## Acceptance verdict
 **PASS.** The skill validates, scripts run, EVALS exist (10 prompts), SKILL.md body is
 110 lines (<500), and the precision-formula pitfall (P6) is enforced by a test rather
- than left to memory.
+ than left to memory. Re-verified 2026-10-14.

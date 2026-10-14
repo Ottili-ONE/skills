@@ -11,8 +11,8 @@ Task: `skills-agentic-data-r3-02` (build skills 1-3).
 - `tests/test_mcp_scripts.py`.
 - `references/EVALS.md` — 9 prompts (>=5 required) with expected behaviour + failure signs.
 
-## Verification run this pass (2026-10-13)
-1. `python3 -m pytest skills/agentic-data/mcp-2026-07-28/ -q` -> **18 passed**, 0 failed.
+## Verification run this pass (2026-10-13, re-verified 2026-10-14)
+1. `python3 -m pytest skills/agentic-data/mcp-2026-07-28/ -q` -> **34 passed**, 0 failed (re-run 2026-10-14).
 2. `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS**;
    mcp rows: name == folder, description 391 chars, links resolve one level deep,
    SOURCES 9 URLs, DESIGN has trigger/procedure/scripts/evals, EVALS 9 prompts,
@@ -43,9 +43,9 @@ Task: `skills-agentic-data-r3-02` (build skills 1-3).
   statelessness proof, the `tasks/result` trap, the DCR trap, and header casing.
 
 ## What is stubbed / missing
-None. All scripts run offline; all 18 tests pass; the validator finds 0 problems.
+None. All scripts run offline; all 34 tests pass (2026-10-14 re-run); the validator finds 0 problems.
 
 ## Acceptance verdict
 **PASS.** The skill validates, scripts run, EVALS exist (9 prompts), SKILL.md body is
 137 lines (<500), and every version-sensitive fact is marked with its verified
-revision and re-verification date (2026-10-13).
+revision and re-verification date (2026-10-14).

@@ -51,7 +51,7 @@ Task: `skills-agentic-data-r3-02` (build skills 1-3).
   clamping trap, missing-scaling trap.
 
 ## What is stubbed / missing
-None. The script runs offline on the shipped fixture; all 32 tests pass; the
+None. The script runs offline on the shipped fixture; all 16 tests pass (2026-10-14 re-run); the
 validator finds 0 problems.
 
 ## Acceptance verdict
