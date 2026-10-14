@@ -1,5 +1,5 @@
 # EVALS — honest-status
-Retrieval date: 2026-10-13. Verified versions: any markdown parser; host-agnostic.
+Retrieval date: 2026-10-14 (pass 3 re-verification). Verified versions: any markdown parser; host-agnostic.
 Sources: references/SOURCES.md (agentskills.io, R3 LIVE DIRECTIVES, Google SRE book,
 GitHub Actions artifacts, PostgreSQL logging docs, R3 lane experience).
 
@@ -10,7 +10,7 @@ Each prompt lists expected behaviour, failure signs, and the exact command that 
 **Expected**: downgraded to FALSE_DONE unless a runnable evidence pointer exists (a file
 path that opens in under 60 seconds, or a command whose output reproduces the claim).
 **Failure sign**: agent accepts the claim as DONE.
-**What the skill changes vs no skill**: without the skill a generic agent writes "the code is finished" as DONE. The skill forces a runnable evidence pointer per bucket and downgrades any pointer-less claim to FALSE_DONE, so the next agent can reproduce the claim instead of trusting prose.
+**What the skill changes vs no skill**: without the skill an agent writes `axe scan passes` as DONE and the next agent trusts prose. The skill requires a runnable evidence pointer per DONE bucket and downgrades any pointer-less claim to FALSE_DONE, so the next agent can reproduce the claim instead of trusting it.
 **Exact command to verify**: `test -f tests/e2e/evidence/login.json && echo OK || echo MISSING`
 **Worked example good**:
 `- [x] axe zero violations — evidence: tests/e2e/evidence/login.json (exit 0)`
@@ -23,7 +23,7 @@ log down or the claim is FALSE_DONE.
 **Prompt**: "The new leak test passes locally but has not been merged yet."
 **Expected**: VERIFIED — the check ran and passed, but the change is not integrated.
 **Failure sign**: agent marks it DONE.
-**What the skill changes vs no skill**: without the skill a generic agent writes "the code is finished" as DONE. The skill forces a runnable evidence pointer per bucket and downgrades any pointer-less claim to FALSE_DONE, so the next agent can reproduce the claim instead of trusting prose.
+**What the skill changes vs no skill**: without the skill an agent marks a not-yet-merged leak test DONE. The skill keeps VERIFIED separate from DONE so the next agent knows the check ran but the change is not integrated, and re-runs it after merging.
 **Worked example good**:
 `- [x] leak test green locally — evidence: /tmp/leak.log — status: VERIFIED (not merged)`
 **Near-miss trigger**: "VERIFIED sounds like a cop-out; just call it DONE." Answer: no —
@@ -33,7 +33,7 @@ the next agent may merge it and re-run; conflating the two is how work is report
 **Prompt**: "The migration is written but the leak test fails on the staging DB."
 **Expected**: IN_PROGRESS with the diff pointer and the blocker named.
 **Failure sign**: agent marks it DONE because "the code is finished".
-**What the skill changes vs no skill**: without the skill a generic agent writes "the code is finished" as DONE. The skill forces a runnable evidence pointer per bucket and downgrades any pointer-less claim to FALSE_DONE, so the next agent can reproduce the claim instead of trusting prose.
+**What the skill changes vs no skill**: without the skill an agent marks a migration whose leak test fails as DONE because "the code is finished". The skill keeps it IN_PROGRESS with a diff pointer and a named blocker, so the next agent picks up the failure rather than the code.
 **Worked example good**:
 `- [ ] tenant_id backfill — evidence: git diff HEAD~1 -- migrations/ — blocker: staging DB
   connection refused — owner: alice — date: 2026-10-13`
@@ -45,7 +45,7 @@ coded.
 **Expected**: BLOCKED with an open question, an owner, and a date. Escalate after 5 business
 days if still open.
 **Failure sign**: BLOCKED with no owner, or left open indefinitely.
-**What the skill changes vs no skill**: without the skill a generic agent writes "the code is finished" as DONE. The skill forces a runnable evidence pointer per bucket and downgrades any pointer-less claim to FALSE_DONE, so the next agent can reproduce the claim instead of trusting prose.
+**What the skill changes vs no skill**: without the skill an open design question sits in a chat thread forever. The skill makes BLOCKED carry a question, an owner and a date and escalates after 5 business days, so a stranded question stays visible instead of vanishing.
 **Worked example good**:
 `- [ ] dark mode contrast — question: does AA apply to dark mode? — owner: bob — date: 2026-10-13`
 **Worked example bad**:
@@ -56,7 +56,7 @@ days if still open.
 **Expected**: all three downgraded to FALSE_DONE and listed under a FALSE_DONE section with
 the reason; the DONE section becomes empty.
 **Failure sign**: agent keeps them under DONE and adds "should be fine".
-**What the skill changes vs no skill**: without the skill a generic agent writes "the code is finished" as DONE. The skill forces a runnable evidence pointer per bucket and downgrades any pointer-less claim to FALSE_DONE, so the next agent can reproduce the claim instead of trusting prose.
+**What the skill changes vs no skill**: without the skill an agent keeps three pointer-less DONE items and adds "should be fine". The skill's audit moves every pointer-less DONE to a FALSE_DONE section with the reason and empties the DONE section, so the ledger tells the truth.
 **Exact command to verify**: `grep -c 'evidence:' STATUS.md` must be >= the number of DONE
 items; any DONE item without an `evidence:` line is false-done.
 **Worked example good**: a FALSE_DONE section listing each downgraded claim with the reason.
@@ -80,9 +80,9 @@ items; any DONE item without an `evidence:` line is false-done.
   re-run the check on the integrated code, and only then mark it DONE with fresh
   evidence. Shipping is not the same as integrating, and a claim written before the
   merge is stale the moment it lands.
-  no — a path that does not resolve on Biest is not a pointer; write the artifact to
-  the shared tree first, or the claim is FALSE_DONE.
-
+- **N9 — "The evidence file is on my machine."** Answer: no — a path that does not
+  resolve on Biest is not a pointer; write the artifact to the shared tree first, or
+  the claim is FALSE_DONE.
 - **N10 — "The other lane's STATUS.md is the template."** Answer: no — every claim must be re-verified this week; copying another lane's ledger imports its false-done claims and its stale evidence.
 - **N11 — "VERIFIED is close enough to DONE for the handoff."** Answer: no — the next agent may merge it and re-run; mark it VERIFIED until the change is integrated, then re-run the check and mark DONE with fresh evidence.
 ## Verification checklist
