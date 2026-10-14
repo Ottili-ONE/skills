@@ -48,6 +48,13 @@ locally.
   count as one. Verify with `scripts/score_sources.py corroboration`.
 - **Confidence**: high = primary + >=2 corroborating; medium = primary only;
   low = secondary only; none = no source.
+- **Citation rules**: every claim needs URL + title + retrieval date; a claim
+  missing any one is downgraded one rung. Quotations <=15 words are fine with a
+  citation; longer ones need a page/section reference. A paraphrase must change
+  wording, argument order, or level of abstraction; otherwise it is a quote.
+  Version-sensitive facts record the exact version seen and are re-fetched if
+  older than 7 days. Contradictions are recorded in `references/incidents.md`
+  with both sources and the resolution (see `references/citation-discipline.md`).
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - A source with no retrieval date -> not evidence, re-fetch and record.
@@ -94,6 +101,7 @@ claim dressed as a finding, over-long quotation).
 
 ## References
 - procedures: references/procedures.md
+- citation discipline: references/citation-discipline.md
 - scoring: references/source-scoring.md
 - contradiction handling: references/contradiction-handling.md
 - citation and fetch: references/cite-fetch.md
