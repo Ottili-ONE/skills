@@ -1,0 +1,14 @@
+{
+  "n_items": 30,
+  "judge_model": "claude-sonnet-4",
+  "generator_model": "gpt-4.1",
+  "judge_prompt_sha": "a1b2c3d4",
+  "generator_prompt_sha": "e5f6g7h8",
+  "krippendorff_alpha": 1.0,
+  "mean_score": 3.0,
+  "position_bias": 0.0,
+  "min_agreement": 0.6,
+  "max_position_bias": 0.5,
+  "degenerate": false,
+  "ok": true
+}

@@ -1,0 +1,7 @@
+rubric_id: bad
+scale: 1-5
+points:
+  - score: 1
+    definition: poor
+  - score: 5
+    definition: good

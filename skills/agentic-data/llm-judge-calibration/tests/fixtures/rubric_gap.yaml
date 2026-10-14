@@ -1,0 +1,10 @@
+rubric_id: gap
+scale: 1-5
+points:
+  - score: 1
+    definition: poor
+    example: x
+  - score: 1
+    definition: duplicate
+    example: y
+    anti_examples: [z]

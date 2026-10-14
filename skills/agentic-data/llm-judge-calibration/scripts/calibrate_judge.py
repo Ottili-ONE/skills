@@ -164,6 +164,8 @@ def lint_rubric(path: Path) -> tuple[list[str], dict]:
         anti = pt.get("anti_examples")
         if score != min(scores_seen) and not isinstance(anti, list):
             failures.append(f"FAIL: point {score} has no 'anti_examples' list")
+        elif isinstance(anti, list) and score != min(scores_seen) and not anti:
+            failures.append(f"FAIL: point {score} has empty 'anti_examples'")
     if scores_seen and min(scores_seen) != 1:
         failures.append(f"FAIL: lowest score is {min(scores_seen)}, expected 1")
 
@@ -197,6 +199,12 @@ def main() -> int:
     pc.add_argument("--min-agreement", type=float, default=0.6)
     pc.add_argument("--max-position-bias", type=float, default=0.5)
     pc.add_argument("--max-drift", type=float, default=0.3)
+    pc.add_argument("--min-items", type=int, default=30,
+                    help="minimum size of the calibration set (30-50 recommended)")
+    pc.add_argument("--max-items", type=int, default=50,
+                    help="maximum size of the calibration set")
+    pc.add_argument("--min-scale-spread", type=int, default=2,
+                    help="minimum number of distinct scores the set must span")
     pc.add_argument("--json", type=Path, default=None)
     pc.add_argument("--judge-model", type=str, default=None,
                     help="model that produced the scores (the judge)")
@@ -226,6 +234,39 @@ def main() -> int:
     rows = load_rows(args.rows)
     if not rows:
         print("FAIL: no usable items in rows file", file=sys.stderr)
+        return 1
+
+    # A calibration set that is too small cannot support a meaningful
+    # agreement statistic; one that is too large is not held-out. Both bounds
+    # are enforced so the report cannot silently calibrate on 3 items.
+    if args.min_items < 1:
+        raise SystemExit("ERROR: --min-items must be >= 1")
+    if args.max_items < args.min_items:
+        raise SystemExit("ERROR: --max-items must be >= --min-items")
+    if len(rows) < args.min_items:
+        print(f"FAIL: calibration set has {len(rows)} items, "
+              f"minimum is {args.min_items}", file=sys.stderr)
+        return 1
+    if len(rows) > args.max_items:
+        print(f"FAIL: calibration set has {len(rows)} items, "
+              f"maximum is {args.max_items}", file=sys.stderr)
+        return 1
+
+    # Every row must carry a gold label: an item with no gold cannot anchor a
+    # drift comparison and its scores are uncalibrated.
+    missing_gold = [r.get("id") for r in rows if r.get("gold") is None]
+    if missing_gold:
+        print(f"FAIL: {len(missing_gold)} item(s) have no gold label: "
+              f"{missing_gold[:5]}", file=sys.stderr)
+        return 1
+
+    # A set where every score is identical makes alpha=1.0 meaningless (the
+    # judge is either perfectly consistent or never distinguishes anything).
+    distinct = {v for r in rows for v in r.get("scores", []) if v is not None}
+    if len(distinct) < args.min_scale_spread:
+        print(f"FAIL: calibration set spans {len(distinct)} distinct score(s), "
+              f"minimum is {args.min_scale_spread}; a degenerate set cannot be "
+              f"calibrated", file=sys.stderr)
         return 1
 
     # Judge/teacher separation is the first condition of a usable judge score.
@@ -283,6 +324,17 @@ def main() -> int:
 
     if args.baseline:
         base = load_rows(args.baseline)
+        if not base:
+            print("FAIL: baseline file has no usable items", file=sys.stderr)
+            return 1
+        # Drift is only meaningful if the baseline covers the same items.
+        base_ids = {r.get("id") for r in base}
+        row_ids = {r.get("id") for r in rows}
+        missing = sorted(row_ids - base_ids)
+        if missing:
+            print(f"FAIL: {len(missing)} item(s) missing from the baseline: "
+                  f"{missing[:5]}", file=sys.stderr)
+            return 1
         base_mean = mean_score(base)
         drift = abs(mean - base_mean)
         report["baseline_mean"] = round(base_mean, 4)

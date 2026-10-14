@@ -1,0 +1,14 @@
+rubric_id: empty-anti
+scale: 1-3
+points:
+  - score: 1
+    definition: poor
+    example: x
+  - score: 2
+    definition: mid
+    example: y
+    anti_examples: []
+  - score: 3
+    definition: good
+    example: z
+    anti_examples: [bad]

@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "calibrate_judge.py"
-FIX = Path("/srv/ottili/repo/skills/../../scratch/skills/skills-agentic-data-r3/judge_fixtures")
+FIX = Path(__file__).resolve().parent / "fixtures"
 
 # Judge/teacher provenance required for every calibration report (see the
 # provenance gate in scripts/calibrate_judge.py). Distinct models with
@@ -87,15 +87,97 @@ def test_report_accepts_separated_models_with_same_prompt() -> None:
     r = run(
         "calibrate", "--rows", str(FIX / "high.jsonl"),
         "--judge-model", "claude-sonnet-4", "--generator-model", "gpt-4.1",
-        "--judge-prompt-sha", "same", "--generator-prompt-sha", "same", *PROV[-4:],
-    )
-    # PROV[-4:] re-supplies distinct hashes; rebuild the call with the real ones
-    r = run(
-        "calibrate", "--rows", str(FIX / "high.jsonl"),
-        "--judge-model", "claude-sonnet-4", "--generator-model", "gpt-4.1",
-        "--judge-prompt-sha", "a1b2c3d4", "--generator-prompt-sha", "e5f6g7h8",
+        "--judge-prompt-sha", "same", "--generator-prompt-sha", "same",
     )
     assert r.returncode == 0, r.stderr
+
+
+def test_min_items_rejects_tiny_set() -> None:
+    # The shipped fixtures have 30 items; a 3-item file must be rejected.
+    small = FIX / "tiny.jsonl"
+    small.write_text("".join(
+        json.dumps({"id": f"t{i}", "scores": [5, 5, 5], "gold": 5}) + "\n"
+        for i in range(3)
+    ))
+    r = run("calibrate", "--rows", str(small), "--min-items", "30", *PROV)
+    assert r.returncode == 1
+    assert "minimum is 30" in r.stderr
+
+
+def test_min_items_accepts_default() -> None:
+    r = run("calibrate", "--rows", str(FIX / "high.jsonl"), *PROV)
+    assert r.returncode == 0, r.stderr
+
+
+def test_missing_gold_label_rejected() -> None:
+    bad = FIX / "nogold.jsonl"
+    bad.write_text(json.dumps({"id": "x", "scores": [5, 5, 5]}) + "\n" * 30)
+    r = run("calibrate", "--rows", str(bad), *PROV)
+    assert r.returncode == 1
+    assert "no gold label" in r.stderr
+
+
+def test_degenerate_set_rejected() -> None:
+    # 30 items, every score identical -> the set spans one score and cannot be
+    # calibrated (alpha would be 1.0 for a trivial reason).
+    deg = FIX / "degenerate.jsonl"
+    deg.write_text("".join(
+        json.dumps({"id": f"d{i}", "scores": [3, 3, 3], "gold": 3}) + "\n"
+        for i in range(30)
+    ))
+    r = run("calibrate", "--rows", str(deg), *PROV)
+    assert r.returncode == 1
+    assert "degenerate" in r.stderr
+
+
+def test_baseline_id_alignment_rejected() -> None:
+    # baseline.jsonl reuses the high ids; a baseline with different ids must be
+    # rejected because drift is only meaningful on the same items.
+    other = FIX / "other_ids.jsonl"
+    other.write_text("".join(
+        json.dumps({"id": f"z{i:02d}", "scores": [3, 3, 3], "gold": 3}) + "\n"
+        for i in range(30)
+    ))
+    r = run(
+        "calibrate", "--rows", str(FIX / "high.jsonl"),
+        "--baseline", str(other), "--max-drift", "0.01", *PROV,
+    )
+    assert r.returncode == 1
+    assert "missing from the baseline" in r.stderr
+
+
+def test_baseline_drift_detected_with_aligned_ids() -> None:
+    # baseline.jsonl shares the high ids but scores are shifted +1, so drift is
+    # non-zero and must be detected when the threshold is tight.
+    r = run(
+        "calibrate", "--rows", str(FIX / "high.jsonl"),
+        "--baseline", str(FIX / "baseline.jsonl"), "--max-drift", "0.01", *PROV,
+    )
+    assert r.returncode == 1
+    assert "drift" in r.stderr
+
+
+def test_rubric_lint_rejects_empty_anti_examples() -> None:
+    rubric = FIX / "rubric_empty_anti.yaml"
+    rubric.write_text(
+        "rubric_id: empty-anti\n"
+        "scale: 1-3\n"
+        "points:\n"
+        "  - score: 1\n"
+        "    definition: poor\n"
+        "    example: x\n"
+        "  - score: 2\n"
+        "    definition: mid\n"
+        "    example: y\n"
+        "    anti_examples: []\n"
+        "  - score: 3\n"
+        "    definition: good\n"
+        "    example: z\n"
+        "    anti_examples: [bad]\n"
+    )
+    r = run("rubric", str(rubric))
+    assert r.returncode == 1
+    assert "empty 'anti_examples'" in r.stderr
 
 
 def test_rubric_lint_passes() -> None:
