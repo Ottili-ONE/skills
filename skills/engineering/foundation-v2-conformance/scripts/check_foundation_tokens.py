@@ -51,11 +51,22 @@ def _load_tokens(path: Path) -> set[str]:
     return values
 
 
-def _exempt_lines(text: str, allow_comment: str) -> set[int]:
-    """Return the set of 0-based line indices exempted by an ALLOWED comment."""
+TICKET_RE = re.compile(r"\bFV2-WA:\s*ISSUE-\d+\b")
+OWNER_RE = re.compile(r"owner:\s*\S+", re.IGNORECASE)
+
+
+def _exempt_lines(text: str, allow_comment: str, require_ticket: bool) -> set[int]:
+    """Return the set of 0-based line indices exempted by an ALLOWED comment.
+
+    With ``require_ticket`` the marker must also carry ``FV2-WA: ISSUE-<digits>`` and an
+    ``owner:`` token, otherwise the line is not exempt and the raw value is a finding.
+    A marker without a ticket is a stale escape hatch, not a tracked workaround.
+    """
     exempt: set[int] = set()
     for i, line in enumerate(text.splitlines()):
         if allow_comment and allow_comment in line:
+            if require_ticket and not (TICKET_RE.search(line) and OWNER_RE.search(line)):
+                continue
             exempt.add(i)
     return exempt
 
@@ -66,9 +77,9 @@ def _strip_urls(line: str) -> str:
     return URL_RE.sub(lambda m: " " * len(m.group(0)), SVG_URL_RE.sub(lambda m: " " * len(m.group(0)), line))
 
 
-def check_file(path: Path, tokens: set[str], allow_comment: str) -> list[str]:
+def check_file(path: Path, tokens: set[str], allow_comment: str, require_ticket: bool) -> list[str]:
     text = path.read_text(encoding="utf-8", errors="ignore")
-    exempt = _exempt_lines(text, allow_comment)
+    exempt = _exempt_lines(text, allow_comment, require_ticket)
     findings: list[str] = []
     for i, line in enumerate(text.splitlines()):
         if i in exempt:
@@ -100,16 +111,19 @@ def main() -> int:
         help="comment marker that exempts a line from the check",
     )
     ap.add_argument("files", nargs="+", help="consumer source files to scan")
+    ap.add_argument("--require-ticket", action="store_true",
+                    help="an ALLOWED marker must also carry FV2-WA: ISSUE-<digits> and owner:")
     ap.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of text")
     ap.add_argument("--max-findings", type=int, default=0,
                     help="fail if any single file has more than N findings (0 = no per-file cap)")
     args = ap.parse_args()
+    require_ticket = args.require_ticket
 
     tokens = _load_tokens(Path(args.tokens))
     per_file: dict[str, list[str]] = {}
     findings: list[str] = []
     for f in args.files:
-        f_findings = check_file(Path(f), tokens, args.allow_comment)
+        f_findings = check_file(Path(f), tokens, args.allow_comment, require_ticket)
         per_file[str(Path(f).resolve())] = f_findings
         findings.extend(f_findings)
 

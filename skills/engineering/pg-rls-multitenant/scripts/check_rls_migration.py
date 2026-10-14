@@ -54,26 +54,42 @@ def scan(path: Path) -> list[str]:
 
 
 def main() -> int:
-    args = sys.argv[1:]
-    if not args:
-        sys.stderr.write("usage: check_rls_migration.py <migration.sql> [...]\n")
-        return 2
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("migrations", nargs="+", help="migration SQL file(s) to check")
+    ap.add_argument("--json", action="store_true",
+                    help="emit machine-readable JSON instead of text")
+    args = ap.parse_args()
+
     failures = 0
     malformed = False
-    for path in args:
+    reports: list[dict] = []
+    for path in args.migrations:
         p = Path(path)
         if not p.is_file():
             print(f"FAIL: {path}: file not found", file=sys.stderr)
             malformed = True
             continue
         findings = scan(p)
+        reports.append({"file": str(p.resolve()), "findings": findings})
         if findings:
             failures += 1
-            print(f"FAIL: {path}")
+            if not args.json:
+                print(f"FAIL: {path}")
             for f in findings:
                 print(f"  - {f}", file=sys.stderr)
-        else:
+        elif not args.json:
             print(f"ok: {path}")
+    if args.json:
+        import json
+        print(json.dumps({
+            "status": "fail" if (failures or malformed) else "ok",
+            "files_checked": len(args.migrations),
+            "failures": failures,
+            "malformed": malformed,
+            "reports": reports,
+        }, indent=2, sort_keys=True))
     if malformed:
         return 2
     return 1 if failures else 0

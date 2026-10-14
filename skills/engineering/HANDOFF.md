@@ -4,17 +4,50 @@
 
 | Trigger | Re-verify | How |
 |---------|-----------|-----|
-| New version of a referenced spec (e.g. RFC 7807, WCAG, Postgres) | SOURCES.md retrieval date + version claim | curl primary source, update date; bump SKILL.md version if changed |
-| Validator schema change (catalog.json fields) | validate.py + all SKILL.md frontmatter | run `python3 scripts/validate.py` after any catalog edit |
-| Script signature change (args, exit codes) | EVALS.md prompts + tests for that skill | run the script with real inputs; confirm EVALS pass |
-| Cross-link added or removed in Related section | circular-dependency check across all ten SKILL.md files | grep Related sections; ensure no cycles in the graph |
-| New skill added to skills/engineering/** | catalog.json entry + README list + index build | add entry, run build-index.py, run validate.py green |
-| Freeze 4 announced (docs/STATUS_ALL.md) | @ottili versions in every SOURCES.md that pins one; DEV_FIXTURE_ALIAS=1 rule until Platform lane p1-registration-r3 is green. Do not bump versions without integrator announcement. |
+| New version of a referenced spec (RFC 9457, WCAG 2.2, Postgres, axe-core, OpenAPI) | SOURCES.md retrieval date + version claim | curl the primary source, update the date; bump the SKILL.md version claim only if the spec actually changed |
+| Validator schema change (catalog.json fields) | `validate.py` + all SKILL.md frontmatter | run `python3 scripts/validate.py` after any catalog edit |
+| Script signature change (args, exit codes) | EVALS.md prompts + the skill's `_test.py` | run the script with real inputs; confirm the EVALS prompt's exact command still exits as documented |
+| Cross-link added or removed in a Related section | circular-dependency check across all ten SKILL.md files | grep `## Related skills` in every SKILL.md; `shared-tree-git` must stay a pure sink, the graph acyclic |
+| New skill added to `skills/engineering/**` | catalog entry + README list + index build | add entry, run `build-index.py`, run `validate.py` green |
+| Freeze 4 announced (`docs/STATUS_ALL.md`) | every `@ottili` version pinned in a SOURCES.md; `DEV_FIXTURE_ALIAS=1` until Platform lane `p1-registration-r3` is green | do not bump versions without an integrator announcement recorded in STATUS_ALL.md |
+
+## How to re-run the acceptance gate for this collection
+
+```bash
+python3 scripts/validate_skills.py          # agentskills.io rules + EVALS counts, exit 0
+python3 scripts/validate.py                 # catalog consistency, exit 0
+for t in $(find skills/engineering -name '*_test.py' | sort); do python3 "$t" || exit 1; done
+```
+
+All three must exit 0. The self-tests are the regression net for the scripts; the
+validators are the net for structure and cross-links.
 
 ## Ideas for the next ten skills (with rationale)
 
-1. **secrets-scanning** — secrets leak is the #1 blast-radius risk; a playbook with pre-commit hooks and CI gates prevents it early. 2. **observability-contract** — every service needs structured logs/metrics/traces defined up front; contract-first approach avoids post-hoc retrofits. 3. **migration-safety** — DB migrations are the classic production incident source; a checklist + dry-run script reduces risk. 4. **rate-limit-policy** — API services need explicit rate-limit contracts per tenant/client; prevents noisy-neighbour outages. 5. **cache-invalidation** — stale cache causes subtle data bugs; a playbook around event-driven invalidation helps teams get it right first time. 6. **feature-flag-governance** — flags accumulate and rot without lifecycle rules; governance playbook keeps them bounded and deletable. 7. **error-budget-policy** — SLOs without budgets are just targets; policy playbook ties error budgets to release gates and on-call action thresholds:   - <50% budget remaining → no deploys without approval   - <20% → freeze feature work, incident review within 24h   - <5% → mandatory war-room, rollback plan required   This table gives concrete thresholds so teams do not debate "how low is too low" at incident time
-   (addresses the vague-text requirement).   ## Cross-links established in this pass (no cycles) - acceptance-harness -> long-test-discipline, problem-json-contracts - foundation-v2-conformance -> honest-status, module-contract-first - honest-status -> long-test-discipline - long-test-discipline -> shared-tree-git - module-contract-first -> problem-json-contracts - outbox-idempotency -> pg-rls-multitenant - pg-rls-multitenant -> problem-json-contracts - playwright-a11y-e2e -> acceptance-harness - problem-json-contracts -> honest-status - shared-tree-git -> module-contract-first
+1. **secrets-scanning** — secret leakage is the highest blast-radius failure mode; a
+   pre-commit + CI gate playbook stops it before it reaches a remote.
+2. **observability-contract** — define structured logs, metrics and traces per service up
+   front; contract-first avoids post-hoc retrofitting of dashboards.
+3. **migration-safety** — DB migrations are the classic production incident source; a
+   checklist plus a dry-run script cuts that risk.
+4. **rate-limit-policy** — explicit per-tenant rate-limit contracts prevent noisy-neighbour
+   outages; the contract is the thing to review, not the implementation.
+5. **cache-invalidation** — stale cache causes subtle data bugs; an event-driven
+   invalidation playbook gets it right the first time.
+6. **feature-flag-governance** — flags rot without lifecycle rules; a governance playbook
+   keeps them bounded, auditable and deletable.
+7. **error-budget-policy** — SLOs without budgets are just targets. Tie budgets to release
+   gates and on-call action thresholds: <50% remaining → no deploys without approval;
+   <20% → freeze feature work, incident review within 24h; <5% → mandatory war-room,
+   rollback plan required. This decision table gives concrete thresholds so teams do not
+   debate "how low is too low" at incident time (addresses the vague-text requirement).
+8. **canary-rollout** — staged traffic shift with automatic rollback criteria turns deploys
+   into a repeatable procedure instead of an ad-hoc event.
+9. **data-classification** — label data at rest and in transit so access control and
+   retention rules can be derived mechanically rather than argued per field.
+10. **incident-comms** — a runbook for naming the incident commander, the status page
+    cadence and the post-mortem template prevents the same incident from being fought
+    twice with different words each time.
 
 ## Pass 2026-10-14 — skills-engineering-r3-05 (evals, validation, cross-links, handoff)
 

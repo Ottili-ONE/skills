@@ -112,5 +112,66 @@ def main() -> int:
     return 0
 
 
+def test_require_ticket_rejects_marker_without_ticket() -> None:
+    """--require-ticket turns a bare ALLOWED marker back into a finding."""
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        (t / "token.json").write_text(json.dumps({"colors": ["#1a1a1a"], "spacing": ["1rem"]}))
+        src = t / "comp.tsx"
+        src.write_text(
+            "import { Button } from '@ottili/foundation-ui';\n"
+            "const c = <div style={{ color: '#ff0000' }} ALLOWED />\n",
+            encoding="utf-8",
+        )
+        r = run("--tokens", str(t / "token.json"), "--require-ticket", str(src))
+        if r.returncode != 1 or "#ff0000" not in (r.stdout + r.stderr):
+            print("FAIL: marker without ticket should be a finding under --require-ticket")
+            print(r.stdout, r.stderr)
+            return 1
+        print("ok: --require-ticket rejects a bare ALLOWED marker")
+        return 0
+
+
+def test_require_ticket_accepts_marker_with_ticket() -> None:
+    """A marker carrying FV2-WA: ISSUE-<digits> and owner: is exempt."""
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        (t / "token.json").write_text(json.dumps({"colors": ["#1a1a1a"], "spacing": ["1rem"]}))
+        src = t / "comp.tsx"
+        src.write_text(
+            "import { Button } from '@ottili/foundation-ui';\n"
+            "<div style={{ color: '#ff0000' }} /* ALLOWED: FV2-WA: ISSUE-1234 owner: alice */ />\n",
+            encoding="utf-8",
+        )
+        r = run("--tokens", str(t / "token.json"), "--require-ticket", str(src))
+        if r.returncode != 0:
+            print("FAIL: ticketed marker should be exempt")
+            print(r.stdout, r.stderr)
+            return 1
+        print("ok: --require-ticket accepts a ticketed marker")
+        return 0
+
+
+EDGE_TESTS = [
+    ("require-ticket rejects bare marker", test_require_ticket_rejects_marker_without_ticket),
+    ("require-ticket accepts ticketed marker", test_require_ticket_accepts_marker_with_ticket),
+]
+
+
+def run_edge() -> int:
+    failures = 0
+    for _name, fn in EDGE_TESTS:
+        try:
+            failures += fn()
+        except Exception as exc:  # noqa: BLE001
+            print(f"FAIL: {_name} raised {exc!r}")
+            failures += 1
+    return failures
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    rc = main()
+    if rc != 0:
+        raise SystemExit(rc)
+    rc = run_edge()
+    raise SystemExit(rc)

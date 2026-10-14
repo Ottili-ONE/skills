@@ -49,10 +49,25 @@ without integrator approval recorded there.
 **What the skill changes vs no skill**: the FREEZE rule in AGENTS.md is the constraint; the
 skill makes the refusal explicit and names the artifact that would authorize the bump.
 
+## E6 — bare ALLOWED marker is a stale escape hatch
+**Prompt**: "My PR uses `data-ottili-workaround` to hide a layout bug."
+**Expected**: agent requires a ticket reference (`FV2-WA: ISSUE-<digits>`) in the attribute or
+the accompanying comment, with an owner and a date, or rejects the workaround.
+**Failure sign**: agent accepts the workaround because "it ships".
+**What the skill changes vs no skill**: the skill makes workarounds ticket-bound and
+time-boxed (30 days); without it, workarounds silently become permanent.
+**Exact command to verify**:
+`python3 scripts/check_foundation_tokens.py --tokens <token.json> --require-ticket <file>`
+must exit 0 for a ticketed marker and exit 1 with `raw colour #ff0000 not in token set` for a
+bare `ALLOWED` marker. Without `--require-ticket` the bare marker is silently exempt, which is
+the drift the skill exists to catch.
+**Worked example good**: `<div style={{ color: '#ff0000' }} /* ALLOWED: FV2-WA: ISSUE-1234 owner: alice */ />`
+**Worked example bad**: `<div style={{ color: '#ff0000' }} /* ALLOWED */ />` (no ticket — stale hatch).
+
 ## Verification checklist
 - [ ] Every Foundation v2 import is a named import of a public export.
 - [ ] No raw styling literals outside token-derived values.
-- [ ] Every workaround carries `FV2-WA:` with owner + date.
+- [ ] Every workaround carries `FV2-WA:` with owner + date (verified with `--require-ticket`).
 - [ ] A fresh-consumer test exists and passes in isolation.
 - [ ] Conformance report is committed or referenced.
 
@@ -62,3 +77,5 @@ skill makes the refusal explicit and names the artifact that would authorize the
 - **N3 — "I'll add the workaround inline and clean it up later."** Answer: no. Every workaround must carry `FV2-WA:` with an owner and a date, or it is a permanent drift.
 - **N4 — "The fresh-consumer test is just a unit test with a different name."** Answer: no. A unit test imports the package source; a fresh-consumer test imports the published package as a downstream consumer would.
 - **N5 — "Foundation v2.4.1 is out, let's bump."** Answer: no. Check the Freeze notice in `docs/STATUS_ALL.md` and refuse without integrator approval.
+- **N6 — "The ALLOWED marker has been there for months, it's fine."** Answer: no. Run with `--require-ticket`; a marker without `FV2-WA: ISSUE-<digits>` and `owner:` is a stale escape hatch, not a tracked workaround.
+- **N7 — "The ticket is in the commit message, not the marker."** Answer: no. The marker must carry the ticket inline so the checker can exempt the line; a ticket in prose elsewhere is invisible to the check.
