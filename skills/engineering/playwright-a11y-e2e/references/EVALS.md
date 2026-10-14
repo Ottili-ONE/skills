@@ -72,3 +72,5 @@ await page.setViewportSize({ width: 1440, height: 900 });
 - **N4 — "The axe run on a dynamic modal without waiting for `aria-hidden=false`."** Answer: no. You get false violations or missed violations; wait for the state change before scanning.
 - **N5 — "Responsive check only at 1440."** Answer: no. The loop must include 320px, 768px, 1024px and 1440px; mobile bugs are never caught otherwise.
 - **N6 — "Keyboard tests that skip shadow DOM."** Answer: no. They fail silently on Web Components; traverse the shadow root.
+- **N7 — "The axe scan is green, so the page is accessible."** Answer: no. Green axe means zero *reported* violations, not that every control is reachable; run the keyboard check too.
+- **N8 — "Use `:focus-visible` as the WCAG criterion."** Answer: no. `:focus-visible` is a CSS pseudo-class, not a WCAG success criterion; assert focus order and focusable state instead.

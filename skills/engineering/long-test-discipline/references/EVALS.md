@@ -64,3 +64,5 @@ ulimit -u 8; pytest tests/test_worker.py   # masks the fork failure instead of f
 - **N3 — "The timeout is probably fine."** Answer: no. Check the log ends with the JSON summary record, not a partial line. A half-written log is a kill, not a failure.
 - **N4 — "Lower the ulimit to make it fit."** Answer: no. Raise `MAX_PROCS`/`MAX_VMEM_KB` or split the suite; never weaken the test's own resource use.
 - **N5 — "The CI job timed out, just lower the timeout."** Answer: no. Match the timeout to the CI job limit and fix the hang or split the test; never exceed the CI limit.
+- **N6 — "A single green run is proof enough."** Answer: no. Re-run with a recorded seed; a flake is a finding, not a shrug. Log the seed and the rerun count.
+- **N7 — "The worker is background, it doesn't need to be in the log."** Answer: no. A background worker dies when the shell exits and its output is lost; chain it in the same foreground command and capture its output in the same log.
