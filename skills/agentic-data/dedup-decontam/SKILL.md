@@ -77,6 +77,7 @@ remove duplicates and prevent test-set leakage.
 - [ ] n-gram size matches the benchmark's tokenization.
 - [ ] There is exactly one normalizer in the pipeline (`normalize.normalize`); no script defines its own.
 - [ ] Embedding threshold is pinned per model, not hardcoded in logic.
+- [ ] Embedding threshold calibrated on a held-out clean set with `scripts/embed_decontam.py --calibrate-out`; the pin is re-derived on every model change.
 
 ## Worked examples
 
@@ -110,4 +111,4 @@ never a constant.
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/normalize.py, scripts/minhash_lsh.py, scripts/ngram_decontam.py, scripts/embed_decontam.py, scripts/plant_test.py, scripts/validate_skill.py
+- scripts: scripts/normalize.py, scripts/minhash_lsh.py, scripts/ngram_decontam.py, scripts/embed_decontam.py (decontam + --calibrate-out), scripts/plant_test.py
