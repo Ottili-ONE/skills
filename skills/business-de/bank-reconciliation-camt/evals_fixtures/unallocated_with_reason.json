@@ -1,1 +1,14 @@
-{"account":"DE89370400440532013000","opening":0.0,"closing":0.02,"open_items":[],"entries":[{"amount":0.02,"date":"2026-10-09","reference":"X","counterparty":"B","matched":false,"reason_code":"BANK_FEE"}]}
+{
+  "opening": 0.0,
+  "entries": [
+    {
+      "amount": 100.0,
+      "reference": "INV-002",
+      "date": "2026-10-09",
+      "matched": false,
+      "reason_code": "UNALLOCATED"
+    }
+  ],
+  "closing": 100.0,
+  "matched": []
+}

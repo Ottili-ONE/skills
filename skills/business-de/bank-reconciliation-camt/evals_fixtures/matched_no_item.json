@@ -1,1 +1,13 @@
-{"account":"DE89370400440532013000","opening":100.0,"closing":200.0,"open_items":[{"id":"INV-001","amount":100.0}],"entries":[{"amount":100.0,"date":"2026-10-09","reference":"INV-001","counterparty":"Acme","matched":true}]}
+{
+  "opening": 0.0,
+  "entries": [
+    {
+      "amount": 100.0,
+      "reference": "INV-002",
+      "date": "2026-10-09",
+      "matched": true
+    }
+  ],
+  "closing": 100.0,
+  "matched": []
+}

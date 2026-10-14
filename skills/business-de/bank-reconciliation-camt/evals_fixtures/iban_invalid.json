@@ -1,1 +1,13 @@
-{"account":"DE91 3704 0044 0532 0130 00","opening":100.0,"closing":200.0,"open_items":[{"id":"INV-001","amount":100.0}],"entries":[{"amount":100.0,"date":"2026-10-09","reference":"INV-001","counterparty":"Acme","matched":true,"open_item_id":"INV-001"}]}
+{
+  "opening": 0.0,
+  "entries": [
+    {
+      "amount": 100.0,
+      "reference": "INV-004",
+      "date": "2026-10-09"
+    }
+  ],
+  "closing": 100.0,
+  "matched": [],
+  "iban": "DE89370400440532013000"
+}

@@ -1,1 +1,17 @@
-{"account":"DE89370400440532013000","opening":0.0,"closing":200.0,"open_items":[{"id":"INV-001","amount":100.0}],"entries":[{"amount":100.0,"date":"2026-10-09","reference":"INV-001","counterparty":"Acme","matched":true,"open_item_id":"INV-001"},{"amount":100.0,"date":"2026-10-13","reference":"INV-001","counterparty":"Acme","matched":true,"open_item_id":"INV-001"}]}
+{
+  "opening": 0.0,
+  "entries": [
+    {
+      "amount": 100.0,
+      "reference": "INV-005",
+      "date": "2026-10-09"
+    },
+    {
+      "amount": 100.0,
+      "reference": "INV-006",
+      "date": "2026-10-09"
+    }
+  ],
+  "closing": 200.0,
+  "matched": []
+}
