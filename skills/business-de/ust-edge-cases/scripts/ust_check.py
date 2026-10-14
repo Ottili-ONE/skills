@@ -99,8 +99,13 @@ def check(rows, prior_turnover=None, kleinunternehmer=False, rounding="half_up",
     return errors
 
 
-def _rows_arg(value: str) -> list:
-    """Accept a JSON file path, a JSON array literal, or stdin ('-')."""
+def _rows_arg(value: str) -> tuple[list, bool, float | None]:
+    """Accept a JSON file path, a JSON array literal, or stdin ('-').
+
+    Returns (rows, kleinunternehmer, prior_turnover). A top-level JSON object
+    may carry ``lines`` plus the scenario flags directly (the form the tests
+    and the one-liner EVALS prompts use); CLI flags override those values.
+    """
     if value == "-":
         raw = sys.stdin.read()
     elif value.lstrip().startswith("["):
@@ -108,7 +113,12 @@ def _rows_arg(value: str) -> list:
     else:
         raw = Path(value).read_text(encoding="utf-8")
     data = json.loads(raw)
-    return data if isinstance(data, list) else data.get("lines", [data])
+    if isinstance(data, list):
+        return data, False, None
+    rows = data.get("lines", [data])
+    ku = bool(data.get("kleinunternehmer", False))
+    pt = data.get("prior_turnover")
+    return rows, ku, pt
 
 
 def main(argv):
@@ -125,17 +135,21 @@ def main(argv):
     ap.add_argument("--rounding", default="half_up",
                     choices=["half_up", "half_even"])
     ap.add_argument("--config", default="config/versions.json")
+    ap.add_argument("file", nargs="?", help="positional JSON file (same as --rows)")
     args = ap.parse_args(argv)
 
-    rows = _rows_arg(args.rows)
-    # CLI flags override per-row fields, so a one-liner can carry the
+    rows_arg = args.file if args.file else args.rows
+    rows, file_ku, file_pt = _rows_arg(rows_arg)
+    # CLI flags override the file-level scenario, so a one-liner can carry the
     # scenario without a JSON file (verified 2026-10-14, r3-05).
+    kleinunternehmer = args.kleinunternehmer or file_ku
+    prior_turnover = args.prior_turnover if args.prior_turnover is not None else file_pt
     for r in rows:
         if not isinstance(r, dict):
             continue
-        if args.prior_turnover is not None:
-            r.setdefault("prior_turnover", args.prior_turnover)
-        if args.kleinunternehmer:
+        if prior_turnover is not None:
+            r.setdefault("prior_turnover", prior_turnover)
+        if kleinunternehmer:
             r["kleinunternehmer"] = True
         if args.reverse_charge:
             r["reverse_charge"] = True
@@ -146,15 +160,8 @@ def main(argv):
         if args.e_invoice:
             r["e_invoice"] = True
 
-    cfg = {"prior_turnover": args.prior_turnover,
-           "kleinunternehmer": args.kleinunternehmer,
-           "rounding": args.rounding}
-    errs = check(
-        rows,
-        prior_turnover=cfg["prior_turnover"],
-        kleinunternehmer=cfg["kleinunternehmer"],
-        rounding=cfg["rounding"],
-    )
+    errs = check(rows, prior_turnover=prior_turnover,
+                 kleinunternehmer=kleinunternehmer, rounding=args.rounding)
     if errs:
         for e in errs:
             print("FAIL", e, file=sys.stderr)

@@ -9,7 +9,10 @@ TMP.mkdir(exist_ok=True)
 def run(data):
     p = TMP / "r.json"
     p.write_text(json.dumps(data), encoding="utf-8")
-    return subprocess.run([sys.executable, str(SCRIPT), str(p)], capture_output=True, text=True)
+    # --no-iban: the legacy fixtures use a placeholder account and the
+    # IBAN check is exercised separately by test_iban_validity.
+    return subprocess.run([sys.executable, str(SCRIPT), str(p), "--no-iban"],
+                          capture_output=True, text=True)
 
 
 def test_balanced():

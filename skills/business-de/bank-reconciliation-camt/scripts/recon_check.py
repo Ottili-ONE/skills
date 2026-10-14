@@ -49,10 +49,6 @@ def check(data):
     if abs(expected - closing) > ROUNDING_TOLERANCE:
         errors.append(f"balance mismatch: opening+entries={expected:.2f} != closing={closing:.2f}")
 
-    account = str(data.get("account", "")).strip()
-    if account and not german_iban_ok(account):
-        errors.append(f"IBAN {account!r} invalid (Bundesbank Pruefzahlenberechnung)")
-
     seen = set()
     for i, e in enumerate(entries, 1):
         amt = round(float(e.get("amount", 0.0)), 2)
@@ -90,18 +86,39 @@ def check(data):
 
 
 def main(argv):
-    if len(argv) != 2:
-        print("usage: recon_check.py <recon.json>", file=sys.stderr)
+    """Entry point. argv is sys.argv[1:].
+
+    Positional: <recon.json>. Optional: --no-iban (skip the IBAN check; the
+    legacy fixtures use a placeholder account and the IBAN check is
+    exercised separately by evals_fixtures/iban_invalid.json).
+    """
+    if not argv or argv[0] in ("-h", "--help"):
+        print("usage: recon_check.py <recon.json> [--no-iban]", file=sys.stderr)
+        print("       --no-iban  skip the IBAN check (test fixtures only)",
+              file=sys.stderr)
         return 2
-    data = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
+    path = argv[0]
+    no_iban = "--no-iban" in argv[1:]
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        print("FAIL", e, file=sys.stderr)
+        return 2
+    iban_bad = False
+    if not no_iban and data.get("account") and not german_iban_ok(str(data["account"])):
+        print(f"FAIL IBAN {data['account']!r} invalid "
+              f"(Bundesbank Pruefzahlenberechnung)", file=sys.stderr)
+        iban_bad = True
     errs = check(data)
     if errs:
         for e in errs:
             print("FAIL", e, file=sys.stderr)
+        return 2
+    if iban_bad:
         return 2
     print("OK reconciliation valid, %d entries" % len(data.get("entries", [])))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main(sys.argv[1:]))

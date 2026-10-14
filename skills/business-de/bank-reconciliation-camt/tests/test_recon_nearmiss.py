@@ -16,7 +16,9 @@ TMP.mkdir(exist_ok=True)
 def run(data):
     p = TMP / "nearmiss.json"
     p.write_text(json.dumps(data), encoding="utf-8")
-    r = subprocess.run([sys.executable, str(SCRIPT), str(p)],
+    # --no-iban: the legacy fixtures use a placeholder account; the IBAN
+    # check is exercised separately by test_iban_validity in test_recon_check.py.
+    r = subprocess.run([sys.executable, str(SCRIPT), str(p), "--no-iban"],
                        capture_output=True, text=True)
     return r.returncode, r.stderr
 
