@@ -120,17 +120,19 @@ Sachkontenlaenge (5-8) or shorten the account.
 `amount-dot-decimal`. A fixture that still validates is not a negative test.
 
 ### N6. "The tax key is in column 125, that is where DATEV puts it"
-**Trap:** column 97 (1-based) is the USt-Schlüssel; column 125 is the
-*text* field. A row with the key at index 124 instead of 96 still has 125
-cells, so the column-count check passes and the validator reports
-`tax_key_missing` — the key is simply in the wrong place. Verified:
-`python3 scripts/validate_extf.py evals_fixtures/stapel_key125.csv` on such a row exits 1 with
-`tax_key_missing`.
+**Trap:** column 97 (1-based, index 96) is the USt-Schlüssel; column 125 is
+the *text* field. `build_stapel.py` writes the key at index 96 by design —
+the column table is the contract, not the CSV. A row built with the key at
+the wrong index still has 125 cells, so the column-count check passes and the
+validator reports no error; the key is simply in the wrong place and DATEV
+will mis-post it. Build from the documented layout, never by eyeballing the
+CSV.
 
 ### N7. "The row has 124 columns, just pad the last one"
-**Trap:** EXTF expects exactly 125 columns. 124 *and* 126 both fail with
-`booking-column-count` — the validator does not tolerate off-by-one. Build
-the row from the documented layout, never by eyeballing the CSV.
+**Trap:** EXTF expects exactly 125 columns. A 124-column row fails with
+`booking-column-count` (verified: `validate_extf.py evals_fixtures/stapel_124.csv`
+exits 1) — the validator does not tolerate off-by-one. Build the row from the
+documented layout, never by eyeballing the CSV.
 
 ### N8. "Belegdatum is the full date 2026-06-01"
 **Trap:** column 10 is TTMM (day+month, 4 digits: `0206`). The year comes
@@ -171,13 +173,16 @@ python3 scripts/build_stapel.py --berater 29098 --mandant 55003 --wj-start 20260
 python3 scripts/validate_extf.py stapel.csv
 # {"ok": true, "checked_lines": 2, "error_count": 0}
 
-# 6b. tax key at column 125 (wrong place) -> exit 1
-python3 scripts/validate_extf.py evals_fixtures/stapel_key125.csv
-# {"ok": false, "errors": [{"code": "tax_key_missing", "severity": "error", ...}]}
+# 6b. the shipped broken fixture MUST fail -> exit 1
+python3 scripts/validate_extf.py fixtures/buchungsstapel-broken.csv
+# {"ok": false, "error_count": 2,
+#  "errors": [{"code": "amount-dot-decimal", "value": "12.50"},
+#             {"code": "belegdatum-format", "value": "2026601"}]}
 
-# 6c. row with 124 columns -> exit 1, booking-column-count
+# 6c. a row with 124 columns -> exit 1, booking-column-count
 python3 scripts/validate_extf.py evals_fixtures/stapel_124.csv
-# {"ok": false, "errors": [{"code": "booking-column-count", "severity": "error", ...}]}
+# {"ok": false, "errors": [{"code": "booking-column-count", "severity": "error",
+#   "params": {"expected": 125}, ...}]}
 ```
 
 Verified 2026-10-14 against `seamless-engineering/datev-extf`

@@ -164,7 +164,7 @@ python3 scripts/purge_decision.py --type invoice --year 2017 --approver "M. Must
 #  "record_retention_until": "2025-12-31"}
 
 # 7c. Verfahrensdokumentation, complete envelope -> exit 0
-python3 scripts/verfahrensdokumentation.py --system "ERP v5.2" --medium "S3 encrypted" --export "DATEV EXTF" --access "RBAC" --backup "daily" --retention "8y" --year 2026 --out /tmp/vd.json
+python3 scripts/verfahrensdokumentation.py --system "ERP v5.2" --medium "S3 encrypted" --export "DATEV EXTF" --access "RBAC" --backup "daily" --retention "8y" --out /tmp/vd.json
 python3 scripts/verfahrensdokumentation.py --check /tmp/vd.json
 # {"ok": true, "missing_sections": [], "checked": 6}
 
