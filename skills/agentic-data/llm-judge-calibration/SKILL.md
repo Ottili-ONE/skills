@@ -102,6 +102,7 @@ re-annotation and the rubric collapses onto the middle. Every score point
 needs a definition AND at least one example.
 ## References
 - procedures: references/procedures.md
+- calibration protocol: references/calibration-protocol.md
 - rubric template: references/rubric-template.md
 - rubric lint: references/rubric-lint.md
 - robustness: references/robustness.md

@@ -111,7 +111,10 @@ def test_min_items_accepts_default() -> None:
 
 def test_missing_gold_label_rejected() -> None:
     bad = FIX / "nogold.jsonl"
-    bad.write_text(json.dumps({"id": "x", "scores": [5, 5, 5]}) + "\n" * 30)
+    bad.write_text("".join(
+        json.dumps({"id": f"g{i:02d}", "scores": [5, 5, 5]}) + "\n"
+        for i in range(30)
+    ))
     r = run("calibrate", "--rows", str(bad), *PROV)
     assert r.returncode == 1
     assert "no gold label" in r.stderr
