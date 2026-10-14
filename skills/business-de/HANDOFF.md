@@ -71,7 +71,16 @@ Twelve commits, all `skills-business-de-r3-05:`, own paths only.
    commands) and this file updated.
 
 Gate: `validate_skills.py` → 10 skills, 0 issues. `run_evals.py` → 74
-commands, 0 failed. `audit_triggers_links.py` → 0 problems.
+commands, 0 failed. `audit_triggers_links.py` → 0 problems. `pytest` → 216
+passed.
+
+Two regressions were found by running the full suite after the grounding
+pass and fixed in the same commit: `recon_check.py` had been passing
+`sys.argv` (including the script name) to `main()`, so every invocation
+read `recon_check.py` as the JSON file and the IBAN check was duplicated
+inside `check()` (where it could not be opted out of); `ust_check.py`'s new
+`--rows` CLI rejected the positional file form the existing tests pass.
+Both are fixed and the suite is green again.
 
 ## Ideas for the next ten skills (with rationale)
 
