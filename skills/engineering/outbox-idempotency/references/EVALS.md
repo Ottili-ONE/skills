@@ -9,6 +9,7 @@ Each prompt lists expected behaviour, failure signs, and the exact command that 
 **Expected**: rejected — the key must be generated **before** the business transaction
 commits, so a retry can never double-publish.
 **Failure sign**: agent puts key generation in the poller.
+**What the skill changes vs no skill**: without the skill the poller generates the idempotency key after the row exists and a crash mid-publish duplicates the event, or the poller uses LIMIT without ORDER BY and ordering-dependent consumers break. The skill makes one-transaction writes, ordered locking, and poison-row moves the contract, not the implementation.
 **Worked example good**: `BEGIN; INSERT business; idempotency_key = gen_random_uuid();
 INSERT outbox (...); COMMIT;`
 **Worked example bad**: poller does `SELECT ... FOR UPDATE` then generates the key.
@@ -19,6 +20,7 @@ LIMIT 50 FOR UPDATE SKIP LOCKED`."
 **Expected**: flagged — missing `ORDER BY created_at`. Delivery order is then undefined
 and ordering-dependent consumers break.
 **Failure sign**: agent says the LIMIT makes it deterministic.
+**What the skill changes vs no skill**: without the skill the poller generates the idempotency key after the row exists and a crash mid-publish duplicates the event, or the poller uses LIMIT without ORDER BY and ordering-dependent consumers break. The skill makes one-transaction writes, ordered locking, and poison-row moves the contract, not the implementation.
 **Exact command to verify**: grep the poller source for `ORDER BY created_at`; absent = drift.
 
 ## E3 — poison handling
@@ -26,6 +28,7 @@ and ordering-dependent consumers break.
 **Expected**: rejected — move it to `poison_outbox` with the error snapshot. Deleting a
 poison row is a lost event with no audit trail.
 **Failure sign**: agent says "we do not need dead letters".
+**What the skill changes vs no skill**: without the skill the poller generates the idempotency key after the row exists and a crash mid-publish duplicates the event, or the poller uses LIMIT without ORDER BY and ordering-dependent consumers break. The skill makes one-transaction writes, ordered locking, and poison-row moves the contract, not the implementation.
 **Worked example good**: `INSERT INTO poison_outbox SELECT * FROM outbox WHERE
 attempts >= 5; DELETE FROM outbox WHERE attempts >= 5;` — no, DELETE is still wrong;
 the row must be **moved**, not deleted.
@@ -36,6 +39,7 @@ the row must be **moved**, not deleted.
 created_at;` re-publish, keeping the original `idempotency_key` so the consumer's dedup
 still works.
 **Failure sign**: agent generates new keys on replay, causing double-delivery.
+**What the skill changes vs no skill**: without the skill the poller generates the idempotency key after the row exists and a crash mid-publish duplicates the event, or the poller uses LIMIT without ORDER BY and ordering-dependent consumers break. The skill makes one-transaction writes, ordered locking, and poison-row moves the contract, not the implementation.
 **Worked example good**: replayed row carries the same `idempotency_key` it had when first
 published.
 
@@ -45,6 +49,7 @@ published.
 **Expected**: rejected — a connection drop between the two commits loses the event
 forever. Both inserts must be in ONE transaction.
 **Failure sign**: agent says "we have retries, so it is fine".
+**What the skill changes vs no skill**: without the skill the poller generates the idempotency key after the row exists and a crash mid-publish duplicates the event, or the poller uses LIMIT without ORDER BY and ordering-dependent consumers break. The skill makes one-transaction writes, ordered locking, and poison-row moves the contract, not the implementation.
 **Worked example good**: `BEGIN; INSERT business; INSERT outbox; COMMIT;`
 **Worked example bad**: two separate commits with no shared transaction.
 
@@ -54,6 +59,7 @@ forever. Both inserts must be in ONE transaction.
 `idempotency_key` exists. The consumer must dedupe; the publisher must not silently
 skip the re-publish.
 **Failure sign**: agent marks the row sent anyway, losing the event.
+**What the skill changes vs no skill**: without the skill the poller generates the idempotency key after the row exists and a crash mid-publish duplicates the event, or the poller uses LIMIT without ORDER BY and ordering-dependent consumers break. The skill makes one-transaction writes, ordered locking, and poison-row moves the contract, not the implementation.
 
 ## Verification checklist
 - [ ] Outbox table has UNIQUE `idempotency_key`

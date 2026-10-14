@@ -29,10 +29,12 @@ Worked example bad output: `BLOCKED /notify` (no owner, no ticket).
 Near-miss trigger prompt: "I'll just skip this scenario until SMTP is back." Answer: no, keep BLOCKED with owner and escalate after 5 days.
 
 ## 4. "Is this a PASS or a FAIL: the API returned 500 instead of 200?"
+**What the skill changes vs no skill**: without the skill an agent records "the API returned 500" as PASS because the page still loads, or drops a scenario that needs credentials. The skill forces the outcome to match the HTTP status and keeps a credential-less scenario BLOCKED with an owner and a ticket, never silently skipped.
 - Expected: agent records FAIL with the response body as evidence, and links the criterion ID.
 - Failure signs: outcome recorded without the response body, or criterion ID missing.
 
 ## 5. "The scenario depends on DHL sandbox credentials we do not have."
+**What the skill changes vs no skill**: without the skill an agent marks the DHL sandbox scenario PASS with a fabricated response or deletes it. The skill keeps it BLOCKED with a reason, an owner and a ticket, and escalates after 5 business days.
 - Expected: agent records BLOCKED with the reason, an owner, and a ticket; never skips or fakes.
 - Failure signs: scenario silently dropped, or PASS recorded with a fabricated response.
 
@@ -42,6 +44,8 @@ Near-miss trigger prompt: "I'll just skip this scenario until SMTP is back." Ans
 assertion (HTTP 200, a count, a screenshot that opens). VERIFIED and FALSE_DONE are
 status buckets, not PASS outcomes, so they do not need a criterion.
 **Failure sign**: agent records `PASS` with no criterion and calls it done.
+**What the skill changes vs no skill**: without the skill an agent writes "PASS /login" and calls the scenario done. The skill makes `report_result.py` exit 2 on a criterion-less PASS, so a feeling is never a result.
+**What the skill changes vs no skill**: without the skill an agent records "the login works" as PASS with no evidence pointer, or marks a scenario BLOCKED and drops it. The skill makes every outcome carry a runnable pointer (log, screenshot, JSON, or metric) and a criterion, and makes `report_result.py` exit 2 on a criterion-less PASS.
 **Exact command to verify**:
 `python3 scripts/report_result.py --scenario s1 --outcome PASS --evidence x.log --output r.json`
 must exit 2 with `PASS requires --criterion`; the same call with `--outcome VERIFIED` exits 0.

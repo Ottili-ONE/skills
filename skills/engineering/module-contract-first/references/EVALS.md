@@ -15,6 +15,7 @@ allowed importers, and adds the drift test to CI.
 `python3 scripts/check_contract_drift.py --enumerate payments` then
 `python3 scripts/check_contract_drift.py --check payments` exits 0.
 **Failure signs**: snapshot missing or empty; no boundary doc; drift test not wired into CI.
+**What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 **Worked example good**: snapshot `{"symbols": ["Invoice", "create_invoice", "refund"]}`
 sorted, deduplicated, produced by `--enumerate`.
 **Worked example bad**: snapshot hand-edited with `["create_invoice", "create_invoice"]`
@@ -26,6 +27,7 @@ in the payments module. Merge this PR."
 **Expected**: Agent detects the breaking signature change via `--check`, blocks merge,
 asks for a major version bump or a reversion.
 **Failure signs**: agent says "looks fine" and merges; no version bump requested; drift
+**What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 test not run.
 **Exact command to verify**: `check_contract_drift.py --check payments` exits 1 with
 `DRIFT DETECTED` when the live surface diverges from the snapshot.
@@ -37,6 +39,7 @@ Can you check?"
 developer to regenerate the snapshot via `--enumerate` and commit both files together in
 the same PR (never separate commits).
 **Failure signs**: agent ignores drift; snapshot manually edited without regeneration;
+**What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 merge proceeds with mismatch.
 ## E4 — Import cycle between modules
 **Prompt**: "Module A imports B and B imports A. Fix it."
@@ -45,6 +48,7 @@ merge proceeds with mismatch.
 utility module that neither side exports publicly, and updates the boundary doc with
 the forbidden import list.
 **Failure signs**: cycle not detected; agent suggests circular import as acceptable; no
+**What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 boundary doc update.
 **Exact command to verify**:
 `python3 scripts/check_contract_drift.py --cycles .` exits 0 when no cycle exists.
@@ -54,6 +58,7 @@ boundary doc update.
 **Expected**: Snapshot shows an empty `symbols` list; `--check` passes when live is also
 empty; agent notes that adding the first export triggers drift detection automatically.
 **Failure signs**: snapshot missing treated as an error instead of full-add drift; agent
+**What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 says no contract is needed for an empty module.
 **Worked example good**: `{"symbols": []}` produced by `--enumerate` on an empty module.
 **Worked example bad**: no `module-contracts/` directory at all — treat as full-add drift,

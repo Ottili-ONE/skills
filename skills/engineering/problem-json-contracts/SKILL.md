@@ -100,4 +100,6 @@ Bad (retry_after as HTTP-date — most clients ignore it):
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
+- [honest-status](../honest-status/SKILL.md) — an unhandled error is a status item; mark it VERIFIED only after the validator ran green.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — the validator and the schema self-test run in the foreground with a recorded seed.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — the catalogue and schema are committed with a task-id prefix.

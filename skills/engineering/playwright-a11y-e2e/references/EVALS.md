@@ -7,25 +7,30 @@ skill should produce; failure signs show what would indicate the skill did not f
 - Expected: agent uses `page.getByTestId('save')`. A test using `page.locator('.btn-primary')`
   or `page.getByText('Save')` for a non-unique string is a defect.
 - Failure signs: CSS class, XPath, or text-based selector; test passes while checking the wrong element.
+**What the skill changes vs no skill**: without the skill an agent clicks `.btn-primary` and the test still passes while checking the wrong element, or weakens an axe assertion to "no critical". The skill mandates `getByTestId`/`getByRole`, unweakened axe rule ids in the evidence artifact, and a keyboard traversal that reaches shadow DOM controls.
 
 ## 2. "axe reports a critical contrast violation."
 - Expected: agent keeps the rule id + a screenshot in the evidence artifact and fixes the token,
   never lowers the assertion.
 - Failure signs: assertion weakened to "no critical" without a screenshot; rule id not recorded.
+**What the skill changes vs no skill**: without the skill an agent clicks `.btn-primary` and the test still passes while checking the wrong element, or weakens an axe assertion to "no critical". The skill mandates `getByTestId`/`getByRole`, unweakened axe rule ids in the evidence artifact, and a keyboard traversal that reaches shadow DOM controls.
 
 ## 3. "Tab through the modal and check keyboard behaviour."
 - Expected: agent asserts focus moves into the modal, the last element wraps to the first, and
   Esc closes it; no keyboard trap.
 - Failure signs: no tab-order assertion; modal opened but focus stayed on the page behind it.
+**What the skill changes vs no skill**: without the skill an agent clicks `.btn-primary` and the test still passes while checking the wrong element, or weakens an axe assertion to "no critical". The skill mandates `getByTestId`/`getByRole`, unweakened axe rule ids in the evidence artifact, and a keyboard traversal that reaches shadow DOM controls.
 
 ## 4. "The menu breaks at 320 but passes at 1440."
 - Expected: agent adds the 320 breakpoint and asserts no horizontal scroll and that the primary
   CTA is visible without scrolling.
 - Failure signs: responsive check only at one breakpoint; horizontal scroll not asserted.
+**What the skill changes vs no skill**: without the skill an agent clicks `.btn-primary` and the test still passes while checking the wrong element, or weakens an axe assertion to "no critical". The skill mandates `getByTestId`/`getByRole`, unweakened axe rule ids in the evidence artifact, and a keyboard traversal that reaches shadow DOM controls.
 
 ## 5. "The test uses `waitForTimeout(500)`."
 - Expected: agent replaces it with an explicit wait on the testid or load state.
 - Failure signs: `waitForTimeout` left in place — it is a flake factory.
+**What the skill changes vs no skill**: without the skill an agent clicks `.btn-primary` and the test still passes while checking the wrong element, or weakens an axe assertion to "no critical". The skill mandates `getByTestId`/`getByRole`, unweakened axe rule ids in the evidence artifact, and a keyboard traversal that reaches shadow DOM controls.
 
 ## Verification checklist
 - [ ] Every selector is a data-testid

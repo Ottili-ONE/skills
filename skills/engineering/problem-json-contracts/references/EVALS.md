@@ -9,6 +9,7 @@ Each prompt lists expected behaviour, failure signs, and the exact command that 
 Is this acceptable?"
 **Expected**: no — the HTTP status must be 404 and the `status` field must equal it.
 **Failure sign**: agent accepts the envelope.
+**What the skill changes vs no skill**: without the skill an endpoint returns `{"status": 404}` with HTTP 200 and every client guesses the real status, or a 5xx leaks `stack_trace`. The skill makes the HTTP status the machine-readable signal, forces absolute `type` URIs, forbids internal fields on 5xx, and makes the catalogue-to-OpenAPI mapping a one-to-one check that fails on drift.
 **Exact command to verify**: `curl -s -o /dev/null -w "%{http_code}" <url>` must equal the
 `status` in the body.
 **Worked example good**: `HTTP 404 | {"type":"about:ottili:users:not-found","title":"User not found","status":404,"instance":"/users/42"}`
@@ -21,6 +22,7 @@ no — the contract is the field; clients key on it.
 **Expected**: no — must be an absolute URI (`https://api.ottili.dev/problems/user-not-found`)
 or `about:ottili:users:not-found`.
 **Failure sign**: agent approves a bare string.
+**What the skill changes vs no skill**: without the skill an endpoint returns `{"status": 404}` with HTTP 200 and every client guesses the real status, or a 5xx leaks `stack_trace`. The skill makes the HTTP status the machine-readable signal, forces absolute `type` URIs, forbids internal fields on 5xx, and makes the catalogue-to-OpenAPI mapping a one-to-one check that fails on drift.
 **Worked example good**: `type: https://api.ottili.dev/problems/user-not-found`
 **Worked example bad**: `type: user-not-found` (relative, not a URI).
 
@@ -28,6 +30,7 @@ or `about:ottili:users:not-found`.
 **Prompt**: "My 503 includes `stack_trace` and `db_connection_string`."
 **Expected**: no — 5xx carries `trace_id` only.
 **Failure sign**: agent says "it's fine for internal services".
+**What the skill changes vs no skill**: without the skill an endpoint returns `{"status": 404}` with HTTP 200 and every client guesses the real status, or a 5xx leaks `stack_trace`. The skill makes the HTTP status the machine-readable signal, forces absolute `type` URIs, forbids internal fields on 5xx, and makes the catalogue-to-OpenAPI mapping a one-to-one check that fails on drift.
 **Worked example good**: `{"type":"...","title":"Service unavailable","status":503,"trace_id":"abc123","instance":"/health"}`
 **Worked example bad**: `{"status":503,"stack_trace":"...","db_connection_string":"..."}`
 
@@ -35,6 +38,7 @@ or `about:ottili:users:not-found`.
 **Prompt**: "Which errors need `retry_after`?"
 **Expected**: 429 and 503 (and any retriable 5xx).
 **Failure sign**: agent omits it on 503.
+**What the skill changes vs no skill**: without the skill an endpoint returns `{"status": 404}` with HTTP 200 and every client guesses the real status, or a 5xx leaks `stack_trace`. The skill makes the HTTP status the machine-readable signal, forces absolute `type` URIs, forbids internal fields on 5xx, and makes the catalogue-to-OpenAPI mapping a one-to-one check that fails on drift.
 **Worked example good**: `{"status":429,"retry_after":30,...}`
 **Worked example bad**: `{"status":429,...}` (no retry_after).
 
@@ -43,6 +47,7 @@ or `about:ottili:users:not-found`.
 **Expected**: `scripts/check_problem_catalogue.py` exits 1 with
 `catalogue code '<code>' has no OpenAPI response entry`.
 **Failure sign**: agent says "CI will catch it later".
+**What the skill changes vs no skill**: without the skill an endpoint returns `{"status": 404}` with HTTP 200 and every client guesses the real status, or a 5xx leaks `stack_trace`. The skill makes the HTTP status the machine-readable signal, forces absolute `type` URIs, forbids internal fields on 5xx, and makes the catalogue-to-OpenAPI mapping a one-to-one check that fails on drift.
 **Exact command to verify**:
 `python3 scripts/check_problem_catalogue.py --catalogue examples/catalogue.json --openapi examples/openapi.yaml --schema-dir examples/schemas`
 must exit 0.
@@ -60,6 +65,7 @@ are a defect. Give each a distinct code (e.g. `CONFLICT` and `VERSION_STALE`) an
 `type` URI. Note: the checker keys on the *code string*, so duplicates collide in the
 catalogue dict itself; the fix is distinct codes, not distinct HTTP statuses.
 **Failure sign**: agent says "409 is fine for both".
+**What the skill changes vs no skill**: without the skill an endpoint returns `{"status": 404}` with HTTP 200 and every client guesses the real status, or a 5xx leaks `stack_trace`. The skill makes the HTTP status the machine-readable signal, forces absolute `type` URIs, forbids internal fields on 5xx, and makes the catalogue-to-OpenAPI mapping a one-to-one check that fails on drift.
 **Near-miss trigger**: "I'll keep both as 409 and just change the title." Answer: no —
 clients key on the `type` URI, not the status; keep the code distinct.
 
@@ -67,6 +73,7 @@ clients key on the `type` URI, not the status; keep the code distinct.
 **Prompt**: "My `title` is 200 chars."
 **Expected**: rejected — schema caps `title` at 120, `detail` at 500.
 **Failure sign**: agent accepts it.
+**What the skill changes vs no skill**: without the skill an endpoint returns `{"status": 404}` with HTTP 200 and every client guesses the real status, or a 5xx leaks `stack_trace`. The skill makes the HTTP status the machine-readable signal, forces absolute `type` URIs, forbids internal fields on 5xx, and makes the catalogue-to-OpenAPI mapping a one-to-one check that fails on drift.
 **Worked example good**: `title: "Validation failed"` (18 chars).
 **Worked example bad**: `title: "<200 chars of explanation>"`.
 
