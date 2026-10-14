@@ -103,13 +103,13 @@ The four that matter most:
   did anything at all.
 
 ## Related skills
-- **`verifiable-environments`** — the with_skill/without_skill baseline is a verifier pattern: you must detect whether the skill did anything.
-- **`mcp-2026-07-28`** — an MCP skill is a skill like any other; audit its description and evals the same way.References
+- (none — this is the meta-skill: it authors and evaluates the other skills and depends on nothing in this set.)
+## References
 - procedures: references/procedures.md
 - front-matter rules: references/front-matter-rules.md
 - trigger evals: references/trigger-evals.md
 - worked examples: references/examples.md
-- SOURCES: references/SOURCES.md
+- eval schema: references/eval-schema.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
-- scripts: scripts/validate_skill.py (front matter), scripts/eval_metrics.py (precision, recall, output delta, train/val split), scripts/evals_check.py (evals.json schema)
+- SOURCES: references/SOURCES.md

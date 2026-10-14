@@ -81,13 +81,12 @@ Why it fails: the validator must walk every gzip member. The pitfall was
 verified live 2026-10-08 — a 3-record file reads as 1 record unless the
 member walk is explicit.
 ## Related skills
+- **`browser-agent-playwright`** — when a full browser is needed instead of a static crawl, route here; the WARC pipeline is the browser-free alternative.
 - **`trajectory-ledger`** — a crawl is a multi-step run whose steps, offsets and costs belong in the ledger.
-- **`deep-research-method`** — WARC archives are raw evidence for this workflow; a crawl is a multi-step run whose offsets and costs belong in the ledger.
-- **`browser-agent-playwright`** — when a full browser is needed instead of a static crawl, route here; the WARC pipeline is the browser-free alternative.References
+## References
 - procedures: references/procedures.md
 - policy: references/crawl-policy.md
 - warc validation: references/warc-validation.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/robots.py, scripts/rate_limit.py, scripts/resume_state.py, scripts/warc_writer.py, scripts/validate_warc.py

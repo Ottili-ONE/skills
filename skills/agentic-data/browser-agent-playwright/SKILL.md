@@ -116,7 +116,12 @@ Exhausting either cap stops the run and reports the cap, not a silent fallback.
 - [ ] `gen_hostile.py` round-trip: severity == detector verdict for all 10 fixtures.
 - [ ] `handoff.py` build/validate round-trip: a summary written by `--out` re-validates with `--validate`, and a mismatched `--field`/`--locator` count fails cleanly (rc=1) rather than crashing.
 
-## Related skillsReferences
+## Related skills
+- **`computer-use-drivers`** — for a desktop or remote app rather than a browser, route there; the browser is the one surface this skill drives that exposes an accessibility tree.
+- **`mcp-2026-07-28`** — a browser tool exposed over MCP is a client of this protocol; drive the browser, don't re-implement the wire.
+- **`trajectory-ledger`** — a browser run is a multi-step trajectory; record its steps, locators and costs so the result is replayable and auditable.
+- **`verifiable-environments`** — a browser run is a good environment to verify: every locator and wait must be grounded, and the injection defenses need a bypass audit.
+## References
 - procedures: references/procedures.md
 - locator catalog: references/locator-catalog.md
 - network waits: references/network-waits.md

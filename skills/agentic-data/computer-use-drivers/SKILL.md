@@ -160,7 +160,10 @@ Why it fails: the confirmation string now carries screen content, which is
 untrusted data. Use a fixed phrase only; let the exception path carry the
 content if it must.
 ## Related skills
-- **`browser-agent-playwright`** — the browser is the one surface with an accessibility tree this skill does not use; route there instead.References
+- **`mcp-2026-07-28`** — expose a desktop driver over MCP so the protocol, not raw sockets, carries the tool calls; this skill defines the wire.
+- **`verifiable-environments`** — the confirm() gates, coordinate scaling and tree reads in this skill are verifier components that need a bypass audit before they are trusted.
+
+## References
 - procedures: references/procedures.md
 - platform quirks: references/platform-quirks.md
 - worked examples: references/examples.md
@@ -168,6 +171,3 @@ content if it must.
 - safety layers: references/safety-layers.md
 - coordinate scaling: references/coordinate-scaling.md
 - SOURCES: references/SOURCES.md
-- EVALS: references/EVALS.md
-- fixtures: fixtures/sample_driver.py, fixtures/registry_20260801.json
-- scripts: scripts/validate_driver.py

@@ -106,17 +106,19 @@ Why it fails: without per-level examples annotators spread 20+ points on
 re-annotation and the rubric collapses onto the middle. Every score point
 needs a definition AND at least one example.
 ## Related skills
+- **`dedup-decontam`** — a contaminated calibration set is a dedup-decontam failure, not a judge failure.
 - **`skill-authoring-evals`** — a calibrated judge is the measurement tool this skill's own evals rely on; audit the judge the same way.
-- **`verifiable-environments`** — an LLM judge is a verifier whose calibration set and pass rate need a bypass audit.References
+- **`verifiable-environments`** — an LLM judge is a verifier whose calibration set and pass rate need a bypass audit.
+## References
 - procedures: references/procedures.md
 - calibration protocol: references/calibration-protocol.md
 - rubric template: references/rubric-template.md
 - rubric lint: references/rubric-lint.md
 - robustness: references/robustness.md
 - incidents: references/incidents.md
+- DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/calibrate_judge.py (calibrate, rubric), scripts/rubric_lint.py, scripts/gen_rubric.py
 
 ## Provenance gate
 Every calibration report must record the judge model, the generator model and

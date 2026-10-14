@@ -1,52 +1,68 @@
-# Agentic Data Skills
+# skills/agentic-data — ten Agent Skills for agentic data work
 
-Ten researched Agent Skills (agentskills.io standard) for coding and operations
-agents working on the Ottili platform. Each skill is a folder `name/` with
-`SKILL.md` (YAML front matter + body under 500 lines), optional `scripts/`,
-`references/` and `tests/`. Long material lives in `references/` one level deep;
-SKILL.md links it by name (progressive disclosure).
+Each folder is a self-contained Agent Skill (agentskills.io standard): `SKILL.md`
+with YAML frontmatter, plus `references/` (SOURCES, EVALS, procedures) and
+`scripts/` (small, deterministic, runnable offline).
+
+Install with the repo script:
+
+```bash
+./install.sh skills/agentic-data/browser-agent-playwright
+# or install all ten:
+./install.sh skills/agentic-data/*
+```
+
+Validate before shipping:
+
+```bash
+python3 scripts/validate_skill.py skills/agentic-data/<name>
+python3 scripts/validate.py --json          # catalog consistency
+```
 
 ## The ten skills
 
-| Skill | One-line value |
-| --- | --- |
-| `mcp-2026-07-28` | Build and audit MCP servers/clients against the 2026-07-28 spec: tools, resources, prompts, tasks, elicitation, structured output, OAuth 2.1, SDK version negotiation. |
-| `skill-authoring-evals` | Author, validate and evaluate Agent Skills: description design that triggers reliably, front-matter validation, with_skill/without_skill baselines, precision/recall targets (>=0.9). |
-| `computer-use-drivers` | Drive desktop/remote apps through accessibility trees and background input: coordinate scaling, confirm() gates, macOS AX / Windows UIA / X11-Wayland quirks. |
-| `browser-agent-playwright` | Drive a browser with Playwright: DOM/ARIA grounding, robust locators, web-first waits, prompt-injection defense, safe hand-off to code. |
-| `polite-crawling-warc` | Crawl a site and archive it to WARC 1.1: robots.txt first, token-bucket rate limiting, sitemaps, resume state, hostile-input sanitization. |
-| `dedup-decontam` | Deduplicate and decontaminate text corpora for LLM training: MinHash/LSH near-dedup, n-gram and embedding decontamination, planted-item tests. |
-| `verifiable-environments` | Design verifiers that resist reward hacking: spec-derived checks, oracle-free tests, pass-rate calibration, sandboxing, bypass-audit. |
-| `llm-judge-calibration` | Calibrate LLM-as-judge graders: inter-annotator agreement, rubric tightness, cost/latency ledger, contradiction resolution, planted-item tests. |
-| `trajectory-ledger` | Schema, grounding rules, outcome status and cost ledgers for agent trajectories so runs are reproducible and auditable. |
-| `deep-research-method` | Evidence-backed research: score sources 0-10, cite every claim (URL + retrieval date + pinned version), resolve contradictions by weight, state confidence. |
+- **browser-agent-playwright** — Drive a browser with Playwright: DOM/ARIA
+  grounding, robust locators, network waits, prompt-injection defense, safe
+  hand-off. Use when an agent must scrape, test or automate a site.
+- **computer-use-drivers** — Drive desktop/remote apps through accessibility
+  trees and background input with coordinate scaling, confirm() gates and
+  platform quirks. Use when the target app has no API.
+- **dedup-decontam** — Deduplicate datasets and decontaminate them against
+  eval/train corpora with MinHash/LSH and n-gram overlap. Use before training
+  or before publishing a dataset.
+- **deep-research-method** — Score, fetch, cite and reconcile web sources into
+  an auditable evidence chain with a confidence ladder. Use for factual
+  questions that depend on documents you must find and weigh.
+- **llm-judge-calibration** — Build, lint and calibrate LLM-as-judge rubrics so
+  that model scores are stable, auditable and cheap. Use when grading model
+  output at scale.
+- **mcp-2026-07-28** — Implement or audit an MCP server/client against the
+  2026-07-28 model spec: tool discovery, resources, prompts, OAuth flow,
+  error codes, version negotiation. Use when building or probing an MCP
+  server.
+- **polite-crawling-warc** — Crawl politely (robots.txt, rate limits, resume
+  state) and write WARC files that validate against the WARC spec. Use for
+  large, resumable web archives.
+- **skill-authoring-evals** — Author Agent Skills and write evals for them:
+  front-matter rules, trigger precision, eval schemas and metrics. Use when
+  creating or reviewing a skill.
+- **trajectory-ledger** — Record, replay and audit multi-step agent runs as a
+  typed, hashed, costed JSONL ledger. Use when a result must be reproducible
+  or auditable.
+- **verifiable-environments** — Design verifiers that resist reward hacking:
+  spec-derived checks, oracle-free tests, pass-rate calibration, sandboxing,
+  failure-mode auditing. Use when building or auditing an eval harness.
 
-## Install hints
+## Cross-links
 
-- **Single skill:** copy the folder into your client's skill directory
-  (`~/.codex/skills/`, `~/.claude/skills/`, etc.). The client discovers skills by
-  folder name; the `name:` field in `SKILL.md` must match the folder name.
-- **All ten:** `bash scripts/install.sh <target-dir>` (writes each skill folder,
-  skips existing ones, prints a manifest).
-- **Validate before shipping:** `python3 <skill>/scripts/validate_skill.py <skill>`
-  (exit 0 = pass). Run it on every skill after editing.
-- **Run the acceptance contract:** `python3 skills/agentic-data/scripts/acceptance_check.py`
-  from the repository root (exit 0 only if all ten meet the contract).
-- **Run the test suite:** `python3 -m pytest skills/agentic-data/ -q` from the
-  repository root.
+Related skills are named in each `SKILL.md`'s *Related* section. The graph is
+acyclic; `skill-authoring-evals` is the meta-skill (it authors and evaluates
+skills) and depends on nothing else in this set.
 
-## Related skills
+## Where to go next
 
-- `skills/core/**` and `skills/curated/**` — the platform's curated skill set;
-  this job's skills are complementary, not replacements.
-- `skills/engineering/**` — the ten engineering playbook skills (a sibling job).
-
-## Sources
-
-Every skill's `references/SOURCES.md` lists the primary sources (official
-documentation, standards, source repositories, postmortems) with URL and
-retrieval date. Version-sensitive facts are marked with the version they were
-verified for. The latest cross-skill re-verification is `references/PASS5-R3-05-REVERIFY.md`
-(2026-10-14): MCP 2026-07-28, Playwright 1.64.0, datasketch 2.0.0, the GPT-2
-pre-tokenizer regex, RFC 9309 and the 17-member `computer_toolset_20260801`
-registry were all re-fetched live and are still current.
+- `HANDOFF.md` — what to re-verify and when, plus ideas for the next ten skills.
+- Each skill's `references/EVALS.md` — realistic prompts, expected behaviour,
+  failure signs and near-miss triggers.
+- Each skill's `references/SOURCES.md` — primary sources with URLs and retrieval
+  dates.

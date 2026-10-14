@@ -143,8 +143,8 @@ cannot be gamed is a check nobody has tried to game; every check needs a
 written entry in `references/bypass-register.md`, and this one has none.
 ## Related skills
 - **`mcp-2026-07-28`** — an MCP server is a good environment to verify: statelessness is provable by replay.
-- **`computer-use-drivers`** — the driver's confirm() gates and coordinate scaling are verifier components that need a bypass audit.
-- **`browser-agent-playwright`** — a browser run is a good environment to verify: every locator and wait must be grounded.References
+- **`skill-authoring-evals`** — the with_skill/without_skill baseline is a verifier pattern: you must detect whether a skill did anything.
+## References
 - procedures: references/procedures.md
 - verifier design: references/verifier-design.md
 - sandbox contract: references/sandbox-contract.md
@@ -152,6 +152,6 @@ written entry in `references/bypass-register.md`, and this one has none.
 - calibration: references/calibration.md
 - neutering: references/neutering.md
 - incidents: references/incidents.md
+- DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/verify_harness.py (verify, bypass-audit, neuter, --min-defences), scripts/gen_fixtures.py

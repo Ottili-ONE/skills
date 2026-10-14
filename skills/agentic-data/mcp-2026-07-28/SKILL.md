@@ -124,16 +124,17 @@ Good and bad client behaviour, with the detection signal for each, live in
 extension, header-casing trap).
 
 ## Related skills
-- **`computer-use-drivers`** — expose a desktop driver over MCP so the protocol, not raw sockets, carries the tool calls.
-- **`browser-agent-playwright`** — a browser tool exposed over MCP is a client of this protocol, not a reason to drive the DOM directly.References
+- **`skill-authoring-evals`** — an MCP skill is a skill like any other; audit its description and evals the same way.
+## References
 - changelog: references/changelog.md
 - error codes: references/error-codes.md
 - oauth flow: references/oauth-flow.md
 - server/discover: references/server-discover.md
 - per-request _meta: references/meta-schema.md
 - tasks extension: references/tasks-extension.md
-- worked examples: references/examples.md
-- SOURCES: references/SOURCES.md
+- compat matrix: references/compat-matrix.md
+- compat versions: references/compat-versions.md
+- examples: references/examples.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
-- scripts: scripts/protocol_check.py, scripts/version_negotiate.py, scripts/stateless_probe.py
+- SOURCES: references/SOURCES.md
