@@ -87,4 +87,4 @@ member walk is explicit.
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/robots.py, scripts/rate_limit.py, scripts/resume_state.py, scripts/warc_writer.py, scripts/validate_warc.py, scripts/validate_skill.py (warc_writer --validate re-reads and validates its own output)
+- scripts: scripts/robots.py, scripts/rate_limit.py, scripts/resume_state.py, scripts/warc_writer.py, scripts/validate_warc.py
