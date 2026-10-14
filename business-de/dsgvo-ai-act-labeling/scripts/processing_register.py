@@ -27,7 +27,7 @@ def main() -> int:
     args = ap.parse_args()
 
     uc = json.loads(Path(args.use_case).read_text(encoding="utf-8"))
-    missing = [f for f in REQUIRED if not uc.get(f)]
+    missing = [f for f in REQUIRED if f not in uc or uc[f] in (None, '')]
     if missing:
         print(json.dumps({"ok": False, "missing": missing}))
         return 1

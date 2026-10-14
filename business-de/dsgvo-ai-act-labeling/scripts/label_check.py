@@ -63,7 +63,11 @@ def main() -> int:
     cfg = load_config(Path(args.config)).get("dsgvo-ai-act-labeling", {})
     window = int(cfg.get("label_recheck_days", 365))
 
-    rec = load_record(Path(args.record))
+    try:
+        rec = load_record(Path(args.record))
+    except ValueError as e:
+        print(json.dumps({"ok": False, "reason": "malformed_record", "detail": str(e)}))
+        return 2
     ev_path = Path(rec["review_evidence_path"])
     if not ev_path.is_absolute():
         ev_path = Path(args.record).resolve().parent / ev_path
