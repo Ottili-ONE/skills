@@ -1,5 +1,5 @@
 # Sources — honest-status
-Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
+Retrieval date: 2026-10-14 (re-verification pass). All URLs re-fetched with curl; HTTP status recorded.
 
 ## Primary sources
 1. **Agent Skills standard (agentskills.io)** — https://agentskills.io/. Verified 2026-10-13

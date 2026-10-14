@@ -104,4 +104,6 @@ Bad (hand-edited snapshot to make CI green — hides a real breaking change for 
 
 ## Related skills
 - [problem-json-contracts](../problem-json-contracts/SKILL.md) — contract shapes are also problem-detail shapes.
+- [honest-status](../honest-status/SKILL.md) — a contract that drifts is a status item; mark it VERIFIED only after `--check` ran green.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — the snapshot enumeration and the drift check are long tests; run them in the foreground with a recorded seed.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — snapshot and boundary doc are committed with a task-id prefix.

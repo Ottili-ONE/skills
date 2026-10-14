@@ -1,5 +1,5 @@
 # Sources — acceptance-harness
-Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
+Retrieval date: 2026-10-14 (re-verification pass). All URLs re-fetched with curl; HTTP status recorded.
 
 ## Primary sources
 1. **IEEE 829-2008** — Standard for Software Test Documentation. Defines the test procedure

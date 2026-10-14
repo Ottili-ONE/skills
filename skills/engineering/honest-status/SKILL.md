@@ -98,5 +98,4 @@ Bad (DONE and IN_PROGRESS merged — hides what is actually shippable):
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
-- [long-test-discipline](../long-test-discipline/SKILL.md) — long tests still need honest status buckets.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — commit status with a task-id prefix.

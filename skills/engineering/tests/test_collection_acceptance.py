@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Collection-level acceptance test for the ten engineering playbook skills.
 
-Checks the acceptance criteria of skills-engineering-r3-01:
+Checks the acceptance criteria of skills-engineering-r3-01 and the r3-05 quality pass:
   * RESEARCH.md exists with the ranked list and final names
   * every skill folder has a SKILL.md with valid front matter
   * every skill has references/SOURCES.md with >= 6 unique URLs
   * every skill has references/DESIGN.md (trigger, what-it-does-better, procedure, scripts, 5 evals)
   * every skill has references/EVALS.md with >= 5 prompts
+  * every SKILL.md `## Related skills` section links to real skill folders and the
+    cross-link graph is acyclic with `shared-tree-git` as the unique sink
+  * every references/EVALS.md has >= 3 near-miss prompts (trigger-precision guard)
+  * every SOURCES.md records a retrieval date of 2026-10-14 (re-verification pass)
 """
 from __future__ import annotations
 
@@ -73,6 +77,18 @@ def check() -> list[str]:
             if len(urls) < 6:
                 errors.append(f"{name}: SOURCES.md has {len(urls)} unique URLs (< 6 required)")
 
+        # SOURCES.md re-verification date (r3-05 task item 3)
+        stext = sources.read_text(encoding="utf-8")
+        if "2026-10-14" not in stext:
+            errors.append(f"{name}: SOURCES.md not re-verified on 2026-10-14")
+
+        # EVALS near-miss prompts (r3-05 task item 2)
+        etext = evals.read_text(encoding="utf-8")
+        nm_section = etext.split("Near-miss", 1)[-1] if "Near-miss" in etext else ""
+        nm_count = len(re.findall(r"^\s*-\s+\*\*N\d", nm_section, re.MULTILINE))
+        if nm_count < 3:
+            errors.append(f"{name}: EVALS.md has {nm_count} near-miss prompts (< 3 required)")
+
         if not design.is_file():
             errors.append(f"{name}: references/DESIGN.md missing")
         else:
@@ -88,6 +104,48 @@ def check() -> list[str]:
             prompts = re.findall(r"^##\s+(?:\d+\.|E\d+|Prompt\s+\d+)", evals.read_text(encoding="utf-8"), re.MULTILINE)
             if len(prompts) < 5:
                 errors.append(f"{name}: EVALS.md has {len(prompts)} prompts (< 5 required)")
+
+    # Cross-link graph: acyclic, shared-tree-git is the unique sink (r3-05 task item 4)
+    edges: dict[str, set[str]] = {name: set() for name in EXPECTED}
+    for name in EXPECTED:
+        skill_md = ENGINEERING / name / "SKILL.md"
+        body = skill_md.read_text(encoding="utf-8")
+        section = body.split("## Related", 1)[-1] if "## Related" in body else ""
+        for m in re.finditer(r"\[([a-z0-9-]+)\]\(\.\./([a-z0-9-]+)/SKILL\.md\)", section):
+            target = m.group(2)
+            if target not in edges:
+                errors.append(f"{name}: Related section links unknown skill '{target}'")
+                continue
+            edges[name].add(target)
+    # every skill must have a Related section
+    for name in EXPECTED:
+        body = (ENGINEERING / name / "SKILL.md").read_text(encoding="utf-8")
+        if "## Related" not in body:
+            errors.append(f"{name}: SKILL.md has no '## Related skills' section")
+    # shared-tree-git must be a sink: its Related section may *describe* other skills
+    # (informational mentions) but must not link them, otherwise the graph has a cycle.
+    stg_body = (ENGINEERING / "shared-tree-git" / "SKILL.md").read_text(encoding="utf-8")
+    stg_section = stg_body.split("## Related", 1)[-1] if "## Related" in stg_body else ""
+    if re.search(r"\]\(\.\./[a-z0-9-]+/SKILL\.md\)", stg_section):
+        errors.append("shared-tree-git must not link other skills in its Related section (it is the sink)")
+    # DFS cycle detection
+    WHITE, GRAY, BLACK = 0, 1, 2
+    colour: dict[str, int] = {n: WHITE for n in EXPECTED}
+
+    def dfs(node: str) -> bool:
+        colour[node] = GRAY
+        for nxt in edges.get(node, ()):
+            if colour[nxt] == GRAY:
+                return True
+            if colour[nxt] == WHITE and dfs(nxt):
+                return True
+        colour[node] = BLACK
+        return False
+
+    for n in EXPECTED:
+        if colour[n] == WHITE and dfs(n):
+            errors.append("cross-link graph has a cycle")
+            break
 
     return errors
 

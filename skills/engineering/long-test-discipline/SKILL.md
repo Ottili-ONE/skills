@@ -98,4 +98,5 @@ pytest tests/test_flaky.py            # green, but was it luck?
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
+- [honest-status](../honest-status/SKILL.md) — a long test's outcome is a status item; mark it VERIFIED only after the log shows the JSON summary, not DONE on a half-written log.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — commit the wrapper script with explicit paths only.

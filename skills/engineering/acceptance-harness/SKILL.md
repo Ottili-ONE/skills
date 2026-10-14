@@ -103,4 +103,6 @@ requirement: "Create order AND send email"
 ## Related skills
 - [honest-status](../honest-status/SKILL.md) — PASS/FAIL/BLOCKED outcomes are status buckets.
 - [problem-json-contracts](../problem-json-contracts/SKILL.md) — a failure in a scenario is a problem-detail payload.
+- [module-contract-first](../module-contract-first/SKILL.md) — a scenario's criteria are module contracts: enumerate them, do not hand-wave the API surface.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — a scenario that takes minutes is a long test; schedule it in the foreground with a recorded seed.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — the scenario file, evidence and outcome are committed with a task-id prefix.

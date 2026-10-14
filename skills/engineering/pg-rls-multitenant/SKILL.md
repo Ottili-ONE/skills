@@ -115,4 +115,5 @@ ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
 - [long-test-discipline](../long-test-discipline/SKILL.md) — the leak test is a long test that runs in the foreground.
 - [module-contract-first](../module-contract-first/SKILL.md) — an RLS policy is a contract: enumerate it, version it, block merge on drift.
 - [problem-json-contracts](../problem-json-contracts/SKILL.md) — a leak is reported as a problem detail, not a silent row.
+- [outbox-idempotency](../outbox-idempotency/SKILL.md) — the outbox row is tenant-scoped and must survive RLS; the leak test and the outbox leak test share the same tenant-isolation contract.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — the migration and the leak-test evidence are committed with a task-id prefix.

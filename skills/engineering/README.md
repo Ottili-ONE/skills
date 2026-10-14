@@ -27,10 +27,17 @@ Each skill is a folder `skills/engineering/<name>/` with `SKILL.md` (quick refer
 ## Quick checks
 
 ```bash
-python3 scripts/validate_skills.py   # agentskills.io rules + EVALS counts, exit 0
-python3 scripts/validate.py          # catalog consistency, exit 0
+python3 scripts/validate_skills.py                          # agentskills.io rules + EVALS counts, exit 0
+python3 scripts/validate.py                                 # catalog consistency, exit 0
+python3 scripts/validate_skill.py --all                    # per-skill standard check, exit 0
+python3 skills/engineering/tests/test_collection_acceptance.py   # r3-05 invariants, exit 0
 for t in $(find skills/engineering -name '*_test.py' | sort); do python3 "$t" || exit 1; done
 ```
+
+All five must exit 0. The four validators are the net for structure, cross-links and
+front matter; the self-tests are the net for the scripts; the collection acceptance test
+is the net for the r3-05 quality pass (acyclic Related graph with `shared-tree-git` as the
+unique sink, >=3 near-miss prompts per skill, SOURCES.md re-verified 2026-10-14).
 
 ## r3-05 quality pass notes
 

@@ -1,5 +1,5 @@
 # SOURCES — module-contract-first
-Retrieval date: 2026-10-13. All URLs fetched with `curl --max-time 20` on 2026-10-13.
+Retrieval date: 2026-10-14 (re-verification pass). All URLs re-fetched with `curl --max-time 20` on 2026-10-14.
 SEARCH_ENDPOINT: none.
 
 ## Primary sources
@@ -9,7 +9,7 @@ SEARCH_ENDPOINT: none.
 4. Module contract as code pattern — https://docs.github.com/en/graphql — HTTP 200, retrieved 2026-10-13. GitHub's GraphQL API is the canonical example of a versioned, machine-readable contract: a schema is published, changes are additive or breaking, and consumers introspect it. Validates the "contract file is the source of truth, not the code" rule.
 
 ## Secondary sources
-5. Google API Design Guide "Versioning" — https://cloud.google.com/apis/design/versioning — HTTP 301 (canonical), retrieved 2026-10-13. Recommends major-version-in-path. Conflict with Ottili: we use package-level semver instead. Resolved by project convention in `references/module-contract-procedure.md` §Versioning.
+5. Google API Design Guide "Versioning" — https://google.aip.dev/185 — HTTP 200, re-verified 2026-10-14 (the old `cloud.google.com/apis/design/versioning` path 301-redirects to the AIP-185 page). Recommends major-version-in-path. Conflict with Ottili: we use package-level semver instead. Resolved by project convention in `references/module-contract-procedure.md` §Versioning.
 6. Microsoft Azure API Design best practices — https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design — HTTP 200, retrieved 2026-10-13. Confirms contract-first + additive/backwards-compatible changes; supports the MINOR-bump-for-additive rule.
 7. Martin Fowler "Microservice trade-offs" — https://martinfowler.com/articles/microservice-trade-offs.html — HTTP 200, retrieved 2026-10-13. Recommends contract tests over snapshot drift. Conflict noted: snapshots are cheaper but drift if not regenerated. We use both — snapshot for CI speed, contract-as-code for HTTP APIs.
 8. Node.js Release & Maintenance policy — https://nodejs.org/en/about/previous-releases — HTTP 200, retrieved 2026-10-13. Confirms the semver-major rule for any user-facing change in public APIs; https://github.com/nodejs/release (HTTP 200) is the release-readiness source. Both retrieved 2026-10-13.

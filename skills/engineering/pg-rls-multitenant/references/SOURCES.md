@@ -1,6 +1,6 @@
 # pg-rls-multitenant — SOURCES
 
-All retrievals: 2026-10-13 (re-verification pass). Host: Biest. SEARCH_ENDPOINT none (search results were pointers only; the URLs below were fetched directly with `curl -L --max-time 20`).
+All retrievals: 2026-10-14 (re-verification pass). Host: Biest. SEARCH_ENDPOINT none (search results were pointers only; the URLs below were fetched directly with `curl -L --max-time 20`).
 
 ## Primary sources
 
@@ -14,7 +14,7 @@ All retrievals: 2026-10-13 (re-verification pass). Host: Biest. SEARCH_ENDPOINT 
    Used for: `DROP POLICY ... ON table CASCADE` behaviour and the "policy must not silently vanish" rule.
 5. PostgreSQL 18 docs, ALTER TABLE — https://www.postgresql.org/docs/current/sql-altertable.html (HTTP 200, retrieved 2026-10-07).
    Used for: `ENABLE ROW LEVEL SECURITY`, `DISABLE ROW LEVEL SECURITY`, `FORCE ROW LEVEL SECURITY`, `NO FORCE ROW LEVEL SECURITY`, and the fact that these are owner-only privileges.
-6. Supabase docs, "Row Level Security" — https://supabase.com/docs/guides/auth/row-level-security (HTTP 200, re-verified 2026-10-13).
+6. Supabase docs, "Row Level Security" — https://supabase.com/docs/guides/database/postgres/row-level-security (HTTP 200, re-verified 2026-10-14; the old `/guides/auth/row-level-security` path 308-redirects to the `/guides/database/postgres/` path).
    Used for: grant-vs-policy ordering (missing grant → 42501 before any policy runs), `service_role` bypass, `auth.uid()` returning NULL when unauthenticated, views bypassing RLS by default, `set local request.jwt.claim.sub` for testing, and the pgTAP `results_eq`/`is_empty`/`throws_ok` testing idiom.
 
 ## Version-sensitive facts
@@ -41,8 +41,8 @@ sub-SELECT race, covert channels) is live at the current-docs path; the older
 ## Dead / moved URLs (recorded 2026-10-13)
 The following URLs from earlier passes no longer resolve and must not be linked:
 - `https://www.postgresql.org/docs/current/ddl-rls.html` — 404; the canonical path is `ddl-rowsecurity.html`.
-- `https://kafka.apache.org/documentation/producersemantics.html` — 404 as of 2026-10-13. Kafka's at-least-once / idempotent-producer semantics are now documented under the general Kafka documentation index; the specific page moved. The outbox skill records this and points at the Kafka documentation index rather than a stale path.
-- `https://martinfowler.com/articles/transactional_outbox.html` — 404 as of 2026-10-13. The canonical article is reachable via the Martin Fowler site index; link to the site root or the bliki tag page and treat the article as the authoritative *description* (write business data and outbox row in one transaction; a relay publishes outbox rows asynchronously), not as a live URL to cite.
+- `https://kafka.apache.org/documentation/producersemantics.html` — 404 as of 2026-10-13; re-confirmed 404 on 2026-10-14. Kafka's at-least-once / idempotent-producer semantics are now documented under the general Kafka documentation index; the specific page moved. The outbox skill records this and points at the Kafka documentation index rather than a stale path.
+- `https://martinfowler.com/articles/transactional_outbox.html` — 404 as of 2026-10-13; re-confirmed 404 on 2026-10-14. The canonical article is reachable via the Martin Fowler site index; link to the site root or the bliki tag page and treat the article as the authoritative *description* (write business data and outbox row in one transaction; a relay publishes outbox rows asynchronously), not as a live URL to cite.
 - `https://developers.cloudflare.com/workers/runtime-apis/http/` — 404 as of 2026-10-13. The Workers runtime docs index is live at `/workers/runtime-apis/`; the HTTP-specific subsection was restructured. Retry-after behaviour is verified against RFC 7231 §7.1.2 instead.
 
 ## Additional primary sources (verified 2026-10-13)

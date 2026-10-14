@@ -81,4 +81,6 @@ Good (tracked workaround — marker + ISSUE ticket, checker passes):
 - [module-contract-first](../module-contract-first/SKILL.md) — the Foundation `exports` map is itself a module contract; enumerate it, do not hand-wave it.
 - [problem-json-contracts](../problem-json-contracts/SKILL.md) — a conformance failure is reported as a problem detail, not a silent row.
 - [playwright-a11y-e2e](../playwright-a11y-e2e/SKILL.md) — axe assertions must not be weakened for token drift.
+- [honest-status](../honest-status/SKILL.md) — a conformance failure is a status item; mark it VERIFIED only after the checker ran green, not after the code is written.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — the fresh-consumer install + test cycle takes minutes; run it in the foreground with a recorded seed.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — the conformance report and the fresh-consumer test are committed with a task-id prefix.

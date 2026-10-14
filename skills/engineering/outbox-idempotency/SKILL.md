@@ -100,5 +100,6 @@ SELECT ... FROM outbox WHERE sent_at IS NULL LIMIT 50 FOR UPDATE SKIP LOCKED;
 - [acceptance-harness](../acceptance-harness/SKILL.md) — the outbox leak test is an acceptance scenario with PASS evidence.
 - [honest-status](../honest-status/SKILL.md) — the outbox migration is a status item; mark it VERIFIED only when the leak test ran.
 - [problem-json-contracts](../problem-json-contracts/SKILL.md) — outbound failures are emitted as problem details.
-- [pg-rls-multitenant](../pg-rls-multitenant/SKILL.md) — the outbox row is tenant-scoped and must survive RLS.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — the leak test is a long test; run it in the foreground with a recorded seed and a resource cap.
+- [module-contract-first](../module-contract-first/SKILL.md) — the outbox schema and the idempotency contract are module contracts; snapshot them, block merge on drift.
 - [shared-tree-git](../shared-tree-git/SKILL.md) — the outbox migration and the leak-test evidence are committed with a task-id prefix.
