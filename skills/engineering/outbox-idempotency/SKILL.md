@@ -6,6 +6,8 @@ compatibility: "PostgreSQL 15+ / any transactional store; framework-agnostic"
 metadata: {}
 allowed-tools: []
 ---
+
+Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
 # Outbox Idempotency Skill — Quick Reference (body <500 lines; full procedure in references/outbox-procedure.md)
 
 ## When to use this skill (trigger)

@@ -6,6 +6,8 @@ compatibility: "framework-agnostic; Node.js host; Linux; Playwright browsers ins
 metadata: {}
 allowed-tools: []
 ---
+
+Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
 # Playwright A11y E2E Skill (body <500 lines; full procedure in references/playwright-a11y-e2e-procedure.md)
 
 ## When to use this skill (trigger)

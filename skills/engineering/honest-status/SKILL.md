@@ -6,6 +6,8 @@ compatibility: "framework-agnostic; text; any host"
 metadata: {}
 allowed-tools: []
 ---
+
+Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
 # Honest Status Skill — Quick Reference (body <500 lines; full procedure in references/honest-status-procedure.md)
 
 ## When to use this skill (trigger)

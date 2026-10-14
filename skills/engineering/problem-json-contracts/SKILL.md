@@ -6,6 +6,8 @@ compatibility: "Any HTTP API; RFC 9457 (2023); JSON Schema draft 2020-12"
 metadata: {}
 allowed-tools: []
 ---
+
+Standard: name/description/length rules — [agentskills.io standard](../references/agentskills-standard.md).
 # Problem JSON Contracts Skill — Quick Reference (body <500 lines; full procedure in references/problem-procedure.md)
 
 ## When to use this skill (trigger)

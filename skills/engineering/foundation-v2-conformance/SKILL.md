@@ -6,6 +6,8 @@ compatibility: "Node.js or Python host; Foundation v2 packages installed; Linux"
 metadata: {}
 allowed-tools: []
 ---
+
+Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
 # Foundation v2 Conformance Skill (body <500 lines)
 
 Full procedure: references/foundation-v2-conformance-procedure.md
@@ -69,4 +71,3 @@ Good (tracked workaround — marker + ISSUE ticket, checker passes):
 
 ## Related skills
 - [acceptance-harness](../acceptance-harness/SKILL.md)
-

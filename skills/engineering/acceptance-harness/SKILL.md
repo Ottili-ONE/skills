@@ -6,6 +6,8 @@ compatibility: "framework-agnostic; any test runner; Linux"
 metadata: {}
 allowed-tools: []
 ---
+
+Standard: name/description/length rules — [agentskills.io standard](../../references/agentskills-standard.md).
 # Acceptance Harness Skill (body <500 lines)
 
 Full procedure: references/acceptance-harness-procedure.md
