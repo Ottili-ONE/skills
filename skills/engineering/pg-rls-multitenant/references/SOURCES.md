@@ -19,7 +19,7 @@ All retrievals: 2026-10-14 (re-verification pass). Host: Biest. SEARCH_ENDPOINT 
 
 ## Version-sensitive facts
 
-- Postgres 18 is the current stable line (re-verified 2026-10-13); `FORCE ROW LEVEL SECURITY` has existed since 9.5 and is unchanged. No version bump expected for the RLS feature set.
+- Postgres 18 is the current stable line, specifically **18.6** (re-verified 2026-10-14 against `https://www.postgresql.org/docs/18/`); `FORCE ROW LEVEL SECURITY` has existed since 9.5 and is unchanged. No version bump expected for the RLS feature set.
 - Supabase changed its key model in 2025: the JWT-based `service_role` key is legacy; a "secret key" is preferred. The `service_role` Postgres role still has `bypassrls`. This is a Supabase-specific fact, not a Postgres one — do not state it as Postgres behaviour.
 
 ## Conflicts / open questions
@@ -32,8 +32,8 @@ All retrievals: 2026-10-14 (re-verification pass). Host: Biest. SEARCH_ENDPOINT 
 - Existing: Supabase's own RLS guide and the Postgres manual are reference material, not agents. Community agent skills for RLS are thin and almost all assume Supabase's `auth.uid()` helper.
 - Difference: this skill is framework-agnostic, treats the tenant key as a *first-class design decision* (column, JWT claim, or security-definer lookup), mandates `FORCE ROW LEVEL SECURITY` for anything that is not a dev-only table, gives an expand/contract migration recipe with rollback, and ships a deterministic leak-test harness that runs against a real Postgres (or Docker image) with PASS/FAIL assertions rather than prose advice.
 
-## Re-verification (2026-10-13)
-All ten primary URLs above were re-fetched with `curl -L --max-time 20` on 2026-10-13:
+## Re-verification (2026-10-14)
+All primary URLs above were re-fetched with `curl -L --max-time 20` on 2026-10-14: HTTP 200 for every one. The `ddl-rowsecurity` page (owner-bypass, FORCE RLS, WITH CHECK, sub-SELECT race, covert channels) is live at the current-docs path; the older `ddl-rls.html` path 404s and must not be linked. The docs landing page reports PostgreSQL 18.6 as the current stable line.
 HTTP 200 for every one. The `ddl-rowsecurity` page (owner-bypass, FORCE RLS, WITH CHECK,
 sub-SELECT race, covert channels) is live at the current-docs path; the older
 `ddl-rls.html` path 404s and must not be linked.
