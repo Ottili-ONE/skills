@@ -158,6 +158,70 @@ def cmd_audit(sources: list[dict], claims_path: Path, min_score: int) -> int:
     return 0
 
 
+def cmd_corroboration(sources: list[dict], min_score: int) -> int:
+    """Count *independent* upstreams behind the kept sources.
+
+    Corroboration is not "how many URLs": two URLs that share an upstream are
+    one source. This subcommand groups kept sources by their declared upstream
+    and reports the number of distinct upstreams, which is what the
+    "corroboration" axis of the quality score actually measures. It also flags
+    the fake-middle pattern: several URLs that agree exactly on a numeric value
+    but trace to the same upstream, which is the signature of one source copied
+    by several.
+    """
+    kept = [s for s in sources if score_source(s) >= min_score and s.get("url")]
+    if not kept:
+        print("FAIL: no kept sources to check", file=sys.stderr)
+        return 1
+    upstreams: dict[str, list[str]] = {}
+    for s in kept:
+        up = str(s.get("upstream") or s.get("url"))
+        upstreams.setdefault(up, []).append(s.get("url", "?"))
+    failures: list[str] = []
+    for up, urls in upstreams.items():
+        if len(urls) > 1:
+            failures.append(
+                f"FAIL: {len(urls)} kept URLs share upstream '{up}': {urls}; "
+                f"they count as one source for corroboration"
+            )
+    n = len(upstreams)
+    print(f"INFO: {len(kept)} kept URL(s) trace to {n} distinct upstream(s)", file=sys.stderr)
+    if failures:
+        for f in failures:
+            print(f, file=sys.stderr)
+        print(f"FAIL: {len(failures)} shared-upstream problem(s)", file=sys.stderr)
+        return 1
+    print(f"PASS: {n} independent upstream(s) behind {len(kept)} kept URL(s)", file=sys.stderr)
+    return 0
+
+
+def cmd_provenance(sources: list[dict], min_score: int) -> int:
+    """Every kept source must carry URL + retrieval date + pinned version.
+
+    A source without a retrieval date is memory, not evidence. A source
+    without a pinned version cannot be re-verified. This subcommand checks the
+    three fields together on the kept set only: a low-scoring source is
+    discarded before it is read, so its missing fields are not a failure.
+    """
+    kept = [s for s in sources if score_source(s) >= min_score and s.get("url")]
+    if not kept:
+        print("FAIL: no kept sources to check", file=sys.stderr)
+        return 1
+    failures: list[str] = []
+    for i, s in enumerate(kept):
+        if not str(s.get("retrieved", "")).strip():
+            failures.append(f"FAIL: kept source {i} ({s.get('url')}) has no 'retrieved' date")
+        if not str(s.get("version", "")).strip():
+            failures.append(f"FAIL: kept source {i} ({s.get('url')}) has no pinned 'version'")
+    if failures:
+        for f in failures:
+            print(f, file=sys.stderr)
+        print(f"FAIL: {len(failures)} provenance problem(s)", file=sys.stderr)
+        return 1
+    print(f"PASS: all {len(kept)} kept sources carry URL + retrieval date + version", file=sys.stderr)
+    return 0
+
+
 def cmd_cite(sources: list[dict], min_score: int) -> int:
     """Emit a citation block: one line per kept source, URL + retrieval date."""
     kept = [s for s in sources if score_source(s) >= min_score and s.get("url")]
@@ -243,6 +307,14 @@ def main() -> int:
     p.add_argument("sources", type=Path)
     p.add_argument("--min", type=int, default=MIN_SCORE)
 
+    p = sub.add_parser("corroboration")
+    p.add_argument("sources", type=Path)
+    p.add_argument("--min", type=int, default=MIN_SCORE)
+
+    p = sub.add_parser("provenance")
+    p.add_argument("sources", type=Path)
+    p.add_argument("--min", type=int, default=MIN_SCORE)
+
     args = ap.parse_args()
     if args.cmd in ("score", "cite", "fetch") and not args.sources.is_file():
         print(f"FAIL: sources file not found: {args.sources}", file=sys.stderr)
@@ -265,6 +337,10 @@ def main() -> int:
         return cmd_cite(sources, args.min)
     if args.cmd == "fetch":
         return cmd_fetch(sources, args.min)
+    if args.cmd == "corroboration":
+        return cmd_corroboration(sources, args.min)
+    if args.cmd == "provenance":
+        return cmd_provenance(sources, args.min)
     return cmd_audit(sources, args.claims, args.min)
 
 
