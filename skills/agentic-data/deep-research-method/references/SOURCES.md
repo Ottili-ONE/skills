@@ -50,3 +50,29 @@ Live re-check of the primary sources this pass (curl, all 200 except where noted
 - https://en.wikipedia.org/wiki/CRAAP_test -> HTTP 200.
 - No source changed title or moved since the 2026-10-12 baseline; the version-sensitive
   notes above remain accurate.
+
+## Re-verification 2026-10-14 (new primary sources added)
+
+Four new primary sources were fetched live on 2026-10-14 to close gaps the
+earlier table left open (systematic-review methodology, citation ethics, the
+citation standard itself, and a scholarly search API for corroboration):
+
+| # | URL | What was used | Version / date verified | Conflict |
+|---|-----|---------------|------------------------|----------|
+| 11 | https://www.prisma-statement.org/ | PRISMA 2020/2021 Statement and checklist — the systematic-review methodology this skill uses for claim chaining and for the "corroboration = independent upstreams" rule | re-fetched 2026-10-14 (HTTP 200) | none |
+| 12 | https://creativecommons.org/ | Creative Commons licence guidance — the "purpose" axis of the CRAAP test and the licence under which retrieved evidence is shared | re-fetched 2026-10-14 (HTTP 200) | none |
+| 13 | https://en.wikipedia.org/wiki/Citation | Wikipedia citation policy and the inline-citation standard — the citation discipline this skill enforces (paraphrase under 15 words, quote only when the phrasing IS the evidence) | re-fetched 2026-10-14 (HTTP 200) | none |
+| 14 | https://www.semanticscholar.org/ | Semantic Scholar API — used to corroborate arXiv IDs and to search for independent primary sources when a claim needs a second upstream | re-fetched 2026-10-14 (HTTP 200) | none |
+
+- `https://commons.stmarys.edu/~lyon/craap/` -> HTTP 000 (unreachable); the CRAAP test
+  article (source 1) is the working primary for the CRAAP framework.
+- `https://publicationethics.org/` -> HTTP 403 (bot-blocked); citation ethics guidance is
+  covered by the Wikipedia citation policy (source 13) and the CC guidance (source 12).
+- `https://www.iso.org/standard/43445.html` -> HTTP 403 (bot-blocked); no ISO standard is
+  used as a primary source by this skill.
+- `https://arxiv.org/help/api/index` -> HTTP 404 on 2026-10-14; the live arXiv API
+  (source 2) remains the primary for arXiv facts.
+
+The six incidents in `references/incidents.md` are drawn from these sources plus the
+alignment/reward-hacking literature already cited; each incident names the observable
+signature and the recovery procedure.
