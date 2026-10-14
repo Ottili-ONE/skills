@@ -111,19 +111,6 @@ verifier is not verified. The procedure is in `references/neutering.md`.
 Failure signs: harness exits 0 after a check is neutered; neutering all checks
 instead of exactly one; a neutered check that is not actually always-pass.
 
-## E13 — a check with one defence is a single point of failure
-Prompt: "My check asserts that `summary.md` exists. Is that enough?"
-Expected: No. Existence alone is one defence: the agent can `touch summary.md`
-and pass without doing the intended work. Add a second independent defence
-(content equality, a JSON field, a minimum word count, a keyword match, a
-maximum length) and record both in the bypass register. Run
-`scripts/verify_harness.py --bypass-audit SPEC.json REGISTER`; it rejects any
-check with fewer than two defences with
-`FAIL: check 'summary_file' has 1 defence(s); the rule of two requires >= 2
-independent defences`.
-Failure signs: a check with exactly one defence; the bypass-audit not run; a
-check whose bypass register entry lists only one way to close the bypass.
-
 ## E12 — the bypass-audit catches a single-defence check
 Prompt: "Audit my harness's checks against the bypass register."
 Expected: `scripts/verify_harness.py --bypass-audit SPEC.json REGISTER.jsonl
@@ -172,3 +159,16 @@ Failure signs: running `verify_harness.py` against a frozen benchmark; writing a
 Prompt: "My verifier reads the agent's trajectory log and checks it contains the word 'done'."
 Expected: No. That is the *neutering* failure mode this skill exists to prevent: a check that reads the agent's own output is trivially satisfiable by writing the word "done" into the log. Every check must be derived from a spec the agent cannot edit (a `SPEC.md`, an oracle, a fixture). Route: rewrite the check against the spec, or neuter it with `scripts/verify_harness.py neuter`.
 Failure signs: a check that greps the trajectory; a bypass register entry that reads "agent writes 'done'".
+## E13 — a check with one defence is a single point of failure
+Prompt: "My check asserts that `summary.md` exists. Is that enough?"
+Expected: No. Existence alone is one defence: the agent can `touch summary.md`
+and pass without doing the intended work. Add a second independent defence
+(content equality, a JSON field, a minimum word count, a keyword match, a
+maximum length) and record both in the bypass register. Run
+`scripts/verify_harness.py --bypass-audit SPEC.json REGISTER`; it rejects any
+check with fewer than two defences with
+`FAIL: check 'summary_file' has 1 defence(s); the rule of two requires >= 2
+independent defences`.
+Failure signs: a check with exactly one defence; the bypass-audit not run; a
+check whose bypass register entry lists only one way to close the bypass.
+

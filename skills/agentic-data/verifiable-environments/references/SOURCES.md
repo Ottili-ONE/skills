@@ -83,3 +83,6 @@ no hallucinated titles, no moved URLs:
 Web primaries also 200: github.com/openai/evals, prisma-statement.org,
 creativecommons.org, en.wikipedia.org/wiki/Citation, semanticscholar.org.
 No fact drift since the 2026-10-13 baseline.
+
+## Re-verified 2026-10-14 (PASS 5)
+Re-fetched the version-sensitive primaries live on 2026-10-14 (see `references/PASS5-R3-05-REVERIFY.md` for the full table). All pinned versions are still current: MCP 2026-07-28 (and the 2025-11-25 / 2025-06-18 fallbacks), Playwright 1.64.0 on PyPI, datasketch 2.0.0 with the `affine32` default, the GPT-2 pre-tokenizer regex at line 53 of `openai/gpt-2`, RFC 9309, and the 17-member `computer_toolset_20260801` registry. The two known bot-blocked URLs (iso.org WARC, openai.com/index/evals) are unchanged and are already recorded as secondary sources. No fact drift.

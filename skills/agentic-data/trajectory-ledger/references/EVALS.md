@@ -132,3 +132,20 @@ cost is accepted (it sums what it can), but the run is flagged on the strict
 walk. Every event that carries a cost dict must carry all four units.
 Failure signs: a partial cost being treated as complete; the strict walk not
 being run before a cost-sensitive decision.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — application telemetry
+Prompt: "Log every HTTP request my service makes, with status and latency."
+Expected: No. That is *application telemetry* — a metrics/logging pipeline, not an agent trajectory ledger. This skill is for *multi-step agent runs*: typed events (tool/think/observe), grounded tool calls (args + result recorded), state hashes, terminal evidence, cost with units. A web server's request log has no steps, no tool calls and no outcome status.
+Failure signs: treating an access log as a trajectory; recording a tool call without its result.
+
+## N2 — a single tool call
+Prompt: "Record this one `git status` call in the ledger."
+Expected: No. A ledger is a *sequence* of events across a run; a single tool call has no trajectory to replay or audit. The skill's core invariant is "a sequence of typed events where every tool call is grounded" — one event is not a sequence. Use a plain log for single calls; reserve this skill for multi-step runs.
+Failure signs: running `ledger.py append` for a one-off command and calling it a trajectory.
+
+## N3 — a cost report with no events
+Prompt: "Summarise the cost of my last ten agent runs."
+Expected: No. That is *aggregation over completed runs*, not recording a trajectory. This skill records and audits *individual runs*; cost is a field on each terminal event, not a standalone report. If the runs were never recorded as trajectories, the ledger has nothing to summarise — record them first with `ledger.py append`.
+Failure signs: running `ledger.py cost` on a directory with no JSONL; treating a cost summary as a trajectory.
