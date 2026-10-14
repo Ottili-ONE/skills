@@ -1,46 +1,46 @@
-# Engineering Playbook Skills (r3-05 quality pass)
+---
+title: Engineering Playbooks — Ottili ONE Skills
+---
 
-Ten opinionated, offline-checkable Agent Skills for Ottili engineering work.
-Each skill is a folder `skills/engineering/<name>/` with `SKILL.md` (quick reference),
-`references/` (procedure, EVALS, SOURCES, DESIGN), and `scripts/` (deterministic checkers).
+# Engineering Playbooks
 
-## Install
-
-```bash
-./scripts/install.sh --target codex --force pg-rls-multitenant outbox-idempotency ...
-# or copy any skill folder into your agent's skills directory
-```
+Ten opinionated, testable skills for Ottili engineering lanes. Each one is a **contract**: a
+trigger, a decision table, a checker script, and an `EVALS.md` with real prompts. Install with
+`scripts/install.sh --target <agent-dir> <skill-name>` or copy the folder.
 
 ## Skills
 
-- **acceptance-harness** — Define PASS/FAIL/BLOCKED acceptance scenarios, collect per-scenario evidence, and inject faults to prove resilience.
-- **foundation-v2-conformance** — Enforce token-only styling, named imports, tracked workaround markers, and fresh-consumer tests for Foundation v2 packages.
-- **honest-status** — Write STATUS.md that separates done/verified/in-progress/blocked, detects false-done claims, and records runnable evidence pointers.
-- **long-test-discipline** — Schedule long-running tests in the foreground with timeout wrappers, structured logs, resource limits, and deterministic reruns for flakes.
-- **module-contract-first** — Design and enforce module contracts: public API surface, versioned schemas, drift tests against snapshots, boundary rules between siblings.
-- **outbox-idempotency** — Implement the transactional outbox pattern with idempotency keys, poison-row handling, and replay that preserves the original key.
-- **pg-rls-multitenant** — Enforce Postgres row-level security for multi-tenant workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, automated leak tests.
-- **playwright-a11y-e2e** — End-to-end browser tests with Playwright and axe-core: axe scans, keyboard-only navigation, responsive breakpoints, stable selectors.
-- **problem-json-contracts** — RFC 9457 problem+json error contracts: error catalogue, retry semantics, versioned schemas, validators that fail on malformed responses.
-- **shared-tree-git** — Commit by path with task-id prefixes in a multi-agent shared tree, recover `index.lock`, and verify commit isolation.
+| Skill | One-line value | Install hint |
+|-------|----------------|--------------|
+| [acceptance-harness](./acceptance-harness/SKILL.md) | Turns "did it work?" into a PASS/FAIL/BLOCKED verdict with evidence. | `install.sh --target agents acceptance-harness` |
+| [foundation-v2-conformance](./foundation-v2-conformance/SKILL.md) | Stops agents from inventing styling/workarounds that break on the next Foundation v2 release. | `install.sh --target agents foundation-v2-conformance` |
+| [honest-status](./honest-status/SKILL.md) | Replaces `DONE`/`VERIFIED` prose with auditable status + evidence + ticket. | `install.sh --target agents honest-status` |
+| [long-test-discipline](./long-test-discipline/SKILL.md) | Runs minute-scale tests in the foreground with a wrapper, a recorded seed and a JSON record. | `install.sh --target agents long-test-discipline` |
+| [module-contract-first](./module-contract-first/SKILL.md) | Forces a versioned public API + snapshot before any implementation starts. | `install.sh --target agents module-contract-first` |
+| [outbox-idempotency](./outbox-idempotency/SKILL.md) | Makes duplicate publishes and crash-replays safe via one-transaction outbox + idempotency key. | `install.sh --target agents outbox-idempotency` |
+| [pg-rls-multitenant](./pg-rls-multitenant/SKILL.md) | Tenant-key-first Postgres RLS with FORCE, expand/contract migrations and automated leak tests. | `install.sh --target agents pg-rls-multitenant` |
+| [playwright-a11y-e2e](./playwright-a11y-e2e/SKILL.md) | `getByTestId` selectors, unweakened axe rules, keyboard traversal incl. shadow DOM. | `install.sh --target agents playwright-a11y-e2e` |
+| [problem-json-contracts](./problem-json-contracts/SKILL.md) | RFC 9457 problem details with a catalogue, OpenAPI sync and duplicate-code detection. | `install.sh --target agents problem-json-contracts` |
+| [shared-tree-git](./shared-tree-git/SKILL.md) | Commits only your own paths on a shared tree; checks `index.lock` PID liveness first. | `install.sh --target agents shared-tree-git` |
 
-## Quick checks
+## Evals
 
-```bash
-python3 scripts/validate_skills.py                          # agentskills.io rules + EVALS counts, exit 0
-python3 scripts/validate.py                                 # catalog consistency, exit 0
-python3 scripts/validate_skill.py --all                    # per-skill standard check, exit 0
-python3 skills/engineering/tests/test_collection_acceptance.py   # r3-05 invariants, exit 0
-for t in $(find skills/engineering -name '*_test.py' | sort); do python3 "$t" || exit 1; done
+Every skill ships `references/EVALS.md` with **5+ realistic prompts** (expected behaviour +
+failure signs + "what the skill changes vs no skill") and **3+ near-miss prompts** (act before
+the incident). Run the prompts mentally against the SKILL.md, and where a script exists, with a
+real input:
+
+```
+python3 scripts/validate_skill.py --all
+python3 scripts/validate.py
 ```
 
-All five must exit 0. The four validators are the net for structure, cross-links and
-front matter; the self-tests are the net for the scripts; the collection acceptance test
-is the net for the r3-05 quality pass (acyclic Related graph with `shared-tree-git` as the
-unique sink, >=3 near-miss prompts per skill, SOURCES.md re-verified 2026-10-14).
+## Cross-links
 
-## r3-05 quality pass notes
+The `## Related skills` section of every SKILL.md links to sibling skills by name. The graph is
+**acyclic**: `shared-tree-git` is the unique sink (it has no outgoing edges) and every other skill
+reaches it transitively. Verify with:
 
-- Every `references/EVALS.md` carries 5 primary prompts and 3 near-miss prompts (trigger-precision guard).
-- Cross-links in every `## Related skills` section form an acyclic graph with `shared-tree-git` as the unique sink.
-- Version-sensitive facts in SOURCES.md were re-verified against primary sources this pass.
+```
+python3 scripts/check_shared_tree.py scan -- skills/engineering
+```

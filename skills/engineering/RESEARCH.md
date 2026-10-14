@@ -84,7 +84,7 @@ Commits (all `skills-engineering-r3-01:`, own paths only):
 | `d899fcf` | `check_contract_drift.py --classify` semver-bump subcommand |
 | `0cdbb10` | worked examples + near-miss triggers for module-contract-first |
 | `b109a4c` | worked examples + near-miss triggers for shared-tree-git; re-verify SOURCES (`git-index` 404 → `git-update-index`, +8 live URLs) |
-| `cb80d82` | worked examples + selector decision table for playwright-a11y-e2e; re-verify axe-core 4.14.0 / Playwright 1.64.0 |
+| `cb80d82` | worked examples + selector decision table for playwright-a11y-e2e; re-verify axe-core 4.14.0 / Playwright 1.64.1 |
 | `023a486` | harden `check_axe_evidence.py` (`incomplete` gate, `inapplicable` info-only, `--require-keys`, `--max-age-days`) + 7 self-tests |
 | `3bf2267` | harden `check_foundation_tokens.py` (URL/hash exclusion, `--json`, `--max-findings`) |
 | `75f02a3` | worked examples + near-miss triggers for foundation-v2-conformance; +3 self-tests |
@@ -96,7 +96,7 @@ Commits (all `skills-engineering-r3-01:`, own paths only):
 All URLs re-fetched; statuses recorded per skill's SOURCES.md:
 
 - `registry.npmjs.org/axe-core` → **4.14.0** (released 2026-10-05). `@axe-core/playwright` → **4.13.0**.
-- `registry.npmjs.org/playwright` → **1.64.0** (new primary source for the playwright skill).
+- `registry.npmjs.org/playwright` → **1.64.1** (new primary source for the playwright skill; 1.64.0 was the value at the time of that note).
 - `registry.npmjs.org/@ottili/foundation-ui` → **1.0.13** (unchanged; versions 1.0.1–1.1, 1.0.10–1.0.13).
 - `www.postgresql.org/docs/current/ddl-rowsecurity.html` → 200 (canonical RLS page).
 - `www.ietf.org/rfc/rfc9457.txt`, `rfc-editor.org/rfc/rfc9457`, `datatracker.ietf.org/doc/html/rfc9457` → all 200.

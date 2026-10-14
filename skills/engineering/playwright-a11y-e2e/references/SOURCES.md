@@ -9,7 +9,7 @@ Retrieval date: 2026-10-14 (re-verified). All URLs fetched with curl; HTTP statu
 2. **axe-core** — `registry.npmjs.org/axe-core`. Verified 2026-10-13: latest = **4.14.0**.
    Rule list lives at https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md
    — retrieved 2026-10-13 (raw 200).
-3. **Playwright** — `registry.npmjs.org/playwright`. Verified 2026-10-14: `dist-tags.latest` = **1.64.0**. The browser automation library; `@playwright/test` is the test runner. URL: https://www.npmjs.com/package/playwright — retrieved 2026-10-14.
+3. **Playwright** — `registry.npmjs.org/playwright`. Verified 2026-10-14: `dist-tags.latest` = **1.64.1** (bumped from 1.64.0 during this re-verification pass; the 1.64.0 entry is retained below as the previous value). The browser automation library; `@playwright/test` is the test runner. URL: https://www.npmjs.com/package/playwright — retrieved 2026-10-14.
 3a. **Playwright Page API** — https://playwright.dev/docs/api/class-page. Verified 2026-10-13
    (HTTP 200, ~975 KB). `page.viewportSize`, `page.keyboard`, `page.goto`, `page.locator`,
    `page.screenshot` are the primitives this skill uses. Version-agnostic; the skill targets
@@ -28,7 +28,7 @@ Retrieval date: 2026-10-14 (re-verified). All URLs fetched with curl; HTTP statu
 |------|-------|----------|
 | @axe-core/playwright latest | 4.13.0 | 2026-10-14 |
 | axe-core latest | 4.14.0 | 2026-10-14 |
-| Playwright latest | 1.64.0 | 2026-10-14 |
+| Playwright latest | 1.64.1 | 2026-10-14 (re-verified) |
 
 | axe report keys | `violations`, `incomplete`, `passes` | 4.10+ (4.13.0 confirmed) |
 | WCAG conformance level | A, AA, AAA | WCAG 2.2, retrieved 2026-10-13 |
