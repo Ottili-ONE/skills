@@ -137,6 +137,7 @@ re-review date. A bare signature is `human_review_incomplete` — the
 the EU, not only customers. B2B newsletter recipients in the EU are still
 data subjects. The register entry must cover the offer, not the contract.
 
+
 ---
 
 ## Run these checks

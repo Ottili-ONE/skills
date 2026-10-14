@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
+  <IssueDate>20260602</IssueDate>
+  <DeliveryDate>20260601</DeliveryDate>
+  <LeitwegID>DE12345678901234</LeitwegID>
+  <PaymentTerms>net 30</PaymentTerms>
+  <PaymentDueDate>20260702</PaymentDueDate>
+  <AccountID>DE89370400440532013000</AccountID>
+  <TaxAmount>228.00</TaxAmount>
+</CrossIndustryInvoice>

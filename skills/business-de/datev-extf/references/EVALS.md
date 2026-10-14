@@ -119,6 +119,7 @@ Sachkontenlaenge (5-8) or shorten the account.
 **Trap:** the broken fixture must *actually* fail — `12.50` produces
 `amount-dot-decimal`. A fixture that still validates is not a negative test.
 
+
 ---
 
 ## Run these checks
@@ -132,7 +133,7 @@ the **Belegdatum comes before the tax key**, so `0206,19` is 2 June at 19%.
 
 ```bash
 # 3. pin the EXTF version and re-verify the fixtures -> exit 0
-python3 scripts/validate_extf.py fixtures/buchungsstapel-valid.csv
+python3 scripts/validate_extf.py fixtures/buchungsstapel-valid.json
 # {"ok": true, "pinned_versionsnummer": "700", "pinned_formatversion": "13"}
 
 # 4. generate a valid + a deliberately broken fixture -> exit 0
@@ -141,15 +142,13 @@ python3 scripts/fixture_generator.py --out-dir ./fixtures
 #                                          "Belegdatum must be YYYYMMDD"]}]}
 
 # 4b. the broken fixture MUST fail validation -> exit 1
-python3 scripts/validate_extf.py fixtures/buchungsstapel-broken.csv
+python3 scripts/validate_extf.py fixtures/buchungsstapel-broken.json
 # {"ok": false, "error_count": 2,
 #  "errors": [{"code": "amount-dot-decimal", "value": "12.50"},
 #             {"code": "belegdatum-format", "value": "2026601"}]}
 
 # 6. build a stapel; the tax key lands at column 97 -> exit 0
-python3 scripts/build_stapel.py --berater 29098 --mandant 55003 --wj-start 20260101 \
-  --from-date 20260601 --to-date 20260630 --label "Shop 06/2026" --skr 03 \
-  --booking 1200,S,4000,0206,19,Netto+19% --output stapel.csv
+python3 scripts/build_stapel.py --berater 29098 --mandant 55003 --wj-start 20260101 --from-date 20260601 --to-date 20260630 --label "Shop 06/2026" --skr 03 --booking 1200,S,4000,0206,19,Netto+19% --output stapel.csv
 # row has 125 columns: col 10 (index 9) = "0206", col 97 (index 96) = "19"
 python3 scripts/validate_extf.py stapel.csv
 # {"ok": true, "checked_lines": 2, "error_count": 0}
