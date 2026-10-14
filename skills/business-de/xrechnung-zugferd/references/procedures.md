@@ -141,3 +141,30 @@ python3 scripts/retention_check.py --archive ./archive --config config/versions.
 ```
 
 Append a dated entry to `references/SOURCES.md` recording the run.
+
+## 8. Worked examples — good vs bad
+
+### 8.1 Archive retention
+
+**GOOD** — An invoice dated 2026-06-02 is archived as the original PDF/A-3 with
+embedded `factur-x.xml`. `retention_check.py` reports
+`{"file": "2026-06-02-factur-x.pdf", "sha256": "abc…", "retention_end":
+"2034-12-31", "export_test": "passed"}`. The original is never converted.
+
+**BAD** — The agent prints the PDF/A-3 to a new PDF to "clean it up". The
+structured XML is gone; the document is now a sonstige Rechnung and the GoBD
+archive is broken. The skill keeps the original file unchanged and computes
+retention from the document year, not the archive date.
+
+### 8.2 Re-verification on a spec bump
+
+**GOOD** — The KoSIT config bumps from v2026-08-31 to v2026-11-01. The agent
+updates `config/versions.json`, re-runs `validate_invoice.py` over the whole
+archive sample, and appends a dated entry to `references/SOURCES.md` recording
+`{"old_tag": "v2026-08-31", "new_tag": "v2026-11-01", "recheck": "2026-10-14",
+"result": "0 new errors"}`.
+
+**BAD** — The agent updates the config but does not re-validate the archive.
+The pinned version now says 3.0 but the archive was validated against 2.x, and
+the retention log cannot show that the archive was ever re-checked. A pinned
+version without a re-verification run is not a pin — it is a guess.

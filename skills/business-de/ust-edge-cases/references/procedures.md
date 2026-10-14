@@ -90,3 +90,47 @@ Verified 2026-10-09 against the IHK Chemnitz page
 
 Run `scripts/ust_check.py <invoice.json>` — exits 0 on a valid treatment,
 2 otherwise.
+
+## 8. Worked examples — good vs bad
+
+### 8.1 Reverse charge (§13b) on an intra-EU service
+
+**GOOD** — A German GmbH hires a French SaaS provider (B2B, VAT ID present,
+service received in Germany). `ust_check.py` reports
+`{"treatment": "reverse_charge", "tax_rate": 0, "tax_key": "06",
+ "buyer_is_steuerschuldner": true, "evidence": ["buyer_vat_id", "seller_vat_id",
+ "service_code"]}`. The invoice shows EUR 1,000.00 gross with EUR 0.00 tax and
+the §13b notice. The German GmbH declares the service in the USt-Anmeldung
+under the reverse-charge rule.
+
+**BAD** — The agent treats the French SaaS as a standard import and applies
+19% German VAT on the net amount. The invoice now over-collects VAT, the
+French provider did not charge French VAT (correctly, it is a B2B service), and
+the German GmbH has a reverse-charge obligation it never met. The USt-Anmeldung
+plausibility check fails because the input-tax claim has no matching
+reverse-charge line.
+
+### 8.2 Kleinunternehmen and the e-invoice exemption
+
+**GOOD** — A Kleinunternehmen (§19 UStG, turnover < EUR 220,000) receives an
+e-invoice from a B2B supplier. The Kleinunternehmen can **receive** it (since
+2025-01-01) but is not required to issue e-invoices itself. `ust_check.py`
+reports `{"treatment": "kleinunternehmen", "issue_obligation": false,
+"receive_obligation": true}`.
+
+**BAD** — The agent assumes the Kleinunternehmen must issue e-invoices and
+rejects its outgoing "sonstige Rechnung". The exemption is real and is in §19,
+not a workaround. Rejecting a valid Kleinunternehmen invoice is the wrong
+direction of the error.
+
+### 8.3 Rounding
+
+**GOOD** — Line item 33.33 × 19% = 6.3326 → 6.33. Per §23 UStDV the tax amount
+per line is rounded to cents (half-up), then the line taxes are summed and
+compared to the total. If the total does not match, the largest line is
+adjusted by ±0.01. `ust_check.py` reports `{"rounded": [6.33], "total": 19.00,
+"adjustment": 0.0}`.
+
+**BAD** — The agent rounds the *net* amount first and then computes tax on the
+rounded net. That changes the tax by a cent and breaks the plausibility
+check. Round tax per line, never round the net before taxing.

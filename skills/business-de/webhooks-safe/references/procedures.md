@@ -134,3 +134,39 @@ python3 ssrf_check.py --url https://ottili.example/webhooks/inbound --allow otti
   replay-window expiry.
 - `scripts/deadletter.py` — moves a failed event to the dead-letter queue.
 - `scripts/ssrf_check.py` — allow-list validation of outbound delivery targets.
+
+## 8. Worked examples — good vs bad
+
+### 8.1 Signature verification over the raw body
+
+**GOOD** — GitHub sends `X-Hub-Signature-256: sha256=abc…`. `verify.py --provider
+github --secret s --body raw.bin --sig 'sha256=abc…'` recomputes
+`sha256(hmac(secret, raw_bytes))` and compares with `hmac.compare_digest`.
+Exit 0, `{"provider": "github", "valid": true}`.
+
+**BAD** — The agent parses the JSON body first, re-serialises it with
+`json.dumps` and verifies the signature over the re-serialised bytes. JSON
+re-encoding changes key order and whitespace; every signature fails. The
+skill reads the raw bytes and never touches the body before verification.
+
+### 8.2 Replay window
+
+**GOOD** — Stripe signature carries `t=1730000000`. `verify.py --provider stripe
+--now 173000200` (200 s later) checks `abs(now - ts) <= 300` and passes.
+`--now 173001000` (1000 s later) fails and the event is rejected.
+
+**BAD** — The agent skips the timestamp check entirely and verifies only the
+HMAC. A replayed event (an attacker resubmits a captured signature) passes.
+The replay window is the whole point of the `t=` field; skipping it is the
+worst thing the skill prevents.
+
+### 8.3 Out-of-order delivery
+
+**GOOD** — Events arrive in order 1, 2, 4. `ordering.py` accepts 1 and 2, puts 4
+in the held set, accepts 3 when it arrives, then flushes 4. No event is
+processed twice and none is silently dropped.
+
+**BAD** — The agent processes 4 immediately because "it arrived". The downstream
+system now sees state 4 without having seen 3. The held set exists exactly for
+this case; processing out of order is the failure the ordering script is built
+to prevent.

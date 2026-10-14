@@ -81,3 +81,40 @@ line (RECHNUNG123) are different fields; match on the `:61:` reference first.
 
 Run `scripts/recon_check.py <recon.json>` — exits 0 on a valid
 reconciliation, 2 otherwise.
+
+## 8. Worked examples — good vs bad
+
+### 8.1 Amount-only matching trap
+
+**GOOD** — Two statements each show EUR 1,000.00 on 2026-10-12, but one is a
+supplier payment and the other is a customer receipt. `recon_check.py` matches
+on **amount + date + direction** and reports `{"match": false, "reason":
+"direction differs: outgoing vs incoming"}`. The agent investigates instead of
+assuming they net out.
+
+**BAD** — The agent matches on amount and date only and nets the two lines.
+The supplier payment is unreconciled, the customer receipt is unreconciled, and
+the balance sheet is wrong by EUR 2,000. Amount + date is the most common
+false-positive match in bank reconciliation; always include direction and, if
+available, the counterparty reference.
+
+### 8.2 Legacy camt.053 namespace
+
+**GOOD** — A statement uses the older camt.053 namespace.
+`recon_check.py` detects `BankToCustomerDebitCreditEntry` in either namespace
+and extracts `Amount`, `BookingDate`, `TransactionReference`. Exit 0.
+
+**BAD** — The agent hardcodes the newest namespace and rejects any statement
+that does not match. German banks still send older namespaces through EBICS;
+a hardcoded namespace silently drops real data.
+
+### 8.3 Duplicate detection
+
+**GOOD** — The same transaction appears twice with the same amount, date and
+reference. `recon_check.py` reports `{"duplicate": true, "first": "…", "second":
+"…"}` and blocks the import. The duplicate is investigated before it lands in
+the ledger.
+
+**BAD** — The agent imports both lines because "the bank sent them twice". The
+ledger now has a doubled balance and the reconciliation will never tie. The
+skill treats a duplicate as a blocker, not a warning.

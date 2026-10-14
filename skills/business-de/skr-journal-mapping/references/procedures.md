@@ -73,3 +73,31 @@ unlock + re-lock cycle breaks the plausibility check and the GoBD
 
 Run `scripts/journal_check.py <journal.json>` — exits 0 on balance and
 valid tax keys, 2 otherwise.
+
+## 7. Worked examples — good vs bad
+
+### 7.1 Mapping a SKR04 sales account
+
+**GOOD** — Account 4010 (sales to domestic customers, SKR04). `map_skr.py`
+emits `{"account": 4010, "range": "4xxx", "type": "income/expense",
+"tax_key": "19", "direction": "S"}`. The journal entry is
+`S 4010 / H 1700` (tax on sales). The period lock is then set.
+
+**BAD** — The agent maps account 4010 with tax key `06` (reverse charge)
+because "it is also a sales account". A domestic sale is not a reverse-charge
+sale; the tax key drives the USt-Anmeldung and a wrong key means the tax
+authority computes the wrong liability. `journal_check.py` exits 2 with
+`"tax_key 06 not valid for account range 4xxx domestic"`.
+
+### 7.2 Period lock
+
+**GOOD** — All postings for 2026-12 are closed, `period_lock.py --mandant 1
+--year 2026 --month 12 --lock` sets the flag, `period_lock_check.py` exits 0.
+Only then does the USt-Anmeldung run.
+
+**BAD** — The agent posts a corrective entry on 2026-12-31 after the lock
+without an explicit unlock/re-lock cycle. The plausibility check fails: the
+closed period shows a change after Monatsschluss, which the auditor treats as
+a GoBD violation ("nachträgliche Änderungen"). The lock is not a soft hint — it
+is a hard block, and any override must be logged as an explicit unlock event
+with a reason and a re-lock.
