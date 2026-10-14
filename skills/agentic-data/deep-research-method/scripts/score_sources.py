@@ -7,8 +7,9 @@ optional `version`. Computes the total score, flags sources below the minimum,
 and reports coverage: every claim must cite a kept source.
 
 Subcommands:
-  score   <sources.jsonl>             print scored sources, exit 1 if any < min
-  audit   <sources.jsonl> <claims.json> check every claim cites a kept source
+  score             <sources.jsonl>             print scored sources, exit 1 if any < min
+  audit             <sources.jsonl> <claims.json> check every claim cites a kept source
+  check-citations   <sources.jsonl> <claims.json> alias for audit (claim coverage)
 
 Fully offline and deterministic. Machine-readable counts to stdout,
 FAIL:/PASS:/INFO: detail to stderr.
@@ -332,6 +333,11 @@ def main() -> int:
     p.add_argument("claims", type=Path)
     p.add_argument("--min", type=int, default=MIN_SCORE)
 
+    p = sub.add_parser("check-citations", aliases=["cite-check"])
+    p.add_argument("sources", type=Path)
+    p.add_argument("claims", type=Path)
+    p.add_argument("--min", type=int, default=MIN_SCORE)
+
     p = sub.add_parser("contradictions")
     p.add_argument("sources", type=Path)
     p.add_argument("pairs", type=Path)
@@ -379,13 +385,15 @@ def main() -> int:
         return cmd_cite(sources, args.min)
     if args.cmd == "fetch":
         return cmd_fetch(sources, args.min)
+    if args.cmd in ("audit", "check-citations", "cite-check"):
+        return cmd_audit(sources, args.claims, args.min)
     if args.cmd == "corroboration":
         return cmd_corroboration(sources, args.min)
     if args.cmd == "confidence":
         return cmd_confidence(sources, args.min)
     if args.cmd == "provenance":
         return cmd_provenance(sources, args.min)
-    return cmd_audit(sources, args.claims, args.min)
+    return 2
 
 
 if __name__ == "__main__":
