@@ -9,7 +9,53 @@
 | Script signature change (args, exit codes) | EVALS.md prompts + tests for that skill | run the script with real inputs; confirm EVALS pass |
 | Cross-link added or removed in Related section | circular-dependency check across all ten SKILL.md files | grep Related sections; ensure no cycles in the graph |
 | New skill added to skills/engineering/** | catalog.json entry + README list + index build | add entry, run build-index.py, run validate.py green |
-| Freeze 4 announced (docs/STATUS_ALL.md) | @ottili versions in every SOURCES.md that pins one; DEV_FIXTURE_ALIAS=1 rule until Platform lane p1-registration-r3 is green. Do not bump versions without integrator announcement.  ## Ideas for the next ten skills (with rationale) 1. **secrets-scanning** — secrets leak is the #1 blast-radius risk; a playbook with pre-commit hooks and CI gates prevents it early. 2. **observability-contract** — every service needs structured logs/metrics/traces defined up front; contract-first approach avoids post-hoc retrofits. 3. **migration-safety** — DB migrations are the classic production incident source; a checklist + dry-run script reduces risk. 4. **rate-limit-policy** — API services need explicit rate-limit contracts per tenant/client; prevents noisy-neighbour outages. 5. **cache-invalidation** — stale cache causes subtle data bugs; a playbook around event-driven invalidation helps teams get it right first time. 6. **feature-flag-governance** — flags accumulate and rot without lifecycle rules; governance playbook keeps them bounded and deletable. 7. **error-budget-policy** — SLOs without budgets are just targets; policy playbook ties error budgets to release gates and on-call action thresholds:   - <50% budget remaining → no deploys without approval   - <20% → freeze feature work, incident review within 24h   - <5% → mandatory war-room, rollback plan required   This table gives concrete thresholds so teams do not debate "how low is too low" at incident time (addresses vague text requirement).   ## Cross-links established in this pass (no cycles) - acceptance-harness -> long-test-discipline, problem-json-contracts - foundation-v2-conformance -> honest-status, module-contract-first - honest-status -> long-test-discipline - long-test-discipline -> shared-tree-git - module-contract-first -> problem-json-contracts - outbox-idempotency -> pg-rls-multitenant - pg-rls-multitenant -> problem-json-contracts - playwright-a11y-e2e -> acceptance-harness - problem-json-contracts -> honest-status - shared-tree-git -> module-contract-first 
+| Freeze 4 announced (docs/STATUS_ALL.md) | @ottili versions in every SOURCES.md that pins one; DEV_FIXTURE_ALIAS=1 rule until Platform lane p1-registration-r3 is green. Do not bump versions without integrator announcement. |
+
+## Ideas for the next ten skills (with rationale)
+
+1. **secrets-scanning** — secrets leak is the #1 blast-radius risk; a playbook with pre-commit hooks and CI gates prevents it early. 2. **observability-contract** — every service needs structured logs/metrics/traces defined up front; contract-first approach avoids post-hoc retrofits. 3. **migration-safety** — DB migrations are the classic production incident source; a checklist + dry-run script reduces risk. 4. **rate-limit-policy** — API services need explicit rate-limit contracts per tenant/client; prevents noisy-neighbour outages. 5. **cache-invalidation** — stale cache causes subtle data bugs; a playbook around event-driven invalidation helps teams get it right first time. 6. **feature-flag-governance** — flags accumulate and rot without lifecycle rules; governance playbook keeps them bounded and deletable. 7. **error-budget-policy** — SLOs without budgets are just targets; policy playbook ties error budgets to release gates and on-call action thresholds:   - <50% budget remaining → no deploys without approval   - <20% → freeze feature work, incident review within 24h   - <5% → mandatory war-room, rollback plan required   This table gives concrete thresholds so teams do not debate "how low is too low" at incident time
+   (addresses the vague-text requirement).   ## Cross-links established in this pass (no cycles) - acceptance-harness -> long-test-discipline, problem-json-contracts - foundation-v2-conformance -> honest-status, module-contract-first - honest-status -> long-test-discipline - long-test-discipline -> shared-tree-git - module-contract-first -> problem-json-contracts - outbox-idempotency -> pg-rls-multitenant - pg-rls-multitenant -> problem-json-contracts - playwright-a11y-e2e -> acceptance-harness - problem-json-contracts -> honest-status - shared-tree-git -> module-contract-first
+
+## Pass 2026-10-14 — skills-engineering-r3-05 (evals, validation, cross-links, handoff)
+
+Quality pass over all ten skills. Acceptance: validator green for all ten, every EVALS.md has
+5 prompts and 3 near-miss prompts, README and HANDOFF exist.
+
+- **Validator green**: `python3 scripts/validate_skill.py --all` and `python3 scripts/validate.py`
+  both exit 0 with all ten skills passing. Re-run after any SKILL.md edit.
+- **EVALS audit**: all ten `references/EVALS.md` files carry 5 numbered prompts (expected
+  behaviour + failure signs + exact verification command) and 3-5 near-miss prompts. The
+  near-miss prompts are written to fire *before* the incident, e.g. "The axe scan is green,
+  so the page is accessible" (no — green axe means zero *reported* violations, not that every
+  control is reachable).
+- **Cross-links made acyclic**: the Related-section graph had a cycle
+  (`shared-tree-git -> honest-status -> long-test-discipline -> shared-tree-git` and longer
+  transits through `module-contract-first`). `shared-tree-git` is the foundation every other
+  skill builds on, so it now has **no outgoing markdown links** — only plain-text mentions of
+  the skills that point back at it. Verified with the inline cycle-detection script in
+  `README.md`; the graph is acyclic and `shared-tree-git` is the unique sink.
+- **Version re-verification**: re-fetched primary sources with curl on 2026-10-14.
+  `@ottili/foundation-ui` latest is still **1.0.13** (HTTP 200, version list
+  `1.0.1-1.1, 1.0.10, 1.0.11, 1.0.12, 1.0.13`, license Apache-2.0) — no bump, so no SOURCES.md
+  date change was needed. The agentskills.io specification was re-fetched (HTTP 200): the
+  constraints are unchanged (name ≤64 chars lowercase-hyphenated matching the folder; description
+  ≤1024 chars non-empty; compatibility ≤500; metadata map; optional `license`/`allowed-tools`).
+  `playwright-a11y-e2e` SOURCES.md already carried 2026-10-14 axe/Playwright pins.
+- **README.md** updated with the install hints plus an evals/cross-links section and the
+  inline acyclic-check script.
+- **Trigger descriptions**: every SKILL.md description states both what the skill does and
+  *when* to use it (the standard's requirement); near-miss prompts in EVALS.md are the
+  trigger-precision guard for neighbours.
+
+### Known gaps (not blockers for this pass)
+
+- `scripts/install.sh --package engineering` still resolves through `catalog.json`, which has
+  no `engineering` package and no entries for the ten skills. Install by explicit folder
+  (see the open-blocker note below).
+- `skills-ref` is not installed on Biest; `scripts/validate_skill.py` is the validator that
+  runs. It was written against the agentskills.io specification text fetched 2026-10-14
+  (HTTP 200) and re-confirmed unchanged this pass.
+
 ## Pass 2026-10-13 — completion state of skills-engineering-r3-01
 
 All ten skills now carry `references/SOURCES.md` (≥6 unique URLs each, verified with curl on

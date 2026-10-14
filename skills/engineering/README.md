@@ -32,8 +32,38 @@ deterministic, runnable offline).
 
 - Validate all ten at once: `python3 scripts/validate_skills.py`
 - Validate one skill: `python3 scripts/validate_skill.py <name>`
+- Run the repo-wide conformance check: `python3 scripts/validate.py`
 - Install a skill into an agent home: `./scripts/install.sh <name> <target-dir>`
 - Rebuild the index: `python3 scripts/build-index.py`
+
+## Evals and cross-links
+
+Each skill carries `references/EVALS.md` with 5 realistic prompts (expected behaviour +
+failure signs + exact verification command) and 3-5 near-miss prompts that fire *before*
+the incident. The Related-section graph across all ten skills is acyclic by construction:
+`shared-tree-git` is the foundation and has no outgoing links; every other skill points
+toward it or toward a peer. Re-check after any edit with the inline script below:
+
+```
+python3 - <<'EOF'
+import re, glob, os
+skills=[d.split('/')[-2] for d in glob.glob("skills/engineering/*/") if os.path.isfile(d+"SKILL.md")]
+g={}
+for s_ in skills:
+    txt=open(f"skills/engineering/{s_}/SKILL.md").read()
+    sec=txt.split("## Related skills",1)[-1].split("\n## ",1)[0]
+    g[s_]=re.findall(r'\[.*?\]\(\.\./([a-z0-9-]+)/SKILL.md\)', sec)
+c={s_:0 for s_ in skills}
+def d(u):
+    c[u]=1
+    for v in g.get(u,[]):
+        if v not in c: d(v)
+        elif c[v]==1: raise SystemExit(f"cycle through {u}->{v}")
+    c[u]=2
+for s_ in skills: d(s_)
+print("acyclic OK")
+EOF
+```
 
 ## Layout of one skill
 
