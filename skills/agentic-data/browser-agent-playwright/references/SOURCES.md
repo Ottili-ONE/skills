@@ -58,3 +58,17 @@ this skill moved.
 
 ## Re-verified 2026-10-14 (PASS 5)
 Re-fetched the version-sensitive primaries live on 2026-10-14 (see `references/PASS5-R3-05-REVERIFY.md` for the full table). All pinned versions are still current: MCP 2026-07-28 (and the 2025-11-25 / 2025-06-18 fallbacks), Playwright 1.64.0 on PyPI, datasketch 2.0.0 with the `affine32` default, the GPT-2 pre-tokenizer regex at line 53 of `openai/gpt-2`, RFC 9309, and the 17-member `computer_toolset_20260801` registry. The two known bot-blocked URLs (iso.org WARC, openai.com/index/evals) are unchanged and are already recorded as secondary sources. No fact drift.
+
+## Re-verification 2026-10-14 (EXPAND pass)
+
+Random sample of primary sources re-fetched live with curl (seed 20261014, first six table URLs per skill):
+
+| URL | HTTP | note |
+|-----|------|------|
+| https://playwright.dev/docs/locators | 200 | re-fetched 2026-10-14 |
+| https://playwright.dev/docs/api/class-page | 200 | re-fetched 2026-10-14 |
+| https://playwright.dev/docs/api/class-frame | 200 | re-fetched 2026-10-14 |
+| https://playwright.dev/docs/api/class-browsercontext | 200 | re-fetched 2026-10-14 |
+| https://playwright.dev/docs/network | 200 | re-fetched 2026-10-14 |
+| https://playwright.dev/docs/emulation | 200 | re-fetched 2026-10-14 |
+
