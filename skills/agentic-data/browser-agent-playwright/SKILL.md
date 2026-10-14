@@ -119,6 +119,7 @@ Exhausting either cap stops the run and reports the cap, not a silent fallback.
 - decision tables + worked examples: references/decision-tables.md
 - injection defense: references/injection-defense.md
 - injection decision: references/injection-decision.md
+- best-of-N jailbreak detection: references/bo-n-jailbreak.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/sanitize.py, scripts/handoff.py, scripts/gen_hostile.py, scripts/validate_skill.py
