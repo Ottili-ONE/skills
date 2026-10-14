@@ -19,9 +19,34 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = ROOT / "skills" / "business-de"
 
-# Match `python3 ...` code spans, including ones whose argument is a JSON
-# array literal (the common one-line form in these EVALS files).
-CMD_RE = re.compile(r"`(python3\s+\S.*?)`", re.M)
+# Match `python3 ...` commands, in either form used by the EVALS files:
+#   * inline code spans: `python3 ...` (one line)
+#   * fenced ```bash blocks (multi-line, the "Run these checks" sections)
+# Multi-line commands are joined into one shell command before execution.
+INLINE_RE = re.compile(r"`(python3\s+\S.*?)`", re.M)
+FENCE_RE = re.compile(r"```(?:bash|sh)?\n(.*?)\n```", re.S)
+
+
+def extract_commands(text: str) -> list[str]:
+    cmds = INLINE_RE.findall(text)
+    for block in FENCE_RE.findall(text):
+        # keep only lines that are part of a python3 invocation; strip comments
+        # and `# output` annotation lines, then join continuation lines.
+        # join `\`-continued lines BEFORE stripping comments, so a command
+        # that wraps across several lines in the fenced block becomes one
+        # real shell command (the backslash is the line-continuation marker).
+        raw = block.replace("\
+", " ")
+        lines = [ln.strip() for ln in raw.splitlines()]
+        lines = [ln for ln in lines if ln and not ln.startswith("#")]
+        joined = " ".join(lines)
+        # a fenced block may hold several commands separated by blank lines;
+        # split on the python3 word so each becomes its own command.
+        for piece in re.split(r"(?=python3\s)", joined):
+            piece = piece.strip()
+            if piece.startswith("python3 "):
+                cmds.append(piece)
+    return cmds
 
 
 EXIT_RE = re.compile(r"\b(?:exits?|exit code)\s+(\d+)", re.I)
@@ -71,7 +96,7 @@ def main(argv):
     for s, ev in evals_files(skills):
         text = ev.read_text(encoding="utf-8")
         blocks = split_blocks(text)
-        cmds = CMD_RE.findall(text)
+        cmds = extract_commands(text)
         if not cmds:
             print(f"[{s}] no inline python3 commands in EVALS.md — SKIPPED")
             continue

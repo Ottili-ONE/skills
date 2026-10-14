@@ -132,3 +132,69 @@ us". SSRF prevention does not know ownership.
 **Trap:** a single failure routes to the dead-letter queue after the retry
 budget is exhausted, not on the first failure. Immediate retry without
 backoff is a thundering-herd risk on a failing upstream.
+
+---
+
+## Run these checks
+
+Every prompt above names a script and an expected exit code. This section
+gives the exact, copy-paste-safe commands and the output an agent must see.
+All commands are run from the skill directory
+(`cd skills/business-de/webhooks-safe`). `--now <unix-ts>` is REQUIRED for
+Stripe/PayPal/Twilio: the replay window is enforced, not optional.
+
+```bash
+# 6. valid GitHub signature -> exit 0
+python3 scripts/verify.py --provider github --secret s3cr3t \
+  --body body.json --sig 'sha256=<hex>'
+# {"provider": "github", "valid": true}
+
+# 6b. stale Stripe signature (600s old) -> exit 1 (replay attack)
+python3 scripts/verify.py --provider stripe --secret s3cr3t \
+  --body body.json --sig 't=<ts>,v1=<hex>' --now <ts+600>
+# {"provider": "stripe", "valid": false}
+
+# 6c. Stripe without --now -> exit 2 (replay window enforced)
+python3 scripts/verify.py --provider stripe --secret s3cr3t \
+  --body body.json --sig 't=<ts>,v1=<hex>'
+# {"ok": false, "error": "--now is required for stripe: ..."}
+
+# 2. first delivery -> exit 0, process
+python3 scripts/dedupe.py --event-id evt-1 --ttl 86400 --store /tmp/events.jsonl
+# {"event_id": "evt-1", "duplicate": false, "action": "process"}
+
+# 2b. second delivery -> exit 0, ack_and_skip
+python3 scripts/dedupe.py --event-id evt-1 --ttl 86400 --store /tmp/events.jsonl
+# {"event_id": "evt-1", "duplicate": true, "action": "ack_and_skip"}
+
+# 3. in-order -> exit 0
+python3 scripts/ordering.py --stream github:ottili --seq 1 --payload body.json \
+  --store /tmp/order.jsonl --replay-seconds 86400
+# {"action": "process", "seq": 1, "released": []}
+
+# 3b. out-of-sequence -> exit 1, held
+python3 scripts/ordering.py --stream github:ottili --seq 3 --payload body.json \
+  --store /tmp/order.jsonl --replay-seconds 86400
+# {"action": "hold", "held_count": 1, "reason": "waiting for missing event or replay-window expiry"}
+
+# 4. dead-letter a failed event -> exit 0
+python3 scripts/deadletter.py --event-id evt-9 --reason 'timeout' \
+  --payload body.json --queue /tmp/dl.jsonl
+# {"event_id": "evt-9", "queued": "/tmp/dl.jsonl", "reason": "timeout"}
+
+# 5. allow-listed target -> exit 0
+python3 scripts/ssrf_check.py --url https://ottili.example/webhooks/inbound \
+  --allow ottili.example
+# {"ok": true, "host": "ottili.example", "allowed": "ottili.example"}
+
+# 5b. non-allow-listed target -> exit 1 (SSRF)
+python3 scripts/ssrf_check.py --url https://evil.example/x --allow ottili.example
+# {"ok": false, "reason": "host not in allow-list", "host": "evil.example"}
+```
+
+Dedupe is atomic (check-and-set under an advisory lock) so a race cannot
+process the event twice. Ordering is per-stream, never global — two
+independent providers may interleave. Verified 2026-10-14 against
+`developer.paypal.com/docs/api/webhooks/v1` (HTTP 200; the
+`X-PayPal-Signature` header name and algorithm remain **unverified** — the
+skill falls back to plain HMAC-SHA256 and flags the result).
