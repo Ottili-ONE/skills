@@ -79,6 +79,19 @@ def audit(path: Path) -> tuple[int, int, int]:
         warn("f-string in error path may carry screen content")
     if "credentials" in src.lower() or "mount" in src.lower():
         oks += 1
+
+    # Tree is the gate, not a preference: a driver that enumerates the tree must
+    # also expose a usability check, and must never fall back to pixels when the
+    # tree is empty. Detecting the fallback is the near-miss that lets a driver
+    # click blind on surfaces with no accessibility tree.
+    if "enumerate_tree" in src:
+        if "tree_is_usable" not in src:
+            fail("enumerate_tree present but no tree_is_usable gate — an empty tree "
+                 "must stop the run, never fall back to pixels")
+        else:
+            oks += 1
+        if re.search(r"if\s+not\s+tree|fallback\s*to\s*pixels|no\s+tree", src, re.I):
+            fail("tree-empty fallback detected — the tree is the gate; stop on an empty tree")
     return fails, warns, oks
 
 

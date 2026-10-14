@@ -176,64 +176,6 @@ def test_contract_invalid_json_fails(tmp_path: Path) -> None:
     assert r.returncode == 2
 
 
-def test_audit_flags_clamping(tmp_path: Path) -> None:
-    src = FIXTURE.read_text(encoding="utf-8")
-    bad = tmp_path / "clamping_driver.py"
-    bad.write_text(src.replace(
-        "    def left_click(self, input_data):\n        self._scale(input_data)",
-        "    def left_click(self, input_data):\n        x, y = self._scale(input_data)\n"
-        "        x = max(0, min(x, 1280))\n        y = max(0, min(y, 720))\n",
-    ), encoding="utf-8")
-    r = run(str(bad))
-    assert r.returncode == 1
-    assert "clamp" in r.stderr.lower()
-
-
-def test_audit_flags_missing_scaling(tmp_path: Path) -> None:
-    src = FIXTURE.read_text(encoding="utf-8")
-    bad = tmp_path / "noscale_driver.py"
-    # also strip the comment that mentions input.copy(), so no scaling signal survives
-    bad.write_text(src.replace("self._scale(input_data)", "pass")
-                   .replace("return input.copy()", "return input")
-                   .replace("input.copy() is the signal", "scaled into a fresh array"),
-                   encoding="utf-8")
-    r = run(str(bad))
-    assert r.returncode == 1
-    assert "scale" in r.stderr.lower()
-
-
-def test_audit_json_mode() -> None:
-    r = run(str(FIXTURE), "--json")
-    assert r.returncode == 0
-    data = json.loads(r.stdout)
-    assert data["mode"] == "audit"
-    assert data["valid"] is True
-
-
-def test_contract_json_mode() -> None:
-    r = run("--contract", str(REGISTRY), "--json")
-    assert r.returncode == 0
-    data = json.loads(r.stdout)
-    assert data["mode"] == "contract"
-    assert data["valid"] is True
-    assert data["fails"] == 0
-
-
-def test_contract_empty_members_fails(tmp_path: Path) -> None:
-    reg = tmp_path / "empty.json"
-    reg.write_text(json.dumps({"members": []}), encoding="utf-8")
-    r = run("--contract", str(reg))
-    assert r.returncode == 1
-    assert "empty" in r.stderr.lower()
-
-
-def test_contract_invalid_json_fails(tmp_path: Path) -> None:
-    reg = tmp_path / "bad.json"
-    reg.write_text("not json", encoding="utf-8")
-    r = run("--contract", str(reg))
-    assert r.returncode == 2
-
-
 # --- reference coverage (added in EXPAND pass) ---
 
 def test_reference_files_exist_and_are_substantive():
@@ -285,3 +227,36 @@ def test_contract_accepts_canonical_registry() -> None:
     assert out["valid"] is True
     assert out["mode"] == "contract"
     assert out["fails"] == 0
+
+
+# --- tree-as-gate (EXPAND pass 2) ---
+
+def test_tree_gate_present():
+    """The fixture driver enumerates the tree and exposes a usability gate."""
+    r = run(str(FIXTURE))
+    assert r.returncode == 0, r.stderr
+    assert "0 0" in r.stdout
+
+
+def test_tree_without_gate_fails(tmp_path: Path) -> None:
+    src = FIXTURE.read_text(encoding="utf-8")
+    bad = tmp_path / "no_gate.py"
+    bad.write_text(src.replace(
+        "    def tree_is_usable(self):",
+        "    def tree_is_missing(self):",
+    ), encoding="utf-8")
+    r = run(str(bad))
+    assert r.returncode == 1
+    assert "tree_is_usable" in r.stderr
+
+
+def test_tree_fallback_to_pixels_fails(tmp_path: Path) -> None:
+    src = FIXTURE.read_text(encoding="utf-8")
+    bad = tmp_path / "fallback.py"
+    bad.write_text(src + "\n    def click(self, x, y):\n"
+                      "        if not self.tree_is_usable():\n"
+                      "            return self._pixel_click(x, y)  # fallback to pixels\n",
+                 encoding="utf-8")
+    r = run(str(bad))
+    assert r.returncode == 1
+    assert "fallback" in r.stderr.lower()

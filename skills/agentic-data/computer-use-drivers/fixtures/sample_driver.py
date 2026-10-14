@@ -79,3 +79,24 @@ class BetaAbstractComputerToolset20260801:
         if not self.confirm("hold_key", input_data):
             raise ToolsetUsageError("declined")
         return "held"
+
+    def enumerate_tree(self):
+        """Return the accessibility tree: a list of {role, name, value, description}.
+
+        The tree is the gate, not a preference. An empty tree (every node
+        role: "unknown" with no name) must stop the run, never fall back to
+        pixels. The screenshot gives pixels; the tree gives what is at them.
+        """
+        return [
+            {"role": "button", "name": "Save", "value": None, "description": ""},
+            {"role": "textbox", "name": "Password", "value": "", "description": ""},
+        ]
+
+    def tree_is_usable(self):
+        """True when the enumerated tree has at least one node with a real role
+        and name. False on an empty or all-unknown tree."""
+        nodes = self.enumerate_tree()
+        return any(
+            n.get("role") not in (None, "", "unknown") and n.get("name")
+            for n in nodes
+        )
