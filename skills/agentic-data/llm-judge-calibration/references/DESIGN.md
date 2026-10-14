@@ -113,6 +113,21 @@ must be calibrated:
   battery (paraphrase, reorder, negate, insert noise) a judge must survive to
   be usable.
 
+## Provenance gate
+Every calibration report must record the judge model, the generator model and
+the hash of both prompts. A score with no provenance cannot be reproduced or
+audited, so `scripts/calibrate_judge.py calibrate` requires all four fields
+and rejects a report where judge and generator are the same model with the
+same prompt. Decision table: same model + same prompt = fail; different model
+or different prompt = acceptable; different model = preferred.
+
+## Incidents
+Six real calibration failures with their observable signatures and recovery
+procedures live in `references/incidents.md`: circular self-judgement, a
+rubric with definitions only, calibration on the training set, position bias
+mistaken for quality, drift ignored because the set was old, and a ceiling
+effect reported as success.
+
 ## Near-miss triggers
 - The scoring model is the same model that produced the submissions, with the
   same prompt -> the agreement number is circular by construction.

@@ -103,6 +103,23 @@ This skill is the only Agent Skill that treats the verifier as a system to be au
   `summary_file` check, which asserted only existence against a spec that asked
   for a 20-word summary: the agent could `touch summary.md` and pass.
 
+## Rule of two
+Every check needs at least two independent defences (existence, content
+equality, JSON field, word count, keyword match, max length). A check with
+exactly one defence is a single point of failure: the agent either does the
+intended work or finds the one unintended path. `scripts/verify_harness.py
+--bypass-audit SPEC REGISTER` enforces this and rejects single-defence checks.
+This is what caught the shipped fixture's `summary_file` check, which asserted
+only existence against a spec that asked for a 20-word summary.
+
+## Incidents
+Six real verifier failures with their observable signatures and recovery
+procedures live in `references/incidents.md`: a verifier that imports the
+environment module, a decorative check that passes on a broken agent, pass
+rates that are 100% on every agent, an un-pinned sandbox contract, a check
+that depends on wall-clock time, and a harness that exits 0 after a check is
+neutered.
+
 ## Near-miss triggers
 - Verifier imports the environment module -> shares its bugs; rewrite against SPEC.md.
 - A check has no bypass entry -> FAIL the check; you have not audited it.

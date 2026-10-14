@@ -77,6 +77,20 @@ recorded:
 - **Single-unit cost fields**: mixing tokens and USD in one field makes the ledger
   unsummable; this skill forbids it.
 
+## Sequence and schema
+A ledger is a *sequence*: `step` must be strictly increasing across the file,
+or reordering is silent corruption and replay is meaningless. It must also
+declare the schema it was written against on the first event
+(`trajectory-ledger-v1`); a ledger written against a draft cannot be replayed
+against the current one, and a file that mixes versions is ambiguous. The audit
+enforces both.
+
+## Incidents
+Six real ledger failures with their observable signatures and recovery
+procedures live in `references/incidents.md`: fabricated success, a ledger
+written after the fact, a hash chain silently broken, non-determinism treated
+as failure, steps written out of order, and the wrong schema version.
+
 ## Near-miss triggers
 - A `succeeded` event with no result field -> fabricated success; reject and re-run.
 - A tool call recorded without args -> ungrounded; re-run before marking succeeded.
