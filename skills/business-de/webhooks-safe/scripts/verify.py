@@ -52,24 +52,64 @@ def verify_stripe(secret: str, body: bytes, sig: str, now: int) -> bool:
     return hmac.compare_digest(expected, parts.get("v1", ""))
 
 
+def verify_paypal_twilio(secret: str, body: bytes, sig: str, now: int) -> bool:
+    """HMAC-SHA256 over the raw body, hex digest, with a replay window.
+
+    The exact PayPal/Twilio header layout could not be re-verified to a
+    plain-text crawl (recorded in references/SOURCES.md as unverified), so
+    this path is conservative: it checks the digest AND the replay window and
+    refuses to verify when no timestamp is available. A provider whose scheme
+    differs must be added explicitly, not silently passed.
+    """
+    if not sig:
+        return False
+    ts = None
+    if "t=" in sig:
+        try:
+            ts = int(sig.split("t=", 1)[1].split(",", 1)[0])
+        except ValueError:
+            ts = None
+    if ts is None:
+        # No timestamp in the signature -> cannot bound the replay window.
+        return False
+    if abs(now - ts) > REPLAY_WINDOW_SECONDS["paypal"]:
+        return False
+    expected = hmac.new(secret.encode(), f"{ts}.".encode() + body,
+                        hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, sig)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--provider", required=True, choices=["github", "stripe", "paypal", "twilio"])
+    ap.add_argument("--provider", required=True,
+                    choices=["github", "stripe", "paypal", "twilio"])
     ap.add_argument("--secret", required=True)
     ap.add_argument("--body", required=True, help="file with the raw body bytes")
     ap.add_argument("--sig", required=True, help="signature header value")
-    ap.add_argument("--now", type=int, default=0, help="unix timestamp (0 = skip replay check)")
+    ap.add_argument("--now", type=int, default=0,
+                    help="unix timestamp; REQUIRED for stripe/paypal/twilio "
+                         "(0 = skip replay check, github only)")
     args = ap.parse_args()
 
     body = Path(args.body).read_bytes()
     if args.provider == "github":
         ok = verify_github(args.secret, body, args.sig)
     elif args.provider == "stripe":
-        ok = verify_stripe(args.secret, body, args.sig, args.now or 0)
+        if not args.now:
+            print(json.dumps({"ok": False,
+                              "error": "--now is required for stripe: the replay "
+                                       "window is enforced, not optional"},
+                             indent=2), file=sys.stderr)
+            return 2
+        ok = verify_stripe(args.secret, body, args.sig, args.now)
     else:
-        # PayPal/Twilio: HMAC-SHA256 over the raw body, hex digest.
-        expected = hmac.new(args.secret.encode(), body, hashlib.sha256).hexdigest()
-        ok = hmac.compare_digest(expected, args.sig)
+        if not args.now:
+            print(json.dumps({"ok": False,
+                              "error": "--now is required for paypal/twilio: the "
+                                       "replay window is enforced, not optional"},
+                             indent=2), file=sys.stderr)
+            return 2
+        ok = verify_paypal_twilio(args.secret, body, args.sig, args.now)
     print(json.dumps({"provider": args.provider, "valid": ok}))
     return 0 if ok else 1
 

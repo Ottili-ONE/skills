@@ -91,3 +91,42 @@ def test_reconcile_perfect_match(tmp_path):
     out = json.loads(r.stdout)
     assert out["ok"] is True
     assert out["deltas"] == []
+"""Near-miss triggers for carrier-apis-de: traps a strong generic agent walks
+straight into. Each test must still produce a passing artefact."""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+LABEL = ROOT / "scripts" / "label_create.py"
+TRACK = ROOT / "scripts" / "track.py"
+
+
+def run(script, *args):
+    return subprocess.run([sys.executable, str(script), *args],
+                          capture_output=True, text=True)
+
+
+def test_track_live_branch_uses_composed_url():
+    """Trap: the dry-run prints only the carrier path, so an agent copying the
+    dry-run shape sends the bare base URL and drops the tracking path. The
+    live branch must compose base + path + number (verified by exercising
+    build_request, which is the single source of truth for the URL)."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import track
+    req = track.build_request("dhl", "12345678901234567890", "tok",
+                              "https://api.dhl.com")
+    assert req["url"] == ("https://api.dhl.com"
+                          "/shipment/v2/tracking?shipmentNumber="
+                          "12345678901234567890"), req["url"]
+    assert req["headers"]["Authorization"] == "Bearer tok"
+
+
+def test_label_create_empty_ref_blocked():
+    """Trap: an empty idempotency key passes the choices check but is not a
+    real key. The script must reject it before building the envelope."""
+    r = run(LABEL, "--carrier", "dhl", "--ref", "   ")
+    assert r.returncode == 2
+    assert "idempotency key" in r.stderr

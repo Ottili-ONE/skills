@@ -111,10 +111,13 @@ def main() -> int:
     if not args.token or not args.url:
         ap.error("--execute requires --token and --url")
     import urllib.request
-    req = urllib.request.Request(args.url, headers=build_request(
-        args.carrier, args.number, args.token, args.url)["headers"])
+    # build_request returns the full URL (base + carrier path + number); the
+    # dry-run branch prints the path, so the live branch must use the same
+    # composed URL or the tracking endpoint is silently dropped.
+    req = build_request(args.carrier, args.number, args.token, args.url)
+    request = urllib.request.Request(req["url"], headers=req["headers"])
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(request, timeout=30) as r:
             body = r.read().decode()
     except Exception as exc:  # noqa: BLE001
         print(f"error: {exc}", file=sys.stderr)

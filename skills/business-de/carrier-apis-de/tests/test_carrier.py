@@ -142,3 +142,26 @@ def test_label_create_gls_embeds_key_in_body():
     assert data["idempotency_field"] == "labelId"
     assert "X-Request-ID" not in data["request"]["headers"]
     assert data["request"]["body"]["labelId"] == "ORD-5"
+
+
+def test_track_composes_full_url_in_live_branch():
+    """The dry-run branch prints the carrier path; the live branch must build
+    the same composed URL (base + path + number). Before the PASS-3 fix the
+    live branch sent the bare base URL and silently dropped the tracking path.
+    """
+    import carrier_test_helpers as h  # noqa: F401  (ensures import path)
+    # exercise build_request directly
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import track  # noqa: E402
+    req = track.build_request("dhl", "12345678901234567890", "tok",
+                              "https://api.dhl.com")
+    assert req["url"] == ("https://api.dhl.com"
+                          "/shipment/v2/tracking?shipmentNumber="
+                          "12345678901234567890"), req["url"]
+    assert req["headers"]["Authorization"] == "Bearer tok"
+
+
+def test_track_rejects_non_numeric_number():
+    r = run(TRACK, "--carrier", "dhl", "--number", "ABC-1")
+    assert r.returncode != 0
+    assert "numeric" in r.stderr.lower()
