@@ -356,3 +356,51 @@ def test_reference_links_resolve():
         target = (root / "references" / raw.strip()).resolve()
         assert target.is_file(), f"dangling reference link {raw!r}"
         target.relative_to((root / "references").resolve())
+
+
+# --- hardened stateless_probe edge cases (EXPAND pass 2) ---
+
+def _w(tmp_path, name, text):
+    p = tmp_path / name
+    p.write_text(text, encoding="utf-8")
+    return str(p)
+
+
+def test_stateless_probe_rejects_non_object(tmp_path):
+    a = _w(tmp_path, "a.json", json.dumps(["not", "an", "object"]))
+    b = _w(tmp_path, "b.json", json.dumps({"_meta": {}, "result": {}}))
+    r = run("stateless_probe.py", a, b)
+    assert r.returncode == 1
+    assert "object" in r.stderr.lower()
+
+
+def test_stateless_probe_flags_empty_meta(tmp_path):
+    a = _w(tmp_path, "a.json", json.dumps({"_meta": {}, "result": {"x": 1}}))
+    b = _w(tmp_path, "b.json", json.dumps({"_meta": {}, "result": {"x": 1}}))
+    r = run("stateless_probe.py", a, b)
+    assert r.returncode == 1
+    assert "empty" in r.stderr.lower()
+
+
+def test_stateless_probe_accepts_valid_replay(tmp_path):
+    a = _w(tmp_path, "a.json", json.dumps({
+        "_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
+        "result": {"x": 1}}))
+    b = _w(tmp_path, "b.json", json.dumps({
+        "_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
+        "result": {"x": 1}}))
+    r = run("stateless_probe.py", a, b)
+    assert r.returncode == 0, r.stderr
+    assert "1 0 0" in r.stdout
+
+
+def test_stateless_probe_flags_meta_without_protocolversion(tmp_path):
+    a = _w(tmp_path, "a.json", json.dumps({
+        "_meta": {"io.modelcontextprotocol/clientInfo": {"name": "x"}},
+        "result": {"x": 1}}))
+    b = _w(tmp_path, "b.json", json.dumps({
+        "_meta": {"io.modelcontextprotocol/clientInfo": {"name": "x"}},
+        "result": {"x": 1}}))
+    r = run("stateless_probe.py", a, b)
+    assert r.returncode == 1
+    assert "protocolVersion" in r.stderr

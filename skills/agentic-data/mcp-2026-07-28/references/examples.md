@@ -111,3 +111,76 @@ A tool that generates a report takes three minutes.
 
 Detection signal: no blocking on the plain tool call; no call to `tasks/result`;
 `input_required` is handled, not treated as an error.
+
+## Good — OAuth discovery-first client
+
+```python
+import httpx
+
+def obtain_token(server_url: str, client_id: str, code_verifier: str) -> str:
+    # 1. discover (never hardcode an issuer)
+    disc = httpx.post(server_url + "/mcp", json={"jsonrpc": "2.0", "id": 1,
+        "method": "server/discover", "params": {}}).json()
+    as_url = disc["result"]["capabilities"]["authorization"]["authorizationServers"][0]
+
+    # 2. metadata document is the contract
+    meta = httpx.get(f"{as_url}/.well-known/client-id-metadata").json()
+    assert client_id == meta["client_id"], "client_id must match the metadata document"
+
+    # 3. validate iss before redeeming (RFC 9207 / SEP-2468)
+    token_resp = httpx.post(meta["token_endpoint"], data={
+        "grant_type": "authorization_code", "code_verifier": code_verifier,
+        "client_id": client_id, "redirect_uri": meta["redirect_uris"][0]})
+    iss = token_resp.json().get("iss")
+    assert iss == as_url, "issuer mismatch — re-run discovery, never reuse creds"
+    return token_resp.json()["access_token"]
+```
+
+Detection signal: a client that fetches the metadata document and asserts `iss`
+before redeeming is correct; one that hardcodes `client_id` + `token_endpoint` is not.
+
+## Bad — DCR for a new client
+
+```python
+# WRONG: Dynamic Client Registration is deprecated since 2026-07-28 (PR #2858).
+# It still works for legacy ASes, so the failure is silent, not an error.
+httpx.post(as_url + "/register", json={
+    "client_name": "my-agent", "redirect_uris": ["https://agent/cb"],
+    "token_endpoint_auth_method": "none"})
+```
+
+Detection signal: grep for `/register` or `DynamicClientRegistration`; any hit in
+new client code is a deprecation warning, not a bug. Use the Client ID Metadata
+Document at `/.well-known/client-id-metadata` instead.
+
+## Good — tasks extension, poll loop
+
+```python
+def run_long_tool(client, tool_name: str, args: dict) -> dict:
+    res = client.call(tool_name, args)          # may carry resultType
+    if res.get("resultType") == "task":
+        task_id = res["task"]["id"]
+        while True:
+            t = client.call("tasks/get", {"id": task_id})
+            if t["status"] in ("completed", "failed", "cancelled", "suspended"):
+                return t
+            time.sleep(t.get("pollIntervalSeconds", 5))
+    if res.get("resultType") == "input_required":
+        answer = ask_human(res["inputRequired"])
+        return client.call("tasks/update", {"id": res["task"]["id"],
+                                             "inputResponses": [answer]})
+    return res  # "complete" or absent -> short tool
+```
+
+Detection signal: the loop calls `tasks/get` and handles `input_required` via
+`tasks/update`. A loop calling `tasks/result` (removed in 2026-07-28) is wrong.
+
+## Bad — silent version downgrade
+
+```python
+# WRONG: picking the *lowest* common version to "maximise compatibility"
+agreed = min(client_versions & server_versions)   # weakens security, loses server/discover
+```
+
+Detection signal: `version_negotiate.py --client ... --server ...` must print the
+**highest** common version. `min()` in negotiation code is a fail.

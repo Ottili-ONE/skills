@@ -32,8 +32,21 @@ def main() -> int:
         return 1
 
     fails = 0
+    for name, pair in (("a", a), ("b", b)):
+        if not isinstance(pair, dict):
+            print(f"FAIL: {name} is not a JSON object, got {type(pair).__name__}",
+                  file=sys.stderr)
+            fails += 1
+    if fails:
+        print(f"0 {fails} 0")
+        return 1
+
     ma = a.get("_meta", {})
     mb = b.get("_meta", {})
+    if not ma:
+        print("FAIL: a._meta is empty; per-request metadata is mandatory",
+              file=sys.stderr)
+        fails += 1
     if ma != mb:
         print("FAIL: _meta differs between replays; request is not self-contained", file=sys.stderr)
         fails += 1

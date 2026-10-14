@@ -78,3 +78,39 @@ casing in config only after a primary re-fetch. The primary spec text uses
 `Mcp-Method`, `Mcp-Name`, `MCP-Protocol-Version`; a server that is strict about
 casing is non-conformant, but do not rely on that — normalise on your side.
 Failure signs: hardcoding one casing in logic and blaming the other side.
+
+## E10 — OAuth discovery-first vs DCR
+Prompt: "Register a new MCP client with the authorization server. Do I use Dynamic
+Client Registration?"
+Expected: No for a new client. The 2026-07-28 revision deprecates Dynamic Client
+Registration (RFC 7591, PR #2858) in favour of OAuth 2.1 Authorization Code + PKCE
+(S256 only, `code_verifier` 43-128 chars) with a Client ID Metadata Document fetched
+from `/.well-known/client-id-metadata`. DCR is kept only for backwards
+compatibility with ASes that do not support the document flow. Credentials are keyed
+by issuer; re-register when the issuer changes. Validate `iss` before redeeming the
+code (RFC 9207, SEP-2468).
+Failure signs: calling `/register` for a new client; storing one global
+`client_id`; skipping `iss` validation; sending `client_secret` when the metadata
+document declared `token_endpoint_auth_method: none`.
+
+## E11 — poll a task correctly
+Prompt: "A tool returns `resultType: "task"`. How do I get the result?"
+Expected: Read `task.id` from the result, then poll `tasks/get` (from the
+`io.modelcontextprotocol/tasks` extension) until the status is terminal
+(`completed`, `failed`, `cancelled`, `suspended`). If the result carries
+`resultType: "input_required"`, it is a Multi Round-Trip Request — respond with
+`tasks/update` carrying `inputResponses`, do not abort. `tasks/result` and
+`tasks/list` were removed in 2026-07-28 and return `-32601`.
+Failure signs: calling `tasks/result`; blocking on the original tool call;
+treating `input_required` as an error; polling without declaring the extension on
+both sides.
+
+## E12 — refuse a silent downgrade
+Prompt: "My client and server both list 2026-07-28 and 2025-06-18. Which version do
+we use?"
+Expected: The **highest** common version, 2026-07-28. Negotiation picks
+`max(client ∩ server ∩ ALLOWED)`; picking the lowest to "maximise compatibility"
+weakens security and loses `server/discover`. If the intersection is empty the
+connection is refused with `-32022`, never silently downgraded.
+Failure signs: `min()` in negotiation code; a client that advertises only
+2025-06-18 reaching a 2026-07-28-only server and expecting it to work.
