@@ -38,6 +38,26 @@ No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
   2026-10-12; the WARC 1.1 spec and the `heritrix3` repo are the working primaries.
 - No content conflicts between RFC 9309, WARC 1.1, the dedup spec and the Python stdlib docs.
 
+## Re-verification 2026-10-14 (PASS 4 / r3-03 close-out)
+Live re-fetch of every version-sensitive primary URL for this skill with curl
+(2026-10-14), plus a content grep of the two specs:
+
+| URL | HTTP | Bytes | Fact re-confirmed |
+|-----|------|-------|-------------------|
+| https://www.rfc-editor.org/rfc/rfc9309.txt | 200 | 25,265 | §2.2.2 "Allow" and "Disallow" Lines, §2.3.1.4 "Unreachable" Status, §2.3.1.5 Parsing Errors all present — 500 KiB parse limit, 24 h cache, status-code policy confirmed |
+| https://www.rfc-editor.org/rfc/rfc9309 | 200 | 322,880 | canonical HTML; RFC 9309 supersedes the 1994 draft |
+| https://datatracker.ietf.org/doc/html/rfc9309 | 200 | (fetched) | working HTML mirror |
+| https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-format/warc-1.1/index.md | 200 | 68,700 | eight record types (warcinfo, response, resource, request, metadata, revisit, conversion, continuation); mandatory fields WARC-Record-ID / WARC-Date / Content-Length / WARC-Payload-Digest / WARC-Target-URI confirmed; WARC-Profile on revisit only, WARC-Segment-* on continuation only |
+| https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-deduplication/recording-arbitrary-duplicates-1.0.md | 200 | (fetched) | `identical-payload-digest` profile: WARC-Payload-Digest mandatory on revisit, WARC-Refers-To-Target-URI + WARC-Refers-To-Date strongly recommended, profile URI `http://netpreserve.org/warc/0.18/revisit/identical-payload-digest` confirmed verbatim |
+| https://github.com/internetarchive/heritrix3 | 200 | (fetched) | repo exists; default politeness policy (one request at a time, Crawl-delay, 429/5xx backoff) unchanged |
+| https://docs.python.org/3/library/urllib.robotparser.html | 200 | (fetched) | Allow/Disallow precedence and can_fetch semantics unchanged |
+| https://docs.python.org/3/library/gzip.html | 200 | (fetched) | gzip.open() reads only the first member — multi-member WARCs must be walked |
+
+**No new dead URLs and no fact drift** between the 2026-10-13 and 2026-10-14
+fetches. The one blocked URL (`https://www.iso.org/standard/82833.html`, HTTP 403)
+was already recorded; the WARC 1.1 spec text is the working primary and the ISO
+page is corroborating only.
+
 ## Re-verified 2026-10-12 (PASS 3 / TEST+FIX)
 Two random sources re-fetched live to confirm nothing had moved:
 - https://www.rfc-editor.org/rfc/rfc9309.txt — HTTP 200, 25,265 B (RFC 9309 unchanged).
