@@ -70,3 +70,20 @@ Failure signs: exit 1 (default-deny) because the empty stdin was parsed as "no r
 Prompt: "Validate the WARC from the last crawl: `warc_writer.py --validate out.warc.gz`."
 Expected: if the file is absent, exits 1 with `FAIL: WARC file not found` — a validation failure, not an argparse usage error (rc=2). The validator is part of the resume contract, so a broken resume must be reported as a validation failure.
 Failure signs: exit 2 with an argparse error; silent success.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — a one-page fetch
+Prompt: "Fetch https://example.com and extract the title."
+Expected: No. That is a single HTTP GET, not a crawl. This skill is for crawling a *site* (multiple pages, robots.txt, sitemaps, rate limits, WARC archiving). A one-page fetch needs `curl` or `urllib`, not a politeness engine with token buckets and resume state.
+Failure signs: running `robots.py` and `rate_limit.py` for a single URL; writing a WARC record for one page.
+
+## N2 — server-side scraping
+Prompt: "Scrape the internal API behind our app — it returns JSON."
+Expected: No. This skill is for *polite web crawling* of HTML sites, respecting robots.txt and producing WARC archives. An internal JSON API is not a website — it has no robots.txt to respect and no HTML to archive. Use the API directly or an API client skill.
+Failure signs: crawling an API endpoint; treating a JSON response as a page to archive.
+
+## N3 — a site that is down
+Prompt: "Crawl https://this-host-does-not-exist.invalid/ and archive it."
+Expected: No. The skill's procedure says: 5xx/network error on robots.txt -> unreachable, default-deny, retry once, then skip. It does not invent content for a dead host. The correct behaviour is to record the failure in the WARC as a metadata record and move on, not to keep retrying or to fabricate pages.
+Failure signs: retrying a dead host indefinitely; writing response records for a host that never responded.

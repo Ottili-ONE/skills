@@ -139,3 +139,20 @@ degenerate set cannot be calibrated` -- alpha would be 1.0 for a trivial
 reason. Both checks run before agreement is measured.
 Failure signs: calibration passing on an unlabelled or constant set; the
 degenerate case not checked.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — grading a single submission by hand
+Prompt: "Grade this one student essay against a rubric."
+Expected: No. That is a one-off grading task, not a *calibration pipeline*. This skill is for making an *LLM judge* reliable and reproducible: separation from the generator, agreement statistics (Fleiss' kappa / Krippendorff's alpha >= 0.6), position-bias checks, drift detection, pass-rate calibration. A human grading one essay needs a rubric, not a judge-calibration workflow.
+Failure signs: running `calibrate_judge.py` on one item; treating a single grade as a calibration measurement.
+
+## N2 — a rubric with no examples
+Prompt: "I wrote a rubric with five score points and no examples. Is that a problem?"
+Expected: No — this is a *rubric design* question, and this skill is about *calibrating a judge* that already has a rubric. The skill's procedure says score points without examples produce 20+ point spread on re-annotation, but the fix belongs in the rubric-writing step, not in the calibration loop. Use a rubric-authoring skill or write the examples directly.
+Failure signs: running `calibrate_judge.py rubric` on a rubric that has no per-level examples; treating calibration as the fix for an ambiguous rubric.
+
+## N3 — comparing two model outputs by eye
+Prompt: "Which of these two model answers is better?"
+Expected: No. That is a single pairwise preference, not a *measured, reproducible judge*. This skill requires a calibration set, agreement statistics, provenance (judge model, generator model, prompt hashes) and a cost ledger. A one-off comparison by eye adds none of that and cannot be audited.
+Failure signs: declaring a winner without a rubric, a gold label or a recorded prompt hash; running the calibration pipeline for a single pair.

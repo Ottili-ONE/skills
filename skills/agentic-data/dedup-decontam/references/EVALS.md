@@ -103,3 +103,20 @@ and either accepts it or raises k to 256/512. It never silently claims 0.94.
 Failure signs: a table entry asserting (b=8, r=16) gives threshold ~0.94;
 no WARN when the target is unreachable; the detector silently tuned to a
 threshold the caller did not ask for.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — deduplicating a list of file paths
+Prompt: "Remove duplicate paths from this list of 200 files."
+Expected: No. That is exact-set deduplication — `set()` in Python. This skill is for *text corpora for LLM training*: MinHash/LSH near-dedup on shingles, n-gram decontamination against test prompts, embedding decontamination, planted-item tests. A list of paths has no shingles, no test leakage and no embeddings.
+Failure signs: running `minhash_lsh.py` on a list of filenames; shingling a path string.
+
+## N2 — checking if two documents are similar
+Prompt: "Are these two contracts similar?"
+Expected: No. That is single-pair similarity — TF-IDF, cosine, or a diff. This skill is for *corpora* (thousands of documents) and its pipeline is exact dedup -> MinHash/LSH near-dedup -> decontamination against a test set -> planted-item test. It is not a pairwise similarity tool, and running it on two documents would produce a report with no meaning.
+Failure signs: feeding two documents into the full pipeline; expecting a similarity score from `minhash_lsh.py` (it returns bucket membership, not a score).
+
+## N3 — cleaning a single CSV
+Prompt: "Deduplicate the rows of this CSV."
+Expected: No. That is a spreadsheet/data-frame operation — `df.drop_duplicates()`. This skill is for *text corpora* (plain text, tokenised into shingles) and its decontamination step requires test *prompts* to check against. A CSV has neither shingles nor prompts.
+Failure signs: running the text normaliser on CSV rows; feeding prompts that are not natural-language test cases.

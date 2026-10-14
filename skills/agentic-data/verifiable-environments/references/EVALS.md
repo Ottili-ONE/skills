@@ -155,3 +155,20 @@ defences; `--min-defences 1` accepts a single-defence check. The default is 2
 (the rule of two). Asking for 0 is rejected as out of range.
 Failure signs: the floor being silently ignored; a `--min-defences 0` being
 accepted.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — writing unit tests for ordinary software
+Prompt: "Write unit tests for the `auth.py` module in my service."
+Expected: No. That is ordinary software testing — pytest, fixtures, assertions. This skill is for *verifiers that resist reward hacking*: spec-derived checks the agent cannot edit, oracle-free tests, pass-rate calibration, bypass registers, sandboxing. A unit test for your own code is exactly the thing this skill warns about (the agent can edit both the code and the test).
+Failure signs: treating `pytest` as a verifier; writing a check that imports the code under test.
+
+## N2 — a benchmark that already has a leaderboard
+Prompt: "Set up a benchmark for my agent using the existing MMLU leaderboard."
+Expected: No. MMLU is a *fixed* benchmark with a known pass rate; this skill is for building *new* verifiable environments where the agent can game the score. Re-using an existing leaderboard adds no bypass audit and no calibration. Use the leaderboard's published numbers; do not re-run it as a verifier project.
+Failure signs: running `verify_harness.py` against a frozen benchmark; writing a bypass register for a dataset nobody can edit.
+
+## N3 — a checker that reads the agent's own log
+Prompt: "My verifier reads the agent's trajectory log and checks it contains the word 'done'."
+Expected: No. That is the *neutering* failure mode this skill exists to prevent: a check that reads the agent's own output is trivially satisfiable by writing the word "done" into the log. Every check must be derived from a spec the agent cannot edit (a `SPEC.md`, an oracle, a fixture). Route: rewrite the check against the spec, or neuter it with `scripts/verify_harness.py neuter`.
+Failure signs: a check that greps the trajectory; a bypass register entry that reads "agent writes 'done'".
