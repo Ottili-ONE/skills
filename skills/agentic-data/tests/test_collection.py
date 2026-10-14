@@ -91,6 +91,34 @@ def test_design_and_sources(name: str) -> None:
         f"{name}: SOURCES.md has no retrieval date"
     )
 
+@pytest.mark.parametrize("name", SKILL_NAMES)
+def test_design_completeness(name: str) -> None:
+    """DESIGN.md must carry the sections the R3 brief asks for: a trigger
+    description draft, a procedure outline, a scripts list, and five eval
+    scenarios, plus a competitive-comparison section saying what existing
+    public skills do and what this one does differently."""
+    root = COLLECTION_ROOT / name
+    design = (root / "references" / "DESIGN.md").read_text(encoding="utf-8")
+    lowered = design.lower()
+    assert "trigger description" in lowered, f"{name}: DESIGN.md has no trigger description"
+    assert "procedure outline" in lowered or "procedure" in lowered, (
+        f"{name}: DESIGN.md has no procedure outline"
+    )
+    assert "scripts" in lowered, f"{name}: DESIGN.md has no scripts section"
+    assert "five eval scenarios" in lowered, (
+        f"{name}: DESIGN.md has no five eval scenarios"
+    )
+    assert "what this skill does better" in lowered, (
+        f"{name}: DESIGN.md has no 'does better than a generic agent' section"
+    )
+    assert "what existing public skills do" in lowered, (
+        f"{name}: DESIGN.md has no competitive-comparison section"
+    )
+    scenarios = re.findall(r'^\d\. "', design, flags=re.M)
+    assert len(scenarios) >= 5, (
+        f"{name}: DESIGN.md lists only {len(scenarios)} numbered eval scenarios (need >= 5)"
+    )
+
 
 @pytest.mark.parametrize("name", SKILL_NAMES)
 def test_evals_present(name: str) -> None:
