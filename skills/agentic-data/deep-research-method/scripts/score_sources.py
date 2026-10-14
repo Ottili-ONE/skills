@@ -235,6 +235,44 @@ def cmd_cite(sources: list[dict], min_score: int) -> int:
     return 0
 
 
+def cmd_confidence(sources: list[dict], min_score: int) -> int:
+    """Compute the confidence ladder for a claim from its cited sources.
+
+    Confidence is a function of the *kept* sources behind a claim, not of how
+    many URLs cite it:
+      high   = primary + >=2 corroborating distinct upstreams
+      medium = primary only (exactly 1 distinct upstream)
+      low    = secondary only (no source scored >= min_score)
+      none   = no sources at all
+
+    A claim whose kept sources trace to one upstream cannot claim high
+    confidence even if it cites three URLs, because those URLs are one source.
+    """
+    kept = [s for s in sources if score_source(s) >= min_score and s.get("url")]
+    if not kept:
+        print("FAIL: no kept sources to compute confidence from", file=sys.stderr)
+        return 1
+    upstreams = {str(s.get("upstream") or s.get("url")) for s in kept}
+    n = len(upstreams)
+    if n >= 3:
+        conf = "high"
+    elif n == 2:
+        conf = "high"
+    elif n == 1:
+        conf = "medium"
+    else:
+        conf = "low"
+    print(json.dumps({
+        "n_kept": len(kept),
+        "n_upstreams": n,
+        "confidence": conf,
+        "rule": "high = >=2 distinct upstreams; medium = 1; low = none kept",
+    }))
+    print(f"INFO: confidence={conf} ({len(kept)} kept URL(s) across {n} upstream(s))",
+          file=sys.stderr)
+    return 0
+
+
 def cmd_fetch(sources: list[dict], min_score: int) -> int:
     """Dry-run the fetch list: every kept source's URL, in order, for curl."""
     urls = [s["url"] for s in sources if score_source(s) >= min_score and s.get("url")]
@@ -311,6 +349,10 @@ def main() -> int:
     p.add_argument("sources", type=Path)
     p.add_argument("--min", type=int, default=MIN_SCORE)
 
+    p = sub.add_parser("confidence")
+    p.add_argument("sources", type=Path)
+    p.add_argument("--min", type=int, default=MIN_SCORE)
+
     p = sub.add_parser("provenance")
     p.add_argument("sources", type=Path)
     p.add_argument("--min", type=int, default=MIN_SCORE)
@@ -339,6 +381,8 @@ def main() -> int:
         return cmd_fetch(sources, args.min)
     if args.cmd == "corroboration":
         return cmd_corroboration(sources, args.min)
+    if args.cmd == "confidence":
+        return cmd_confidence(sources, args.min)
     if args.cmd == "provenance":
         return cmd_provenance(sources, args.min)
     return cmd_audit(sources, args.claims, args.min)

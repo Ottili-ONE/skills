@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "score_sources.py"
-FIX = Path("/srv/ottili/repo/skills/../../scratch/skills/skills-agentic-data-r3/deepr_fixtures")
+FIX = Path(__file__).resolve().parent / "fixtures"
 
 
 def run(*args: str) -> subprocess.CompletedProcess:
@@ -201,3 +201,41 @@ def test_provenance_flags_missing_date() -> None:
     r = run("provenance", str(nodate))
     assert r.returncode == 1
     assert "no 'retrieved' date" in r.stderr
+
+
+
+def test_confidence_medium_single_upstream() -> None:
+    # single.jsonl keeps one source tracing to one upstream -> medium
+    r = run("confidence", str(FIX / "single.jsonl"))
+    assert r.returncode == 0, r.stderr
+    assert '"confidence": "medium"' in r.stdout
+
+
+def test_confidence_high_three_upstreams() -> None:
+    # good.jsonl keeps three sources across three distinct upstreams -> high
+    r = run("confidence", str(FIX / "good.jsonl"))
+    assert r.returncode == 0, r.stderr
+    assert '"confidence": "high"' in r.stdout
+
+
+def test_confidence_fake_middle_is_medium() -> None:
+    # equal.jsonl keeps two URLs that share one upstream: the fake middle.
+    # Confidence is medium, not high, because there is one upstream.
+    r = run("confidence", str(FIX / "equal.jsonl"))
+    assert r.returncode == 0, r.stderr
+    assert '"confidence": "medium"' in r.stdout
+    assert '"n_upstreams": 1' in r.stdout
+
+
+def test_confidence_rejects_no_kept_sources() -> None:
+    r = run("confidence", str(FIX / "bad.jsonl"))
+    assert r.returncode == 1
+    assert "no kept sources" in r.stderr
+
+
+def test_help_lists_subcommands() -> None:
+    r = run("--help")
+    assert r.returncode == 0
+    for sub in ("score", "audit", "contradictions", "corroboration",
+                "provenance", "cite", "fetch", "staleness", "confidence"):
+        assert sub in r.stdout, f"missing subcommand {sub}"
