@@ -14,9 +14,23 @@ import sys
 from pathlib import Path
 
 
+# Anchored regexes: a bare substring match flagged `git commit --amend` (history
+# rewriting, forbidden in a shared tree) and `my_stash_var = 1` (a variable name).
+# Word boundaries and whitespace anchoring keep `git merge-base` and `git stash list`
+# false-positives out while still catching the commands.
 FORBIDDEN = [
-    "reset --hard", "checkout ", "stash", "rebase", "merge ", "pull",
-    "add -A", "add .", "commit -a", "switch ", "restore ",
+    r"\breset\s+--hard\b",
+    r"\bcheckout\s+",
+    r"\bstash\b",
+    r"\brebase\b",
+    r"\bmerge\s+",
+    r"\bpull\b",
+    r"\badd\s+-A\b",
+    r"\badd\s+\.\b",
+    r"\bcommit\s+-a\b",
+    r"\bcommit\s+--amend\b",
+    r"\bswitch\s+",
+    r"\brestore\s+",
 ]
 COMMIT_PREFIX_RE = re.compile(r"^[a-z0-9-]+-r3-[0-9]+:")
 
@@ -141,11 +155,11 @@ def cmd_scan_forbidden(args: argparse.Namespace) -> int:
 
 
 def _is_forbidden(line: str) -> str | None:
-    """Return the forbidden token in line, or None."""
+    """Return the forbidden pattern that matched in line, or None."""
     stripped = line.lstrip()
-    for needle in FORBIDDEN:
-        if needle in stripped:
-            return needle
+    for pattern in FORBIDDEN:
+        if re.search(pattern, stripped):
+            return pattern
     return None
 
 

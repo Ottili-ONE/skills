@@ -90,7 +90,39 @@ def test_scan_flags_forbidden():
         (tmp / "bad.sh").write_text("#!/bin/sh\ngit reset --hard HEAD~1\n")
         r = run("--file", str(tmp / "bad.sh"), "scan")
         assert r.returncode == 1
-        assert "reset --hard" in r.stderr
+        assert "reset" in r.stderr
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_scan_allows_merge_base_and_stash_var():
+    """`git merge-base` and a variable named `my_stash_var` must NOT be flagged.
+
+    The old substring matcher flagged both: `merge ` is a prefix of `merge-base`
+    and `stash` is a substring of `stash_var`. Anchored regexes fix this.
+    """
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        (tmp / "ok.sh").write_text(
+            "#!/bin/sh\n"
+            "BASE=$(git merge-base main HEAD)\n"
+            "my_stash_var=1\n"
+            "echo $my_stash_var\n"
+        )
+        r = run("--file", str(tmp / "ok.sh"), "scan")
+        assert r.returncode == 0, r.stderr
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_scan_flags_commit_amend():
+    """`git commit --amend` rewrites history and is forbidden in a shared tree."""
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        (tmp / "amend.sh").write_text("#!/bin/sh\ngit commit --amend --no-edit\n")
+        r = run("--file", str(tmp / "amend.sh"), "scan")
+        assert r.returncode == 1, r.stderr
+        assert "amend" in r.stderr
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
