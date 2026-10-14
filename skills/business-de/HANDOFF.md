@@ -32,8 +32,7 @@ Four commits, all `skills-business-de-r3-05:`, own paths only.
 
 1. **README refresh.** `skills/business-de/README.md` rewritten: one-line value
    per skill, install hints, layout diagram, version-pin rule, cross-link
-   contract and the gate commands. The old README carried a stale test count
-   (131) and no cross-link notes.
+   contract and the gate commands.
 2. **EVALS grounding pass.** Every prompt that names a script was re-run
    against the real script in dry-run mode and its expected exit code
    recorded. Two prompts were broken: `skr-journal-mapping` #2/#5/#7 quoted
