@@ -81,9 +81,21 @@ specification this pass; DPD, GLS, Hermes and UPS facts are marked
 - [ ] Tracking via official API only
 - [ ] Charges reconciled by reference; unknown results flagged
 
+## Scripts
+
+- `create_label.py` — see `references/DESIGN.md`
+- `reconcile_charges.py` — see `references/DESIGN.md`
+- `track_shipment.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
 - [Design](references/DESIGN.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **webhooks-safe** — carrier tracking and webhook delivery use the same signature-verify/dedup path; this skill owns the safe receipt side.

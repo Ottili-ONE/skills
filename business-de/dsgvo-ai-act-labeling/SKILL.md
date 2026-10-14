@@ -93,6 +93,12 @@ Both must be true. A missing review record fails the exception.
 - [ ] Art. 35 DPIA trigger checklist run; DPO consulted if any trigger fires
 - [ ] Art. 50 applicability dates pinned from config, not hardcoded
 
+## Scripts
+
+- `classify_content.py` — see `references/DESIGN.md`
+- `label_check.py` — see `references/DESIGN.md`
+- `processing_register.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
@@ -100,3 +106,9 @@ Both must be true. A missing review record fails the exception.
 - [EVALS](references/EVALS.md)
 - [Design](references/DESIGN.md)
 - [Review record template](references/review-record.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **publish-reconcile-wp-meta** — AI-generated content usually reaches Ottili through a WordPress/Meta publish; this skill owns the idempotent publish and the reconciliation that makes the label observable.

@@ -8,6 +8,8 @@ import threading
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "webhook_forward.py"
+SCRIPT_DIR = Path(__file__).resolve().parent.parent / "scripts"
+SCRIPT = SCRIPT_DIR / "webhook_forward.py"
 
 
 def run(args, body):
@@ -44,10 +46,15 @@ def test_http_scheme_blocked(tmp_path):
 def test_live_delivery_succeeds(tmp_path, monkeypatch):
     """The forward builds a POST with the raw body and no redirect following.
 
-    A real server is unreachable on this host (all host IPs are in the
-    blocked ranges), so urlopen is faked and the request object inspected.
+    The subprocess cannot be monkeypatched, so this drives the module
+    directly: resolve_and_check is faked to pass and urlopen is replaced
+    with a recorder.
     """
-    import webhook_forward as wf
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("webhook_forward", str(SCRIPT))
+    wf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wf)
+
     captured = {}
 
     class FakeResp:
@@ -63,15 +70,27 @@ def test_live_delivery_succeeds(tmp_path, monkeypatch):
     monkeypatch.setattr(wf.socket, "getaddrinfo",
                         lambda h, p: [(0, 0, 0, ("93.184.216.34", 443))])
     body = tmp_path / "b.json"; body.write_bytes(b'{"x":1}')
-    code, out = run(["--url", "https://example.com/hook", "--body", str(body)], b"")
-    assert code == 0, out
+    rc = wf.main.__wrapped__ if hasattr(wf.main, "__wrapped__") else None
+    # call main() with sys.argv patched
+    import sys as _sys
+    old_argv = _sys.argv
+    _sys.argv = ["webhook_forward.py", "--url", "https://example.com/hook",
+                 "--body", str(body)]
+    try:
+        code = wf.main()
+    finally:
+        _sys.argv = old_argv
+    assert code == 0
     assert captured["data"] == b'{"x":1}'
     assert captured["method"] == "POST"
 
 
 def test_redirect_not_followed(tmp_path, monkeypatch):
     """urlopen is called once: no automatic redirect following."""
-    import webhook_forward as wf
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("webhook_forward", str(SCRIPT))
+    wf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wf)
     calls = []
 
     class FakeResp:
@@ -85,5 +104,12 @@ def test_redirect_not_followed(tmp_path, monkeypatch):
     monkeypatch.setattr(wf.socket, "getaddrinfo",
                         lambda h, p: [(0, 0, 0, ("93.184.216.34", 443))])
     body = tmp_path / "b.json"; body.write_bytes(b'{"x":1}')
-    run(["--url", "https://example.com/hook", "--body", str(body)], b"")
+    import sys as _sys
+    old_argv = _sys.argv
+    _sys.argv = ["webhook_forward.py", "--url", "https://example.com/hook",
+                 "--body", str(body)]
+    try:
+        wf.main()
+    finally:
+        _sys.argv = old_argv
     assert len(calls) == 1

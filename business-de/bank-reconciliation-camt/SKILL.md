@@ -86,8 +86,18 @@ older namespace silently. The full list of five traps, with sources, is in
 - [ ] Differences under EUR 0.01 are rounding
 - [ ] `scripts/recon_check.py` exits 0
 
+## Scripts
+
+- `recon_check.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **webhooks-safe** — bank notifications (EBICS, camt.053 push) arrive as inbound webhooks; this skill owns the safe receipt and dedup side.

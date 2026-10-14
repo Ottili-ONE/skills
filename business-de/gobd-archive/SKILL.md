@@ -130,8 +130,21 @@ not "today + 8 years". `scripts/purge_decision.py` derives
 - [ ] Purge record itself retained for the full retention period
 - [ ] Re-verification run logged
 
+## Scripts
+
+- `audit_export.py` — see `references/DESIGN.md`
+- `immutability_check.py` — see `references/DESIGN.md`
+- `purge_decision.py` — see `references/DESIGN.md`
+- `retention_classify.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **dsgvo-ai-act-labeling** — a DPIA and the processing register are tax-relevant documents with their own retention clock; this skill decides whether AI content needs them.

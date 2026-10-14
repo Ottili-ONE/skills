@@ -110,8 +110,21 @@ of the calendar year of creation, not on the document's own date.
 - [ ] Retention end date computed (8 years from year-end)
 - [ ] Export test passed
 
+## Scripts
+
+- `profile_selector.py` — see `references/DESIGN.md`
+- `retention_check.py` — see `references/DESIGN.md`
+- `validate_invoice.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **gobd-archive** — the archived e-invoice must survive the GoBD retention clock; this skill computes the retention end date and the audit-ready export.
+- **ust-edge-cases** — every e-invoice carries Steuerschlüssel per rate (BT-19/BG-19); this skill owns the tax-key decision that the invoice must reflect.

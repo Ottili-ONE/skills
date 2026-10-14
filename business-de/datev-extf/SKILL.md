@@ -166,8 +166,22 @@ category-specific checks (code/name/version, column count, row rules) do
 **not**. When a file is not a Buchungsstapel, say so explicitly instead of
 running Buchungsstapel rules against it.
 
+## Scripts
+
+- `build_stapel.py` — see `references/DESIGN.md`
+- `fixture_generator.py` — see `references/DESIGN.md`
+- `heading_row.py` — see `references/DESIGN.md`
+- `validate_extf.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **gobd-archive** — EXTF exports are accounting data and must be retained immutably; this skill owns the retention policy and audit export.
+- **skr-journal-mapping** — the Buchungsstapel is the machine-readable form of the SKR journal this skill produces.

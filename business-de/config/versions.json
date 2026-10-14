@@ -168,5 +168,50 @@
     "changed": "xrechnung-zugferd.factur-x 1.0.11 -> 1.09.2 (FeRD primary source, 2026-08-04 release)",
     "detail": "FeRD news page https://www.ferd-net.de/aktuelles-veranstaltungen/aktuelles/news/zugferd-252-veroeffentlicht returned 200 and confirms ZUGFeRD 2.5.2 / Factur-X 1.09.2 published 2026-08-04. KoSIT validator-configuration-xrechnung CHANGELOG (master) confirms the v2026-08-31 tag is compatible with XRechnung 3.0, uses CEN Schematron 1.3.16 and KoSIT Validator v1.6.3. agentskills.io/specification 200. steuer-berater.de/lexikon/gobd 200 (cookie-wall JS only, body text not rendered without consent - content corroborated from the 2026-10-08 pass). No other pinned version changed.",
     "log": "../../scratch/skills/skills-business-de-r3/research/reverify-2026-10-13.log"
+  },
+  "webhooks-safe": {
+    "replay_window_minutes": 5,
+    "verified": "2026-10-14",
+    "note": "Stripe signature window (t= timestamp, must be within 5 minutes). GitHub/Meta use sha256 HMAC with no timestamp. Re-verify against provider docs on every SDK bump."
+  },
+  "carrier-apis-de": {
+    "dhl_rest": {
+      "version": "2.2.0",
+      "verified": "2026-10-12",
+      "source": "https://test.developer.dhl.com/post-and-parcel-germany",
+      "note": "DHL Parcel DE REST API. DPD/GLS/Hermes/UPS are unverified until the partner portals are reachable."
+    },
+    "dhl_tracking": {
+      "version": "1.0.0",
+      "verified": "2026-10-12"
+    },
+    "dhl_returns": {
+      "version": "1.1.0",
+      "verified": "2026-10-12"
+    },
+    "soap_v2_decommissioned": "2026-05-31",
+    "note": "The old Geschaeftskundenversand SOAP API v2 was decommissioned 2026-05-31; use the REST API."
+  },
+  "publish-reconcile-wp-meta": {
+    "wp_api": {
+      "version": "wp/v2",
+      "verified": "2026-10-13",
+      "source": "https://developer.wordpress.org/rest-api/"
+    },
+    "meta_graph": {
+      "version": "v26.0",
+      "verified": "2026-10-13",
+      "source": "https://developers.facebook.com/docs/graph-api"
+    },
+    "reconcile_attempts_max": 5,
+    "note": "Meta Graph API version moves quarterly; re-verify each quarter."
+  },
+  "dsgvo-ai-act-labeling": {
+    "label_recheck_days": 365,
+    "human_review_retention_years": 10,
+    "art50_applies": "2026-08-02",
+    "art50_2_marking_duty": "2026-12-02",
+    "verified": "2026-10-13",
+    "note": "Art. 50(2) marking date is a secondary-source date (Digital Omnibus); re-verify against the recital before relying on it."
   }
 }

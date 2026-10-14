@@ -19,7 +19,7 @@ strength of "it is obviously a product photo".
 responsibility. Label?"
 
 **Expected behaviour:** EXEMPT — but only if the review record names the
-person. Run `scripts/ai_label_check.py` against the record; both conjuncts
+person. Run `scripts/label_check.py` against the record; both conjuncts
 must be true.
 
 **Failure signs:** Exempting on the strength of "someone reviewed it" with no

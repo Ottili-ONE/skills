@@ -77,9 +77,16 @@ targets.
 - [ ] Failures moved to dead-letter with raw payload preserved
 - [ ] Forwarded URL DNS-resolved at request time; private/link-local blocked
 
+## Scripts
+
+- `dedup_event.py` — see `references/DESIGN.md`
+- `verify_webhook.py` — see `references/DESIGN.md`
+- `webhook_forward.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
 - [Design](references/DESIGN.md)
+

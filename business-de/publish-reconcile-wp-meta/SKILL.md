@@ -70,9 +70,20 @@ status is observable. A 2xx with an id is never treated as proof.
 - [ ] Reconciliation row recorded in the ledger
 - [ ] Dual-platform record is `partial` when one provider failed
 
+## Scripts
+
+- `publish_post.py` — see `references/DESIGN.md`
+- `reconcile_publish.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
 - [Design](references/DESIGN.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **webhooks-safe** — the publish result arrives as an inbound webhook (Meta Graph, WordPress); this skill owns the signature verification and dedup that make the reconciliation loop safe.

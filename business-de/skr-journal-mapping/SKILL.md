@@ -125,8 +125,23 @@ Three traps recur; the full list with sources is in
 - [ ] Retention period recorded (10y books, 8y vouchers, 6y letters) with
       checksum and retrieval path
 
+## Scripts
+
+- `generate_journal.py` — see `references/DESIGN.md`
+- `journal_check.py` — see `references/DESIGN.md`
+- `map_skr.py` — see `references/DESIGN.md`
+- `period_lock.py` — see `references/DESIGN.md`
+- `period_lock_check.py` — see `references/DESIGN.md`
+
 ## References
 
 - [Procedures and worked examples](references/procedures.md)
 - [Standards and sources](references/SOURCES.md)
 - [EVALS](references/EVALS.md)
+
+## Related skills
+
+Cross-links by name (one level deep, no circular dependency):
+
+- **datev-extf** — the automatic journal is emitted as a DATEV EXTF Buchungsstapel; this skill owns the envelope and column rules.
+- **ust-edge-cases** — the Steuerschluessel on every Buchungszeile (column 97) is the VAT decision this skill owns.

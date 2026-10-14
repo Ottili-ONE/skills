@@ -28,4 +28,7 @@ the HTTP status is recorded per row. Version-sensitive facts are pinned in
 
 ## Re-verification 2026-10-13
 
+## Re-verification 2026-10-13
+
 All primary URLs re-probed with curl on 2026-10-13. Statuses recorded per row above. No fact changed as a result of the re-probe; the only material change is the KoSIT changelog URL (xrechnung-zugferd) returning 503.
+

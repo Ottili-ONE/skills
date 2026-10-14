@@ -52,7 +52,7 @@
 | Script | Purpose |
 |---|---|
 | `scripts/classify_content.py` | Bucket a piece of content into synthetic/assist/augment/disclose from a metadata file; exits non-zero on ambiguous input. |
-| `scripts/ai_label_check.py` | Applies the Art. 50(4) exception test to a review-record JSON; prints LABEL or EXEMPT with the failing conjunct. |
+| `scripts/label_check.py` | Applies the Art. 50(4) exception test to a review-record JSON; prints LABEL or EXEMPT with the failing conjunct. |
 | `scripts/processing_register.py` | Emits an Art. 30 row from a use-case description + retention class; validates required fields. |
 
 ## Five eval prompts
