@@ -179,7 +179,7 @@
       "version": "2.0.2",
       "verified": "2026-10-14",
       "source": "https://developer.dhl.com/api-reference/parcel-de-shipping-post-parcel-germany-v2?language_content_entity=en",
-      "note": "DHL Parcel DE REST API. The live developer.dhl.com page (200 OK, 2026-10-14) states the API version is v2.0.2 (response field "version": "v2.0.2"). The earlier 2.2.0 pin was wrong - it was read from a test-environment page. DPD/GLS/Hermes/UPS are unverified until the partner portals are reachable."
+      "note": "DHL Parcel DE REST API. The live developer.dhl.com page (200 OK, 2026-10-14) states the API version is v2.0.2 (response field \"version\": \"v2.0.2\"). The earlier 2.2.0 pin was wrong - it was read from a test-environment page. DPD/GLS/Hermes/UPS are unverified until the partner portals are reachable."
     },
     "dhl_tracking": {
       "version": "1.0.0",

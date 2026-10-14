@@ -98,4 +98,5 @@ specification this pass; DPD, GLS, Hermes and UPS facts are marked
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **webhooks-safe** — carrier tracking and webhook delivery use the same signature-verify/dedup path; this skill owns the safe receipt side.
+- **webhooks-safe** — carrier tracking and webhook delivery use the same
+  signature-verify/dedup path; this skill owns the safe receipt side.
