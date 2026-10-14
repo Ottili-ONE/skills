@@ -38,6 +38,19 @@ LEGAL_BASES = {
     "art6_1e_task": "Public task (Art. 6(1)(e))",
     "art6_1f_legit": "Legitimate interests (Art. 6(1)(f))",
 }
+# Human-readable synonyms accepted on input; the register always stores the
+# canonical Art. 6(1) key so the artefact is machine-checkable.
+LEGAL_BASE_SYNONYMS = {
+    "consent": "art6_1a_consent",
+    "contractual necessity": "art6_1b_contract",
+    "contract": "art6_1b_contract",
+    "legal obligation": "art6_1c_legal",
+    "legal": "art6_1c_legal",
+    "vital interests": "art6_1d_vital",
+    "public task": "art6_1e_task",
+    "legitimate interests": "art6_1f_legit",
+    "legit": "art6_1f_legit",
+}
 
 
 def classify(activity: dict, now: str | None = None) -> dict:
@@ -46,8 +59,11 @@ def classify(activity: dict, now: str | None = None) -> dict:
     if missing:
         raise SystemExit(f"Art. 30 entry missing fields: {missing}")
     basis = activity.get("legal_basis", "")
+    basis = LEGAL_BASE_SYNONYMS.get(str(basis).strip().lower(), basis)
     if basis not in LEGAL_BASES:
-        raise SystemExit(f"unknown legal basis '{basis}'; choose from {sorted(LEGAL_BASES)}")
+        raise SystemExit(f"unknown legal basis '{activity.get('legal_basis')}'; "
+                         f"choose from {sorted(LEGAL_BASES)} or the synonyms "
+                         f"{sorted(LEGAL_BASE_SYNONYMS)}")
     # The register is append-only GoBD evidence: every entry must carry the
     # moment it was recorded. Never trust the caller for this timestamp.
     if not now:

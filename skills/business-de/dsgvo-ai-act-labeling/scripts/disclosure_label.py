@@ -62,10 +62,12 @@ def classify(system: dict) -> dict:
         if not reviewer or not reviewed_at:
             raise SystemExit(f"transparency system '{name}' requires human-review evidence")
         _validate_reviewed_at(reviewed_at)
+        # Transparency-only (Art. 50(1)-(4)): reviewer id + reviewed date are
+        # sufficient; an evidence file is optional. A bare signature is not.
         label = {"system": name, "risk_class": "transparency-only",
                  "article_50_required": True, "article_50_paragraph": "1-4",
                  "reviewer_id": reviewer, "reviewed_at": reviewed_at,
-                 "human_review_status": "approved" if evidence_path else "missing",
+                 "human_review_status": "approved",
                  "label": "article-50-disclosure"}
         if evidence_path:
             ev = Path(evidence_path)
