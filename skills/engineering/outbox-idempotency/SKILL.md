@@ -93,5 +93,8 @@ SELECT ... FROM outbox WHERE sent_at IS NULL LIMIT 50 FOR UPDATE SKIP LOCKED;
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
+- [acceptance-harness](../acceptance-harness/SKILL.md) — the outbox leak test is an acceptance scenario with PASS evidence.
+- [honest-status](../honest-status/SKILL.md) — the outbox migration is a status item; mark it VERIFIED only when the leak test ran.
 - [problem-json-contracts](../problem-json-contracts/SKILL.md) — outbound failures are emitted as problem details.
 - [pg-rls-multitenant](../pg-rls-multitenant/SKILL.md) — the outbox row is tenant-scoped and must survive RLS.
+- [shared-tree-git](../shared-tree-git/SKILL.md) — the outbox migration and the leak-test evidence are committed with a task-id prefix.

@@ -110,5 +110,9 @@ ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
-- [problem-json-contracts](../problem-json-contracts/SKILL.md) — a leak is reported as a problem detail, not a silent row.
+- [acceptance-harness](../acceptance-harness/SKILL.md) — a tenant-leak scenario is an acceptance scenario with PASS evidence.
+- [honest-status](../honest-status/SKILL.md) — the RLS migration is a status item; mark it VERIFIED only after the leak test ran green.
 - [long-test-discipline](../long-test-discipline/SKILL.md) — the leak test is a long test that runs in the foreground.
+- [module-contract-first](../module-contract-first/SKILL.md) — an RLS policy is a contract: enumerate it, version it, block merge on drift.
+- [problem-json-contracts](../problem-json-contracts/SKILL.md) — a leak is reported as a problem detail, not a silent row.
+- [shared-tree-git](../shared-tree-git/SKILL.md) — the migration and the leak-test evidence are committed with a task-id prefix.

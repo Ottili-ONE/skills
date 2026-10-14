@@ -113,3 +113,5 @@ await page.keyboard.press('Tab');  // stops at the light DOM; shadow controls un
 ## Related skills
 - [acceptance-harness](../acceptance-harness/SKILL.md) — axe JSON and screenshots are the evidence pointers.
 - [honest-status](../honest-status/SKILL.md) — a green axe scan is not DONE.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — the axe scan and the keyboard traversal are long tests; run them in the foreground with a recorded seed.
+- [shared-tree-git](../shared-tree-git/SKILL.md) — the evidence artifacts and the test script are committed with a task-id prefix.

@@ -78,4 +78,7 @@ Good (tracked workaround — marker + ISSUE ticket, checker passes):
 
 ## Related skills
 - [acceptance-harness](../acceptance-harness/SKILL.md) — conformance is an acceptance scenario with PASS evidence.
+- [module-contract-first](../module-contract-first/SKILL.md) — the Foundation `exports` map is itself a module contract; enumerate it, do not hand-wave it.
+- [problem-json-contracts](../problem-json-contracts/SKILL.md) — a conformance failure is reported as a problem detail, not a silent row.
 - [playwright-a11y-e2e](../playwright-a11y-e2e/SKILL.md) — axe assertions must not be weakened for token drift.
+- [shared-tree-git](../shared-tree-git/SKILL.md) — the conformance report and the fresh-consumer test are committed with a task-id prefix.
