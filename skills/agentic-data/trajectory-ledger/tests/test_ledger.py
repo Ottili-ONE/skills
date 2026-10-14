@@ -83,11 +83,16 @@ def test_record_non_det_appends_observe_event() -> None:
     with tempfile.TemporaryDirectory() as td:
         out = Path(td) / "norm.jsonl"
         run("normalize", str(FIX / "traj.jsonl"), str(out))
-        r = run("record-non-det", str(out), "1", "timestamps drifted")
+        # the divergence was at step 1; the record itself is a new event and
+        # must be appended after the last recorded step (2 here).
+        r = run("record-non-det", str(out), "3", "timestamps drifted")
         assert r.returncode == 0, r.stderr
         assert "recorded non-determinism" in r.stderr
         lines = [json.loads(l) for l in out.read_text().splitlines() if l.strip()]
         assert any(e.get("non_determinism") is True for e in lines)
+        # the appended event must be the last step and audit clean
+        assert lines[-1]["step"] == 3
+        assert lines[-1]["non_determinism"] is True
         # and the appended event must audit clean
         r2 = run("audit", str(out))
         assert r2.returncode == 0, r2.stderr

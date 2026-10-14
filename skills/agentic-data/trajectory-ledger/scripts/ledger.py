@@ -19,6 +19,7 @@ import json
 import sys
 from pathlib import Path
 
+SCHEMA_VERSION = "trajectory-ledger-v1"
 VALID_TYPES = {"think", "tool", "observe"}
 VALID_OUTCOMES = {"pending", "running", "succeeded", "failed", "blocked", "timeout"}
 REQUIRED_BY_OUTCOME = {
@@ -96,6 +97,35 @@ def cmd_audit(events: list[dict]) -> int:
     failures: list[str] = []
     for i, ev in enumerate(events):
         failures += check_event(ev, i)
+    # Step monotonicity: a ledger whose steps are not strictly increasing is
+    # not a sequence and cannot be replayed deterministically. Reordering
+    # events is the most common silent corruption of a hand-written ledger.
+    prev_step: int | None = None
+    for i, ev in enumerate(events):
+        st = ev.get("step")
+        if not isinstance(st, int):
+            failures.append(f"FAIL: event {i} has non-integer 'step'")
+            continue
+        if prev_step is not None and st <= prev_step:
+            failures.append(
+                f"FAIL: event {i} step {st} is not strictly greater than "
+                f"event {i - 1} step {prev_step}; the ledger is not a sequence"
+            )
+        prev_step = st
+    # Schema version: a ledger that does not declare the schema it was written
+    # against may have been written against a draft and cannot be replayed
+    # against the current schema. The first event carries the schema; the
+    # header line (schema + run_id) is optional.
+    declared = {ev.get("schema") for ev in events if ev.get("schema")}
+    if len(declared) > 1:
+        failures.append(
+            f"FAIL: ledger mixes schema versions {sorted(str(x) for x in declared)}"
+        )
+    if events and SCHEMA_VERSION not in declared:
+        failures.append(
+            f"FAIL: no event declares schema '{SCHEMA_VERSION}'; the ledger "
+            f"was not written against the current schema and cannot be replayed"
+        )
     if failures:
         for f in failures:
             print(f, file=sys.stderr)
@@ -165,7 +195,24 @@ def cmd_record_non_det(ledger_path: Path, step: int, reason: str) -> int:
     The replay procedure says: on first divergence, record it and stop. This
     subcommand appends that record so the ledger carries the evidence instead
     of the run being silently marked non-reproducible.
+
+    The appended event's `step` is the next step after the last recorded one,
+    not the diverging step: the divergence *is* the divergence at `step`, and
+    the record itself is a new event that must come after every existing one.
+    Passing a step that is not strictly greater than the last recorded step
+    would itself break the monotonicity the audit enforces, so it is rejected
+    rather than silently appended out of order.
     """
+    existing = load_events(ledger_path) if ledger_path.is_file() else []
+    last_step = max((e.get("step", -1) for e in existing if isinstance(e.get("step"), int)), default=-1)
+    if step <= last_step:
+        print(
+            f"FAIL: step {step} is not strictly greater than the last recorded "
+            f"step {last_step}; the non-determinism record must be appended after "
+            f"every existing event",
+            file=sys.stderr,
+        )
+        return 1
     ev = {
         "step": step,
         "timestamp": _now(),

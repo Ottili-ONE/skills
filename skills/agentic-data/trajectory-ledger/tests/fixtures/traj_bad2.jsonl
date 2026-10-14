@@ -1,0 +1,1 @@
+{"args": {"cmd": "ls"}, "cost": {"seconds": 0.0, "tokens_in": 0, "tokens_out": 0, "usd": 0.0}, "schema": "trajectory-ledger-v1", "state": {"files": []}, "step": 0, "timestamp": "t", "tool": "shell", "type": "tool"}

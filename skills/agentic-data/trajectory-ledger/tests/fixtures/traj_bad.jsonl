@@ -1,0 +1,1 @@
+{"cost": {"seconds": 0.0, "tokens_in": 0, "tokens_out": 0, "usd": 0.0}, "outcome": "succeeded", "schema": "trajectory-ledger-v1", "state": {"files": []}, "state_hash": "sha256:602e35a92eec4bc0a2ec6ae113f07bfc6933322fb69fe8dee416e5a67217e2a2", "step": 0, "timestamp": "t", "type": "observe"}

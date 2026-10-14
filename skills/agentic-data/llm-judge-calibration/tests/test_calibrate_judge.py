@@ -16,25 +16,25 @@ def run(*args: str) -> subprocess.CompletedProcess:
 
 
 def test_high_agreement_passes() -> None:
-    r = run("calibrate", "--rows", str(FIX / "high.jsonl"))
+    r = run("calibrate", "--rows", str(FIX / "high.jsonl"), *PROV)
     assert r.returncode == 0, r.stderr
     assert "PASS" in r.stderr
 
 
 def test_low_agreement_fails() -> None:
-    r = run("calibrate", "--rows", str(FIX / "low.jsonl"))
+    r = run("calibrate", "--rows", str(FIX / "low.jsonl"), *PROV)
     assert r.returncode == 1
     assert "agreement" in r.stderr
 
 
 def test_position_bias_detected() -> None:
-    r = run("calibrate", "--rows", str(FIX / "biased.jsonl"))
+    r = run("calibrate", "--rows", str(FIX / "biased.jsonl"), *PROV)
     assert r.returncode == 1
     assert "position bias" in r.stderr
 
 
 def test_drift_detected() -> None:
-    r = run("calibrate", "--rows", str(FIX / "high.jsonl"), "--baseline", str(FIX / "baseline.jsonl"), "--max-drift", "0.01")
+    r = run("calibrate", "--rows", str(FIX / "high.jsonl"), "--baseline", str(FIX / "baseline.jsonl"), "--max-drift", "0.01", *PROV)
     assert r.returncode == 1
     assert "drift" in r.stderr
 
@@ -42,11 +42,44 @@ def test_drift_detected() -> None:
 def test_json_report() -> None:
     out = FIX / "report_test.json"
     out.unlink(missing_ok=True)
-    r = run("calibrate", "--rows", str(FIX / "high.jsonl"), "--json", str(out))
+    r = run("calibrate", "--rows", str(FIX / "high.jsonl"), "--json", str(out), *PROV)
     assert r.returncode == 0
     data = json.loads(out.read_text())
     assert data["ok"] is True
     assert data["krippendorff_alpha"] >= 0.6
+    # provenance must be recorded in the report or the score is not auditable
+    assert data["judge_model"] == "claude-sonnet-4"
+    assert data["generator_model"] == "gpt-4.1"
+    assert data["judge_prompt_sha"] == "abc123"
+    assert data["generator_prompt_sha"] == "def456"
+
+
+def test_report_rejects_missing_provenance() -> None:
+    r = run("calibrate", "--rows", str(FIX / "high.jsonl"))
+    assert r.returncode == 1
+    assert "provenance" in r.stderr
+    assert "--judge-model" in r.stderr
+
+
+def test_report_rejects_circular_judge_and_teacher() -> None:
+    r = run(
+        "calibrate", "--rows", str(FIX / "high.jsonl"),
+        "--judge-model", "gpt-4.1", "--generator-model", "gpt-4.1",
+        "--judge-prompt-sha", "same", "--generator-prompt-sha", "same",
+    )
+    assert r.returncode == 1
+    assert "circular" in r.stderr
+
+
+def test_report_rejects_separated_models_with_same_prompt() -> None:
+    """Different model, same prompt: the judge is still effectively self-judging."""
+    r = run(
+        "calibrate", "--rows", str(FIX / "high.jsonl"),
+        "--judge-model", "claude-sonnet-4", "--generator-model", "gpt-4.1",
+        "--judge-prompt-sha", "same", "--generator-prompt-sha", "same",
+    )
+    assert r.returncode == 1
+    assert "circular" in r.stderr
 
 
 def test_rubric_lint_passes() -> None:

@@ -198,6 +198,14 @@ def main() -> int:
     pc.add_argument("--max-position-bias", type=float, default=0.5)
     pc.add_argument("--max-drift", type=float, default=0.3)
     pc.add_argument("--json", type=Path, default=None)
+    pc.add_argument("--judge-model", type=str, default=None,
+                    help="model that produced the scores (the judge)")
+    pc.add_argument("--generator-model", type=str, default=None,
+                    help="model that produced the submissions (the teacher)")
+    pc.add_argument("--judge-prompt-sha", type=str, default=None,
+                    help="sha256 of the judge prompt")
+    pc.add_argument("--generator-prompt-sha", type=str, default=None,
+                    help="sha256 of the generator prompt")
     args = ap.parse_args()
 
     if args.cmd == "rubric":
@@ -219,12 +227,41 @@ def main() -> int:
     if not rows:
         print("FAIL: no usable items in rows file", file=sys.stderr)
         return 1
+
+    # Judge/teacher separation is the first condition of a usable judge score.
+    # A judge that grades its own outputs is circular by construction, and a
+    # report that records no provenance cannot be reproduced or audited. Both
+    # model names and both prompt hashes are required; a report missing any of
+    # the four is not evidence.
+    provenance_failures: list[str] = []
+    for label, val in (("judge-model", args.judge_model),
+                       ("generator-model", args.generator_model),
+                       ("judge-prompt-sha", args.judge_prompt_sha),
+                       ("generator-prompt-sha", args.generator_prompt_sha)):
+        if not val:
+            provenance_failures.append(f"FAIL: --{label} is required for every calibration report")
+    if args.judge_model and args.generator_model and args.judge_model == args.generator_model:
+        if not args.judge_prompt_sha or not args.generator_prompt_sha or args.judge_prompt_sha == args.generator_prompt_sha:
+            provenance_failures.append(
+                "FAIL: judge and generator are the same model with the same prompt; "
+                "agreement is circular by construction"
+            )
+    for f in provenance_failures:
+        print(f, file=sys.stderr)
+    if provenance_failures:
+        print(f"FAIL: {len(provenance_failures)} provenance problem(s)", file=sys.stderr)
+        return 1
+
     alpha = krippendorff_alpha(rows)
     mean = mean_score(rows)
     bias = position_bias(rows)
 
     report: dict = {
         "n_items": len(rows),
+        "judge_model": args.judge_model,
+        "generator_model": args.generator_model,
+        "judge_prompt_sha": args.judge_prompt_sha,
+        "generator_prompt_sha": args.generator_prompt_sha,
         "krippendorff_alpha": round(alpha, 4),
         "mean_score": round(mean, 4),
         "position_bias": round(bias, 4),
