@@ -24,6 +24,34 @@ SKILLS_DIR = ROOT / "skills" / "business-de"
 CMD_RE = re.compile(r"`(python3\s+\S.*?)`", re.M)
 
 
+EXIT_RE = re.compile(r"\b(?:exits?|exit code)\s+(\d+)", re.I)
+
+
+def split_blocks(text: str) -> list[str]:
+    """Split an EVALS.md into prompt blocks at ## / ### headers.
+
+    A near-miss prompt that says ``exits 2`` means the command must exit 2;
+    treating every non-zero exit as a failure made every near-miss fail.
+    """
+    blocks: list[str] = []
+    cur: list[str] = []
+    for line in text.splitlines():
+        if line.startswith("## ") or line.startswith("### "):
+            if cur:
+                blocks.append("\n".join(cur))
+            cur = [line]
+        else:
+            cur.append(line)
+    if cur:
+        blocks.append("\n".join(cur))
+    return blocks
+
+
+def expected_exit(block: str) -> int:
+    m = EXIT_RE.search(block)
+    return int(m.group(1)) if m else 0
+
+
 def evals_files(skills):
     out = []
     for s in skills:
@@ -42,12 +70,17 @@ def main(argv):
     ran = 0
     for s, ev in evals_files(skills):
         text = ev.read_text(encoding="utf-8")
+        blocks = split_blocks(text)
         cmds = CMD_RE.findall(text)
         if not cmds:
             print(f"[{s}] no inline python3 commands in EVALS.md — SKIPPED")
             continue
         for cmd in cmds:
             ran += 1
+            # A near-miss prompt may legitimately expect a non-zero exit
+            # (``exits 2``). Read the expected code from the prompt block.
+            block = next((b for b in blocks if cmd in b), text)
+            want = expected_exit(block)
             # process substitution <(...) is a shell feature; wrap it.
             full = cmd if "<(" not in cmd else f"bash -c '{cmd}'"
             r = subprocess.run(
@@ -55,14 +88,15 @@ def main(argv):
                 cwd=str(SKILLS_DIR / s),
                 capture_output=True, text=True, timeout=60,
             )
-            ok = r.returncode == 0
+            ok = r.returncode == want
             if not ok:
                 failures += 1
             status = "OK  " if ok else "FAIL"
-            print(f"{status} [{s}] {cmd[:96]}{'...' if len(cmd) > 96 else ''}")
+            print(f"{status} [{s}] {cmd[:80]}{'...' if len(cmd) > 80 else ''}"
+                  f" (expected exit {want})")
             if not ok:
                 print(f"      exit={r.returncode} stderr={r.stderr.strip()[:300]}")
-    print(f"\n{ran} commands run, {failures} failed")
+    print(f"\n{ran} commands run, {failures} failed (exit codes matched per prompt)")
     return 1 if failures else 0
 
 
