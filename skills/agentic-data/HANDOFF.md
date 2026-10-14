@@ -41,34 +41,44 @@ research-and-design job that produced them.
    procedure (two labelled sets, precision/recall >= 0.9, train/validation
    split).
 
-## What PASS 5 (2026-10-14) changed
+## What r3-05 (2026-10-14) changed
 
-This pass was the quality pass: run the validator and the EVALS prompts for real,
-re-verify version-sensitive facts online, and close the remaining gaps.
+This pass was the evals / validation / cross-links / handoff pass. The
+version-sensitive primaries were re-verified earlier today (see
+`references/PASS5-R3-05-REVERIFY.md`); nothing in the SKILL.md text moved.
 
-1. **Re-verified every version-sensitive primary live.** `references/PASS5-R3-05-REVERIFY.md`
-   is the table. All pinned versions are still current (MCP 2026-07-28 and its
-   2025-11-25 / 2025-06-18 fallbacks, Playwright 1.64.0, datasketch 2.0.0 with the
-   `affine32` default, the GPT-2 pre-tokenizer regex, RFC 9309, the 17-member
-   `computer_toolset_20260801` registry). The two known bot-blocked URLs (iso.org
-   WARC, openai.com/index/evals) are unchanged and already recorded as secondary.
-   No SKILL.md text changed as a result.
-2. **Re-executed the script-backed EVALS prompts against real inputs.** This found
-   and fixed three real gaps:
-   - `dedup-decontam` E12 quoted a stale banding result (b=8, r=16 -> 0.878);
-     `bands_for(128, 0.94)` actually returns b=4, r=32 -> 0.9576, and the
-     achievable threshold is *higher* than the target, not lower.
-   - `dedup-decontam` EVALS.md had an orphan line ("step; threshold baked into
-     the script.") left over from an earlier edit.
-   - `polite-crawling-warc` E10 said `--status 4xx` but the flag takes an `int`
-     (`404`); the prompt now says `404`.
-3. **Fixed `verifiable-environments` EVALS ordering** — E13 was numbered before E12.
-4. **Filled the empty `## Related skills` section in `deep-research-method`** with
-   six acyclic edges (the only skill missing them).
-5. **Recorded the re-verification date in all ten `references/SOURCES.md`** files
-   with a short note pointing at the PASS5 table.
-
-## Ideas for the next ten skills (with rationale)
+1. **Cross-links are now acyclic.** A DFS over every `## Related skills` section
+   found three cycles (browser <-> desktop, and an 8-hop loop through the whole
+   set). The graph is now a strict DAG rooted at `skill-authoring-evals` (the
+   meta-skill, which links nothing). The layering is: authoring -> mcp ->
+   drivers/browser -> ledger/verifier -> research/crawl -> judge -> dedup.
+2. **Every SKILL.md now has a `## References` section.** `browser-agent-playwright`
+   had its `## Related skills` and `## References` headings merged into one
+   (`## Related skillsReferences`) — a real bug that would have made the
+   references list invisible to a reader. All ten skills now separate the two.
+3. **README.md was written** (`skills/agentic-data/README.md`): the ten skills
+   with one-line values, install and validate commands, and the cross-link map.
+4. **The markdown EVALS became machine-checkable.** The eval loop's
+   `evals.json` artefact did not exist, so the ten EVALS.md files were
+   unverifiable by the schema checker. `skill-authoring-evals/scripts/evals_md.py`
+   parses the markdown (tolerant of both `- **Prompt**: ...` and `Prompt: ...`
+   styles, and of wrapped prompts) into the JSON contract and re-uses
+   `evals_check.check()`. Run it with `--all`:
+   `python3 skill-authoring-evals/scripts/evals_md.py --all` -> **10 skills,
+   147 cases, 0 fails, 0 warns**. It enforces the >=5 and >=3 near-miss
+   floors that the standard checker could not see in markdown.
+5. **Three real EVALS defects found and fixed by running the checker:**
+   - `skill-authoring-evals` E17 duplicated E7's prompt verbatim (a WARN, not a
+     FAIL, because the checker only de-duplicates exact text).
+   - `dedup-decontam` E7 duplicated E3's prompt ("Flag training documents that
+     are too similar to my eval prompts...").
+   - `skill-authoring-evals` E17 was re-pointed at a *different* gap (a 12-case
+     benchmark with no train/val split) instead of restating the overfitting case.
+6. **Validator green on all ten** at every step: `scripts/validate.py --json`
+   (catalog), `scripts/validate_skill.py --all` (agentskills.io standard), and
+   `scripts/validate_skills.py` (portable fields, reference links, script
+   executability). Pytest: 41 passed, 9 skipped (the skips are network-gated
+   probes, recorded in STATUS.md).
 
 ## Ideas for the next ten skills (with rationale)
 

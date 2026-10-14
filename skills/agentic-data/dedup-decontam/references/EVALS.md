@@ -59,7 +59,7 @@ normalizer is applied after hashing instead of before.
 
 ## E7 — embedding decontamination with a pinned threshold
 Prompt: "Flag training documents that are too similar to my eval prompts using
-sentence-transformers/all-MiniLM-L6-v2."
+sentence-transformers/all-MiniLM-L6-v2 and a cosine threshold of 0.95."
 Expected: embed corpus and prompts with the *same* model, compute cosine
 similarity, flag pairs above the pinned threshold. Note that 0.92 is calibrated
 for all-MiniLM-L6-v2 and **does not transfer** to another model; calibrate on a
