@@ -83,6 +83,7 @@ fires when it should.
 - [ ] Long material moved to `references/`, linked one level deep.
 - [ ] Every `references/` link resolves.
 - [ ] Scripts deterministic, runnable offline, machine-readable to stdout.
+- [ ] `evals.json` passes `scripts/evals_check.py` (unique ids, prompts, should_fire, expected_output).
 - [ ] Trigger evals: should-fire and should-not-fire sets, with a train/validation split.
 - [ ] Each eval run has with_skill and without_skill outputs.
 - [ ] Weakest section identified and rewritten.
@@ -107,4 +108,4 @@ The four that matter most:
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
-- scripts: scripts/validate_skill.py, scripts/eval_metrics.py (precision, recall, output delta)
+- scripts: scripts/validate_skill.py, scripts/eval_metrics.py (precision, recall, output delta), scripts/evals_check.py (evals.json schema)

@@ -74,3 +74,43 @@ Live re-fetch of all 12 primary URLs recorded in this SOURCES.md, 2026-10-14, vi
 **Dead / blocked on 2026-10-14:**
 
 - `https://www.iso.org/standard/82833.html` -> HTTP 403. iso.org serves a 403 bot-block to curl; the WARC 1.1 spec text is the working primary and this page is corroborating only. Recorded as a known dead URL, not a fact drift.
+
+
+## Re-verification 2026-10-14 (PASS 2 — skills-agentic-data-r3-02)
+All primary URLs re-fetched live with curl on 2026-10-14. Every URL below
+returned HTTP 200; no new dead links, no fact drift vs the 2026-10-13 record.
+
+| URL | Code |
+|-----|------|
+| https://modelcontextprotocol.io/specification/2026-07-28/changelog | 200 |
+| https://modelcontextprotocol.io/specification/2025-11-25/changelog | 200 |
+| https://modelcontextprotocol.io/specification/2025-06-18/changelog | 200 |
+| https://modelcontextprotocol.io/specification/2026-07-28/deprecated | 200 |
+| https://github.com/modelcontextprotocol/specification/releases/tag/2026-07-28 | 200 |
+| https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | 200 |
+| https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md | 200 |
+| https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/1686-tasks.md | 200 |
+| https://github.com/modelcontextprotocol/python-sdk | 200 |
+| https://api.github.com/repos/modelcontextprotocol/specification | 200 |
+| https://agentskills.io/specification.md | 200 |
+| https://agentskills.io/skill-creation/optimizing-descriptions | 200 |
+| https://agentskills.io/skill-creation/evaluating-skills | 200 |
+| https://agentskills.io/skill-creation/best-practices | 200 |
+| https://agentskills.io/skill-creation/using-scripts | 200 |
+| https://agentskills.io/clients.md | 200 |
+| https://agentskills.io/llms.txt | 200 |
+| https://github.com/anthropics/skills | 200 |
+| https://github.com/openai/skills | 200 |
+| https://docs.anthropic.com/en/docs/agents-and-tools/computer-use | 200 |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer_toolset_20260801.json | 200 |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/computer-toolset.md | 200 |
+
+**Version-sensitive fact re-confirmed on 2026-10-14:** the live
+`computer_toolset_20260801.json` still carries exactly **17 members**
+(`key`, `hold_key`, `type`, `cursor_position`, `mouse_move`, `left_mouse_down`,
+`left_mouse_up`, `left_click`, `left_click_drag`, `right_click`,
+`middle_click`, `double_click`, `triple_click`, `scroll`, `wait`,
+`screenshot`, `zoom`) with `default_disabled: []`. The vendored fixture
+`fixtures/registry_20260801.json` matches it member-for-member, so the 17-member
+registry in the skill is current and the 16-member drift trap in EVALS E7 is a
+real near-miss, not a hypothetical.

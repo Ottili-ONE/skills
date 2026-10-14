@@ -58,3 +58,23 @@ validator finds 0 problems.
 **PASS.** The skill validates, the script runs, EVALS exist (10 prompts), SKILL.md
 body is 172 lines (<500), and the 17-member registry is audited against the live
 primary source rather than assumed.
+
+
+## PASS 2 (EXPAND) — 2026-10-14 — skills-agentic-data-r3-02
+
+Deepened this skill in the EXPAND pass (commit prefix `skills-agentic-data-r3-02`):
+
+- `references/examples.md` gained 4 worked examples (good OAuth discovery-first
+  client, bad DCR-for-a-new-client, good tasks-extension poll loop, bad silent
+  version downgrade).
+- `references/EVALS.md` gained E10 (OAuth discovery-first vs DCR), E11 (poll a
+  task correctly) and E12 (refuse a silent downgrade) — 12 prompts total.
+- `scripts/stateless_probe.py` hardened: non-object pair, empty `_meta` and
+  missing `protocolVersion` are now FAILs; `audit`-style tuple contract kept.
+- `tests/test_mcp_scripts.py` gained 4 edge-case tests (non-object, empty meta,
+  valid replay accepted, meta without protocolVersion).
+- Live re-verification 2026-10-14 (curl): all 10 primary URLs HTTP 200, no new
+  dead links, no fact drift vs the 2026-10-13 record.
+
+Verification this pass: 38 tests pass; `acceptance_check.py` ACCEPTANCE PASS
+(12 eval prompts, SKILL.md 137 L, links resolve one level deep).
