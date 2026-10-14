@@ -32,7 +32,12 @@ PROVIDERS = {
 
 
 def parse_stripe(header: str) -> tuple[str, str]:
-    """Stripe: `t=<unix_ts>,v1=<hex_hmac>`."""
+    """Stripe: `t=<unix_ts>,v1=<hex_hmac>`.
+
+    The header value may be prefixed with the scheme name
+    (`X-Signature: t=...,v1=...`); strip it before parsing.
+    """
+    header = header.split(":", 1)[1].strip() if ":" in header else header
     ts = mac = ""
     for part in header.split(","):
         if part.startswith("t="):
