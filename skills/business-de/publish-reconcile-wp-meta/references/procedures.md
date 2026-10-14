@@ -118,3 +118,44 @@ IP literals and `localhost` without resolving them.
   before every publish.
 - `scripts/reconcile.py` — reconciles WP vs Meta state when the result is
   unknown; emits a delta report; `--strict` fails on missing fields.
+
+## 8. Worked examples — good vs bad
+
+### 8.1 Publishing with an idempotency key
+
+**GOOD** — Key `post:2026-10-14:summer-sale`. First run:
+`idempotency_store.py` reports a miss, `wp_publish.py` posts, the store
+appends `{"key":"post:2026-10-14:summer-sale","post_id":42}`. Second run with
+the same key: the store reports a hit, nothing is posted, post 42 is returned.
+Third run after a 500: same key, store still a miss (the first post failed),
+backoff and retry, then append.
+
+**BAD** — The agent ignores the store and POSTs twice because "the first call
+looked like it might have failed". WordPress creates two posts. The store never
+learned about the first one, so the duplicate is invisible to the skill. The
+fix is the reconciliation step: on any unknown result, re-query both platforms
+by key before acting on either answer.
+
+### 8.2 Reconciling an unknown result
+
+**GOOD** — WP returned 200 with post 42; Meta timed out. `reconcile.py`
+re-queries both by key: WP says 42, Meta says nothing. Delta:
+`{"wp":42,"meta":null}`. Action: post to Meta, then append
+`{"key":...,"wp":42,"meta":91}`. Both platforms now agree.
+
+**BAD** — The agent treats the WP 200 as authoritative and skips Meta, then
+notices a week later that Meta never published. By then the delta is stale and
+the recovery path is a manual delete. The skill's rule is: **never assume the
+first response is authoritative**; re-query both platforms by the
+client-generated key and compare state.
+
+### 8.3 SSRF-safe target check
+
+**GOOD** — A content field contains `https://wp.example.com/post`. The
+allow-list check passes (host matches the configured WP endpoint), the
+publish proceeds.
+
+**BAD** — A content field contains `http://169.254.169.254/latest/meta-data`.
+The check rejects the IP literal without resolving it and blocks the publish.
+Resolving first would have leaked the AWS metadata endpoint; rejecting without
+resolving is the safe default.

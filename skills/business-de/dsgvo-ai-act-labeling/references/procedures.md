@@ -103,3 +103,45 @@ Store the label alongside the system artefact. Re-run classification on every
 material change to inputs or outputs and on every release cycle. Treat
 member-state additions (BDSG, French/ Dutch implementations) as unverified
 until local counsel confirms.
+
+## 8. Worked examples — good vs bad
+
+### 8.1 Registering an activity
+
+**GOOD** — Controller "Ottili GmbH", purpose "order fulfillment", legal basis
+`art6_1b_contract`, data subjects `["customers"]`, categories `["name","address","email"]`,
+recipients `["carrier"]`, retention "7y", security "TLS 1.3, AES-256 at rest".
+`process_register.py` appends one JSONL line with a server-set `recorded_at`:
+```json
+{"id":"dsgvo-0001","controller":"Ottili GmbH","purpose":"order fulfillment",
+ "legal_basis":"art6_1b_contract","personal_data":true,...,
+ "recorded_at":"2026-10-14T09:00:00Z"}
+```
+
+**BAD** — The agent writes the entry by hand and invents `retention_period: "as needed"`.
+`process_register.py` exits 2 and names the missing fields. An entry that the
+agent authored without the script is not GoBD evidence, because nobody can
+tell whether the timestamp is real.
+
+### 8.2 High-risk label
+
+**GOOD** — `disclosure_label.py --system recruiter-ai --ai-type high-risk
+--reviewer lawyer-1 --reviewed-at 2026-10-09 --evidence /tmp/evidence.txt`.
+Exit 0, label carries `article_50_paragraph: "5"` and an `evidence_sha256`
+that matches `sha256(/tmp/evidence.txt)`.
+
+**BAD** — The agent runs the same command without `--evidence`. Exit 2 with
+`BLOCKING: high-risk requires an evidence file`. The agent must not edit the
+script to lower the bar.
+
+### 8.3 Transparency-only chatbot
+
+**GOOD** — `disclosure_label.py --system support-bot --ai-type chatbot
+--reviewer ops-1 --reviewed-at 2026-10-09`. Exit 0; `article_50_paragraph:
+"1-4"`, no evidence file required.
+
+**BAD** — The agent labels the chatbot `not-ai` to skip the review. The skill
+blocks: a chatbot is transparency-only by definition, and a transparency-only
+system still needs a reviewer. The near-miss N2 trap (an FAQ chatbot that
+makes decisions is high-risk, not transparency-only) is the deeper version of
+this mistake.

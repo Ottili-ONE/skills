@@ -84,3 +84,28 @@ Two random sources per skill re-fetched with `curl -L --max-time 20 -A OttiliRes
 |---|---|---|
 | https://www.cen.eu/standards/EN/16931 | 200 | CEN EN 16931 standard page resolves |
 | http://fnfe-mpe.org/factur-x/ | 200 | Factur-X / ZUGFeRD page resolves; Factur-X 1.09.2 / ZUGFeRD 2.5.2 confirmed |
+
+## Re-check 2026-10-14 (PASS 3 of skills-business-de-r3-01)
+
+Re-fetched with `curl -L --max-time 20 -A OttiliResearchBot/1.0` on 2026-10-14.
+Two statute portals re-confirmed still 404; the dejure.org mirrors carry the
+authoritative text. Nothing was copied verbatim from any source.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://www.cen.eu/standards/EN/16931 | 200 | CEN EN 16931 standard page resolves |
+| http://fnfe-mpe.org/factur-x/ | 200 | Factur-X / ZUGFeRD page resolves; Factur-X 1.09.2 / ZUGFeRD 2.5.2 confirmed |
+| https://www.ferd-net.de/standards/zugferd | 200 | FeRD ZUGFeRD page resolves; 2.5.2 confirmed |
+| https://github.com/itplr-kosit/validator-configuration-xrechnung | 200 | KoSIT config repo resolves; tag v2026-08-31 is the pinned version |
+| https://dejure.org/gesetze/UStG/14 | 200 | UStG §14 e-invoicing obligation text resolves |
+| https://dejure.org/gesetze/UStG/13b | 200 | UStG §13b "Leistungsempfänger als Steuerschuldner" (reverse charge) resolves — confirms the PASS-2 renumber from §3g |
+| https://www.gesetze-im-internet.de/ustg/ | 404 | UStG page still 404 (re-confirmed); use dejure.org mirror |
+| https://www.gesetze-im-internet.de/ao/ | 404 | AO page still 404 (re-confirmed); use dejure.org or steuer-berater.de mirror |
+| https://www.datev.de/ | 200 | datev.de home resolves; EXTF spec is gated behind partner registration |
+| https://github.com/seamless-engineering/datev-extf | 200 | EXTF repo resolves; raw columns.ts is the authoritative column table |
+| https://www.whk-controlling.de/ | 200 | GoBD retention classes resolve; 6/8/10 split confirmed |
+
+**Net effect on pinned versions: none.** Every version in
+`config/versions.json` is still current as of 2026-10-14. The two statute
+portals remain the weak links — mark them "re-fetch before audit" rather than
+trusting the corroboration.
