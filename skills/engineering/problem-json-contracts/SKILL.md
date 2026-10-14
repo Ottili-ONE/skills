@@ -85,6 +85,14 @@ Bad (retry_after as HTTP-date — most clients ignore it):
 - [ ] No internal fields leaked on 5xx responses
 - [ ] `scripts/check_problem_catalogue.py` passes in CI
 
+## Verification
+- Run the offline gate: `python3 scripts/check_problem_catalogue.py --catalogue <cat> --openapi <spec> --schema-dir <dir>` — must exit 0.
+- Run the RFC 9457 shape validator: `python3 scripts/validate_problem_examples.py --schema-dir references/examples/schemas --catalogue references/examples/catalogue.json` — must print OK.
+- Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
+- Full procedure, version table, worked examples, and pitfalls: `references/problem-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
 - [pg-rls-multitenant](../pg-rls-multitenant/SKILL.md)
 - [outbox-idempotency](../outbox-idempotency/SKILL.md)

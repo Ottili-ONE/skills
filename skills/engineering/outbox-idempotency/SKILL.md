@@ -79,6 +79,14 @@ SELECT ... FROM outbox WHERE sent_at IS NULL LIMIT 50 FOR UPDATE SKIP LOCKED;
 - [ ] Leak test harness runs green against Docker Postgres
 - [ ] No DELETE on poison_outbox rows
 
+## Verification
+- Run the offline gate: `python3 scripts/check_outbox.py <sql-file>` — must exit 0.
+- Run the self-test: `python3 scripts/check_outbox_test.py` — must print ok.
+- Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
+- Full procedure, version table, worked examples, and pitfalls: `references/outbox-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
 - [pg-rls-multitenant](../pg-rls-multitenant/SKILL.md)
 - [problem-json-contracts](../problem-json-contracts/SKILL.md)
