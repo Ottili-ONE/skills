@@ -125,6 +125,7 @@ extension, header-casing trap).
 
 ## Related skills
 - **`skill-authoring-evals`** — an MCP skill is a skill like any other; audit its description and evals the same way.
+
 ## References
 - changelog: references/changelog.md
 - error codes: references/error-codes.md

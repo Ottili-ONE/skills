@@ -128,9 +128,9 @@ Why it fails: without per-level examples annotators spread 20+ points on
 re-annotation and the rubric collapses onto the middle. Every score point
 needs a definition AND at least one example.
 ## Related skills
-- **`dedup-decontam`** — a contaminated calibration set is a dedup-decontam failure, not a judge failure.
-- **`skill-authoring-evals`** — a calibrated judge is the measurement tool this skill's own evals rely on; audit the judge the same way.
-- **`verifiable-environments`** — an LLM judge is a verifier whose calibration set and pass rate need a bypass audit.
+- **`skill-authoring-evals`** — the gold labels and rubric used to score sources are evidence products: cite them, score them, state confidence.
+- **`verifiable-environments`** — a judge's calibration harness is itself a verifier: the rubric is the spec, the bypass register is the audit, and the pass-rate table is the calibration.
+
 ## References
 - procedures: references/procedures.md
 - calibration protocol: references/calibration-protocol.md

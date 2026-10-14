@@ -127,7 +127,7 @@ exact failure mode the ledger exists to prevent.
 ## Related skills
 - **`skill-authoring-evals`** — an eval run is a multi-step trajectory worth recording and auditing.
 - **`mcp-2026-07-28`** — an MCP round-trip is a tool call worth grounding in a trajectory.
-- **`verifiable-environments`** — record the verifier's own runs so calibration is reproducible.
+
 ## References
 - procedures: references/procedures.md
 - schema: references/schema.md

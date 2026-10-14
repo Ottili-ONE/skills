@@ -161,7 +161,7 @@ untrusted data. Use a fixed phrase only; let the exception path carry the
 content if it must.
 ## Related skills
 - **`mcp-2026-07-28`** — expose a desktop driver over MCP so the protocol, not raw sockets, carries the tool calls; this skill defines the wire.
-- **`verifiable-environments`** — the confirm() gates, coordinate scaling and tree reads in this skill are verifier components that need a bypass audit before they are trusted.
+- **`skill-authoring-evals`** — the confirm() gates, coordinate scaling and tree reads in this skill are verifier components that need a bypass audit before they are trusted; author those evals with the meta-skill.
 
 ## References
 - procedures: references/procedures.md

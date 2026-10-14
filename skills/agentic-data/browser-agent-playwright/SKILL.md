@@ -121,8 +121,8 @@ Exhausting either cap stops the run and reports the cap, not a silent fallback.
 ## Related skills
 - **`computer-use-drivers`** — for a desktop or remote app rather than a browser, route there; the browser is the one surface this skill drives that exposes an accessibility tree.
 - **`mcp-2026-07-28`** — a browser tool exposed over MCP is a client of this protocol; drive the browser, don't re-implement the wire.
-- **`trajectory-ledger`** — a browser run is a multi-step trajectory; record its steps, locators and costs so the result is replayable and auditable.
-- **`verifiable-environments`** — a browser run is a good environment to verify: every locator and wait must be grounded, and the injection defenses need a bypass audit.
+- **`skill-authoring-evals`** — this skill's own evals, trigger precision and bypass register are authored and measured by the meta-skill; audit this skill's description and EVALS the same way you would any skill.
+
 ## References
 - procedures: references/procedures.md
 - locator catalog: references/locator-catalog.md

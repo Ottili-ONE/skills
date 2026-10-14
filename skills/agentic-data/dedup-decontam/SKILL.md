@@ -106,7 +106,9 @@ Why it fails: the threshold moves with the model. Pin it per model in the
 config and re-derive it on every model change; the script reads the pin,
 never a constant.
 ## Related skills
+- **`skill-authoring-evals`** — the corpus and the eval set are both data; author the evals that measure this skill with the meta-skill, and record the with_skill/without_skill baseline.
 - **`verifiable-environments`** — the planted-item test pattern in this skill is the same shape as a bypass-register check.
+
 ## References
 - procedures: references/procedures.md
 - planted-item tests: references/planted-item-tests.md

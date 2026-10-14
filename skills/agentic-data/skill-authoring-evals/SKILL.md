@@ -93,17 +93,23 @@ fires when it should.
 ## Worked examples
 
 Full good/bad cases with detection signals live in `references/examples.md`.
-The four that matter most:
+The four that matter most for *this* skill:
 
 - **Good trigger vs bad summary.** A description that names concrete symptoms fires;
-  "This skill helps with X" never does.
-- **Name/folder agreement.** `my-skill` vs `name: other` means the skill never registers.
-- **Body size.** 600 lines fails `validate_skill.py` at the 500-line cap.
-- **Baseline presence.** Without `without_skill/` runs you cannot tell whether the skill
-  did anything at all.
+  "This skill helps with X" never does. Detection: the skill loads on the symptom
+  prompt and skips the summary prompt.
+- **Name/folder agreement.** `my-skill` vs `name: other` means the skill never
+  registers. Detection: `validate_skill.py` prints
+  `FAIL: name field 'other' != folder name 'my-skill'` and exits 1.
+- **Body size.** 600 lines fails `validate_skill.py` at the 500-line cap. Detection:
+  `FAIL: SKILL.md over 500 lines (600)`. Split into `references/`.
+- **Baseline presence.** Without `without_skill/` runs you cannot tell whether the
+  skill did anything at all. Detection: `scripts/eval_metrics.py delta` reports a
+  zero output-delta case as a miss.
 
 ## Related skills
 - (none — this is the meta-skill: it authors and evaluates the other skills and depends on nothing in this set.)
+
 ## References
 - procedures: references/procedures.md
 - front-matter rules: references/front-matter-rules.md

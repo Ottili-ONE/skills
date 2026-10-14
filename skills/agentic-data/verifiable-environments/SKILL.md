@@ -142,8 +142,9 @@ Why it fails: the verifier shares the environment's bugs. A check that
 cannot be gamed is a check nobody has tried to game; every check needs a
 written entry in `references/bypass-register.md`, and this one has none.
 ## Related skills
-- **`mcp-2026-07-28`** — an MCP server is a good environment to verify: statelessness is provable by replay.
 - **`skill-authoring-evals`** — the with_skill/without_skill baseline is a verifier pattern: you must detect whether a skill did anything.
+- **`mcp-2026-07-28`** — an MCP server is a good environment to verify: statelessness is provable by replay, which is itself a verifier pattern.
+
 ## References
 - procedures: references/procedures.md
 - verifier design: references/verifier-design.md

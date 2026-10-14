@@ -145,11 +145,10 @@ More worked examples, each ending with the check that would have caught it, live
 in `references/examples.md`.
 
 ## Related skills
-- **`dedup-decontam`** — a contaminated corpus (test-set leakage, near-duplicates) is a data-quality failure this skill must detect before scoring sources.
-- **`llm-judge-calibration`** — the gold labels and rubric used to score sources are evidence products: cite them, score them, state confidence.
-- **`polite-crawling-warc`** — WARC archives produced by that pipeline are raw evidence for this workflow; a crawl is a multi-step run whose offsets and costs belong in the ledger.
 - **`skill-authoring-evals`** — the source-scoring rubric and the trigger-eval methodology are research products; cite them and state confidence.
+- **`polite-crawling-warc`** — WARC archives produced by that pipeline are raw evidence for this workflow.
 - **`verifiable-environments`** — the SPEC a verifier is derived from is a research product with cited sources; a verifier's bypass audit is itself a research claim.
+
 ## References
 - procedures: references/procedures.md
 - citation discipline: references/citation-discipline.md

@@ -81,8 +81,9 @@ Why it fails: the validator must walk every gzip member. The pitfall was
 verified live 2026-10-08 — a 3-record file reads as 1 record unless the
 member walk is explicit.
 ## Related skills
-- **`browser-agent-playwright`** — when a full browser is needed instead of a static crawl, route here; the WARC pipeline is the browser-free alternative.
-- **`trajectory-ledger`** — a crawl is a multi-step run whose steps, offsets and costs belong in the ledger.
+- **`skill-authoring-evals`** — the crawl policy and the WARC validation rules are research products; cite them and state confidence when you audit this skill.
+- **`trajectory-ledger`** — a crawl is a multi-step run whose steps, offsets and costs belong in the ledger; the WARC is the evidence, the ledger is the provenance.
+
 ## References
 - procedures: references/procedures.md
 - policy: references/crawl-policy.md
