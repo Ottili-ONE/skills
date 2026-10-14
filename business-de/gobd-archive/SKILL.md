@@ -147,4 +147,6 @@ not "today + 8 years". `scripts/purge_decision.py` derives
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **dsgvo-ai-act-labeling** — a DPIA and the processing register are tax-relevant documents with their own retention clock; this skill decides whether AI content needs them.
+- **dsgvo-ai-act-labeling** — a DPIA and the processing register are
+  tax-relevant documents with their own retention clock; this skill decides
+  whether AI content needs them.

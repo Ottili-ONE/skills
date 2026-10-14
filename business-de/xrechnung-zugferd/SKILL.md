@@ -126,5 +126,7 @@ of the calendar year of creation, not on the document's own date.
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **gobd-archive** — the archived e-invoice must survive the GoBD retention clock; this skill computes the retention end date and the audit-ready export.
-- **ust-edge-cases** — every e-invoice carries Steuerschlüssel per rate (BT-19/BG-19); this skill owns the tax-key decision that the invoice must reflect.
+- **gobd-archive** — the archived e-invoice must survive the GoBD retention
+  clock; this skill computes the retention end date and the audit-ready export.
+- **skr-journal-mapping** — every e-invoice carries Steuerschluessel per rate
+  (BT-19/BG-19); this skill owns the tax-key decision the invoice must reflect.

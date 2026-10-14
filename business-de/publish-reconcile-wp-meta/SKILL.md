@@ -86,4 +86,6 @@ status is observable. A 2xx with an id is never treated as proof.
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **webhooks-safe** — the publish result arrives as an inbound webhook (Meta Graph, WordPress); this skill owns the signature verification and dedup that make the reconciliation loop safe.
+- **webhooks-safe** — the publish result arrives as an inbound webhook (Meta
+  Graph, WordPress); this skill owns the signature verification and dedup that
+  make the reconciliation loop safe.

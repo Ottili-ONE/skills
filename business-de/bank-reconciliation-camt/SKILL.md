@@ -100,4 +100,5 @@ older namespace silently. The full list of five traps, with sources, is in
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **webhooks-safe** — bank notifications (EBICS, camt.053 push) arrive as inbound webhooks; this skill owns the safe receipt and dedup side.
+- **webhooks-safe** — bank notifications (EBICS, camt.053 push) arrive as
+  inbound webhooks; this skill owns the safe receipt and dedup side.

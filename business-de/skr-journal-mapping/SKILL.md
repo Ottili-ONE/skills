@@ -143,5 +143,5 @@ Three traps recur; the full list with sources is in
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **datev-extf** — the automatic journal is emitted as a DATEV EXTF Buchungsstapel; this skill owns the envelope and column rules.
-- **ust-edge-cases** — the Steuerschluessel on every Buchungszeile (column 97) is the VAT decision this skill owns.
+- **datev-extf** — the automatic journal is emitted as a DATEV EXTF
+  Buchungsstapel; this skill owns the envelope and column rules.

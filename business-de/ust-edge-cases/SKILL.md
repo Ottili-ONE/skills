@@ -82,5 +82,5 @@ five traps, with sources, is in `references/procedures.md` §1–§6.
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **skr-journal-mapping** — the tax key decided here is the Steuerschluessel placed on the SKR journal line.
-- **xrechnung-zugferd** — the e-invoice interplay: an invoice with a wrong Steuerschlüssel fails the EN 16931 tax validation (BT-19).
+- **skr-journal-mapping** — the Steuerschluessel decided here is placed on
+  the SKR journal line by this skill.

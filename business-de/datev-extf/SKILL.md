@@ -183,5 +183,5 @@ running Buchungsstapel rules against it.
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **gobd-archive** — EXTF exports are accounting data and must be retained immutably; this skill owns the retention policy and audit export.
-- **skr-journal-mapping** — the Buchungsstapel is the machine-readable form of the SKR journal this skill produces.
+- **gobd-archive** — EXTF exports are accounting data and must be retained
+  immutably; this skill owns the retention policy and audit export.

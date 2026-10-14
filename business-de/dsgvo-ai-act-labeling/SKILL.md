@@ -111,4 +111,6 @@ Both must be true. A missing review record fails the exception.
 
 Cross-links by name (one level deep, no circular dependency):
 
-- **publish-reconcile-wp-meta** — AI-generated content usually reaches Ottili through a WordPress/Meta publish; this skill owns the idempotent publish and the reconciliation that makes the label observable.
+- **publish-reconcile-wp-meta** — AI-generated content usually reaches Ottili
+  through a WordPress/Meta publish; this skill owns the idempotent publish and
+  the reconciliation that makes the label observable.
