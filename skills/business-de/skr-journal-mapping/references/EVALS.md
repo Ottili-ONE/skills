@@ -6,7 +6,7 @@ watch for. Run the relevant script and compare the output to the expected.
 ## 1. Prompt
 **Prompt:** "Map our SKR04 revenue account 4000 to a tax key."
 
-**Expected behaviour:** Run `scripts/map_skr.py --account 4000 --skr 04`.
+**Expected behaviour:** Run `python3 scripts/map_skr.py --account 4000 --skr 04`.
 Expect `ok: true`, `default_tax_key: "19"`, `rate_percent: 19`, and
 `rates_from_config` read from `config/versions.json` (never a hardcoded 19).
 The agent must also state the caveat: intra-EU supplies on 4000 use 0%, and
@@ -19,11 +19,13 @@ rate is universal; not flagging the intra-EU override.
 **Prompt:** "Generate a journal entry for a domestic B2B sale, EUR 1,200.00
 net, 19% VAT, on account 4000."
 
-**Expected behaviour:** Run `scripts/generate_journal.py` with the line
-`{"account":"4000","side":"S","amount":1200,"tax_key":"19","belegdatum":"20260601"}`.
-Expect one entry with `konto: "4000"`, `steuerschluessel: "19"`,
-`rate_percent: 19`. Then run `scripts/journal_check.py` on a complete journal
-(sales leg + bank leg + tax account 1570); it must report `OK journal balanced`.
+**Expected behaviour:** Run `python3 scripts/generate_journal.py --skr 04 --lines
+`[{"account":"4000","side":"S","amount":1200,"tax_key":"19","belegdatum":"20260601"}]`
+`--output /tmp/journal.json`. Expect one entry with `konto: "4000"`,
+`steuerschluessel: "19"`, `rate_percent: 19`. Then run
+`python3 scripts/journal_check.py --journal /tmp/journal.json` on a complete
+journal (sales leg + bank leg + tax account 1570); it must report
+`OK journal balanced`.
 
 **Failure signs:** Emitting a dot decimal; writing the rate into the script
 instead of reading config; producing an entry with no `steuerschluessel`;
@@ -58,8 +60,9 @@ without reviewing the account mapping; not recording the review evidence.
 ## 5. Prompt
 **Prompt:** "Reconcile our generated journals against the source invoices."
 
-**Expected behaviour:** Run `scripts/generate_journal.py` then
-`scripts/journal_check.py`. The report must list matched lines, blocking
+**Expected behaviour:** Run `python3 scripts/generate_journal.py --skr 04 --lines
+`[...]` --output /tmp/journal.json` then `python3 scripts/journal_check.py
+`--journal /tmp/journal.json`. The report must list matched lines, blocking
 errors (unbalanced journal, tax key outside the valid set, account outside SKR
 ranges, tax key present without a tax-account line), and the count of lines
 that need human review. Every blocking error must be escalated, not written off.
@@ -82,10 +85,11 @@ intra-EU supply; not recording the override reason in the output.
 ## 7. Prompt
 **Prompt:** "Generate a journal from a line with tax key 99 on account 4000."
 
-**Expected behaviour:** `scripts/generate_journal.py` must report
-`ok: false`, `blocking: 1`, and list `tax_key must be 19/07/00, got '99'` in
-`blocking_errors`. The output file must still be written so the error is
-auditable.
+**Expected behaviour:** `python3 scripts/generate_journal.py --skr 04 --lines
+`[{"account":"4000","side":"S","amount":1200,"tax_key":"99","belegdatum":"20260601"}]`
+`--output /tmp/j.json` must report `ok: false`, `blocking: 1`, and list
+`tax_key must be 19/07/00, got '99'` in `blocking_errors`. The output file
+must still be written so the error is auditable.
 
 **Failure signs:** Crashing instead of reporting; writing `ok: true` for an
 invalid line.

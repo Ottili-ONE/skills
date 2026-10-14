@@ -22,8 +22,9 @@ the supply as reverse charge (\u00a73g); no VIES verification record.
 > Kleinunternehmer. Invoice a domestic customer for EUR 100."
 
 **Expected behaviour:** no tax line, gross EUR 100 lands in revenue, tax key
-0. `scripts/ust_check.py` exits 0 with `kleinunternehmer: true` and
-`prior_turnover: 18000`.
+0. `python3 scripts/ust_check.py --rows '[{"tax_key":"0","net":100}]'`
+`--kleinunternehmer --prior-turnover 18000` exits 0 with `kleinunternehmer: true`
+and `prior_turnover: 18000`.
 
 **Failure signs:** a 19% tax line; a 1570 account amount; the turnover
 threshold not checked.
@@ -74,7 +75,8 @@ not checking the supply type.
 
 **Expected behaviour:** **rejected** \u2014 EUR 25,000 exceeds the EUR 20,000
 threshold, so the entity is not a Kleinunternehmer and must charge 19%.
-`scripts/ust_check.py` exits 2.
+`python3 scripts/ust_check.py --rows '[{"tax_key":"0","net":100}]'`
+`--kleinunternehmer --prior-turnover 25000` exits 2.
 
 **Failure signs:** self-declaring Kleinunternehmer without checking the
 prior-year figure; using the old 22,000 figure.
@@ -92,20 +94,25 @@ charging a tax amount on a 06/0 line.
 
 ### N1. "Reverse charge is for goods with a foreign USt-IdNr."
 **Expected behaviour:** **rejected** — §13b is *services only*. A goods supply
-with a buyer USt-IdNr. uses §4a. `ust_check.py` exits 2 when
-`supply_type: "goods"` is combined with `reverse_charge: true`.
+with a buyer USt-IdNr. uses §4a. `python3 scripts/ust_check.py --rows '[{"tax_key":"06/0","net":100}]'`
+`--reverse-charge --supply-type goods` exits 2 with the reverse-charge-goods-only
+error.
 
 **Failure signs:** applying reverse charge to a goods supply.
 
 ### N2. "The Kleinunternehmer threshold is EUR 22,000."
 **Expected behaviour:** **rejected** — the threshold is EUR 20,000 (UStG §19
-Abs. 1, verified 2026-10-09). `ust_check.py` exits 2 with "threshold wrong".
+Abs. 1, verified 2026-10-09). `python3 scripts/ust_check.py --rows '[{"tax_key":"0","net":100}]'`
+`--kleinunternehmer --prior-turnover 22000` exits 2 with "threshold wrong".
 
 **Failure signs:** quoting the superseded 22,000 figure.
 
 ### N3. "Round the total to EUR 100.01, then split the tax."
 **Expected behaviour:** **rejected** — round line-level (0.5-up) *first*, then
 split per tax key. Rounding the total before the split is the highest-error
-area in German VAT. `ust_check.py` exits 2.
+area in German VAT. The trap is a stated tax amount that was computed from a
+rounded total: `python3 scripts/ust_check.py --rows
+'[{"tax_key":"19","net":100.005,"tax_amount":19.02}]'` exits 2 because
+100.005 → 19.01 (line-level 0.5-up), not 19.02.
 
 **Failure signs:** rounding the invoice total before the tax split.
