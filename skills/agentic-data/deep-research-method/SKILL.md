@@ -99,6 +99,7 @@ claim dressed as a finding, over-long quotation).
 - citation and fetch: references/cite-fetch.md
 - staleness: references/staleness.md
 - worked examples: references/examples.md
+- confidence ladder: references/confidence-ladder.md
 - incidents: references/incidents.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md

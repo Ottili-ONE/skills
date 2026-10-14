@@ -219,9 +219,9 @@ def test_confidence_high_three_upstreams() -> None:
 
 
 def test_confidence_fake_middle_is_medium() -> None:
-    # equal.jsonl keeps two URLs that share one upstream: the fake middle.
+    # shared.jsonl keeps two URLs that share one upstream: the fake middle.
     # Confidence is medium, not high, because there is one upstream.
-    r = run("confidence", str(FIX / "equal.jsonl"))
+    r = run("confidence", str(FIX / "shared.jsonl"))
     assert r.returncode == 0, r.stderr
     assert '"confidence": "medium"' in r.stdout
     assert '"n_upstreams": 1' in r.stdout
