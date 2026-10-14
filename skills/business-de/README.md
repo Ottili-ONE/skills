@@ -13,16 +13,57 @@ documentation, standards bodies, source repositories, postmortems); see each
 
 | Skill | One-line value | Install |
 |---|---|---|
-| `bank-reconciliation-camt` | Parse CAMT.053/MT940 statements, match postings to open items, flag duplicates and unallocated differences. | `./install.sh bank-reconciliation-camt` |
-| `carrier-apis-de` | German carrier APIs (DHL, DPD, GLS, Hermes, UPS): idempotent labels, official tracking, cost reconciliation. | `./install.sh carrier-apis-de` |
+| `bank-reconciliation-camt` | Parse CAMT.053/MT940 statements, match postings to open items with multi-key heuristics, detect duplicates and unallocated differences, and validate IBANs with the Bundesbank Pruefzahlenberechnung. | `./install.sh bank-reconciliation-camt` |
+| `carrier-apis-de` | German carrier APIs (DHL, DPD, GLS, Hermes, UPS): idempotent labels, official tracking only, cost reconciliation. | `./install.sh carrier-apis-de` |
 | `datev-extf` | Produce and validate DATEV EXTF 700/13 booking stacks, Datenservices and test fixtures. | `./install.sh datev-extf` |
 | `dsgvo-ai-act-labeling` | GDPR processing-register entries and EU AI Act Article 50 disclosure decisions with human-review evidence. | `./install.sh dsgvo-ai-act-labeling` |
 | `gobd-archive` | GoBD-compliant retention classes, immutability, Verfahrensdokumentation and audit-ready export. | `./install.sh gobd-archive` |
 | `publish-reconcile-wp-meta` | Publish and reconcile WordPress/Meta posts with idempotency keys and field-by-field diff. | `./install.sh publish-reconcile-wp-meta` |
 | `skr-journal-mapping` | Map SKR03/SKR04 accounts to journal lines, tax keys and period-lock rules. | `./install.sh skr-journal-mapping` |
 | `ust-edge-cases` | German VAT edge cases: reverse charge, Kleinunternehmer, intra-EU B2B, OSS/IOSS, cent rounding. | `./install.sh ust-edge-cases` |
-| `webhooks-safe` | Ingest webhooks safely: HMAC verification, dedupe, order preservation, dead-letter, SSRF allow-list. | `./install.sh webhooks-safe` |
-| `xrechnung-zugferd` | Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X) per EN 16931 and UStG §14. | `./install.sh xrechnung-zugferd` |
+| `webhooks-safe` | Ingest inbound webhooks safely: HMAC verification, dedupe with TTL, per-stream order, replay windows, dead-letter, SSRF allow-list. | `./install.sh webhooks-safe` |
+| `xrechnung-zugferd` | Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X) compliant with EN 16931 and UStG §14. | `./install.sh xrechnung-zugferd` |
+
+## Layout
+
+```
+skills/business-de/
+├── README.md                 <- this file
+├── HANDOFF.md                <- what to re-verify and what to build next
+├── config/
+│   ├── versions.json         <- every pinned version (read it, never hardcode)
+│   └── REVERIFY_2026-10-14.md <- live re-verification record
+├── scripts/
+│   ├── validate_skills.py    <- the standard's rules
+│   ├── run_evals.py          <- execute every EVALS.md command
+│   ├── audit_triggers_links.py <- trigger + cross-link graph audit
+│   └── common.py             <- shared config loader
+└── <skill-name>/
+    ├── SKILL.md              <- front matter + procedure + decision tables
+    ├── scripts/              <- small, deterministic, offline
+    ├── references/           <- DESIGN.md, procedures.md, SOURCES.md, EVALS.md
+    ├── evals_fixtures/       <- the inputs the EVALS run-sections use
+    └── tests/                <- pytest suite
+```
+
+## Version-pin rule
+
+Every version (EN 16931, Factur-X, KoSIT validator, EXTF 700/13, SKR04, UStG
+rates, camt.053 namespace, retention classes) is pinned in
+`config/versions.json` and **never hardcoded** in scripts or `SKILL.md`.
+Re-verify on every spec bump and record the run in
+`config/REVERIFY_2026-10-14.md` and the skill's `references/SOURCES.md`.
+
+## Cross-link contract
+
+Every skill's `## Related skills` section names its siblings by folder name.
+The graph is acyclic by construction: `gobd-archive` is the pure retention
+sink and links to nobody; every other skill links to it for its retention
+class. Audit it yourself:
+
+```bash
+python3 skills/business-de/scripts/audit_triggers_links.py
+```
 
 ## Install hints
 
@@ -31,42 +72,16 @@ documentation, standards bodies, source repositories, postmortems); see each
 ./install.sh --list                 # show every skill
 ./install.sh <skill-name>           # install one skill into your agent
 ./install.sh --validate             # run the Agent-Skills validator
-python3 skills/business-de/scripts/validate_skills.py   # the ten skills
-cd skills/business-de && python3 -m pytest -q         # 131 tests
 ```
-
-## Layout of one skill
-
-```
-<name>/
-├── SKILL.md                 # front matter + instructions (<=500 lines)
-├── scripts/                 # small, deterministic, offline, documented
-├── references/
-│   ├── SOURCES.md           # >=6 primary URLs + retrieval dates
-│   ├── EVALS.md             # >=5 prompts + 3 near-miss prompts
-│   ├── procedures.md        # long checklists pulled out of SKILL.md
-│   └── DESIGN.md            # design rationale and known conflicts
-└── tests/                   # pytest suite for the scripts
-```
-
-## Version pins
-
-Pinned versions live in `config/versions.json` and are read from there at
-runtime — never hardcode a version inside a script or SKILL.md. Re-verify the
-pins on every spec bump and record the re-verification date in the skill's
-`references/SOURCES.md`.
-
-## Cross-links
-
-Every skill lists its siblings in a `## Related skills` section at the bottom
-of `SKILL.md`. `gobd-archive` is the retention sink: it does not call its
-siblings, but every other skill links here for its retention class. The graph
-is acyclic by construction — no skill links back to a skill that links to it.
 
 ## Re-running the quality gate
 
 ```bash
 python3 skills/business-de/scripts/validate_skills.py   # must be 0 issues
-python3 skills/business-de/scripts/run_evals.py         # execute every EVALS.md script example
+python3 skills/business-de/scripts/run_evals.py         # every EVALS.md command must exit 0
+python3 skills/business-de/scripts/audit_triggers_links.py  # acyclic, no trigger gaps
 cd skills/business-de && python3 -m pytest -q           # full pytest suite
 ```
+
+Gate status at PASS 4 (2026-10-14): validator 10/10 skills, 0 issues;
+`run_evals.py` 74 commands, 0 failed; trigger/link audit 0 problems.

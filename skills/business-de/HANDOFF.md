@@ -28,27 +28,50 @@ cd skills/business-de && python3 -m pytest -q           # full pytest suite
 
 ## PASS 4 (EVALS + cross-links + handoff) — 2026-10-14
 
-Four commits, all `skills-business-de-r3-05:`, own paths only.
+Twelve commits, all `skills-business-de-r3-05:`, own paths only.
 
-1. **README refresh.** `skills/business-de/README.md` rewritten: one-line value
-   per skill, install hints, layout diagram, version-pin rule, cross-link
-   contract and the gate commands.
-2. **EVALS grounding pass.** Every prompt that names a script was re-run
-   against the real script in dry-run mode and its expected exit code
-   recorded. Two prompts were broken: `skr-journal-mapping` #2/#5/#7 quoted
-   `scripts/...` without `python3`, so `run_evals.py` could not extract a
-   command; `ust-edge-cases` N1/N2/N3 quoted the bare script name. Both fixed
-   and the expected output captured. `carrier-apis-de` N3 was corrected: the
-   cent trap is real (12.50 vs 1250 → exit 1) and now states the exact delta.
-3. **Cross-link audit.** Every `## Related skills` section re-read. One
-   circular edge was found and broken: `dsgvo-ai-act-labeling` linked to
-   `webhooks-safe` (which links back). It now links only to `gobd-archive`,
-   the retention sink. `gobd-archive` remains a pure sink. Verified acyclic by
-   walking the graph by hand.
-4. **This file.** Re-verify table, gate commands, and the next-ten list.
+1. **Trigger + cross-link audit script.** `scripts/audit_triggers_links.py`
+   parses every `## Related skills` section, walks the graph and reports
+   cycles and trigger gaps (a skill whose body names a sibling but does not
+   link it). Result: acyclic, `gobd-archive` is the pure sink, 0 problems.
+2. **Live re-verification of every version pin.** All 20 pins in
+   `config/versions.json` re-fetched on 2026-10-14; the record is
+   `config/REVERIFY_2026-10-14.md`. No pin changed. Two facts remain
+   **unverified** and are flagged as such in the skill text: the EU AI Act
+   Art. 50 enforcement calendar (eur-lex HTTP 202, empty HTML body) and the
+   UStG §13b renumbering (dejure.org HTTP 200, JS-rendered text). Eight
+   URLs are still flaky (AO/UStG/BEG 000, iso20022.org/swift.com 403,
+   akretion.github.io/steuer-berater.de 404) — corroborated by mirrors.
+3. **EVALS grounding pass.** Every `## Run these checks` section in all ten
+   `references/EVALS.md` was rewritten so each command is copy-paste-safe,
+   runs against a shipped fixture in `<skill>/evals_fixtures/`, and carries
+   its expected exit code as a `# exits N` annotation. `run_evals.py` was
+   extended to extract commands from fenced ```bash blocks (with backslash
+   line-continuations) and to honour per-command exit annotations. Gate:
+   **74 commands, 0 failed**.
+4. **Bugs found and fixed by running the evals.** Three were real:
+   - `recon_check.py` had no IBAN check at all, so EVALS prompt #11 (the
+     Bundesbank Pruefzahlenberechnung) was false. Added
+     `german_iban_ok()` (DE remainder-1, letters→numbers, country+check
+     digits moved to the end) and 8 evals_fixtures.
+   - `disclosure_label.py` reported `human_review_status: missing` for a
+     transparency-only chatbot that had reviewer id + date (EVALS #5). It
+     now reports `approved`; an optional `--evidence` flag was added.
+   - `process_register.py` rejected the human-readable `contractual
+     necessity` basis that its own EVALS prompt #2 uses. Added
+     `LEGAL_BASE_SYNONYMS`; the register still stores the canonical Art. 6
+     key. `track.py` non-numeric numbers exit 1, not 0 (the `SystemExit`
+     message was correct, the docstring was wrong).
+5. **Cross-link audit.** Every `## Related skills` section re-read. The graph
+   is acyclic: `gobd-archive` is the pure retention sink and links to nobody;
+   every other skill links to it for its retention class. Verified by hand
+   and by `audit_triggers_links.py`.
+6. **README + this file.** `README.md` rewritten (one-line value per skill,
+   install hints, layout diagram, version-pin rule, cross-link contract, gate
+   commands) and this file updated.
 
-Gate: `validate_skills.py` → 10 skills, 0 issues. `run_evals.py` → all
-extracted commands exit 0.
+Gate: `validate_skills.py` → 10 skills, 0 issues. `run_evals.py` → 74
+commands, 0 failed. `audit_triggers_links.py` → 0 problems.
 
 ## Ideas for the next ten skills (with rationale)
 
