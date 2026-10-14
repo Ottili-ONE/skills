@@ -133,6 +133,25 @@ us". SSRF prevention does not know ownership.
 budget is exhausted, not on the first failure. Immediate retry without
 backoff is a thundering-herd risk on a failing upstream.
 
+### N6. "The signature is missing, the webhook is still valid"
+**Trap:** `verify.py` requires `--sig`. Without it the script exits 2
+(argparse) — a missing signature is never a "pass". An agent that treats a
+missing signature as "unsigned = valid" accepts every request on the wire.
+The signature is the only thing that proves the payload came from the
+provider.
+
+### N7. "PayPal is just like GitHub, no timestamp needed"
+**Trap:** PayPal and Twilio enforce the replay window and require `--now`.
+`verify.py --provider paypal` without `--now` exits 2 with
+"--now is required for paypal/twilio". GitHub has no replay window; the two
+provider families are not interchangeable.
+
+### N8. "The event id is new, so it is a first delivery"
+**Trap:** `dedupe.py` is stateful — a second delivery of the same event id
+returns `duplicate: true, action: ack_and_skip` (exit 0). "New" is a claim
+about the *store*, not about the wire. Always look the id up first; an agent
+that skips the lookup processes the same event twice.
+
 
 ---
 

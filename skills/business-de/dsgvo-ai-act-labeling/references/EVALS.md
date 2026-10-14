@@ -137,6 +137,22 @@ re-review date. A bare signature is `human_review_incomplete` — the
 the EU, not only customers. B2B newsletter recipients in the EU are still
 data subjects. The register entry must cover the offer, not the contract.
 
+### N6. "The label was reviewed last year, so it is still valid"
+**Trap:** the re-verification window is one year. A review dated
+2025-01-01 is stale on 2026-10-14 even though the system did not change.
+`label_check.py` exits 1 with `review_date_outside_window`.
+
+### N7. "The checksum is just a formality, the label is fine"
+**Trap:** the checksum is the tamper evidence. A label whose checksum does
+not match its content is rejected outright — an agent that skips the check
+can be fed a back-dated label. `label_check.py` exits 1 on a mismatch.
+
+### N8. "The evidence file is a photo of a signature, that is enough"
+**Trap:** evidence must name a real reviewer and be machine-readable JSON.
+A photo or a free-text note is not evidence for a high-risk system —
+`disclosure_label.py` treats a missing or unreadable evidence file as
+BLOCKING (exit 1). The gate is the *existence of review*, not the *intent*.
+
 
 ---
 
