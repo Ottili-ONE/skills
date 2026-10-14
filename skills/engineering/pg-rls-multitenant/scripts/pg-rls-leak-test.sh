@@ -55,7 +55,7 @@ docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
 # Build the probe SQL with the table name interpolated (heredoc is quoted, so
 # we assemble it from a static template and a sed substitution).
 cat > "$TMPD/probe.sql" <<'PROBE'
-__TABLE__
+-- probe template; __TABLE__ is replaced by sed below
 
 -- Seed two tenants as the superuser (bypasses RLS by design, so seeding is safe).
 -- Run BEFORE SET ROLE so the rows exist when the app role queries them.
@@ -71,18 +71,24 @@ VALUES ('00000000-0000-4000-8000-000000000002',
 -- Run the probe as the app role. We connect as the superuser and SET ROLE to
 -- web_app so the RLS policies evaluate against web_app (NOLOGIN roles cannot
 -- connect directly, and superusers bypass RLS by design).
+-- Wrap in one transaction: psql autocommits each statement, and
+-- set_config(..., true) is transaction-local, so the policy would see NULL
+-- (and the cast to uuid would fail) unless the whole probe is one TX.
+BEGIN;
 SET ROLE web_app;
 SELECT set_config('app.current_tenant',
   '11111111-1111-4111-8111-111111111111', true);
 SELECT count(*) AS a_sees_own FROM __TABLE__;
 SELECT count(*) AS a_sees_b FROM __TABLE__
-WHERE tenant_id = '22222222-2222-4222-8222-222222222222';
+WHERE tenant_id = '22222222-2222-4222-8222-222222222222;
+COMMIT;
 PROBE
 sed -i "s/__TABLE__/$TABLE/g" "$TMPD/probe.sql"
 
 echo ">> running probe as web_app (table $TABLE)"
 OUT=$(docker exec -i "$CONTAINER" psql -U postgres -d postgres -t -A -F $'\t' \
   -v ON_ERROR_STOP=1 -f - < "$TMPD/probe.sql" 2>&1 || true)
+
 
 OWN=$(echo "$OUT" | grep "a_sees_own" | tail -1 | cut -f2)
 CROSS=$(echo "$OUT" | grep "a_sees_b" | tail -1 | cut -f2)
