@@ -110,6 +110,19 @@ everything" applies only to vouchers whose retention started before 2025.
 
 
 ---
+### N5. "The invoice is B2C, so any profile works"
+**Trap:** the profile table is keyed by the full (context, data, recipient)
+triple. There is no rule for (b2c, full, factur-x) — the selector exits 2
+with `no profile rule for ...`. B2C e-invoicing is not yet a pinned case; ask
+for the recipient's profile by name instead of guessing.
+
+### N6. "The profile selector recommends a profile, so the invoice is valid"
+**Trap:** the selector only picks a profile — it never validates the
+document. A profile recommendation with `missing_fields: []` means the
+*fields the profile names* are present, not that the invoice passes. Run
+`validate_invoice.py` afterwards; the two tools are sequential, not
+interchangeable.
+
 
 ## Run these checks
 
