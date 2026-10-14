@@ -1,82 +1,76 @@
-# Ottili Engineering Playbook Skills
+# Ottili ONE — Engineering Playbook Skills
 
-Ten Agent Skills (agentskills.io standard) for coding and operations agents working on
-the Ottili platform. Each skill folder is `<name>/` with a `SKILL.md` (front matter +
-body <500 lines), `references/` (procedure, EVALS, SOURCES) and `scripts/` (small,
-deterministic, runnable offline).
+Ten domain-specific skills under `skills/engineering/<name>/`. Each is a self-contained
+directory: `SKILL.md` (the instructions an agent reads), `references/` (EVALS, SOURCES,
+examples, procedures) and `scripts/` (offline, deterministic checkers with `_test.py`
+twins). Every `SKILL.md` stays under 500 lines; longer material lives in `references/`.
 
-## Skills (one line of value each)
+## One-line value per skill
 
-- [acceptance-harness](./acceptance-harness/SKILL.md) — Define PASS/FAIL/BLOCKED acceptance
-  scenarios with runnable evidence pointers, never "it works".
-- [foundation-v2-conformance](./foundation-v2-conformance/SKILL.md) — Enforce token-only styling,
-  named imports and no bypass of Foundation v2 abstraction layers.
-- [honest-status](./honest-status/SKILL.md) — Distinguish DONE, VERIFIED, IN_PROGRESS,
-  FALSE_DONE and BLOCKED so handoff notes never lie.
-- [long-test-discipline](./long-test-discipline/SKILL.md) — Run long/flaky tests in the
-  foreground with a timeout wrapper, recorded seed and resource limits.
-- [module-contract-first](./module-contract-first/SKILL.md) — Track public API snapshots,
-  detect drift and import cycles before CI goes red.
-- [outbox-idempotency](./outbox-idempotency/SKILL.md) — Make outbound events exactly-once
-  via a transactional outbox + idempotent consumer.
-- [pg-rls-multitenant](./pg-rls-multitenant/SKILL.md) — Isolate tenants with PostgreSQL Row
-  Level Security so no cross-tenant read/write is possible by default.
-- [playwright-a11y-e2e](./playwright-a11y-e2e/SKILL.md) — E2E tests with stable selectors,
-  axe A/AA evidence and keyboard-only paths across responsive breakpoints.
-- [problem-json-contracts](./problem-json-contracts/SKILL.md) — Emit RFC 9457 problem details
-  with a stable catalogue, versioned schema and machine-checkable examples.
-- [shared-tree-git](./shared-tree-git/SKILL.md) — Commit only your own paths with a task-id
-  prefix on a shared tree where up to three agents work simultaneously.
+| Skill | Value |
+| --- | --- |
+| [acceptance-harness](acceptance-harness/SKILL.md) | PASS/FAIL/BLOCKED outcomes backed by a runnable evidence pointer — never a prose claim. |
+| [foundation-v2-conformance](foundation-v2-conformance/SKILL.md) | Blocks raw styling literals, deep imports and untracked workarounds in `@ottili/foundation-ui` v2. |
+| [honest-status](honest-status/SKILL.md) | Status buckets (DONE / VERIFIED / IN_PROGRESS / BLOCKED / FALSE_DONE) with checkable evidence. |
+| [long-test-discipline](long-test-discipline/SKILL.md) | Runs long/flaky tests in the foreground with a recorded seed, ulimit budget and log artifact. |
+| [module-contract-first](module-contract-first/SKILL.md) | Enumerates a module's public API into a JSON snapshot; blocks merge on drift. |
+| [outbox-idempotency](outbox-idempotency/SKILL.md) | Transactional outbox: `idempotency_key`, ordered poller, poison-move, key-preserving replay. |
+| [pg-rls-multitenant](pg-rls-multitenant/SKILL.md) | FORCE RLS migrations, least-privilege grants and a leak test that runs green. |
+| [playwright-a11y-e2e](playwright-a11y-e2e/SKILL.md) | `data-testid` selectors, axe evidence, keyboard + responsive checks that survive refactors. |
+| [problem-json-contracts](problem-json-contracts/SKILL.md) | RFC 9457 `application/problem+json` envelopes with absolute type URIs and no 5xx leakage. |
+| [shared-tree-git](shared-tree-git/SKILL.md) | The foundation: commit only your own paths with a task-id prefix; never rewrite shared history. |
 
 ## Install hints
 
-- Validate all ten at once: `python3 scripts/validate_skills.py`
-- Validate one skill: `python3 scripts/validate_skill.py <name>`
-- Run the repo-wide conformance check: `python3 scripts/validate.py`
-- Install a skill into an agent home: `./scripts/install.sh <name> <target-dir>`
-- Rebuild the index: `python3 scripts/build-index.py`
+Install a single skill, or every engineering skill, into the agent's skills directory:
 
-## Evals and cross-links
+```bash
+# one skill
+./scripts/install-skill.py skills/engineering/pg-rls-multitenant
 
-Each skill carries `references/EVALS.md` with 5 realistic prompts (expected behaviour +
-failure signs + exact verification command) and 3-5 near-miss prompts that fire *before*
-the incident. The Related-section graph across all ten skills is acyclic by construction:
-`shared-tree-git` is the foundation and has no outgoing links; every other skill points
-toward it or toward a peer. Re-check after any edit with the inline script below:
-
+# every engineering skill (dry run first)
+./scripts/install-skill.py --all --dry-run skills/engineering
+./scripts/install-skill.py --all skills/engineering
 ```
-python3 - <<'EOF'
-import re, glob, os
-skills=[d.split('/')[-2] for d in glob.glob("skills/engineering/*/") if os.path.isfile(d+"SKILL.md")]
-g={}
-for s_ in skills:
-    txt=open(f"skills/engineering/{s_}/SKILL.md").read()
-    sec=txt.split("## Related skills",1)[-1].split("\n## ",1)[0]
-    g[s_]=re.findall(r'\[.*?\]\(\.\./([a-z0-9-]+)/SKILL.md\)', sec)
-c={s_:0 for s_ in skills}
-def d(u):
-    c[u]=1
-    for v in g.get(u,[]):
-        if v not in c: d(v)
-        elif c[v]==1: raise SystemExit(f"cycle through {u}->{v}")
-    c[u]=2
-for s_ in skills: d(s_)
-print("acyclic OK")
-EOF
+
+`install.sh` is the shell entry point; `build-index.py` regenerates `index/INDEX.md`
+and `index/skills.json` after any change. Verify the tree after every edit:
+
+```bash
+python3 scripts/validate_skills.py     # agentskills.io rules + EVALS counts
+python3 scripts/validate.py            # catalog consistency
 ```
 
 ## Layout of one skill
 
 ```
-<name>/
-  SKILL.md                 # front matter + body (progressive disclosure entry point)
-  references/
-    agentskills-standard.md  # (shared) the standard the skill conforms to
-    <name>-procedure.md      # full recipe, version table, pitfalls, worked examples
-    EVALS.md                 # >=5 prompts + 3 near-miss prompts + failure signs
-    SOURCES.md               # primary source URLs, retrieval dates, version pins
-  scripts/                 # small deterministic helpers + _test.py self-tests
+skills/engineering/<name>/
+├── SKILL.md                 # trigger description, procedure, Related skills
+├── references/
+│   ├── EVALS.md             # 5 prompts + 3 near-miss prompts + verification checklist
+│   ├── SOURCES.md           # URL + retrieval date for every version-sensitive fact
+│   └── ...                  # procedures, examples, decision tables (one level deep)
+└── scripts/
+    ├── check_*.py           # offline, deterministic checker
+    └── check_*_test.py      # twin test: python3 scripts/check_*_test.py
 ```
 
-Quality bar: every claim is backed by a runnable command or a primary source; no filler,
-no generic advice.
+## Cross-links
+
+Every `SKILL.md` ends with a `## Related skills` section. The graph is deliberately
+acyclic: `shared-tree-git` is the foundation and therefore a pure sink — it has no
+outgoing markdown links, only plain-text mentions of the skills that point back at it.
+Run `python3 scripts/check_shared_tree.py graph` to confirm the graph stays acyclic.
+
+## Evals
+
+Every `references/EVALS.md` carries five numbered prompts (expected behaviour, failure
+signs, exact verification command, worked good/bad examples) and three or more
+near-miss prompts that fire *before* the incident. Example (acceptance-harness N1):
+"The login works but I didn't capture a screenshot — is it still PASS?" → no, downgrade
+to IN_PROGRESS until the evidence pointer resolves. Run the self-tests to re-check a
+skill after editing it:
+
+```bash
+python3 skills/engineering/<name>/scripts/check_*_test.py
+```
