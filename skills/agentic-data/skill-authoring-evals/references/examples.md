@@ -69,3 +69,44 @@ right but missing most cases — the report makes that legible.
 
 One "passed" bit per prompt hides whether the skill fired, fired wrongly or
 did nothing. Detection signal: no per-prompt precision/recall columns.
+
+## Good — eval prompt that discriminates by symptom
+
+> "My skill folder is `foo-bar` but the frontmatter says `name: baz`. It
+> registers in some clients and not others. Which is the real problem?"
+
+Detection signal: the prompt names a concrete symptom and a plausible-but-wrong
+theory; the correct answer is that the name/folder mismatch is the registration
+failure, not a client quirk. A discriminating prompt tests knowledge, not recall.
+
+## Bad — overfit evals
+
+All 12 prompts are the agent's own phrasing of the description, in the same
+sentence structure. The eval measures whether the agent can read its own
+writing. Detection signal: >90% of prompts contain a substring of the
+description, or the train/validation split is 12/0. Recruit fresh prompts that a
+real user would actually type.
+
+## Bad — a firing log missing a case
+
+`firings.txt` lists 9 of 10 case ids. The missing case counts as a miss, so a
+perfect skill scores 0.9 recall and fails the target. Detection signal:
+`eval_metrics.py` reports `"verdict": "missing"` for the absent id and `fn >= 1`.
+Every case must have a firing record — a sparse log makes a good skill look bad.
+
+## Good — description that is implementation-free
+
+> "Use this skill when a skill fails to validate, fires on the wrong tasks, or
+> ships without a without_skill baseline."
+
+Detection signal: it names outcomes and symptoms, never the code that produces
+them (no `validate_skill.py`, no `eval_metrics.py`). User intent, not
+implementation.
+
+## Bad — description that leaks implementation
+
+> "Use this skill when you need to run `validate_skill.py` and `eval_metrics.py`."
+
+Detection signal: the description names tool filenames. It fires only when the
+user already knows the answer and narrows the skill to its own scripts.
+Rewrite to name the *problem*, not the *tool*.

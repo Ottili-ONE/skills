@@ -78,3 +78,94 @@ def test_valid_skill_reports_ok() -> None:
     r = run(str(ROOT.parent / "mcp-2026-07-28"))
     assert r.returncode == 0
     assert "0 0" in r.stdout
+
+
+# --- evals_check.py (EXPAND pass 2) ---
+
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
+
+
+def _run(script, *args, input=None):
+    return subprocess.run(
+        [sys.executable, str(SCRIPTS / script), *args],
+        input=input, capture_output=True, text=True)
+
+
+def _write(tmp_path, name, text):
+    p = tmp_path / name
+    p.write_text(text, encoding="utf-8")
+    return str(p)
+
+
+GOOD = json.dumps([
+    {"id": "E1", "prompt": "My skill folder is `my-skill` but the frontmatter says `name: other`. What happens?", "should_fire": True, "expected_output": "The skill never registers."},
+    {"id": "N1", "prompt": "Write a README for my new Python package.", "should_fire": False, "expected_output": "Not a skill-authoring task."},
+])
+
+
+def test_evals_check_accepts_good(tmp_path):
+    p = _write(tmp_path, "good.json", GOOD)
+    r = _run("evals_check.py", p)
+    assert r.returncode == 0, r.stderr
+    assert "2 0 0" in r.stdout
+
+
+def test_evals_check_rejects_missing_expected_output(tmp_path):
+    bad = json.dumps([{"id": "E1", "prompt": "x", "should_fire": True}])
+    p = _write(tmp_path, "bad.json", bad)
+    r = _run("evals_check.py", p)
+    assert r.returncode == 1
+    assert "expected_output" in r.stderr
+
+
+def test_evals_check_rejects_duplicate_id(tmp_path):
+    bad = json.dumps([
+        {"id": "E1", "prompt": "a", "should_fire": True, "expected_output": "x"},
+        {"id": "E1", "prompt": "b", "should_fire": False, "expected_output": "y"},
+    ])
+    p = _write(tmp_path, "dup.json", bad)
+    r = _run("evals_check.py", p)
+    assert r.returncode == 1
+    assert "duplicate" in r.stderr.lower()
+
+
+def test_evals_check_warns_on_no_negatives(tmp_path):
+    only_pos = json.dumps([
+        {"id": "E1", "prompt": "a", "should_fire": True, "expected_output": "x"},
+        {"id": "E2", "prompt": "b", "should_fire": True, "expected_output": "y"},
+    ])
+    p = _write(tmp_path, "pos.json", only_pos)
+    r = _run("evals_check.py", p)
+    assert r.returncode == 0
+    assert "should-not-fire" in r.stderr
+
+
+def test_evals_check_json_mode(tmp_path):
+    p = _write(tmp_path, "good.json", GOOD)
+    r = _run("evals_check.py", p, "--json")
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["valid"] is True
+    assert out["cases"] == 2
+    assert out["should_fire"] == 1
+    assert out["should_not_fire"] == 1
+
+
+def test_evals_check_rejects_empty_file(tmp_path):
+    p = _write(tmp_path, "empty.json", "")
+    r = _run("evals_check.py", p)
+    assert r.returncode == 2
+    assert "empty" in r.stderr.lower()
+
+
+def test_evals_check_rejects_non_list(tmp_path):
+    p = _write(tmp_path, "obj.json", json.dumps({"not": "a list"}))
+    r = _run("evals_check.py", p)
+    assert r.returncode == 2
+    assert "list" in r.stderr.lower()
