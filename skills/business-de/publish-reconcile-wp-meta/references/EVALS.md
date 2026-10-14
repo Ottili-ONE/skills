@@ -132,6 +132,26 @@ informational, not as deltas.
 is unmaintained. The config pins the WP version; the helper must read it and
 warn. A green run that uses Basic Auth on WP 6.7+ is a failure sign.
 
+### N6. "Reconcile the cost, the amount is in cents"
+**Trap:** the label API returns `amount` in the currency unit (12.50 = EUR
+12.50) while the Ottili record stores cents (1250). `reconcile.py` compares
+the numeric value, so `{"amount": 12.50}` and `1250` do **not** match — the
+agent must normalise both to the same unit first; `--strict` then flags the
+unit drift as a delta.
+
+### N7. "The idempotency store is just a cache, delete the key on success"
+**Trap:** the store is the audit trail. Deleting the key on success means a
+retry after a crash has nothing to compare against and re-posts. The key
+must outlive the publish; a lookup that returns `found` is the answer to
+"has this already been published?", not a signal to clean up.
+
+### N8. "WP Basic Auth still works, use it"
+**Trap:** WP Basic Auth is deprecated and carries the password in the clear
+on every request. The skill pins the Application Password / OAuth route;
+using Basic Auth on a production site is a credential-leak finding, and the
+reconcile step cannot verify the idempotency key through a deprecated auth
+path. Verified: `wp_publish.py` exits 0 only via the pinned auth method.
+
 
 ---
 
