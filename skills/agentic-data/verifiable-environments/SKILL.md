@@ -139,6 +139,7 @@ cannot be gamed is a check nobody has tried to game; every check needs a
 written entry in `references/bypass-register.md`, and this one has none.
 ## References
 - procedures: references/procedures.md
+- verifier design: references/verifier-design.md
 - sandbox contract: references/sandbox-contract.md
 - bypass register: references/bypass-register.md
 - calibration: references/calibration.md

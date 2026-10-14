@@ -1,1 +1,1 @@
-{"checks": [{"name": "x", "path": "output.json", "exists": true}]}
+{"checks": [{"name": "x", "path": "output.json", "exists": true, "min_words": 1}]}

@@ -257,6 +257,8 @@ def main() -> int:
     ap.add_argument("--spec", type=Path, default=None, help="spec markdown (for spec_ref validation)")
     ap.add_argument("--bypass-register", type=Path, default=None, help="bypass register markdown")
     ap.add_argument("--min-power", type=float, default=MIN_POWER)
+    ap.add_argument("--min-defences", type=int, default=2,
+                    help="minimum independent defences per check (rule of two)")
     ap.add_argument("--min-good-pass-rate", type=float, default=MIN_GOOD_PASS_RATE)
     ap.add_argument("--json", type=Path, default=None, help="write JSON report here")
     ap.add_argument("--bypass-audit", nargs=2, metavar=("SPEC", "REGISTER"), default=None,
@@ -294,6 +296,26 @@ def main() -> int:
     except SystemExit as e:
         print(str(e), file=sys.stderr)
         return 2
+
+    well_formed = assert_check_well_formed(checks, min_defences=args.min_defences)
+    if well_formed:
+        detail = list(well_formed)
+        print(f"FAIL: {len(well_formed)} malformed check(s)", file=sys.stderr)
+        for d in well_formed:
+            print(d, file=sys.stderr)
+        if args.json:
+            args.json.write_text(json.dumps({"ok": False, "failures": well_formed}, indent=2) + "\n", encoding="utf-8")
+        return 1
+
+    min_def = assert_min_defences(checks, min_defences=args.min_defences)
+    if min_def:
+        detail = list(min_def)
+        print(f"FAIL: {len(min_def)} check(s) below the rule-of-two floor", file=sys.stderr)
+        for d in min_def:
+            print(d, file=sys.stderr)
+        if args.json:
+            args.json.write_text(json.dumps({"ok": False, "failures": min_def}, indent=2) + "\n", encoding="utf-8")
+        return 1
 
     if args.bypass_audit:
         spec_p, reg_p = args.bypass_audit

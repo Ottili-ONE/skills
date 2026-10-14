@@ -100,7 +100,8 @@ def test_json_report_written() -> None:
 def test_spec_ref_missing_fails() -> None:
     bad = FIX / "checks_noref.json"
     bad.write_text(json.dumps({"checks": [
-        {"name": "x", "path": "output.json", "exists": True}]}))
+        {"name": "x", "path": "output.json", "exists": True,
+         "min_words": 1}]}))
     r = run(
         "--checks", str(bad),
         "--contract", str(FIX / "contract.json"),
@@ -185,3 +186,87 @@ def test_bypass_audit_fails_on_single_defence() -> None:
     )
     assert r.returncode == 1
     assert "rule of two needs >= 2" in r.stderr
+
+
+def test_malformed_check_missing_name_fails() -> None:
+    bad = FIX / "checks_noname.json"
+    bad.write_text(json.dumps({"checks": [
+        {"path": "output.json", "exists": True, "min_words": 1}]}))
+    r = run(
+        "--checks", str(bad),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 1
+    assert "missing a string 'name' field" in r.stderr
+
+
+def test_malformed_check_negative_words_fails() -> None:
+    bad = FIX / "checks_negwords.json"
+    bad.write_text(json.dumps({"checks": [
+        {"name": "x", "path": "output.json", "exists": True, "min_words": -5}]}))
+    r = run(
+        "--checks", str(bad),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 1
+    assert "min_words is negative" in r.stderr
+
+
+def test_malformed_check_json_field_without_value_fails() -> None:
+    bad = FIX / "checks_novalue.json"
+    bad.write_text(json.dumps({"checks": [
+        {"name": "x", "path": "output.json", "exists": True, "json_field": "status"}]}))
+    r = run(
+        "--checks", str(bad),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+    )
+    assert r.returncode == 1
+    assert "json_field but no json_value" in r.stderr
+
+
+def test_min_defences_floor_rejects_single_defence() -> None:
+    # The shipped fixture's summary_file has 3 defences; asking for 4 must fail.
+    r = run(
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+        "--min-defences", "4",
+    )
+    assert r.returncode == 1
+    assert "rule of two requires >= 4" in r.stderr
+
+
+def test_min_defences_floor_accepts_default() -> None:
+    r = run(
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+        "--min-defences", "2",
+    )
+    assert r.returncode == 0, r.stderr
+
+
+def test_min_defences_floor_zero_rejected() -> None:
+    r = run(
+        "--checks", str(FIX / "checks.json"),
+        "--contract", str(FIX / "contract.json"),
+        "--good", str(FIX / "good"),
+        "--broken", str(FIX / "broken"),
+        "--lazy", str(FIX / "lazy"),
+        "--min-defences", "0",
+    )
+    assert r.returncode == 1
+    assert "must be >= 1" in r.stderr
