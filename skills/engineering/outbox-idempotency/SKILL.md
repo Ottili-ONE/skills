@@ -19,13 +19,10 @@ Any of these fires it:
 - Designing retry semantics for a service that writes events and sends them.
 
 ## When NOT to use this skill (neighbour prompts — do not fire)
-- Fire-and-forget logging with no consumer expectation of delivery.
-- Streams where ordering does not matter and duplicates are harmless (e.g., metrics).
-- A synchronous RPC that returns before any work is queued — there is no outbox to
-  protect; the skill fires only when work outlives the request.
-- A fire-and-forget log line with no consumer expectation of delivery — no idempotency
-  key is needed, but if a human might read the log to decide whether something happened,
-  treat it as an event.
+- Fire-and-forget logging or metrics where ordering does not matter and duplicates are
+  harmless — there is no outbox to protect and no idempotency key is needed.
+- A synchronous RPC that returns before any work is queued — the skill fires only when
+  work outlives the request.
 - "We already have retries" — retries are the reason the UNIQUE constraint exists; the
   skill fires when retries are mentioned alongside outbound writes.
 
