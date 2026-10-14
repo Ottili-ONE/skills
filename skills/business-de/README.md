@@ -55,3 +55,18 @@ Pinned versions live in `config/versions.json` and are read from there at
 runtime — never hardcode a version inside a script or SKILL.md. Re-verify the
 pins on every spec bump and record the re-verification date in the skill's
 `references/SOURCES.md`.
+
+## Cross-links
+
+Every skill lists its siblings in a `## Related skills` section at the bottom
+of `SKILL.md`. `gobd-archive` is the retention sink: it does not call its
+siblings, but every other skill links here for its retention class. The graph
+is acyclic by construction — no skill links back to a skill that links to it.
+
+## Re-running the quality gate
+
+```bash
+python3 skills/business-de/scripts/validate_skills.py   # must be 0 issues
+python3 skills/business-de/scripts/run_evals.py         # execute every EVALS.md script example
+cd skills/business-de && python3 -m pytest -q           # full pytest suite
+```
