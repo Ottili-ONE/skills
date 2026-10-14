@@ -92,3 +92,37 @@ starting at 1) cannot be calibrated — fix it before scoring. Generate a valid
 one from a compact spec with `scripts/gen_rubric.py --spec spec.json --out rubric.yaml`.
 Failure signs: calibration run on a rubric that fails the lint; a rubric whose
 lowest score is not 1; a rubric with scores out of order.
+
+## E10 — a calibration report must carry provenance
+Prompt: "My report shows agreement 0.71. Is that enough?"
+Expected: No. The report must also record the judge model, the generator model
+and the hash of both prompts. Without provenance the agreement number cannot be
+reproduced or audited. `scripts/calibrate_judge.py calibrate` now requires all
+four fields and exits 1 with `FAIL: --judge-model is required for every
+calibration report` if any is missing. A report written without them is not
+evidence.
+Failure signs: a report with agreement but no model names; no prompt hashes;
+the calibration run accepted without the four provenance flags.
+
+## E11 — reject a circular judge and teacher
+Prompt: "My judge is the same model that generated the answers, using the same
+prompt. Calibrate it."
+Expected: Reject. Same model + same prompt = circular agreement by construction.
+`scripts/calibrate_judge.py calibrate --judge-model gpt-4.1
+--generator-model gpt-4.1 --judge-prompt-sha same --generator-prompt-sha same`
+exits 1 with `FAIL: judge and generator are the same model with the same
+prompt; agreement is circular by construction`. Change the judge model or the
+judge prompt and re-measure.
+Failure signs: calibration passing with identical model and prompt; the
+circular case not checked.
+
+## E12 — separated models with the same prompt are acceptable
+Prompt: "My judge is a different model but I reused the generator's prompt.
+Is that allowed?"
+Expected: Yes, per the decision table: different model OR different prompt =
+acceptable (different model is preferred). `scripts/calibrate_judge.py
+calibrate --judge-model claude-sonnet-4 --generator-model gpt-4.1
+--judge-prompt-sha a --generator-prompt-sha b` exits 0 on the thresholds. Only
+identical model AND identical prompt is circular.
+Failure signs: rejecting a legitimately separated pair; accepting an identical
+pair.

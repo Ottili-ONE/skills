@@ -110,3 +110,26 @@ passes every check). If power does not drop or the harness still exits 0, the
 verifier is not verified. The procedure is in `references/neutering.md`.
 Failure signs: harness exits 0 after a check is neutered; neutering all checks
 instead of exactly one; a neutered check that is not actually always-pass.
+
+## E11 — a check with one defence is a single point of failure
+Prompt: "My check asserts that `summary.md` exists. Is that enough?"
+Expected: No. Existence alone is one defence: the agent can `touch summary.md`
+and pass without doing the intended work. Add a second independent defence
+(content equality, a JSON field, a minimum word count, a keyword match, a
+maximum length) and record both in the bypass register. Run
+`scripts/verify_harness.py --bypass-audit SPEC.json REGISTER`; it rejects any
+check with fewer than two defences with
+`FAIL: check 'summary_file' has 1 defence(s); the rule of two requires >= 2
+independent defences`.
+Failure signs: a check with exactly one defence; the bypass-audit not run; a
+check whose bypass register entry lists only one way to close the bypass.
+
+## E12 — the bypass-audit catches a single-defence check
+Prompt: "Audit my harness's checks against the bypass register."
+Expected: `scripts/verify_harness.py --bypass-audit SPEC.json REGISTER.jsonl
+--checks checks.json --contract contract.json --good good --broken broken
+--lazy lazy`. Exit 0 only when every check has a register entry AND at least
+two independent defences AND no check is `critical` severity. Exit 1 with a
+per-check failure naming the missing defences.
+Failure signs: the audit exiting 0 on a check with one defence; a check whose
+register entry is missing; a `critical`-severity bypass that was not closed.

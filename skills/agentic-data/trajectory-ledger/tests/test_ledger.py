@@ -96,3 +96,65 @@ def test_record_non_det_appends_observe_event() -> None:
         # and the appended event must audit clean
         r2 = run("audit", str(out))
         assert r2.returncode == 0, r2.stderr
+
+
+def test_audit_rejects_unordered_steps() -> None:
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "unordered.jsonl"
+        p.write_text(
+            '{"schema": "trajectory-ledger-v1", "step": 0, "timestamp": "2026-10-09T12:00:00Z", '
+            '"type": "think", "state": {"i": 0}, "state_hash": "sha256:0", '
+            '"cost": {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}}\n'
+            '{"schema": "trajectory-ledger-v1", "step": 2, "timestamp": "2026-10-09T12:00:02Z", '
+            '"type": "think", "state": {"i": 2}, "state_hash": "sha256:0", '
+            '"cost": {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}}\n'
+            '{"schema": "trajectory-ledger-v1", "step": 1, "timestamp": "2026-10-09T12:00:01Z", '
+            '"type": "think", "state": {"i": 1}, "state_hash": "sha256:0", '
+            '"cost": {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}}\n'
+        )
+        r = run("audit", str(p))
+        assert r.returncode == 1
+        assert "not strictly greater" in r.stderr
+
+
+def test_audit_rejects_missing_schema() -> None:
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "noschema.jsonl"
+        p.write_text(
+            '{"step": 0, "timestamp": "2026-10-09T12:00:00Z", "type": "think", '
+            '"state": {"i": 0}, "state_hash": "sha256:0", '
+            '"cost": {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}}\n'
+        )
+        r = run("audit", str(p))
+        assert r.returncode == 1
+        assert "no event declares schema" in r.stderr
+
+
+def test_audit_rejects_mixed_schema_versions() -> None:
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "mixed.jsonl"
+        p.write_text(
+            '{"schema": "trajectory-ledger-v1", "step": 0, "timestamp": "2026-10-09T12:00:00Z", '
+            '"type": "think", "state": {"i": 0}, "state_hash": "sha256:0", '
+            '"cost": {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}}\n'
+            '{"schema": "draft-v9", "step": 1, "timestamp": "2026-10-09T12:00:01Z", '
+            '"type": "think", "state": {"i": 1}, "state_hash": "sha256:0", '
+            '"cost": {"tokens_in": 0, "tokens_out": 0, "seconds": 0.0, "usd": 0.0}}\n'
+        )
+        r = run("audit", str(p))
+        assert r.returncode == 1
+        assert "mixes schema versions" in r.stderr
+
+
+def test_record_non_det_rejects_out_of_order_step() -> None:
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        out = Path(td) / "norm.jsonl"
+        run("normalize", str(FIX / "traj.jsonl"), str(out))
+        # the last recorded step is 2; step 1 is not strictly greater
+        r = run("record-non-det", str(out), "1", "timestamps drifted")
+        assert r.returncode == 1
+        assert "not strictly greater" in r.stderr

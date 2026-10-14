@@ -78,3 +78,34 @@ Editing an existing `state_hash` to make replay pass forges the ledger: the audi
 would then pass on a run that was never reproducible.
 Failure signs: a `state_hash` that was edited to match; a divergent run shipped
 as `succeeded`; the divergence not recorded anywhere.
+
+## E10 — reject a ledger whose steps are not a sequence
+Prompt: "I wrote the events out of order to group them by type. Audit it."
+Expected: Reject. A ledger whose `step` values are not strictly increasing is not
+a sequence and cannot be replayed deterministically: reordering events changes
+the hash chain even when every individual event is valid. The audit fails with
+`FAIL: event N step X is not strictly greater than event Y step Z; the ledger
+is not a sequence`. Re-order the events by step and re-audit.
+Failure signs: audit passing on a ledger whose steps go 0, 2, 1; the
+re-ordering treated as cosmetic rather than structural.
+
+## E11 — reject a ledger written against the wrong schema
+Prompt: "I wrote this ledger against a draft schema. Audit it."
+Expected: Reject. The first event must declare `schema` equal to
+`trajectory-ledger-v1`. A ledger written against a draft cannot be replayed
+against the current schema, and a ledger that mixes versions is ambiguous. The
+audit fails with `FAIL: no event declares schema 'trajectory-ledger-v1'` or
+`FAIL: ledger mixes schema versions [...]`. Re-write against the current schema
+in `references/schema.md`.
+Failure signs: audit passing on a ledger with no `schema` field; two different
+schema strings in one file.
+
+## E12 — record-non-det must append after the last step
+Prompt: "Replay diverged at step 1. Record it with `record-non-det 1`."
+Expected: Reject the out-of-order step. The divergence *is* the divergence at
+step 1, but the record itself is a new event that must come after every
+existing event. `scripts/ledger.py record-non-det` exits 1 with
+`FAIL: step 1 is not strictly greater than the last recorded step N`. Re-run
+with a step strictly greater than the last recorded one.
+Failure signs: a non-determinism record appended with a step equal to or
+smaller than an existing step; the audit then failing on monotonicity.
