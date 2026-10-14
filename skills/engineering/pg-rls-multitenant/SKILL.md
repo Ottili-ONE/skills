@@ -95,6 +95,15 @@ ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
 - [ ] Migration includes rollback SQL
 - [ ] Views use security_invoker = true or are excluded from RLS scope
 
+
+## Verification
+- Run the offline gate: `python3 scripts/check_rls_migration.py <migration.sql>` — must exit 0.
+- Run the Docker harness: `scripts/pg-rls-leak-test.sh <migration.sql> [table]` — must print PASS.
+- Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
+- Full procedure, version table, worked examples, and pitfalls: `references/pg-rls-procedure.md`.
+- Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
+- Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
+
 ## Related skills
 - [outbox-idempotency](../outbox-idempotency/SKILL.md)
 - [problem-json-contracts](../problem-json-contracts/SKILL.md)
