@@ -131,3 +131,28 @@ No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
   common safety failure.
 - `ToolError` is shown to the model (rewritten as a fixed phrase) and the run continues;
   `ToolsetUsageError` stops the run and is never shown.
+
+## Re-verification 2026-10-14 (PASS 4 re-run)
+
+Live re-fetch of all 13 primary URLs recorded in this SOURCES.md, 2026-10-14, via curl (max-time 25 s, parallel workers=6). Machine-readable report: `../../scratch/skills/skills-agentic-data-r3/reverify_02.json`.
+
+| URL | HTTP | Final URL |
+|-----|------|-----------|
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/computer-toolset.md | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/computer-toolset.md |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer_toolset_20260801.json | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer_toolset_20260801.json |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/src/lib/internal/toolsets/computer-members.ts | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/src/lib/internal/toolsets/computer-members.ts |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/src/helpers/beta/toolsets/computer.ts | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/src/helpers/beta/toolsets/computer.ts |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer-fakes.ts | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer-fakes.ts |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer-interface.test.ts | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/tests/lib/tools/toolsets/computer-interface.test.ts |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/src/lib/tools/BetaRunnableToolset.ts | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/src/lib/tools/BetaRunnableToolset.ts |
+| https://docs.anthropic.com/en/docs/agents-and-tooling/computer-use/overview | 200 | https://platform.claude.com/docs/en/agents-and-tooling/computer-use/overview |
+| https://github.com/anthropics/anthropic-sdk-typescript/blob/main/computer-toolset.md | 503 | https://github.com/anthropics/anthropic-sdk-typescript/blob/main/computer-toolset.md |
+| https://www.iso.org/standard/82833.html | 403 | https://www.iso.org/standard/82833.html |
+| https://api.github.com/repos/modelcontextprotocol/specification | 200 | https://api.github.com/repositories/862570523 |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer_registry.py | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer_registry.py |
+| https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py | 200 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py |
+
+**Dead / blocked on 2026-10-14:**
+
+- `https://github.com/anthropics/anthropic-sdk-typescript/blob/main/computer-toolset.md` -> HTTP 503. GitHub blob view is bot-blocked (503); the raw mirror (`raw.githubusercontent.com/.../computer-toolset.md`) returns HTTP 200 and is the working primary. The blob URL is retained only as a human-readable pointer.
+- `https://www.iso.org/standard/82833.html` -> HTTP 403. iso.org serves a 403 bot-block to curl; the WARC 1.1 spec text is the working primary and this page is corroborating only. Recorded as a known dead URL, not a fact drift.

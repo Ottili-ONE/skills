@@ -51,3 +51,26 @@ No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
   negatives — `tn/(tn+fp)` is the common mistake.
 - Targets are precision >= 0.9 and recall >= 0.9. Below 0.8 on either, rewrite the
   description, not the body.
+
+## Re-verification 2026-10-14 (PASS 4 re-run)
+
+Live re-fetch of all 12 primary URLs recorded in this SOURCES.md, 2026-10-14, via curl (max-time 25 s, parallel workers=6). Machine-readable report: `../../scratch/skills/skills-agentic-data-r3/reverify_02.json`.
+
+| URL | HTTP | Final URL |
+|-----|------|-----------|
+| https://agentskills.io/specification.md | 200 | https://agentskills.io/specification.md |
+| https://agentskills.io/skill-creation/optimizing-descriptions | 200 | https://agentskills.io/skill-creation/optimizing-descriptions |
+| https://agentskills.io/skill-creation/evaluating-skills | 200 | https://agentskills.io/skill-creation/evaluating-skills |
+| https://agentskills.io/skill-creation/best-practices | 200 | https://agentskills.io/skill-creation/best-practices |
+| https://agentskills.io/skill-creation/using-scripts | 200 | https://agentskills.io/skill-creation/using-scripts |
+| https://agentskills.io/clients.md | 200 | https://agentskills.io/clients.md |
+| https://github.com/anthropics/skills | 200 | https://github.com/anthropics/skills |
+| https://github.com/openai/skills | 200 | https://github.com/openai/skills |
+| https://fast.io/resources/awesome-claude-skills-directory-2026/ | 200 | https://fast.io/resources/awesome-claude-skills-directory-2026/ |
+| https://agentskills.io/llms.txt | 200 | https://agentskills.io/llms.txt |
+| https://www.iso.org/standard/82833.html | 403 | https://www.iso.org/standard/82833.html |
+| https://api.github.com/repos/modelcontextprotocol/specification | 200 | https://api.github.com/repositories/862570523 |
+
+**Dead / blocked on 2026-10-14:**
+
+- `https://www.iso.org/standard/82833.html` -> HTTP 403. iso.org serves a 403 bot-block to curl; the WARC 1.1 spec text is the working primary and this page is corroborating only. Recorded as a known dead URL, not a fact drift.

@@ -52,3 +52,24 @@ No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
 - Servers MUST NOT infer `clientCapabilities` from prior requests — this is the
   explicit P3 pitfall and is checked by the per-request rule in
   `references/meta-schema.md`.
+
+## Re-verification 2026-10-14 (PASS 4 re-run)
+
+Live re-fetch of all 10 primary URLs recorded in this SOURCES.md, 2026-10-14, via curl (max-time 25 s, parallel workers=6). Machine-readable report: `../../scratch/skills/skills-agentic-data-r3/reverify_02.json`.
+
+| URL | HTTP | Final URL |
+|-----|------|-----------|
+| https://modelcontextprotocol.io/specification/2026-07-28/changelog | 200 | https://modelcontextprotocol.io/specification/2026-07-28/changelog |
+| https://github.com/modelcontextprotocol/specification/releases/tag/2026-07-28 | 200 | https://github.com/modelcontextprotocol/modelcontextprotocol/releases/tag/2026-07-28 |
+| https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md | 200 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2575-stateless-mcp.md |
+| https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md | 200 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/2663-tasks-extension.md |
+| https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/1686-tasks.md | 200 | https://raw.githubusercontent.com/modelcontextprotocol/specification/main/seps/1686-tasks.md |
+| https://modelcontextprotocol.io/specification/2025-11-25/changelog | 200 | https://modelcontextprotocol.io/specification/2025-11-25/changelog |
+| https://modelcontextprotocol.io/specification/2025-06-18/changelog | 200 | https://modelcontextprotocol.io/specification/2025-06-18/changelog |
+| https://github.com/modelcontextprotocol/python-sdk | 200 | https://github.com/modelcontextprotocol/python-sdk |
+| https://api.github.com/repos/modelcontextprotocol/specification | 200 | https://api.github.com/repositories/862570523 |
+| https://www.iso.org/standard/82833.html | 403 | https://www.iso.org/standard/82833.html |
+
+**Dead / blocked on 2026-10-14:**
+
+- `https://www.iso.org/standard/82833.html` -> HTTP 403. iso.org serves a 403 bot-block to curl; the WARC 1.1 spec text is the working primary and this page is corroborating only. Recorded as a known dead URL, not a fact drift.
