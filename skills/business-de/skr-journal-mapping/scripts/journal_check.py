@@ -98,11 +98,23 @@ def check(rows):
 
 
 def main(argv):
-    if len(argv) != 2:
-        print("usage: journal_check.py <journal.json|journal.csv>", file=sys.stderr)
+    # Accept both the positional form (``journal_check.py journal.json``) and
+    # the named form used by the EVALS prompts (``--journal journal.json``).
+    path = None
+    rest = list(argv)
+    if "--journal" in rest:
+        i = rest.index("--journal")
+        if i + 1 < len(rest):
+            path = rest[i + 1]
+            rest = rest[:i] + rest[i + 2:]
+    if path is None and len(rest) == 2:
+        path = rest[1]
+    if path is None:
+        print("usage: journal_check.py <journal.json|journal.csv> [--journal PATH]",
+              file=sys.stderr)
         return 2
     try:
-        rows = load_rows(Path(argv[1]))
+        rows = load_rows(Path(path))
     except Exception as e:  # noqa: BLE001 - surface any parse failure
         print("FAIL", e, file=sys.stderr)
         return 2
