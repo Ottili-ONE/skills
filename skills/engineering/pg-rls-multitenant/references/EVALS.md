@@ -61,3 +61,6 @@ CREATE TABLE tenant_isolated_notes (id uuid PRIMARY KEY, body text);
 - **N3 — "GRANT ALL ON TABLE notes TO app_role."** Answer: no. Grant only the operations the app needs (SELECT/INSERT/UPDATE); `GRANT ALL` also grants TRUNCATE and ownership-style privileges.
 - **N4 — "The migration has no rollback block."** Answer: no. Record the inverse DDL in the same file so a failed migration can be reverted without dropping data.
 - **N5 — "service_role in the client is fine, it's just a key."** Answer: no. `service_role` bypasses RLS entirely and must never leave the server; use a server-side RPC or the Supabase secret-key model.
+- **N6 — "The policy uses `current_setting('app.current_tenant')` and that's good enough."** Answer: no — the setting must be cast to the column type (`::uuid`) and be NOT NULL, or a missing setting yields NULL and the policy matches nothing (silent data loss, not a leak).
+- **N7 — "A security_invoker view is slower, so let's skip it."** Answer: no — a security-definer (invoker=false) view runs as the view owner and bypasses the underlying table's policies; use `security_invoker=true` or a plain table.
+- **N8 — "The leak test passed on my laptop, that's enough."** Answer: no — run it against Docker Postgres on Biest with two parallel sessions and record the JSON; a laptop run proves nothing about the shared host.
