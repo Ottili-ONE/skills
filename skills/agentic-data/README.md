@@ -26,6 +26,7 @@ platform. Each skill is a folder with `SKILL.md` (front-matter + body), optional
 - Validate one: `python3 ../../scripts/validate_skill.py skills/agentic-data/<name>`
 - Validate all: `python3 ../../scripts/validate_skill.py --all`
 - Related-graph check (acyclic): `python3 ../../scripts/check_related_graph.py --skills skills/agentic-data`
+- Acceptance gate (this pass): `python3 skills/agentic-data/scripts/r305_acceptance.py`
 
 ## Layout
 
