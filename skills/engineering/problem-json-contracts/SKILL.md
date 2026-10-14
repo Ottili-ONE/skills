@@ -27,39 +27,39 @@ Any of these fires it:
 | Versioned JSON Schema (`$id` with version path) | Multiple client versions in the wild | Never break existing `$id`; add a new schema version instead |
 | Error catalogue enum (machine code + human message) | Every error must be machine-searchable by ops | Do not put stack traces in the catalogue response; log separately |
 
-## Near-miss triggers (act before the incident)
-- An endpoint returns a 200 envelope with a nested `status` → the #1 client-parse failure; reject envelopes.
-- `type` is a bare string or a relative URI → clients cannot resolve it; require an absolute URI.
-- A 5xx response leaks connection strings or SQL in `detail` → replace with `trace_id` only.
-- `retry_after` is missing on 429/503 → clients hammer the server; emit seconds, never HTTP-date.
-- Two catalogue entries share one `type` URI → silently conflates two semantics; one type per meaning.
-- A catalogue code has no OpenAPI response entry → CI must fail (`scripts/check_problem_catalogue.py`).
-
-## Numbered procedure (summary; full recipe in references/problem-procedure.md)
-1. **Pick type URI** — `about:<product>:<domain>:<code>` for internal; `https://api.ottili.dev/problems/<code>` for public. Never reuse a type for two different semantics.
-2. **Required fields**: `type`, `title`, `status` (int), `detail`, `instance` (URI). Optional: `trace_id`, `retry_after`, `errors` (field-level array). All strings UTF-8, max lengths enforced by schema (`title` <= 120, `detail` <= 500).
-3. **Status code mapping**: 4xx = client fault with fix hint; 5xx = server fault with trace_id only; never leak internals on 5xx. Map exactly one status per type — no overlap between catalogue entries.
-4. **Retry semantics**: include `retry_after` (seconds) on 429/503; idempotency-key header preserved across retries; client MUST back off exponentially starting at 1s, cap at 60s, max 5 attempts then surface to user with instance URI for support lookup.
-5. **Error catalogue**: single YAML file listing every code, its status, title template, and retryability flag; CI runs `scripts/check_problem_catalogue.py` against it so no duplicate codes and every code has a schema entry matching the catalogue enum value exactly one-to-one with OpenAPI operation responses.
+## Decision table — retry strategy
+| Error status | Retryable | `retry_after` | Client behaviour | Pitfall |
+|-------------|-----------|---------------|------------------|---------|
+| 429 Too Many Requests | yes | integer seconds | back off from `retry_after`, double on each failure | Missing `retry_after` → clients hammer |
+| 503 Service Unavailable | yes | integer seconds | same as 429 | Transient; do not treat as permanent |
+| 504 Gateway Timeout | yes | integer seconds | same; raise after 5 attempts | Timeout is often a timeout, not a fault |
+| 4xx (other) | no | absent | surface immediately to the user | Retrying a 400 wastes a request |
+| 5xx (other) | no | absent | surface with `trace_id` for support lookup | Do not retry blindly |
 
 ## Worked examples
-Good:
+Good (RFC 9457 shape, retriable, no internals):
 ```json
-{ "type": "https://api.ottili.dev/problems/user-not-found",
-  "title": "User not found",
-  "status": 404,
-  "detail": "No user with id 42.",
-  "instance": "/users/42",
-  "trace_id": "abc123" }
+{ "type": "https://api.ottili.dev/problems/rate-limit-exceeded",
+  "title": "Rate limit exceeded",
+  "status": 429,
+  "detail": "60 requests per minute allowed; 120 received.",
+  "instance": "/orders/abc123",
+  "retry_after": 60,
+  "trace_id": "req-9f3c" }
 ```
-Bad (envelope):
+Bad (envelope — the #1 client-parse failure):
 ```json
 { "status": 404, "detail": "No user with id 42." }
 ```
-Bad (5xx leakage):
+Bad (5xx leakage — connection string in `detail`):
 ```json
 { "type": "about:ottili:db:connection", "status": 503,
   "detail": "connection refused at 10.0.0.5:5432", "trace_id": "abc" }
+```
+Bad (retry_after as HTTP-date — most clients ignore it):
+```json
+{ "type": ".../rate-limit-exceeded", "status": 429,
+  "retry_after": "Wed, 21 Oct 2026 07:28:00 GMT" }
 ```
 
 ## Pitfalls from research
@@ -68,6 +68,14 @@ Bad (5xx leakage):
 - Stack traces and connection strings in `detail` on 5xx are a data-leak incident; use `trace_id` only.
 - `retry_after` in HTTP-date format is ignored by most clients; always use integer seconds.
 - Reusing one `type` URI for two different semantics conflates them; one type per meaning.
+
+## Near-miss triggers (act before the incident)
+- An endpoint returns a 200 envelope with a nested `status` → the #1 client-parse failure; reject envelopes.
+- `type` is a bare string or a relative URI → clients cannot resolve it; require an absolute URI.
+- A 5xx response leaks connection strings or SQL in `detail` → replace with `trace_id` only.
+- `retry_after` is missing on 429/503 → clients hammer the server; emit seconds, never HTTP-date.
+- Two catalogue entries share one `type` URI → silently conflates two semantics; one type per meaning.
+- A catalogue code has no OpenAPI response entry → CI must fail (`scripts/check_problem_catalogue.py`).
 
 ## Verification checklist (all must pass before merge)
 - [ ] Every endpoint returns `application/problem+json` on >=400
