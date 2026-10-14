@@ -240,12 +240,17 @@ def main() -> int:
                        ("generator-prompt-sha", args.generator_prompt_sha)):
         if not val:
             provenance_failures.append(f"FAIL: --{label} is required for every calibration report")
-    if args.judge_model and args.generator_model and args.judge_model == args.generator_model:
-        if not args.judge_prompt_sha or not args.generator_prompt_sha or args.judge_prompt_sha == args.generator_prompt_sha:
-            provenance_failures.append(
-                "FAIL: judge and generator are the same model with the same prompt; "
-                "agreement is circular by construction"
-            )
+    # Decision table: same model + same prompt = fail. Different model OR
+    # different prompt = acceptable (different model is preferred). So the
+    # only circular case is identical model AND identical prompt hash.
+    if (args.judge_model and args.generator_model
+            and args.judge_model == args.generator_model
+            and args.judge_prompt_sha
+            and args.judge_prompt_sha == args.generator_prompt_sha):
+        provenance_failures.append(
+            "FAIL: judge and generator are the same model with the same prompt; "
+            "agreement is circular by construction"
+        )
     for f in provenance_failures:
         print(f, file=sys.stderr)
     if provenance_failures:

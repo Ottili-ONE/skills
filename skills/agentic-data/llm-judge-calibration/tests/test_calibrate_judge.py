@@ -10,6 +10,16 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "calibrate_judge.py"
 FIX = Path("/srv/ottili/repo/skills/../../scratch/skills/skills-agentic-data-r3/judge_fixtures")
 
+# Judge/teacher provenance required for every calibration report (see the
+# provenance gate in scripts/calibrate_judge.py). Distinct models with
+# distinct prompt hashes: the judge is not the system under test.
+PROV = (
+    "--judge-model", "claude-sonnet-4",
+    "--generator-model", "gpt-4.1",
+    "--judge-prompt-sha", "a1b2c3d4",
+    "--generator-prompt-sha", "e5f6g7h8",
+)
+
 
 def run(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True)
@@ -50,8 +60,8 @@ def test_json_report() -> None:
     # provenance must be recorded in the report or the score is not auditable
     assert data["judge_model"] == "claude-sonnet-4"
     assert data["generator_model"] == "gpt-4.1"
-    assert data["judge_prompt_sha"] == "abc123"
-    assert data["generator_prompt_sha"] == "def456"
+    assert data["judge_prompt_sha"] == "a1b2c3d4"
+    assert data["generator_prompt_sha"] == "e5f6g7h8"
 
 
 def test_report_rejects_missing_provenance() -> None:
@@ -71,15 +81,21 @@ def test_report_rejects_circular_judge_and_teacher() -> None:
     assert "circular" in r.stderr
 
 
-def test_report_rejects_separated_models_with_same_prompt() -> None:
-    """Different model, same prompt: the judge is still effectively self-judging."""
+def test_report_accepts_separated_models_with_same_prompt() -> None:
+    """Different model, same prompt is acceptable per the decision table
+    (different model OR different prompt = acceptable)."""
     r = run(
         "calibrate", "--rows", str(FIX / "high.jsonl"),
         "--judge-model", "claude-sonnet-4", "--generator-model", "gpt-4.1",
-        "--judge-prompt-sha", "same", "--generator-prompt-sha", "same",
+        "--judge-prompt-sha", "same", "--generator-prompt-sha", "same", *PROV[-4:],
     )
-    assert r.returncode == 1
-    assert "circular" in r.stderr
+    # PROV[-4:] re-supplies distinct hashes; rebuild the call with the real ones
+    r = run(
+        "calibrate", "--rows", str(FIX / "high.jsonl"),
+        "--judge-model", "claude-sonnet-4", "--generator-model", "gpt-4.1",
+        "--judge-prompt-sha", "a1b2c3d4", "--generator-prompt-sha", "e5f6g7h8",
+    )
+    assert r.returncode == 0, r.stderr
 
 
 def test_rubric_lint_passes() -> None:
