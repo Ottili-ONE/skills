@@ -132,6 +132,7 @@ exact failure mode the ledger exists to prevent.
 - procedures: references/procedures.md
 - schema: references/schema.md
 - cost ledger: references/cost-ledger.md
+- procedures (hardened thresholds & decision tables): references/procedures-hardening.md
 - normalisation: references/normalisation.md
 - incidents: references/incidents.md
 - DESIGN: references/DESIGN.md
