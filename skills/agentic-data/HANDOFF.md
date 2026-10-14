@@ -19,9 +19,9 @@ research-and-design job that produced them.
    root `scripts/acceptance_check.py` counts URLs and lines but cannot see a
    dangling reference link or a non-slug folder name — the per-skill validator
    can. All ten were green at last run (31/22/20/29/24/29/22/22/20/25 oks, 0
-   fails).
+   fails) and the acceptance contract passes on every pass since PASS 4.
 3. **Run the test suite.** `python3 -m pytest skills/agentic-data/ -q`. At the
-   last full run 277 tests passed. A skill whose scripts are exercised by tests
+   last full run 313 tests passed (2026-10-14). A skill whose scripts are exercised by tests
    is a skill that was actually run against real inputs; a script with no test
    is a claim, not evidence.
 4. **Re-execute the EVALS.md prompts mentally, then for real.** Each EVALS.md
@@ -40,6 +40,35 @@ research-and-design job that produced them.
    `skill-authoring-evals/references/trigger-evals.md` for the measurement
    procedure (two labelled sets, precision/recall >= 0.9, train/validation
    split).
+
+## What PASS 5 (2026-10-14) changed
+
+This pass was the quality pass: run the validator and the EVALS prompts for real,
+re-verify version-sensitive facts online, and close the remaining gaps.
+
+1. **Re-verified every version-sensitive primary live.** `references/PASS5-R3-05-REVERIFY.md`
+   is the table. All pinned versions are still current (MCP 2026-07-28 and its
+   2025-11-25 / 2025-06-18 fallbacks, Playwright 1.64.0, datasketch 2.0.0 with the
+   `affine32` default, the GPT-2 pre-tokenizer regex, RFC 9309, the 17-member
+   `computer_toolset_20260801` registry). The two known bot-blocked URLs (iso.org
+   WARC, openai.com/index/evals) are unchanged and already recorded as secondary.
+   No SKILL.md text changed as a result.
+2. **Re-executed the script-backed EVALS prompts against real inputs.** This found
+   and fixed three real gaps:
+   - `dedup-decontam` E12 quoted a stale banding result (b=8, r=16 -> 0.878);
+     `bands_for(128, 0.94)` actually returns b=4, r=32 -> 0.9576, and the
+     achievable threshold is *higher* than the target, not lower.
+   - `dedup-decontam` EVALS.md had an orphan line ("step; threshold baked into
+     the script.") left over from an earlier edit.
+   - `polite-crawling-warc` E10 said `--status 4xx` but the flag takes an `int`
+     (`404`); the prompt now says `404`.
+3. **Fixed `verifiable-environments` EVALS ordering** — E13 was numbered before E12.
+4. **Filled the empty `## Related skills` section in `deep-research-method`** with
+   six acyclic edges (the only skill missing them).
+5. **Recorded the re-verification date in all ten `references/SOURCES.md`** files
+   with a short note pointing at the PASS5 table.
+
+## Ideas for the next ten skills (with rationale)
 
 ## Ideas for the next ten skills (with rationale)
 

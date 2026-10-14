@@ -28,10 +28,10 @@ SKILL.md links it by name (progressive disclosure).
   folder name; the `name:` field in `SKILL.md` must match the folder name.
 - **All ten:** `bash scripts/install.sh <target-dir>` (writes each skill folder,
   skips existing ones, prints a manifest).
-- **Validate before shipping:** `python3 <skill>/scripts/validate_skill.py [--json report.json]`
+- **Validate before shipping:** `python3 <skill>/scripts/validate_skill.py <skill>`
   (exit 0 = pass). Run it on every skill after editing.
-- **Run the acceptance contract:** `python3 scripts/acceptance_check.py` from the
-  repository root (exit 0 only if all ten meet the contract).
+- **Run the acceptance contract:** `python3 skills/agentic-data/scripts/acceptance_check.py`
+  from the repository root (exit 0 only if all ten meet the contract).
 - **Run the test suite:** `python3 -m pytest skills/agentic-data/ -q` from the
   repository root.
 
@@ -44,5 +44,9 @@ SKILL.md links it by name (progressive disclosure).
 ## Sources
 
 Every skill's `references/SOURCES.md` lists the primary sources (official
-documentation, standards, source repositories, postmortems) with URL and retrieval
-date. Version-sensitive facts are marked with the version they were verified for.
+documentation, standards, source repositories, postmortems) with URL and
+retrieval date. Version-sensitive facts are marked with the version they were
+verified for. The latest cross-skill re-verification is `references/PASS5-R3-05-REVERIFY.md`
+(2026-10-14): MCP 2026-07-28, Playwright 1.64.0, datasketch 2.0.0, the GPT-2
+pre-tokenizer regex, RFC 9309 and the 17-member `computer_toolset_20260801`
+registry were all re-fetched live and are still current.
