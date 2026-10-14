@@ -40,6 +40,8 @@ public tool closes.
       value — the checker detects this).
 - [ ] Every catalogue code has a schema file under `--schema-dir` named `<code>.json`.
 - [ ] Every schema `$id` maps back to a catalogue code (no orphan schemas).
+- [ ] Every example's `status` field equals its catalogue status (a lying `status` is the
+      #1 client-parse failure).
 - [ ] Every retriable code (429, 503) carries `retry_after` in its example.
 - [ ] Every OpenAPI response entry for a problem code declares `application/problem+json`.
 - [ ] No 5xx example contains `stack_trace`, `sql`, or internal hostnames.
@@ -51,10 +53,10 @@ public tool closes.
   `--schema-dir`. Exit 0 on match, 1 on drift, 2 on malformed input. Self-contained (embedded
   schema subset validator). Args: `--catalogue`, `--openapi`, `--schema-dir`.
 - Examples in `references/examples/`: `good/` (catalogue + openapi + 4 schema/example pairs),
-  `bad/duplicate_code`, `bad/missing_openapi_response`, `bad/missing_problem_json`,
-  `bad/retryable_without_retry_after`, `bad/missing_schema_file`, `bad/example_fails_schema`,
-  plus a malformed YAML fixture.
-- Self-test: `scripts/check_problem_catalogue_test.py` (4 good, 6 bad, 1 malformed).
+  `bad/duplicate_code` (also the malformed duplicate-key fixture, `duplicate_code.yaml`),
+  `bad/missing_openapi_response`, `bad/missing_problem_json`,
+  `bad/retryable_without_retry_after`, `bad/missing_schema_file`, `bad/example_fails_schema`.
+- Self-test: `scripts/check_problem_catalogue_test.py` (1 good, 6 bad, 1 malformed).
 
 ## Five eval prompts
 1. "My API returns `{"error": "user not found"}` on 404. Is it RFC 9457 compliant?" → No.

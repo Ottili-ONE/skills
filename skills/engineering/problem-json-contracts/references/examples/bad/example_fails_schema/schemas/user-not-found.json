@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.ottili.dev/schemas/problem/user-not-found/v1.json",
+  "title": "User not found",
+  "type": "object",
+  "required": ["type", "title", "status", "detail", "instance"],
+  "properties": {
+    "type": {"type": "string", "format": "uri"},
+    "title": {"type": "string", "maxLength": 120},
+    "status": {"type": "integer"},
+    "detail": {"type": "string", "maxLength": 500},
+    "instance": {"type": "string", "format": "uri"}
+  }
+}

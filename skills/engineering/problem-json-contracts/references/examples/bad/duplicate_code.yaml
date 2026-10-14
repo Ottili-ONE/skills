@@ -1,0 +1,13 @@
+# Malformed fixture: duplicate code keys. yaml.safe_load keeps the LAST value and
+# silently drops the earlier entry, so a duplicated problem code looks like a
+# normal code. The checker re-reads the raw file for duplicate keys.
+codes:
+  user-not-found:
+    status: 404
+    title: "User not found"
+  user-not-found:
+    status: 404
+    title: "Duplicate code"
+  validation-failed:
+    status: 400
+    title: "Validation failed"

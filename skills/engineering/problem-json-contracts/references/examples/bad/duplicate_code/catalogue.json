@@ -1,0 +1,12 @@
+# Bad fixture: the same code appears twice. yaml.safe_load keeps the LAST value and
+# silently drops the earlier entry, so a duplicated problem code looks like a normal
+# code. The checker re-reads the raw file for duplicate keys and reports it.
+codes:
+  user-not-found:
+    status: 404
+    title: "User not found"
+    retryable: false
+  user-not-found:
+    status: 404
+    title: "Duplicate code"
+    retryable: false

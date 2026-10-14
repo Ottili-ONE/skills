@@ -17,8 +17,8 @@ def run(schema_dir, catalogue):
 
 
 def main():
-    good = run(os.path.join(ROOT, "references", "examples", "schemas"),
-               os.path.join(ROOT, "references", "examples", "catalogue.json"))
+    good = run(os.path.join(ROOT, "references", "examples", "good", "schemas"),
+               os.path.join(ROOT, "references", "examples", "good", "catalogue.json"))
     if good.returncode != 0:
         print("FAIL: good examples should validate")
         print(good.stdout, good.stderr)
@@ -27,8 +27,8 @@ def main():
         print("FAIL: good examples missing OK line:", good.stdout)
         return 1
 
-    bad = run(os.path.join(ROOT, "references", "examples", "bad", "bad-example", "schemas"),
-              os.path.join(ROOT, "references", "examples", "bad", "bad-example", "catalogue.json"))
+    bad = run(os.path.join(ROOT, "references", "examples", "bad", "example_fails_schema", "schemas"),
+              os.path.join(ROOT, "references", "examples", "bad", "example_fails_schema", "catalogue.json"))
     if bad.returncode != 1:
         print("FAIL: bad examples should report findings, got", bad.returncode)
         print(bad.stdout, bad.stderr)

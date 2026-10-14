@@ -3,3 +3,4 @@ codes:
     status: 404
     title: "User not found"
     retryable: false
+    retry_after: null

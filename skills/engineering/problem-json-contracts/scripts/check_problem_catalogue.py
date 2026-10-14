@@ -86,8 +86,16 @@ def _duplicate_keys(raw: str) -> list[str]:
     keys, so a nested ``status`` under ``user-not-found`` does not collide with the
     top-level ``status``.
     """
+    # yaml.safe_load keeps the *last* value for a duplicated key and silently drops
+    # the earlier entry, so a duplicated problem code looks like a normal code.
+    # We re-read the raw file and report every key that appears more than once at
+    # the same scope. When a duplicate is found the earlier occurrence's children
+    # are discarded by the parser, so their scopes are cleared here too - otherwise
+    # a nested key under the first occurrence would be reported as colliding with
+    # the same nested key under the second occurrence, which is a false positive.
     seen: dict[tuple[str, ...], int] = {}
     path: list[str] = []  # enclosing keys at each indent level
+    indents: list[int] = []  # indent of each enclosing key
     dups: list[str] = []
     last_indent = -1
     for lineno, line in enumerate(raw.splitlines(), 1):
@@ -95,17 +103,23 @@ def _duplicate_keys(raw: str) -> list[str]:
             continue
         stripped = line.lstrip()
         indent = len(line) - len(stripped)
-        m = re.match(r"^([A-Za-z0-9_.\\-]+)\\s*:", stripped)
+        m = re.match(r"^([A-Za-z0-9_.\-]+)\s*:", stripped)
         if not m:
             continue
         key = m.group(1)
         while path and indent <= last_indent:
             path.pop()
-            last_indent -= 2
+            indents.pop()
+            last_indent = indents[-1] if indents else -1
         last_indent = indent
+        indents.append(indent)
         scope = tuple(path + [key])
         if scope in seen:
             dups.append(f"{key} (line {seen[scope]} and {lineno})")
+            # the later occurrence supersedes the earlier one: drop scopes that are
+            # the earlier occurrence itself or nested under it.
+            for dead in [sc for sc in seen if sc == scope or sc[:len(scope)] == scope]:
+                del seen[dead]
         else:
             seen[scope] = lineno
         path.append(key)
@@ -149,7 +163,8 @@ def validate_examples(codes: dict, schema_dir: Path | None, problems: list[str])
     """Every catalogue code must have a schema file, and every example must validate."""
     if schema_dir is None:
         return
-    for code in codes:
+    for code, entry in codes.items():
+        status = entry.get("status") if isinstance(entry, dict) else None
         schema_path = schema_dir / f"{code}.json"
         if not schema_path.is_file():
             problems.append(f"schema: no schema file for code {code!r} ({schema_path})")
@@ -168,6 +183,14 @@ def validate_examples(codes: dict, schema_dir: Path | None, problems: list[str])
                 continue
             for err in _validate(instance, schema, f"{code}"):
                 problems.append(f"schema: {code}.example.json fails {code}.json: {err}")
+            # RFC 9457: the `status` field MUST equal the HTTP status code. A problem
+            # document whose `status` lies (200 in a 404 response) is the #1 client-parse
+            # failure, so the example must carry the catalogue status, not a different one.
+            inst_status = instance.get("status") if isinstance(instance, dict) else None
+            if inst_status != status:
+                problems.append(
+                    f"schema: {code}.example.json status {inst_status!r} does not match "
+                    f"catalogue status {status}")
         else:
             problems.append(f"schema: no example file for code {code!r} ({examples})")
 
