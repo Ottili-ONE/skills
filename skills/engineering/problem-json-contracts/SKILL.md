@@ -21,6 +21,9 @@ Any of these fires it:
 ## When NOT to use this skill
 - Internal CLI-only tools with no HTTP transport.
 - Health-check endpoints that return plain text 200.
+- A success response (2xx) — the skill governs the >=400 shape, not the happy path.
+- An error that is logged but never returned to the client — that is a logging concern, not a problem-detail contract.
+- A one-off script that emits one error shape and is never called again — still validate it, but the catalogue is overkill; use the schema only.
 
 ## Decision table — error shape
 | Pattern | When to pick | Pitfall |
@@ -97,5 +100,4 @@ Bad (retry_after as HTTP-date — most clients ignore it):
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
-- [pg-rls-multitenant](../pg-rls-multitenant/SKILL.md)
-- [outbox-idempotency](../outbox-idempotency/SKILL.md)
+- [shared-tree-git](../shared-tree-git/SKILL.md) — the catalogue and schema are committed with a task-id prefix.

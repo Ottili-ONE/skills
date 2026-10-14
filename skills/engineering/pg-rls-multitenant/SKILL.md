@@ -22,6 +22,9 @@ Any of these fires it:
 - Single-tenant databases (no tenant discriminator needed).
 - Read-only analytics replicas where RLS is enforced upstream.
 - Tables that intentionally share rows across tenants (e.g., global config) — mark them `bypassrls` explicitly instead of omitting policies.
+- A database that is only ever used by one tenant — the skill still applies (the discriminator is still required), but the policy is trivially `true`.
+- A view that is only ever queried by an owner account — that is the exact bypass the skill forbids; `security_invoker = true` is the fix, not an exception.
+- "We encrypt the column instead of using RLS" — encryption is not access control; the skill fires when encryption is proposed as a substitute for tenant isolation.
 
 ## Decision table — expand/contract migration
 | Step | Action | Threshold / pitfall |
@@ -107,5 +110,5 @@ ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
-- [outbox-idempotency](../outbox-idempotency/SKILL.md)
-- [problem-json-contracts](../problem-json-contracts/SKILL.md)
+- [problem-json-contracts](../problem-json-contracts/SKILL.md) — a leak is reported as a problem detail, not a silent row.
+- [long-test-discipline](../long-test-discipline/SKILL.md) — the leak test is a long test that runs in the foreground.

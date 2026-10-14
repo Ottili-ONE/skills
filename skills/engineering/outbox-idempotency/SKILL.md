@@ -21,6 +21,9 @@ Any of these fires it:
 ## When NOT to use this skill
 - Fire-and-forget logging with no consumer expectation of delivery.
 - Streams where ordering does not matter and duplicates are harmless (e.g., metrics).
+- A synchronous RPC that returns before any work is queued — there is no outbox to protect; the skill fires only when work outlives the request.
+- A fire-and-forget log line with no consumer expectation of delivery — no idempotency key is needed, but if a human might read the log to decide whether something happened, treat it as an event.
+- "We already have retries" — retries are the reason the UNIQUE constraint exists; the skill fires when retries are mentioned alongside outbound writes.
 
 ## Decision table — idempotency strategy
 | Pattern | When to pick | Pitfall |
@@ -90,5 +93,5 @@ SELECT ... FROM outbox WHERE sent_at IS NULL LIMIT 50 FOR UPDATE SKIP LOCKED;
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.
 
 ## Related skills
-- [pg-rls-multitenant](../pg-rls-multitenant/SKILL.md)
-- [problem-json-contracts](../problem-json-contracts/SKILL.md)
+- [problem-json-contracts](../problem-json-contracts/SKILL.md) — outbound failures are emitted as problem details.
+- [pg-rls-multitenant](../pg-rls-multitenant/SKILL.md) — the outbox row is tenant-scoped and must survive RLS.

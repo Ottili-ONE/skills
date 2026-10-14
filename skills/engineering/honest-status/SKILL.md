@@ -20,6 +20,8 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - Writing a changelog or release notes (use the project's release process).
 - Informal chat updates (use the chat thread).
 - Status reports that are reviewed in the same session with no persistence need.
+- A task that has no evidence at all — the skill does not invent a pointer, it records FALSE_DONE and names the blocker.
+- A single checkbox in a README — that is a doc, not a status ledger; use the ledger only for work that another agent will pick up.
 
 ## Decision table — status bucket
 | Bucket | Meaning | Required evidence |

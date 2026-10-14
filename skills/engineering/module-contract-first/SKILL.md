@@ -21,6 +21,9 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - Private/internal helpers that no consumer imports (they are not part of the public surface).
 - Single-file scripts with no consumers and no planned exports.
 - Fully greenfield work where no other module depends on the output yet.
+- A change to a private helper that no symbol table can see — the skill governs the public surface, not your local functions.
+- A single-file script with no consumers and no planned exports — no snapshot is needed, but the skill still says: if it might be imported, snapshot it.
+- A semver bump that is a pre-release (1.2.3-alpha.1) — the decision table still applies; pre-releases are not a free pass to break the API.
 
 ## Decision table — change classification
 | Change | Semver | Action |

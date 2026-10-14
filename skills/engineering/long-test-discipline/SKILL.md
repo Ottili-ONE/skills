@@ -21,6 +21,9 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - Unit tests that finish in under a minute.
 - Tests that require a live human operator.
 - Tests that depend on network access that is not available on the host.
+- A test that passes in 2 seconds — the skill is for long/flaky tests; a fast unit test runs normally.
+- A test that only ever runs in an interactive shell with a human watching — if it can run in CI, it can run in the foreground with a wrapper.
+- "Just lower the timeout until it fits" — the skill says fix the hang or split the test; a shrinking timeout is a cover-up, not a fix.
 
 ## Decision table — execution strategy
 | Situation | Strategy | Pitfall |

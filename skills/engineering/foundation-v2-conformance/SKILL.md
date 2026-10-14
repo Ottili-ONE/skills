@@ -21,6 +21,13 @@ Helpers: scripts/
 - You have added a workaround and need to track it until a proper fix lands.
 - A reviewer asks "is this component actually conformant, or is it bypassing the tokens?"
 
+## When NOT to use this skill (neighbour prompts — do not fire)
+- Styling that lives only in a theme file and is never referenced by a component — the skill governs component imports and literals, not the token library itself.
+- A brand-new component that is not yet consumed by anything — there is no consumer to test yet; the skill fires once the first consumer lands.
+- A one-off prototype in a scratch directory that is deleted this week — track it with a marker anyway, but the fresh-consumer test is out of scope.
+- A component that legitimately needs a raw value (e.g. a dynamically computed gradient) — file the `FV2-WA:` ticket and name the owner; the skill does not ban exceptions, it tracks them.
+- An axe-only accessibility review — that is the playwright-a11y-e2e skill; this skill is about the package surface, not the criteria.
+
 ## Worked examples
 Good (named import from the public package, token-derived values, tracked workaround):
 ```tsx

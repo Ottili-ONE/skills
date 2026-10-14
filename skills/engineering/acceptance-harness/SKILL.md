@@ -31,6 +31,9 @@ Helpers: scripts/ (shipped: `check_audit_selectors.py`, `report_result.py`,
 - Exploratory testing without a defined scenario (use a QA session).
 - Pure performance or load testing (use a benchmark harness).
 - Scenarios whose PASS criteria are opinions, not observable facts.
+- A unit test that asserts one function — that is a unit test, not an acceptance scenario; the harness governs end-to-end behaviour with evidence.
+- A "it works on my machine" claim — the harness asks for a runnable pointer, not a story.
+- Retesting something that has not changed — re-run only if the evidence pointer is missing or older than the code it points at.
 
 ## Decision table — scenario outcome
 | Requirement type | Outcome | Evidence to attach |
@@ -98,5 +101,5 @@ requirement: "Create order AND send email"
 - [ ] At least one fault-injection scenario proves recovery.
 
 ## Related skills
-- [long-test-discipline](../long-test-discipline/SKILL.md)
-- [problem-json-contracts](../problem-json-contracts/SKILL.md)
+- [honest-status](../honest-status/SKILL.md) — PASS/FAIL/BLOCKED outcomes are status buckets.
+- [problem-json-contracts](../problem-json-contracts/SKILL.md) — a failure in a scenario is a problem-detail payload.

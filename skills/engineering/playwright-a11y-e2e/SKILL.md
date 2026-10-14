@@ -20,6 +20,9 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - Unit or API tests (use pytest or contract tests).
 - Static HTML/CSS inspection (use axe-core directly).
 - Sites that cannot be automated (CAPTCHA, auth wall with no test credentials).
+- A single static page with no interactive elements — axe will pass trivially, but the keyboard and responsive loops are still worth running once; the skill fires on the first interactive route.
+- "Just eyeball it in the browser" — the skill fires when someone asks for evidence that a human could also produce by looking; the difference is the committed artifact.
+- An axe run that is only run on failure — run on every route; a green pass on a route you did not scan is not evidence.
 
 ## Decision table — test strategy
 | Goal | Primary tool | Evidence |
