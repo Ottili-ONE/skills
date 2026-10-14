@@ -83,6 +83,13 @@ The Python SDK source paths moved from `lib/_computer_use/` to
   not be read as prose; this is recorded as a retrieval limitation, not a contradiction.
   The SDK sources are authoritative for the contract.
 
+
+## Re-verification 2026-10-14 (PASS 3 re-run)
+Two URLs per skill were re-fetched live on 2026-10-14 with curl (random sample, seed 20261014). All 20 returned HTTP 200 except:
+- `https://www.iso.org/standard/82833.html` -> HTTP 403 (bot-blocked; the WARC spec text remains the primary evidence, already recorded).
+- `https://api.github.com/repos/modelcontextprotocol/specification` -> HTTP 301 (redirect to the canonical repo; used only to locate the `seps/` directory).
+No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
+
 ## Version-sensitive facts and re-verification
 
 | Fact | Verified for | Re-verify |
@@ -108,10 +115,10 @@ The Python SDK source paths moved from `lib/_computer_use/` to
 
 | # | URL | What was used | Version / date verified | Conflict |
 |---|-----|---------------|------------------------|----------|
-| 8 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer_registry.py | The `computer_toolset_20260801` registry: the 17-member set (`COMPUTER_MEMBERS`), the `CONFIRM_REQUIRED` set (`type`, `key`, `hold_key`) and the subclass contract (override only served members) | re-fetched 2026-10-13 (HTTP 200) | **path moved** from `lib/_computer_use/` to `lib/tools/_toolsets/_computer_registry.py`; the old path now 404s |
-| 9 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py | The accessibility-tree contract and the toolset class: `BetaAbstractComputerToolset20260801`, `cursor_position` returns the cursor in **screenshot** pixels, `confirm` is called before every member the SDK is about to run, `ToolError` is rewritten as `raised_content(bounded_error(exc))` | re-fetched 2026-10-13 (HTTP 200) | **path moved** from `lib/_computer_use/computer_toolset.py`; the old path now 404s |
-| 10 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py | The three safety layers live in this file, not a separate `safety.py`: `confirm()` gating for `type`/`key`/`hold_key` (a missing `confirm` raises `ToolsetConfigError` at construction), desktop isolation is a runtime rule, and `ToolError` vs `ToolsetUsageError` classification (`ToolError` -> rewrite and continue; anything else -> stop) | re-fetched 2026-10-13 (HTTP 200) | **path moved** from `lib/_computer_use/safety.py`; the old path now 404s |
-| 11 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py | The model/display pixel contract: model coordinates are full-screenshot pixels, `cursor_position` returns `{x, y}` in screenshot pixels, and the scaling rule is a driver obligation (the SDK does not check `input`) | re-fetched 2026-10-13 (HTTP 200) | **path moved** from `lib/_computer_use/coordinates.py`; the old path now 404s |
+| 8 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer_registry.py | The `computer_toolset_20260801` registry: the 17-member set (`COMPUTER_MEMBERS`), the `CONFIRM_REQUIRED` set (`type`, `key`, `hold_key`) and the subclass contract (override only served members) | re-fetched 2026-10-13 (HTTP 200); re-verified 2026-10-14 (HTTP 200) | **path moved** from `lib/_computer_use/` to `lib/tools/_toolsets/_computer_registry.py`; the old path now 404s |
+| 9 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py | The accessibility-tree contract and the toolset class: `BetaAbstractComputerToolset20260801`, `cursor_position` returns the cursor in **screenshot** pixels, `confirm` is called before every member the SDK is about to run, `ToolError` is rewritten as `raised_content(bounded_error(exc))` | re-fetched 2026-10-13 (HTTP 200); re-verified 2026-10-14 (HTTP 200) | **path moved** from `lib/_computer_use/computer_toolset.py`; the old path now 404s |
+| 10 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py | The three safety layers live in this file, not a separate `safety.py`: `confirm()` gating for `type`/`key`/`hold_key` (a missing `confirm` raises `ToolsetConfigError` at construction), desktop isolation is a runtime rule, and `ToolError` vs `ToolsetUsageError` classification (`ToolError` -> rewrite and continue; anything else -> stop) | re-fetched 2026-10-13 (HTTP 200); re-verified 2026-10-14 (HTTP 200) | **path moved** from `lib/_computer_use/safety.py`; the old path now 404s |
+| 11 | https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/main/src/anthropic/lib/tools/_toolsets/_computer.py | The model/display pixel contract: model coordinates are full-screenshot pixels, `cursor_position` returns `{x, y}` in screenshot pixels, and the scaling rule is a driver obligation (the SDK does not check `input`) | re-fetched 2026-10-13 (HTTP 200); re-verified 2026-10-14 (HTTP 200) | **path moved** from `lib/_computer_use/coordinates.py`; the old path now 404s |
 
 ## Version-sensitive facts added
 - The published registry is `computer_toolset_20260801` with **17** members. `key` is a

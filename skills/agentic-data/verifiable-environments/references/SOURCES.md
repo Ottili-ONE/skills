@@ -18,6 +18,13 @@ on 2026-10-13 and its `<title>` confirmed against the recorded title.
 | 9 | https://arxiv.org/abs/2406.09338 | Learning the Influence Graph of a High-Dimensional Markov Process with Memory (2024) — verification of process models | arXiv 2406.09338, re-verified 2026-10-13 | none |
 | 10 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — kept as a control: confirms the arXiv API path works and returns real metadata | arXiv 2110.14111, re-verified 2026-10-13 | no domain content; control only |
 
+
+## Re-verification 2026-10-14 (PASS 3 re-run)
+Two URLs per skill were re-fetched live on 2026-10-14 with curl (random sample, seed 20261014). All 20 returned HTTP 200 except:
+- `https://www.iso.org/standard/82833.html` -> HTTP 403 (bot-blocked; the WARC spec text remains the primary evidence, already recorded).
+- `https://api.github.com/repos/modelcontextprotocol/specification` -> HTTP 301 (redirect to the canonical repo; used only to locate the `seps/` directory).
+No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
+
 ## Version-sensitive facts
 - Sandbox APIs (container exec, network policy) change between versions. The contract in
   `references/sandbox-contract.md` was verified against the harness on 2026-10-12; re-verify on upgrade.

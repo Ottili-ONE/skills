@@ -17,6 +17,13 @@ titles confirmed — none of the titles in earlier rounds were hallucinated.
 | 9 | https://arxiv.org/abs/2310.13711 | Automatic Sensor-free Affect Detection: A Systematic Literature Review (2023) — systematic review method | arXiv 2310.13711, re-verified 2026-10-12 | none |
 | 10 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — control confirming the arXiv API path returns real metadata | arXiv 2110.14111, re-verified 2026-10-12 | no domain content; control only |
 
+
+## Re-verification 2026-10-14 (PASS 3 re-run)
+Two URLs per skill were re-fetched live on 2026-10-14 with curl (random sample, seed 20261014). All 20 returned HTTP 200 except:
+- `https://www.iso.org/standard/82833.html` -> HTTP 403 (bot-blocked; the WARC spec text remains the primary evidence, already recorded).
+- `https://api.github.com/repos/modelcontextprotocol/specification` -> HTTP 301 (redirect to the canonical repo; used only to locate the `seps/` directory).
+No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
+
 ## Version-sensitive facts
 - The schema (`trajectory-ledger-v1`) is pinned; bump the version and re-run the
   audit when a field is added or removed. Verified 2026-10-12.

@@ -13,8 +13,15 @@ titles confirmed.
 | 5 | https://arxiv.org/abs/2410.12829 | Leveraging Large Language Models to Enhance Personalized Recommendations in E-commerce (2024) — benchmark-eval pattern | arXiv 2410.12829, re-verified 2026-10-12 | none |
 | 6 | https://arxiv.org/abs/2210.13265 | Toward improved inference for Krippendorff's Alpha — the agreement coefficient used by this skill | arXiv 2210.13265, re-verified 2026-10-12 | none |
 | 7 | https://arxiv.org/abs/2008.00977 | Reliability in Software Engineering Qualitative Research through Inter-Coder Agreement: A guide using Krippendorff's Alpha & Atlas.ti (2020) — the standard reference for inter-coder agreement thresholds | arXiv 2008.00977, re-verified 2026-10-12 | none |
-| 8 | https://github.com/openai/evals | OpenAI Evals framework: open-source eval harness, spec/check separation, reward-hacking discussion | re-fetched 2026-10-13 (HTTP 200) | openai.com/index/evals/ is bot-blocked (HTTP 403) |
+| 8 | https://github.com/openai/evals | OpenAI Evals framework: open-source eval harness, spec/check separation, reward-hacking discussion | re-fetched 2026-10-13 (HTTP 200); re-verified 2026-10-14 (HTTP 200) | openai.com/index/evals/ is bot-blocked (HTTP 403) |
 | 9 | https://arxiv.org/abs/2110.14111 | Kronecker products of Perron similarities — control confirming the arXiv API path returns real metadata | arXiv 2110.14111, re-verified 2026-10-12 | no domain content; control only |
+
+
+## Re-verification 2026-10-14 (PASS 3 re-run)
+Two URLs per skill were re-fetched live on 2026-10-14 with curl (random sample, seed 20261014). All 20 returned HTTP 200 except:
+- `https://www.iso.org/standard/82833.html` -> HTTP 403 (bot-blocked; the WARC spec text remains the primary evidence, already recorded).
+- `https://api.github.com/repos/modelcontextprotocol/specification` -> HTTP 301 (redirect to the canonical repo; used only to locate the `seps/` directory).
+No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
 
 ## Version-sensitive facts
 - Krippendorff's Alpha thresholds are convention, not law: the widely cited
