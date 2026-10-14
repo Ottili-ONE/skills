@@ -84,3 +84,70 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+# --- Cross-link graph (added 2026-10-14, skills-engineering-r3-05) ---
+# Every SKILL.md's `## Related skills` section links to sibling skills by name. The graph
+# must be acyclic with `shared-tree-git` as the unique sink, so no skill transitively depends
+# on a skill that depends on it (a circular handoff).
+import re as _re
+
+_CROSSLINK_RE = _re.compile(r"\]\(\.\./([a-z0-9-]+)/SKILL\.md\)")
+_SINK = "shared-tree-git"
+
+
+def _related_graph(root: Path) -> dict[str, list[str]]:
+    edges: dict[str, list[str]] = {}
+    for skill in sorted(p for p in root.iterdir() if (p / "SKILL.md").is_file()):
+        text = (skill / "SKILL.md").read_text(encoding="utf-8")
+        section = text.split("## Related skills", 1)[1] if "## Related skills" in text else ""
+        edges[skill.name] = sorted(set(_CROSSLINK_RE.findall(section)))
+    return edges
+
+
+def test_related_graph_is_acyclic_with_unique_sink() -> None:
+    root = ENGINEERING_DIR
+    edges = _related_graph(root)
+    assert edges, "no skills found under engineering dir"
+
+    # Every target must be a real skill.
+    for src, targets in edges.items():
+        for tgt in targets:
+            assert tgt in edges, f"{src} links unknown skill {tgt!r}"
+
+    # Cycle detection (DFS with three-colour marking).
+    WHITE, GRAY, BLACK = 0, 1, 2
+    colour = {n: WHITE for n in edges}
+
+    def visit(node: str, stack: list[str]) -> None:
+        colour[node] = GRAY
+        for nxt in edges[node]:
+            assert nxt in colour, f"{node} -> unknown {nxt!r}"
+            if colour[nxt] == GRAY:
+                raise AssertionError(
+                    f"circular cross-link: {' -> '.join(stack + [nxt])}"
+                )
+            if colour[nxt] == WHITE:
+                visit(nxt, stack + [nxt])
+        colour[node] = BLACK
+
+    for node in edges:
+        if colour[node] == WHITE:
+            visit(node, [node])
+
+    # Unique sink: exactly one skill with no outgoing edges, and it must be shared-tree-git.
+    sinks = [n for n, t in edges.items() if not t]
+    assert sinks == [_SINK], f"expected unique sink {_SINK!r}, got {sinks}"
+
+    # Every non-sink reaches the sink transitively (single connected handoff chain).
+    def reaches(node: str, target: str, seen: set[str]) -> bool:
+        if node == target:
+            return True
+        if node in seen:
+            return False
+        seen.add(node)
+        return any(reaches(m, target, seen) for m in edges[node])
+
+    for node in edges:
+        if node != _SINK:
+            assert reaches(node, _SINK, set()), f"{node} does not reach {_SINK}"

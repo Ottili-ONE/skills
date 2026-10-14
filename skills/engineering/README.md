@@ -42,5 +42,10 @@ The `## Related skills` section of every SKILL.md links to sibling skills by nam
 reaches it transitively. Verify with:
 
 ```
-python3 scripts/check_shared_tree.py scan -- skills/engineering
+python3 skills/engineering/tests/test_research_design_acceptance.py   # acyclicity + sink
+python3 skills/engineering/tests/test_evals_completeness.py            # prompt + near-miss counts
 ```
+
+`check_shared_tree.py scan --file <script>` scans a *shell script* for forbidden shared-tree
+commands (`add -A`, `checkout`, `reset --hard`, ...); it is not a graph checker, so do not point
+it at SKILL.md prose.
