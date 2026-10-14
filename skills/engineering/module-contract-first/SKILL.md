@@ -35,6 +35,41 @@ allowed-tools: []
 4. **Enforce boundaries** — run `python3 scripts/check_contract_drift.py --cycles <root>`; any back-edge is an automatic fail.
 5. **Document the boundary** — write a boundary doc listing allowed importers and forbidden import directions.
 
+## Worked examples
+Good (additive change — minor bump, regenerate snapshot in the same PR):
+```bash
+$ python3 scripts/check_contract_drift.py --enumerate src/users
+ok: enumerated 15 symbols -> src/users/module-contracts/users.json
+$ python3 scripts/check_contract_drift.py --classify src/users/module-contracts/users.json src/users/module-contracts/users.json
+{
+  "bump": "patch",
+  "added": [],
+  "removed": [],
+  "old_count": 15,
+  "new_count": 15
+}
+```
+Bad (breaking rename without a major bump — consumer breaks at import time):
+```python
+# before: public export get_user(id)
+# after:  public export fetch_user(id)
+$ python3 scripts/check_contract_drift.py --classify old.json new.json
+{
+  "bump": "major",
+  "added": ["fetch_user"],
+  "removed": ["get_user"],
+  ...
+}
+# Do NOT ship this as a patch. Bump major, notify consumers, regenerate snapshot.
+```
+Bad (hand-edited snapshot to make CI green — hides a real breaking change for weeks):
+```json
+// users.json hand-edited to add "fetch_user" without removing "get_user"
+{"symbols": ["fetch_user", "get_user", ...]}
+# --check now passes, but the live code no longer exports get_user.
+# Rule: never hand-edit; always regenerate with --enumerate.
+```
+
 ## Pitfalls from research (real incidents)
 - Hand-edited snapshots hide new exports; the next `--check` shows full-add drift and CI goes red until regenerated honestly alongside the code change in the same PR.
 - A snapshot that is not regenerated on every PR touching public API surface is the #1 cause of silent breakage across Ottili modules.
@@ -54,6 +89,8 @@ allowed-tools: []
 - [ ] Boundary doc lists allowed importers and forbidden directions
 - [ ] Drift test is wired into CI config
 - [ ] Enumeration completes in <2s for modules under 500 symbols
+
+- [problem-json-contracts](../problem-json-contracts/SKILL.md)
 
 ## Related skills
 - [problem-json-contracts](../problem-json-contracts/SKILL.md)
