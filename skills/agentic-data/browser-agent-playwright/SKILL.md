@@ -1,7 +1,7 @@
 ---
 name: browser-agent-playwright
-description: "Drive a browser with Playwright for agents: grounding in DOM/ARIA, robust locators, network waits, prompt-injection defense for page content, and safe hand-off between browser and code. Use when an agent must scrape, test, or automate a site; never use raw page.evaluate for extraction; not for server-side scraping or non-browser automation. Verified 2026-10-13."
-compatibility: Playwright 1.49+ (verified 1.63 on 2026-10-12); Node/Python/Go drivers
+description: "Drive a browser with Playwright for agents: grounding in DOM/ARIA, robust locators, network waits, prompt-injection defense for page content, and safe hand-off between browser and code. Use when an agent must scrape, test, or automate a site; never use raw page.evaluate for extraction; not for server-side scraping or non-browser automation. Verified 2026-10-14."
+compatibility: Playwright 1.49+ (verified 1.64.0 on 2026-10-13, PyPI latest); Node/Python/Go drivers
 license: MIT
 ---
 # Browser Agent with Playwright
