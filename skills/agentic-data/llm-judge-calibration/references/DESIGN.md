@@ -13,6 +13,27 @@ those three, usually silently. This skill makes the three conditions a gate.
 detection and judge/teacher separation. Use when an agent must build or audit an
 LLM-as-judge scoring pipeline; not for building a single rubric from scratch."
 
+## Procedure outline
+1. **Separate judge from teacher** — the judge that scores submissions must not
+   be the same model (or same prompt) that generated them. Record judge model,
+   generator model and both prompt hashes in every report.
+2. **Write a rubric before any scoring** — each score point gets a definition and
+   at least one example of each level. Score points without examples are
+   ambiguous and produce 20+ point spread on re-annotation.
+3. **Build a calibration set** — 30-50 items spanning the score range, each with
+   a human gold label. Never calibrate on the training set.
+4. **Measure agreement** — Fleiss' kappa or Krippendorff's alpha >= 0.6 before
+   trusting the judge. Below 0.4 the rubric is not usable.
+5. **Check for position/order bias** — shuffle item order between judge runs; if
+   a score moves by >0.5 on a 5-point scale when its neighbours change, aggregate
+   scores across shuffles.
+6. **Detect drift** — re-run the calibration set weekly; if the mean score moves
+   by >0.3 or agreement drops by >0.1, re-calibrate or retire the judge.
+7. **Calibrate the pass rate** — the threshold that yields the target pass rate on
+   the calibration set is the operating threshold. Never fit it to make a
+   specific agent pass.
+
+
 ## The three hard decisions
 
 ### 1. Judge/teacher separation is not a nicety
@@ -119,3 +140,4 @@ must be calibrated:
    the judge's scores drift by more than 0.1 the set is stale and must be rebuilt.
 5. "Can I use the same model as judge and teacher?" -> No: judge/teacher separation is
    mandatory; a model judging its own outputs inflates pass rates by an unknown amount.
+

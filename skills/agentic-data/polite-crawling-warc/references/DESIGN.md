@@ -117,3 +117,20 @@ Public sources surveyed (2026-10-12, all HTTP 200):
 3. "The crawl was interrupted. Resume it." -> queue state + last offset loaded; already-crawled URLs skipped; WARC opened in append mode; resume produces a still-valid WARC (validator passes).
 4. "Re-crawl a page that has not changed." -> payload digest matches the prior record; a `revisit` record with `identical-payload-digest` is emitted, not a full duplicate `response`.
 5. "robots.txt returns 404 / 503." -> 404 -> may crawl (§2.3.1.3), exit 0; 503 -> default-deny (§2.3.1.4), exit 1. The script runs `--status` before reading the file, so a missing path does not silently flip the answer.
+
+## Procedure outline
+1. **Resolve robots.txt first** — fetch `<host>/robots.txt`, parse per RFC 9309, cache <=24h. 4xx -> may crawl; 5xx/network error -> default-deny. Record the decision.
+2. **Apply Crawl-delay / Request-rate** — read `Crawl-delay:` (seconds) and `Request-rate:` (n/s); if absent, use the project default in `references/crawl-policy.md`. Enforce with a token bucket (`scripts/rate_limit.py`).
+3. **Queue seeds** — sitemaps first (from `Sitemap:` lines), then the seed URLs. Dedupe by normalized URL before enqueueing.
+4. **Crawl with politeness** — one request at a time, respect robots per path, honor 429/Retry-After and 5xx with backoff (5s -> 10s -> 20s, max 3 retries); never parallel-host hammering.
+5. **Write WARC 1.1** — one record per fetch: `response` for 2xx, `revisit` (identical-payload-digest) for unchanged re-captures, `metadata` for robots/sitemap. Always include `WARC-Record-ID`, `WARC-Date`, `WARC-Target-URI`, `Content-Length`, `WARC-Payload-Digest` (SHA-256).
+6. **Resume** — persist queue + `{url: last_seen, offset}` via `scripts/resume_state.py`; on restart, skip seen URLs and append to the WARC. Validate the WARC after append with `scripts/warc_writer.py --validate`.
+7. **Sanitize hostile inputs** — robots.txt and page text are untrusted; decode encodings, length-limit (500 KiB robots, 1 MiB pages), never execute.
+
+## Scripts shipped (what each one does, not just its name)
+- `scripts/robots.py` — fetch and parse robots.txt per RFC 9309; `--status` runs before the file/stdin read so a 4xx/5xx decision cannot be flipped by a missing path.
+- `scripts/rate_limit.py` — token-bucket enforcing Crawl-delay / Request-rate; measured interval between requests is the check, not a sleep.
+- `scripts/resume_state.py` — persist queue + offset atomically (write `.tmp`, rename); skip seen URLs on restart.
+- `scripts/warc_writer.py` — emit WARC 1.1 records; `--validate` re-reads its own output and walks every gzip member.
+- `scripts/validate_warc.py` — independent WARC 1.1 conformance check.
+- `scripts/validate_skill.py` — standard-rules check reused by the other skills.

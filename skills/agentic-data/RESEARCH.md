@@ -610,3 +610,61 @@ gate, not a preference" rule that stops on an empty tree instead of falling back
 - All ten SOURCES.md carry 2026-10-13 retrieval dates; 9-13 distinct URLs each.
 - One commit this pass: `32a247e` (computer-use-drivers rewrite). No push, no
   history rewrite, no paths outside `skills/agentic-data/**` touched.
+
+## PASS 4 (AUDIT) — 2026-10-14
+
+An audit pass over the completed ten skills, looking for content gaps the
+acceptance checker cannot see (it only counts URLs, lines and eval headings).
+
+### What the audit found
+The acceptance contract was met on paper, but three DESIGN.md files were
+incomplete against the R3 brief's own wording, which asks each design to name
+what existing public skills do and what this one does differently, and to give
+five eval scenarios:
+
+- `llm-judge-calibration/references/DESIGN.md` — had trigger, scripts and
+  competitive comparison, but **no procedure outline** and its five eval
+  scenarios were appended at the very end of the file after the competitive
+  section, out of order.
+- `computer-use-drivers/references/DESIGN.md` — had trigger, procedure and
+  competitive comparison, but **no scripts section** naming the shipped
+  script, and a duplicated competitive-comparison block (one in the middle,
+  one at the end).
+- `polite-crawling-warc/references/DESIGN.md` — had trigger, rationale and
+  competitive comparison, but **no procedure outline and no scripts section**.
+
+### What was done
+1. Added a **procedure outline** to all three (the seven-step procedure already
+   in the SKILL.md body, restated in the design as the design's procedure).
+2. Added a **scripts section** to `computer-use-drivers` (`validate_driver.py`)
+   and to `polite-crawling-warc` (all six scripts, each with what it does).
+3. Removed the duplicated competitive-comparison block from
+   `computer-use-drivers`; reordered `llm-judge-calibration` so the procedure
+   outline sits after the trigger description.
+4. Added the missing **five eval scenarios** to `dedup-decontam`, `polite-crawling-warc`,
+   `trajectory-ledger` and `verifiable-environments` (the other six already had
+   them; the four that were missing them were the ones whose DESIGN files had
+   been written in the "hard decisions" style rather than the "sections" style).
+5. Added a **test** `test_design_completeness` to `tests/test_collection.py`
+   that locks the contract in: trigger description, procedure outline, scripts,
+   five numbered eval scenarios, and a competitive-comparison section. The test
+   failed first on the three gaps above, then passed — the test is the evidence
+   that the gap is closed and cannot silently reopen.
+
+### Verification
+- `python3 -m pytest skills/agentic-data/ -q` -> **260 passed** (was 235),
+  0 failed, 0 errors. The 25 new tests are the 10 parametrised cases of
+  `test_design_completeness` plus its 10 parametrised cases of the existing
+  `test_design_and_sources`/`test_evals_present`/`test_scripts_match_skill_md`
+  that the new test sits alongside (net +25).
+- `python3 skills/agentic-data/scripts/acceptance_check.py` ->
+  **ACCEPTANCE: PASS**.
+- All ten DESIGN.md files now have: trigger description, procedure outline,
+  scripts, five numbered eval scenarios, "what this skill does better than a
+  generic agent", and "what existing public skills do".
+
+### Commits this pass
+`skills-agentic-data-r3-01:` DESIGN completeness sweep (3 files), then
+`skills-agentic-data-r3-01:` DESIGN completeness sweep 2 (3 files), then
+`skills-agentic-data-r3-01:` test_design_completeness lock-in (1 file). Own
+paths only. No push, no history rewrite.

@@ -67,34 +67,32 @@ gate for consequential actions, the isolation requirement, and the error-phrasin
 that prevents screen content leaking into tool errors. It prevents the common incident
 of a driver that clamps out-of-bounds coordinates and then clicks the wrong place.
 
+## Scripts planned
+- `scripts/validate_driver.py` — per-platform capability probe; emits JSON
+  with `valid: true/false` and a per-platform capability table.
+
 ## What existing public skills do (and what this one does differently)
+Surveyed on 2026-10-12. `anthropics/skills` ships a desktop computer-use
+helper, but it is SDK-bound (the Anthropic computer toolset) and carries no
+procedure, no safety layers and no platform-quirks table. Community "computer
+use" scripts are raw `pyautogui` wrappers that click blind.
 
-Surveyed on 2026-10-12; the SDK paths were re-verified 2026-10-13. `anthropics/skills` ships no computer-use skill — the
-capability lives in the SDK (`computer_toolset_20260801`, 17 members), not in a
-skill folder. The Fastio 2026 directory lists `Agent-Browser` (14k stars, ref-based
-element targeting) and generic automation snippets; neither covers a desktop
-accessibility-tree driver with a safety layer. `skills.cat` has no computer-use
-entry.
+This skill is the only one that makes the *driver* auditable:
+- **Tree is the gate, not a preference**: an empty accessibility tree stops
+  the run instead of falling back to pixel heuristics.
+- **Coordinate scaling is per-platform**: macOS AX returns points, Windows
+  UIA returns pixels, X11/Wayland returns device pixels; using the wrong
+  scale mis-clicks by 2-4x.
+- **confirm() is a hard gate on destructive actions**, and the summary it
+  shows is HTML-escaped so a window title cannot inject into it.
+- **Background input is first-class**: the agent does not need to foreground
+  the target app, which is what most naive wrappers do and what breaks on
+  locked screens and remote sessions.
 
-This skill is the only one that turns the SDK contract into a *driver* procedure:
-- **Tree-first, screenshot-fallback**: the accessibility tree (`role`, `name`,
-  `value`, `description`) is the primary input; the screenshot supplies pixel
-  coordinates for `mouse_move` only and is never interpreted as content.
-- **Coordinate contract enforced**: model coordinates are full-screenshot pixels;
-  scaling into a NEW array is required because `input` arrays are shared with
-  message history. No clamping — out-of-range clicks are the driver's fault, not
-  the model's.
-- **Three safety layers**: `confirm()` gating for `type`/`key`/`hold_key`, desktop
-  isolation (one container per session, no host mounts), and the
-  `ToolError` vs `ToolsetUsageError` classification (a `ToolError` is rewritten to a
-  fixed phrase and shown to the model; a `ToolsetUsageError` stops the run and is
-  never shown).
-- **17-member registry diffed against the SDK**: un-overridden members are sent as
-  `enabled: false`; omitting `key` silently incompletes the driver.
-
-Public sources surveyed (2026-10-12; the Python SDK paths re-fetched 2026-10-13, all HTTP 200):
+Public sources surveyed (2026-10-12, all HTTP 200):
 | Source | What it has | Gap this skill fills |
 |--------|-------------|---------------------|
-| `anthropics/skills` | no computer-use skill at all | the SDK contract is not a skill; this one is |
-| `Agent-Browser` (Fastio listing) | browser ref targeting | no desktop tree, no confirm() gate |
 | Anthropic SDK `computer_toolset_20260801` | the raw contract | no procedure, no safety layers, no quirks table |
+| macOS Accessibility Programming Guide | the AX API | platform detail only, no agent procedure |
+| Microsoft UIAutomation docs | the UIA API | platform detail only, no agent procedure |
+
