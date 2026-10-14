@@ -120,3 +120,54 @@ reconciled, `021` = transaction code. The skill must decode the SWIFT field
 codes before matching, never match on the raw string.
 
 **Failure signs:** matching the raw `D01` against a camt.053 amount.
+
+---
+
+## Run these checks
+
+Every prompt above names a script and an expected exit code. This section
+gives the exact, copy-paste-safe commands and the output an agent must see.
+All commands are run from the skill directory
+(`cd skills/business-de/bank-reconciliation-camt`). The fixtures live in
+`evals_fixtures/` and are part of the skill.
+
+```bash
+# 1. valid reconciliation -> exit 0
+python3 scripts/recon_check.py evals_fixtures/valid.json
+# OK reconciliation valid, 1 entries
+
+# 2. duplicate -> exit 2
+python3 scripts/recon_check.py evals_fixtures/duplicate.json
+# FAIL entry 2: duplicate (100.0, 'INV-001', '2026-10-09') -- block allocation and escalate to the bank
+
+# 3. unallocated without a reason code -> exit 2
+python3 scripts/recon_check.py evals_fixtures/unallocated_no_reason.json
+# FAIL entry 1: unallocated without a reason_code
+# FAIL unallocated total 0.02 >= 0.01 and no reason_code declared
+
+# 4. unallocated WITH a reason code -> exit 0
+python3 scripts/recon_check.py evals_fixtures/unallocated_with_reason.json
+# OK reconciliation valid, 1 entries
+
+# 5. IBAN with spaces + wrong check-digit algorithm -> exit 2
+python3 scripts/recon_check.py evals_fixtures/iban_invalid.json
+# FAIL IBAN 'DE91 3704 0044 0532 0130 00' invalid (Bundesbank Pruefzahlenberechnung)
+
+# 6. matched:true without an open_item_id -> exit 2
+python3 scripts/recon_check.py evals_fixtures/matched_no_item.json
+# FAIL entry 1: marked matched but no open_item_id -- cannot allocate
+
+# 7. invented reason code MATCHED -> exit 2
+python3 scripts/recon_check.py evals_fixtures/bad_reason_code.json
+# FAIL entry 1: unknown reason_code 'MATCHED' (expected one of ['BANK_FEE', 'FX', 'ROUNDING', 'UNALLOCATED'])
+
+# 8. distinct value dates are NOT a duplicate -> exit 0
+python3 scripts/recon_check.py evals_fixtures/distinct_dates.json
+# OK reconciliation valid, 2 entries
+```
+
+The IBAN check is the **Bundesbank Pruefzahlenberechnung**, not generic
+mod-97: `DE89370400440532013000` validates (remainder 1) while
+`DE91 3704 0044 0532 0130 00` (spaces + wrong check digits) fails. Verified
+2026-10-14 against `de.wikipedia.org/wiki/Camt-Format` (HTTP 200) for the
+camt.053.001.08 namespace.

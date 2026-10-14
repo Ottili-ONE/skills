@@ -108,9 +108,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--system", required=True, help="JSON file with the system description")
     ap.add_argument("--out", help="write the label to this JSON file")
+    ap.add_argument("--evidence", help="human-review evidence file; for a high-risk system this is BLOCKING")
     args = ap.parse_args()
 
     system = json.loads(Path(args.system).read_text(encoding="utf-8"))
+    if args.evidence:
+        system.setdefault("human_review", {})["evidence_path"] = args.evidence
     label = classify(system)
     if args.out:
         out = Path(args.out)

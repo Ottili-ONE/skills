@@ -136,3 +136,59 @@ re-review date. A bare signature is `human_review_incomplete` — the
 **Trap:** Art. 3 GDPR applies to any offer of goods/services to people in
 the EU, not only customers. B2B newsletter recipients in the EU are still
 data subjects. The register entry must cover the offer, not the contract.
+
+---
+
+## Run these checks
+
+Every prompt above names a script and an expected exit code. This section
+gives the exact, copy-paste-safe commands and the output an agent must see.
+All commands are run from the skill directory
+(`cd skills/business-de/dsgvo-ai-act-labeling`). The register is append-only:
+never edit an entry in place (GoBD immutability; see `gobd-archive`).
+
+```bash
+# 1. incomplete Art. 30 entry -> exit 1, no entry written
+python3 scripts/process_register.py --activity act_incomplete.json --register out.jsonl
+# Art. 30 entry missing fields: ['data_subject_categories', 'data_categories',
+#                                'recipients', 'retention_period', 'security_measures']
+
+# 2. complete entry, human-readable basis -> exit 0
+python3 scripts/process_register.py --activity act_complete.json --register out.jsonl
+# {"ok": true, "entry": {... "legal_basis": "art6_1b_contract", "recorded_at": "2026-10-14"}}
+
+# 2b. unknown legal basis -> exit 1
+python3 scripts/process_register.py --activity act_bad.json --register out.jsonl
+# unknown legal basis 'bogus'; choose from ['art6_1a_consent', ...]
+
+# 3. high-risk system, NO human-review evidence -> exit 1 (BLOCKING)
+python3 scripts/disclosure_label.py --system sys_hr_noev.json
+# high-risk system 'recruiter-ai' BLOCKING: human-review evidence missing
+
+# 4. high-risk system WITH evidence -> exit 0
+python3 scripts/disclosure_label.py --system sys_hr.json --evidence evidence.txt
+# {"risk_class": "high-risk", "article_50_paragraph": "5",
+#  "human_review_status": "approved", "evidence_sha256": "58f2...0c54"}
+
+# 5. transparency-only chatbot -> exit 0, no evidence file required
+python3 scripts/disclosure_label.py --system sys_cb.json
+# {"risk_class": "transparency-only", "article_50_paragraph": "1-4",
+#  "human_review_status": "approved"}
+
+# 6. non-AI system -> exit 0, no review required
+python3 scripts/disclosure_label.py --system sys_na.json
+# {"risk_class": "not-ai", "article_50_required": false,
+#  "human_review_status": "n/a", "label": "no-ai-act-scope"}
+
+# 8. general AI -> exit 0, documented, not disclosed
+python3 scripts/disclosure_label.py --system sys_gen.json
+# {"risk_class": "general", "article_50_required": false,
+#  "article_95_documented": true, "human_review_status": "not-required"}
+```
+
+The human-readable synonyms (`contractual necessity`, `legitimate
+interests`, ...) are accepted on input; the register always stores the
+canonical Art. 6(1) key so the artefact is machine-checkable. Verified
+2026-10-14 against `eur-lex.europa.eu/eli/reg/2024/1689/oj` (HTTP 202; the
+legal-content HTML body was empty for curl, so the Art. 50 enforcement
+calendar remains **unverified** — a lawyer must confirm).

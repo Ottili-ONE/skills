@@ -139,3 +139,37 @@ its HTML changes without notice.
 UPS `X-Inbound-Idempotency-Key` (header), DPD shipment reference (body),
 GLS client-generated `labelId`, Hermes `correlationId` (body). One wrong
 header name is a 400.
+
+---
+
+## Run these checks
+
+Every prompt above names a script and an expected exit code. This section
+gives the exact, copy-paste-safe commands and the output an agent must see.
+All commands are run from the skill directory
+(`cd skills/business-de/carrier-apis-de`). Offline by default; `--execute`
+sends the request and needs `--token`/`--url`.
+
+```bash
+# 1. DHL label, idempotency key in X-Request-ID -> exit 0
+python3 scripts/label_create.py --carrier dhl --ref ORD-1
+# "idempotency_field": "X-Request-ID", the header is set on the request
+
+# 2. Track via the official endpoint, TTL 300s -> exit 0
+python3 scripts/track.py --carrier dhl --number 12345678901234567890
+# "endpoint_path": "/shipment/v2/tracking?shipmentNumber=",
+# "cache_ttl_seconds": 300
+
+# 7. non-numeric tracking number -> exit 1
+python3 scripts/track.py --carrier dhl --number ABC-DEF
+# tracking number must be numeric
+
+# 9. Hermes: dry-run the request envelope, no network -> exit 0
+python3 scripts/label_create.py --carrier hermes --ref ORD-1
+# "idempotency_field": "correlationId"  (embedded in the body, not a header)
+```
+
+The Hermes endpoint contract is unverified (HTTP 403 at retrieval, recorded in
+`references/SOURCES.md`) — flag it as a prerequisite for a business-account
+holder. The DHL/DHL-Express, DPD, GLS and UPS contracts are pinned in
+`config/versions.json`; read them, never hardcode.
