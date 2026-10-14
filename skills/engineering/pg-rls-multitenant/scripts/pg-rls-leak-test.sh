@@ -34,11 +34,9 @@ for i in $(seq 1 30); do
 done
 
 echo ">> applying schema + policies"
-docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
-  -f - < "$SQL_FILE" 2>&1 | tail -20
-
-cat > "$TMPD/probe.sql" <<'PROBE'
--- app role (the migration grants SELECT to this role; missing role == missing grant)
+# The migration grants to the app role (web_app). Create it first so the GRANT
+# does not fail; the harness also uses it to run the probe.
+cat > "$TMPD/pre.sql" <<'PRE'
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'web_app') THEN
@@ -46,25 +44,18 @@ BEGIN
   END IF;
 END
 $$;
-
 GRANT CONNECT ON DATABASE postgres TO web_app;
 GRANT USAGE ON SCHEMA public TO web_app;
+PRE
+cat "$TMPD/pre.sql" "$SQL_FILE" > "$TMPD/full.sql"
+docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+  -f - < "$TMPD/full.sql" 2>&1 | tail -20
 
--- Seed two tenants as the superuser (bypasses RLS by design, so seeding is safe).
-\set ON_ERROR_STOP off
-INSERT INTO tenant_isolated_notes (id, tenant_id, body)
-VALUES ('00000000-0000-4000-8000-000000000001',
-        '11111111-1111-4111-8111-111111111111', 'A row') ON CONFLICT DO NOTHING;
-INSERT INTO tenant_isolated_notes (id, tenant_id, body)
-VALUES ('00000000-0000-4000-8000-000000000002',
-        '22222222-2222-4222-8222-222222222222', 'B row') ON CONFLICT DO NOTHING;
-\set ON_ERROR_STOP on
-
--- Re-grant so the policy applies even if the migration already granted.
-GRANT SELECT ON tenant_isolated_notes TO web_app;
-
--- Run the probe AS the app role with the tenant key set in the session.
--- This is exactly what the application does; RLS policies read current_setting.
+cat > "$TMPD/probe.sql" <<'PROBE'
+-- Run the probe as the app role. We connect as the superuser and SET ROLE to
+-- web_app so the RLS policies evaluate against web_app (NOLOGIN roles cannot
+-- connect directly, and superusers bypass RLS by design).
+SET ROLE web_app;
 SELECT set_config('app.current_tenant',
   '11111111-1111-4111-8111-111111111111', true);
 SELECT count(*) AS a_sees_own FROM tenant_isolated_notes;
@@ -73,8 +64,8 @@ WHERE tenant_id = '22222222-2222-4222-8222-222222222222';
 PROBE
 
 echo ">> running probe as web_app"
-OUT=$(docker exec -i "$CONTAINER" psql -U web_app -d postgres -t -A -F $'\t' \
-  -v ON_ERROR_STOP=1 -f "$TMPD/probe.sql" 2>&1 || true)
+OUT=$(docker exec -i "$CONTAINER" psql -U postgres -d postgres -t -A -F $'\t' \
+  -v ON_ERROR_STOP=1 -f - < "$TMPD/probe.sql" 2>&1 || true)
 
 OWN=$(echo "$OUT" | grep "a_sees_own" | tail -1 | cut -f2)
 CROSS=$(echo "$OUT" | grep "a_sees_b" | tail -1 | cut -f2)
