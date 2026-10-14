@@ -94,3 +94,10 @@ This skill is the only Agent Skill that treats the verifier as a system to be au
 - pass_good 0.6 vs pass_lazy 0.5 -> discriminating power 0.10; unusable.
 - Sandbox contract network=allow or filesystem=open -> whole harness fails.
 - Flipping a check to always-pass does not drop power -> the check is not load-bearing.
+
+## Five eval scenarios (expanded in `references/EVALS.md`)
+1. "My verifier imports the environment module. Is that a problem?" -> Yes: it shares the environment's bugs. Rewrite the verifier against a `SPEC.md` the agent cannot edit.
+2. "A check has no bypass entry. What do I do?" -> FAIL the check; you have not audited it. Every check needs a written bypass entry.
+3. "pass_good is 0.6 and pass_lazy is 0.5. Is the harness usable?" -> No: discriminating power is 0.10, below the 0.30 floor. The harness cannot tell a good agent from a lazy one.
+4. "The sandbox contract says network=allow. Is the harness usable?" -> No: the contract is the whole point. Network must be disabled or sandboxed or the agent can cheat.
+5. "I flipped one check to always-pass and the power did not drop." -> The check was not load-bearing. The verifier-verification step must catch this; if it does not, the harness is decorative.

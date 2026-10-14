@@ -83,3 +83,10 @@ recorded:
 - Replay diverges at step 1 -> environment is non-deterministic; record and stop.
 - Cost field mixes units -> cannot be summed; split into single-unit fields.
 - Ledger edited after the fact -> hash chain breaks; audit fails.
+
+## Five eval scenarios (expanded in `references/EVALS.md`)
+1. "A `succeeded` event has no result field. Is the run valid?" -> No: fabricated success. The grounding rule rejects it; re-run and record the result before marking succeeded.
+2. "A tool call's args were not recorded. Can I replay it?" -> No: unrecorded args make the step ungrounded. Reject and re-run before marking succeeded.
+3. "Replay diverges at step 1. What do I do?" -> The environment is non-deterministic; record the divergence as an `observe` event, do not silently ignore it and do not treat it as failure.
+4. "My cost field mixes tokens and USD. Is that a problem?" -> Yes: it cannot be summed. Split into single-unit fields (tokens, USD, wall-clock) with a currency code.
+5. "A `tool` event has a `type` but no `tool` field." -> Malformed event; reject it. Every `tool` event needs both `type` and `tool`.

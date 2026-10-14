@@ -61,3 +61,59 @@ first-match parser does.
 - Streaming an unbounded robots.txt -> memory-exhaustion attack; cap at 500 KiB.
 - First-match robots parsing -> Allow-over-Disallow precedence is silently lost.
 - Resuming without the offset -> records are re-appended and the archive is duped.
+
+## What this skill does better than a generic agent
+A generic agent writes a `for url in urls: requests.get(url)` loop and calls it a
+crawler. This skill makes the crawl auditable, resumable and legally defensible.
+
+- **robots.txt is a decision, not a checkbox**: the skill distinguishes 2xx
+  (obey), 4xx (may crawl, RFC 9309 §2.3.1.3) and 5xx (default-deny, §2.3.1.4).
+  A generic agent that treats a 404 as "no robots" and a 503 as "no robots"
+  gets the two cases backwards.
+- **WARC is a contract, not a file format**: every record carries
+  `WARC-Record-ID`, `WARC-Date`, `WARC-Target-URI`, `Content-Length` and
+  `WARC-Payload-Digest`, and the validator walks every gzip member rather than
+  reading the first (verified live 2026-10-08: a 3-record file reads as 1
+  record otherwise).
+- **Resume is a first-class feature**: queue + offset state is persisted
+  atomically (write `.tmp`, rename), so an interrupted crawl resumes without
+  duplicating records or corrupting the WARC.
+- **Hostile inputs are bounded before they are parsed**: robots.txt capped at
+  500 KiB, pages at 1 MiB, encodings decoded, nothing executed.
+
+## What existing public skills do (and what this one does differently)
+
+Surveyed on 2026-10-12. `anthropics/skills`, the Fastio 2026 directory and
+`skills.cat` carry no crawling/WARC skill. The topic lives in the
+`webrecorder/pywb` and `internetarchive/heritrix3` ecosystems and in RFC 9309,
+not in agent skill form. Community crawlers are either a single `requests`
+loop with no robots handling, or a full Heritrix deployment that an agent
+cannot configure from a prompt.
+
+This skill is the first crawler that an agent can run from a prompt and that
+produces a standards-conformant, resumable archive:
+- **RFC 9309 status policy is explicit and version-pinned**: the 4xx/5xx
+  distinction is the part most implementations get wrong, and it is the
+  difference between "may crawl" and "must not crawl".
+- **WARC 1.1 record hygiene is checkable**: `scripts/warc_writer.py --validate`
+  re-reads its own output and exits 1 on any missing field, so a broken
+  archive fails the resume contract instead of being silently archived.
+- **Rate limiting is measured, not hoped for**: the token-bucket enforces the
+  measured interval between requests, and the eval verifies it against a
+  `Crawl-delay: 5` policy.
+- **Everything is offline-deterministic**: no API keys, no cloud storage, no
+  remote fetches during validation.
+
+Public sources surveyed (2026-10-12, all HTTP 200):
+| Source | What it has | Gap this skill fills |
+|--------|-------------|---------------------|
+| RFC 9309 (2022) | the robots.txt spec | a spec, not a crawler; no WARC, no resume |
+| `webrecorder/pywb` | WARC tooling | a library; needs a crawler around it |
+| `internetarchive/heritrix3` | a full crawler | a deployment, not a script an agent runs |
+
+## Five eval scenarios (expanded in `references/EVALS.md`)
+1. "Crawl example.com; /admin/ is disallowed." -> robots.txt fetched and parsed; /admin/ paths skipped and logged; every record has WARC-Type, WARC-Record-ID, WARC-Date, WARC-Target-URI, Content-Length, WARC-Payload-Digest.
+2. "The site says Crawl-delay: 5." -> measured interval between requests >= 5 s; rate never exceeds 1/5 s; 429s backoff with 5s/10s/20s, max 3 retries.
+3. "The crawl was interrupted. Resume it." -> queue state + last offset loaded; already-crawled URLs skipped; WARC opened in append mode; resume produces a still-valid WARC (validator passes).
+4. "Re-crawl a page that has not changed." -> payload digest matches the prior record; a `revisit` record with `identical-payload-digest` is emitted, not a full duplicate `response`.
+5. "robots.txt returns 404 / 503." -> 404 -> may crawl (§2.3.1.3), exit 0; 503 -> default-deny (§2.3.1.4), exit 1. The script runs `--status` before reading the file, so a missing path does not silently flip the answer.
