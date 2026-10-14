@@ -52,17 +52,33 @@ cat "$TMPD/pre.sql" "$SQL_FILE" > "$TMPD/full.sql"
 docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
   -f - < "$TMPD/full.sql" 2>&1 | tail -20
 
+# Build the probe SQL with the table name interpolated (heredoc is quoted, so
+# we assemble it from a static template and a sed substitution).
 cat > "$TMPD/probe.sql" <<'PROBE'
+__TABLE__
+
+-- Seed two tenants as the superuser (bypasses RLS by design, so seeding is safe).
+-- Run BEFORE SET ROLE so the rows exist when the app role queries them.
+\set ON_ERROR_STOP off
+INSERT INTO __TABLE__ (id, tenant_id, body)
+VALUES ('00000000-0000-4000-8000-000000000001',
+        '11111111-1111-4111-8111-111111111111', 'A row') ON CONFLICT DO NOTHING;
+INSERT INTO __TABLE__ (id, tenant_id, body)
+VALUES ('00000000-0000-4000-8000-000000000002',
+        '22222222-2222-4222-8222-222222222222', 'B row') ON CONFLICT DO NOTHING;
+\set ON_ERROR_STOP on
+
 -- Run the probe as the app role. We connect as the superuser and SET ROLE to
 -- web_app so the RLS policies evaluate against web_app (NOLOGIN roles cannot
 -- connect directly, and superusers bypass RLS by design).
 SET ROLE web_app;
 SELECT set_config('app.current_tenant',
   '11111111-1111-4111-8111-111111111111', true);
-SELECT count(*) AS a_sees_own FROM "$TABLE";
-SELECT count(*) AS a_sees_b FROM "$TABLE"
+SELECT count(*) AS a_sees_own FROM __TABLE__;
+SELECT count(*) AS a_sees_b FROM __TABLE__
 WHERE tenant_id = '22222222-2222-4222-8222-222222222222';
 PROBE
+sed -i "s/__TABLE__/$TABLE/g" "$TMPD/probe.sql"
 
 echo ">> running probe as web_app (table $TABLE)"
 OUT=$(docker exec -i "$CONTAINER" psql -U postgres -d postgres -t -A -F $'\t' \
