@@ -74,8 +74,26 @@ Quality pass over all ten skills. Acceptance: validator green for all ten, every
   constraints are unchanged (name ≤64 chars lowercase-hyphenated matching the folder; description
   ≤1024 chars non-empty; compatibility ≤500; metadata map; optional `license`/`allowed-tools`).
   `playwright-a11y-e2e` SOURCES.md already carried 2026-10-14 axe/Playwright pins.
-- **README.md** updated with the install hints plus an evals/cross-links section and the
-  inline acyclic-check script.
+- **README.md** rewritten with install hints, a one-line-value table, the layout of one
+  skill, the cross-link rule and the evals section.
+- **HANDOFF.md** rewritten: re-verify table, the exact acceptance-gate command, ten next-skill
+  ideas with rationale, and this pass's findings.
+- **EVALS gaps found by running the scripts against real inputs** (the previous pass shipped
+  text that the checkers did not actually enforce):
+  - `honest-status` — VERIFIED claims were never checked, so a VERIFIED with no evidence
+    pointer passed as "ok"; IN_PROGRESS/BLOCKED claims with no blocker/owner were silently
+    dropped by the parser. Both are now findings, with E6/E7 prompts and 3 near-miss prompts.
+  - `foundation-v2-conformance` — a bare `ALLOWED` marker exempted a line with no ticket, so
+    a stale escape hatch passed. Added `--require-ticket` (needs `FV2-WA: ISSUE-<digits>` +
+    `owner:`), with E6 and 2 near-miss prompts.
+  - `acceptance-harness` — `report_result.py` accepted a PASS with no criterion. Added the
+    criterion requirement (VERIFIED/FALSE_DONE are statuses, not PASS outcomes), with E6 and
+    2 near-miss prompts.
+  - `pg-rls-multitenant` — `check_rls_migration.py` had no argparse, so `--help` was treated
+    as a file path and `--json` mixed prose into the JSON. Switched to argparse, added `--json`,
+    and added 2 edge tests.
+- **Cross-links expanded from 14 to 27 edges** across the Related sections, still acyclic with
+  `shared-tree-git` as the unique sink (verified by an inline DFS cycle detector).
 - **Trigger descriptions**: every SKILL.md description states both what the skill does and
   *when* to use it (the standard's requirement); near-miss prompts in EVALS.md are the
   trigger-precision guard for neighbours.
