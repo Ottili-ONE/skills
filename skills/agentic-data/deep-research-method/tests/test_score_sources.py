@@ -152,3 +152,52 @@ def test_staleness_rejects_bad_question_date() -> None:
     r = run("staleness", str(FIX / "good.jsonl"), "--question-date", "not-a-date")
     assert r.returncode == 1
     assert "invalid question date" in r.stderr
+
+
+def test_corroboration_passes_on_independent_upstreams() -> None:
+    r = run("corroboration", str(FIX / "good.jsonl"))
+    assert r.returncode == 0, r.stderr
+    assert "independent upstream" in r.stderr
+
+
+def test_corrobocation_flags_shared_upstream() -> None:
+    shared = FIX / "shared.jsonl"
+    shared.write_text(
+        '{"url": "https://arxiv.org/abs/2212.08073", "authority": 3, "recency": 3, '
+        '"corroboration": 3, "retrieved": "2026-10-09", "version": "v1", '
+        '"upstream": "https://arxiv.org/abs/2212.08073"}\n'
+        '{"url": "https://blog.example.com/ai-safety", "authority": 1, "recency": 3, '
+        '"corroboration": 3, "retrieved": "2026-10-09", "version": "2026", '
+        '"upstream": "https://arxiv.org/abs/2212.08073"}\n'
+    )
+    r = run("corroboration", str(shared))
+    assert r.returncode == 1
+    assert "share upstream" in r.stderr
+
+
+def test_provenance_passes_when_all_fields_present() -> None:
+    r = run("provenance", str(FIX / "good.jsonl"))
+    assert r.returncode == 0, r.stderr
+    assert "URL + retrieval date + version" in r.stderr
+
+
+def test_provenance_flags_missing_version() -> None:
+    noversion = FIX / "noversion.jsonl"
+    noversion.write_text(
+        '{"url": "https://www.europa.eu/legal-summary/", "authority": 4, "recency": 3, '
+        '"corroboration": 3, "retrieved": "2026-10-09"}\n'
+    )
+    r = run("provenance", str(noversion))
+    assert r.returncode == 1
+    assert "no pinned 'version'" in r.stderr
+
+
+def test_provenance_flags_missing_date() -> None:
+    nodate = FIX / "nodate.jsonl"
+    nodate.write_text(
+        '{"url": "https://arxiv.org/abs/2212.08073", "authority": 3, "recency": 3, '
+        '"corroboration": 3, "version": "v1"}\n'
+    )
+    r = run("provenance", str(nodate))
+    assert r.returncode == 1
+    assert "no 'retrieved' date" in r.stderr

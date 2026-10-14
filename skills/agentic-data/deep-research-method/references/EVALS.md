@@ -106,3 +106,51 @@ it is flagged so it is re-fetched.
 Failure signs: a 2024 source used for a 2026 question with no re-fetch; the
 staleness check skipped because the score was high; the question date omitted so
 the script uses the system clock.
+
+## E12 — count corroboration by upstream, not by URL
+Prompt: "I have three sources: the primary spec, a blog summarising it, and a
+news article that also quotes the spec. Is that three independent sources?"
+Expected: No. The blog and the news article share the spec as their upstream, so
+there is one independent upstream, not three. Corroboration is counted from
+distinct upstreams. Run
+`scripts/score_sources.py corroboration <sources.jsonl>`; it exits 1 with
+`FAIL: N kept URLs share upstream '<url>'` when two kept URLs trace to the same
+upstream. Mark the shared-upstream rows with an `upstream` field pointing at the
+primary they were derived from.
+Failure signs: corroboration counted as 3 when the URLs share an upstream; the
+`corroboration` subcommand not run at all; no `upstream` field recorded.
+
+## E13 — every kept source must carry provenance
+Prompt: "I kept a source. What must be recorded with it?"
+Expected: URL + retrieval date + pinned version, all three. A source without a
+retrieval date is memory, not evidence; a source without a pinned version
+cannot be re-verified. Run
+`scripts/score_sources.py provenance <sources.jsonl>`; it exits 0 with
+`PASS: all N kept sources carry URL + retrieval date + version` and exits 1 with
+a per-source failure naming the missing field.
+Failure signs: a kept source with no `retrieved` or no `version`; the
+provenance check skipped because the score was high.
+
+## E14 — detect the fake middle
+Prompt: "Two sources give the same exact number. Are they independent?"
+Expected: Check whether they share an upstream. If both derive from the same
+primary, they are one source and the agreement is an artefact of copying, not
+corroboration. This is the "fake middle" failure: two sources that agree on a
+wrong value look better than one source that is right. Trace each to its
+upstream before counting it.
+Failure signs: two URLs with different domains agreeing exactly on a numeric
+value and neither linking the primary; corroboration counted as 2.
+
+## E15 — recover from a real incident
+Prompt: "A previous answer cited a 2024 page for a 2026 question and the fact
+was wrong. How do I prevent this next time?"
+Expected: Follow the incident in `references/incidents.md` (I1): every source's
+retrieval date is checked against the question date with
+`scripts/score_sources.py staleness <sources.jsonl> --question-date 2026-10-12`.
+A source older than the window is flagged and re-fetched before it is cited, and
+the original retrieval date is kept in the evidence chain alongside the
+re-fetch date. The other five incidents (secondary-as-primary, fake middle,
+swept contradiction, confidence without evidence, quotation that changes
+meaning) each have a named observable signature and recovery procedure.
+Failure signs: the staleness check skipped; a stale source cited without a
+re-fetch attempt; an incident signature matched and ignored.

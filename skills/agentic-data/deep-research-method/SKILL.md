@@ -43,7 +43,9 @@ locally.
   3; established media = 2; blog/unknown = 0-1.
 - **Recency**: <1 year for fast-changing = 3; 1-3 years = 2; 3-5 years = 1;
   >5 years = 0 unless the fact is stable.
-- **Corroboration**: 3+ independent = 3; 2 = 2; 1 = 1; none = 0.
+- **Corroboration**: 3+ independent = 3; 2 = 2; 1 = 1; none = 0. "Independent"
+  means distinct upstreams, not distinct URLs: two pages that copy the same primary
+  count as one. Verify with `scripts/score_sources.py corroboration`.
 - **Confidence**: high = primary + >=2 corroborating; medium = primary only;
   low = secondary only; none = no source.
 
@@ -56,6 +58,10 @@ locally.
   list, weight, state the range.
 - A 2024 fact used for a 2026 question without re-checking -> re-fetch.
 - A kept source with score <6 -> it was never scored.
+- Two URLs that agree exactly on a value but share an upstream -> the fake middle;
+  they are one source, not two. Count upstreams, not URLs.
+- A kept source with no retrieval date or no pinned version -> it is memory, not
+  evidence; run `scripts/score_sources.py provenance` to catch it.
 
 ## Pitfalls from research
 - P1: Source quality is judged before reading; a good-looking page can be wrong.
@@ -76,6 +82,10 @@ locally.
 - [ ] Contradictions listed and resolved by quality weight.
 - [ ] Confidence stated (high/medium/low) with the reason.
 - [ ] Quotations under 15 words.
+- [ ] `scripts/score_sources.py corroboration` passes: every kept URL traces to
+  a distinct upstream. Two URLs sharing an upstream count as one source.
+- [ ] `scripts/score_sources.py provenance` passes: every kept source carries
+  URL + retrieval date + pinned version.
 
 ## Worked examples
 Good and bad output, with the detection signal for each, live in
@@ -89,7 +99,8 @@ claim dressed as a finding, over-long quotation).
 - citation and fetch: references/cite-fetch.md
 - staleness: references/staleness.md
 - worked examples: references/examples.md
+- incidents: references/incidents.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
-- scripts: scripts/score_sources.py (score, audit, contradictions, cite, fetch, staleness)
+- scripts: scripts/score_sources.py (score, audit, contradictions, cite, fetch, staleness, corroboration, provenance)
