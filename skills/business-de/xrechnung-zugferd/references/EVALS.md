@@ -107,3 +107,45 @@ and record its SHA-256.
 **Trap:** BEG IV / AO §147 gives vouchers **8 years from year-end** (a 2026
 invoice -> 2034-12-31), effective 2025-01-01. The old "10 years for
 everything" applies only to vouchers whose retention started before 2025.
+
+---
+
+## Run these checks
+
+Every prompt above names a script and an expected exit code. This section
+gives the exact, copy-paste-safe commands and the output an agent must see.
+All commands are run from the skill directory
+(`cd skills/business-de/xrechnung-zugferd`). `validate_invoice.py` is the
+**offline subset** — it scopes every BT-* check to the element's own text and
+exits non-zero on any failure. The full rule set needs the KoSIT validator
+(tag `v2026-08-31`, pinned in `config/versions.json`).
+
+```bash
+# 2. valid B2B invoice -> exit 0
+python3 scripts/validate_invoice.py inv.xml --config config/versions.json
+# {"ok": true, "classification": "xml-only", "profile": "COMFORT",
+#  "pinned_spec": "1.2.4", "pinned_validator": "v2026-08-31", "errors": []}
+
+# 3. BT-14/BT-10/BT-20 missing -> exit 1
+python3 scripts/validate_invoice.py inv_missing.xml --config config/versions.json
+# {"ok": false, "errors": ["BT-10 missing (cbc:EndpointID)",
+#                          "BT-14 missing (cbc:IssueDate)",
+#                          "BT-15 missing (cbc:DeliveryDate)", ...]}
+
+# 4. pin the spec and re-verify -> exit 0
+python3 scripts/validate_invoice.py inv.xml --config config/versions.json
+# pinned_spec "1.2.4", pinned_validator "v2026-08-31" -- read from config,
+# never hardcoded
+
+# 7. profile selector -> exit 0
+python3 scripts/profile_selector.py --context B2B --data full --recipient factur-x
+# {"recommended_profile": "COMFORT", "rationale": "EN 16931 default for B2B",
+#  "pinned_spec": "1.2.4", "missing_fields": []}
+```
+
+The BT-18/BT-20 scoping rule (prompt 6, near-miss N1) is what makes the
+validator correct here: the IBAN is matched only inside
+`<cbc:PaymentAllowedAccountID>`, never with a whole-document regex, because
+BT-10's Leitweg-ID (`DE...`) also matches a bare IBAN pattern. Verified
+2026-10-14 against `github.com/itplr-kosit/validator-configuration-xrechnung`
+(HTTP 200).

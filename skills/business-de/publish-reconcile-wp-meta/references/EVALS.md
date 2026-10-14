@@ -131,3 +131,40 @@ informational, not as deltas.
 **Trap:** Basic Auth is deprecated in WP 6.7+ core and the replacement plugin
 is unmaintained. The config pins the WP version; the helper must read it and
 warn. A green run that uses Basic Auth on WP 6.7+ is a failure sign.
+
+---
+
+## Run these checks
+
+Every prompt above names a script and an expected exit code. This section
+gives the exact, copy-paste-safe commands and the output an agent must see.
+All commands are run from the skill directory
+(`cd skills/business-de/publish-reconcile-wp-meta`). The idempotency store is
+append-only JSONL — never delete a key on success, it is part of the audit
+trail (see `gobd-archive`).
+
+```bash
+# 8. publish to Meta, idempotent -> exit 0
+python3 scripts/meta_publish.py --key ORD-1 --page-id 123
+# "idempotency_field": "idempotency_key", embedded in the POST body
+
+# 8b. WP version pin -> exit 0
+python3 scripts/wp_publish.py --key ORD-1 --dry-run
+# reads the pinned WP version from config; warns on Basic Auth + WP 6.7+
+
+# 9. reconcile matching platforms -> exit 0
+python3 scripts/reconcile.py --key ORD-1 --wp post.json --meta post.json
+# {"ok": true, "deltas": []}
+
+# 9b. reconcile mismatch -> exit 1
+python3 scripts/reconcile.py --key ORD-1 --wp post.json --meta draft.json
+# {"ok": false, "deltas": [{"field": "status", "match": false}]}
+
+# 9c. reconcile --strict on a missing idempotency key -> exit 1
+python3 scripts/reconcile.py --key ORD-1 --wp nokey.json --meta post.json --strict
+# {"ok": false, "strict": true, "deltas": [{"reason": "key mismatch"}]}
+```
+
+The two platforms have different field sets (WP has `slug`, Meta has
+`id`/`link`); compare only the shared fields (`id`, `status`, idempotency
+key) and report platform-specific fields as informational.

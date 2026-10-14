@@ -109,3 +109,43 @@ until 2025-12-31 for vouchers).
 ### N4. "A raw DB dump is fine for the auditor"
 **Trap:** an audit export must be chronological, complete, checksummed and
 carry a manifest (MANIFEST.json). A raw DB dump is not an audit export.
+
+---
+
+## Run these checks
+
+Every prompt above names a script and an expected exit code. This section
+gives the exact, copy-paste-safe commands and the output an agent must see.
+All commands are run from the skill directory
+(`cd skills/business-de/gobd-archive`).
+
+```bash
+# 2. retention for a 2026 invoice -> exit 0
+python3 scripts/retention_classify.py --type invoice --year 2026
+# invoice -> Buchungsbeleg (8y), retention end 2034-12-31
+
+# 2b. correspondence without a subtype -> exit 0 but unconfirmed
+python3 scripts/retention_classify.py --type correspondence --year 2026 --json
+# {"retention_class": "Geschäftskorrespondenz", "retention_years": 6,
+#  "retention_end": "2032-12-31",
+#  "warning": "the 6-year class covers only three sub-types; ..."}
+
+# 7. purge 2017 while an audit is open -> exit 1 (blocked)
+python3 scripts/purge_decision.py --type invoice --year 2017 \
+  --approver "M. Mustermann (Steuerberater)" --reason "retention ended" \
+  --open-audit --today 2026-10-14
+# {"purge_permitted": false, "blockers": ["audit_open"]}
+
+# 7b. purge 2017, no audit -> exit 0
+python3 scripts/purge_decision.py --type invoice --year 2017 \
+  --approver "M. Mustermann (Steuerberater)" --reason "retention ended" \
+  --today 2026-10-14
+# {"purge_permitted": true, "blockers": [],
+#  "record_retention_until": "2025-12-31"}
+```
+
+The purge record itself is a document: keep it until the retention end of the
+documents it describes (`2025-12-31` for a 2017 voucher), not until today plus
+8 years. Verified 2026-10-14 against `dejure.org` (HTTP 200; the statute text
+is JS-rendered, so the AO §147 classes are corroborated by
+`whk-controlling.de`, HTTP 200).
