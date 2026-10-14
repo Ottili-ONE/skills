@@ -4,12 +4,22 @@ All dates are read from `config/versions.json`; never hardcode.
 
 ## 1. Classify the content
 
+Four buckets; the decision is made from the three metadata flags
+(`human_authored`, `ai_produced_substantive_part`,
+`published_to_inform_public`) by `scripts/classify_content.py`. Ambiguous
+input is rejected — never silently guessed.
+
 | Input | Bucket | Label? |
 |---|---|---|
-| fully AI-generated, no human input | synthetic | yes |
-| AI drafts, published unchanged | assist | yes, unless reviewed |
-| AI materially modifies human content | augment | yes |
-| AI for spelling/translation only | disclose | no |
+| fully AI-generated, no human input | `synthetic` | yes — Art. 50(4) applies, no exception |
+| human-authored, AI only polished | `assist` | no — AI made no substantive part |
+| AI produced a substantive part (draft, summary, code) | `augment` | depends — see below |
+| AI produced a substantive part AND published to inform the public | `disclose` | yes, unless the Art. 50(4) exception test passes |
+
+The `augment` / `disclose` split is the one that matters: an internal AI
+draft is `augment` (no public-disclosure duty), a blog post drafted by AI and
+published is `disclose`. `scripts/classify_content.py` computes this from the
+metadata and exits non-zero when a flag is missing.
 
 ## 2. Art. 50(4) exception test
 
