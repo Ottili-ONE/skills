@@ -127,3 +127,60 @@ examples, and near-miss trigger prompts. Three checkers gained hardening:
 No SKILL.md exceeds 500 lines (largest is problem-json-contracts at 90). All 12 engineering
 self-tests + the two collection acceptance tests pass; `validate.py`, `validate_skill.py --all`,
 and `build-index.py` are green.
+
+## PASS 3 (DEEPEN) — 2026-10-14
+
+Commits (all `skills-engineering-r3-01:`, own paths only):
+
+| Commit | What |
+|--------|------|
+| `7e61d28` | `references/agentskills-standard.md` (new shared reference: name/description/length rules from the agentskills.io spec); 6th eval prompt for honest-status; stripped three stray `EOF` heredoc leftovers in `make_harness.sh`, `fresh_consumer_test.sh`, `honest-status-procedure.md` |
+| `f243205` | cross-linked the standard into all ten SKILL.md; fixed four stale `SOURCES.md#primary-sources` anchors in shared-tree-git |
+| `f1d6e67` | hardened `check_status_evidence.py` (next-line evidence, empty evidence file, FALSE_DONE contradiction, `--json`) + 7 edge-case tests; `check_axe_evidence.py` edge tests (non-object JSON, stale evidence, `--require-keys`); `check_shared_tree.py` anchored FORBIDDEN regexes (`git commit --amend`, `my_stash_var`) + 2 edge tests; `check_outbox.py` edge tests (no BEGIN/COMMIT, outbox-only transaction, `--json`) |
+
+
+
+
+### What this pass found and fixed (real defects, not cosmetic)
+
+1. **Stray heredoc `EOF` lines** in three script/procedure files — leftovers from a
+   `cat > file <<'EOF'` that had no matching terminator. They were executable content
+   sitting in the middle of shipped scripts. Removed.
+2. **Broken cross-links.** A mechanical walk of every `[label](target)` in the ten
+   SKILL.md found 18 broken relative links (all `../<skill>/SKILL.md` forms that had
+   lost their `../` prefix) plus four stale `#primary-sources` anchors in
+   shared-tree-git. All fixed; a link/anchor checker is now the gate before any
+   SKILL.md edit.
+3. **`check_status_evidence.py` could not parse next-line evidence**, the form the
+   procedure document itself uses (`- [x] claim\n  evidence: path`). The parser only
+   looked for `evidence:` inline on the claim line. Rewritten to attach a bare
+   following evidence line to the preceding claim in the same bucket. Also added:
+   empty evidence file (a 0-byte pointer is not evidence), `[x]` under FALSE_DONE as a
+   contradiction, and `--json` output.
+4. **`check_shared_tree.py` scan false-positives.** The FORBIDDEN list was a set of
+   bare substrings, so `git commit --amend` (history rewriting — genuinely forbidden
+   in a shared tree) was not caught, and `my_stash_var = 1` was caught. Replaced with
+   anchored regexes and added `--amend` to the forbidden set (commit `2e8fccf`).
+5. **Test harness dead code.** Three `*_test.py` files appended edge-case tests *after*
+   their `if __name__ == "__main__": raise SystemExit(main())` block, so the new tests
+   never ran. Stripped the old blocks so the edge tests execute.
+
+### Verification (2026-10-14, all green)
+
+- `python3 scripts/validate.py` → ok (exit 0)
+- `python3 scripts/validate_skill.py --all` → 10/10 ok (exit 0)
+- `python3 scripts/build-index.py` → index regenerated (exit 0)
+- `test_research_design_acceptance.py` → ok: 10 skills meet research+design criteria
+- `test_collection_acceptance.py` → ok: all 10 pass
+- 12 engineering self-test scripts → all PASS, 50 individual assertions across them
+  (was 12 scripts / ~26 assertions; this pass added 24 edge-case assertions to
+  honest-status, axe, shared-tree and outbox checkers, and removed 4 dead-code
+  `__main__` blocks that shadowed the new tests)
+
+### False-done check
+
+No file was created solely to make a test pass. The three `EOF` lines were removed from
+files that already existed; the standard reference and cross-links were added because the
+collection had no stated authoring standard; the checker changes were driven by tests
+that exposed real parsing gaps. Every artifact above was re-read after editing, not
+written to pass.
