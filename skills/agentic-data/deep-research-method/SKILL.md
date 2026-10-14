@@ -95,9 +95,54 @@ locally.
   URL + retrieval date + pinned version.
 
 ## Worked examples
-Good and bad output, with the detection signal for each, live in
-`references/examples.md` (contradiction resolved by quality weight, unsourced
-claim dressed as a finding, over-long quotation).
+
+### Good — scored, cited, confidence-stated answer
+Question: "What is the retention period for GDPR erasure requests?"
+
+1. Decompose: (a) the statutory deadline, (b) whether it has changed, (c) any
+   member-state derogation.
+2. Score candidates before reading: the EU legal-summary page scores 10
+   (authority 4, recency 3, corroboration 3); a blog scores 2 and is discarded.
+3. Fetch the primary legal text first; record URL + retrieval date + version.
+4. Cite by short paraphrase under 15 words, with the URL next to each claim.
+5. Two independent upstreams corroborate -> confidence `high`, stated with the
+   reason.
+
+Result: every claim carries URL + retrieval date + version; confidence is high
+only because two upstreams corroborate. Detection signal: no claim lacks a
+citation, and the confidence word is followed by "because ...".
+
+### Bad — unsourced claim dressed as a finding
+"The model is 3x faster than the baseline." No URL, no retrieval date, no version.
+
+Why it fails: the claim cannot be verified or re-checked. The rule is URL +
+retrieval date + pinned version for every claim; a claim without a source is a
+confidence of `low` and must be flagged, not asserted.
+Detection signal: a sentence with a number and no citation.
+
+### Bad — contradiction averaged into a fake middle
+Source A (university preprint, score 8) says "one month". Source B (industry
+report, score 6) says "two months".
+
+Why it fails: averaging to "one and a half months" produces a number no source
+claimed; it reads as precision and carries no evidence. Resolve by quality
+weight: cite A as primary, note B as a lower-weight disagreement, and state the
+range (one to two months). Never majority-vote and never average.
+Detection signal: the summary names both sources and gives a range, not a
+single number.
+
+### Bad — quoting 22 words to "prove" a point
+`"the results show a statistically significant improvement in latency,
+throughput, and accuracy across all benchmarks"`.
+
+Why it fails: long quotations are paraphrase bait and easy to misquote. Keep
+quotations under 15 words; anything longer is a summary with a citation, not a
+quote.
+Detection signal: a blockquote longer than 15 words that is not labelled a
+summary.
+
+More worked examples, each ending with the check that would have caught it, live
+in `references/examples.md`.
 
 ## References
 - procedures: references/procedures.md
