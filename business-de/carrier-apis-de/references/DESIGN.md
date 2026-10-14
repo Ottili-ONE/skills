@@ -10,7 +10,7 @@
 
 ## What this skill does better than a generic agent
 
-- **Pins the exact API surface per carrier** (DHL Shipping v2.2.0, Tracking
+- **Pins the exact API surface per carrier** (DHL Shipping v2.0.2, Tracking
   v1.0.0, Returns v1.1.0) instead of guessing from a search result.
 - **Idempotency is a first-class concept**: every label POST carries a
   client-generated idempotency key; the skill defines the retry-with-same-key

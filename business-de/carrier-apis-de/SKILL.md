@@ -2,7 +2,7 @@
 name: carrier-apis-de
 description: "Ship parcels with German carriers (DHL, DPD, GLS, Hermes, UPS) via official REST/SOAP APIs only — never by scraping tracking pages. Use when an agent must create or cancel a label, track a shipment, print a return label, or reconcile carrier charges. Not for private senders, freight, or non-DE carriers."
 license: MIT-compat
-compatibility: "framework-agnostic; DHL Parcel DE REST v2.2.0, Tracking v1.0.0, Returns v1.1.0; offline validation"
+compatibility: "framework-agnostic; DHL Parcel DE REST v2.0.2, Tracking v1.0.0, Returns v1.1.0; offline validation"
 metadata: {}
 allowed-tools: []
 ---
@@ -53,7 +53,7 @@ specification this pass; DPD, GLS, Hermes and UPS facts are marked
 
 | Carrier | API surface | Verified | Action |
 |---|---|---|---|
-| DHL Parcel DE | REST v2.2.0 / Tracking v1.0.0 / Returns v1.1.0 | yes | use directly |
+| DHL Parcel DE | REST v2.0.2 / Tracking v1.0.0 / Returns v1.1.0 | yes | use directly |
 | DPD DE | REST (myDPD portal) | **no** | document pattern, re-verify |
 | GLS Group | SOAP/REST + ParcelWatch | **no** | document pattern, re-verify |
 | Hermes / OnTrac | partner portal | **no** (403 at fetch) | document pattern, re-verify |
