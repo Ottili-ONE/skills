@@ -1,0 +1,8 @@
+{
+  "type": "https://api.ottili.dev/problems/tenant-not-found",
+  "title": "Tenant not found",
+  "status": 404,
+  "detail": "No tenant matching the supplied identifier.",
+  "instance": "https://api.ottili.dev/example/tenant-not-found",
+  "trace_id": "abc123"
+}

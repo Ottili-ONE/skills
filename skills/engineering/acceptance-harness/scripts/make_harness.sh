@@ -24,4 +24,5 @@ rollback:
 ## Notes
 - owner:
 - date:
+EOF
 echo "wrote $OUTDIR/$SCENARIO.md"

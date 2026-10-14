@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Validation failed",
+  "type": "object",
+  "required": ["type", "title", "status", "detail", "instance"],
+  "properties": {
+    "type": { "type": "string", "format": "uri" },
+    "title": { "type": "string", "maxLength": 120 },
+    "status": { "type": "integer" },
+    "detail": { "type": "string", "maxLength": 500 },
+    "instance": { "type": "string", "format": "uri" },
+    "trace_id": { "type": "string" },
+    "retry_after": { "type": "integer", "minimum": 1 }
+  },
+  "$id": "https://api.ottili.dev/schemas/problem/validation-failed/v1.json"
+}

@@ -1,0 +1,9 @@
+{
+  "type": "https://api.ottili.dev/problems/version-conflict",
+  "title": "Version conflict",
+  "status": 409,
+  "detail": "Concurrent modification detected.",
+  "instance": "https://api.ottili.dev/example/version-conflict",
+  "trace_id": "abc123",
+  "retry_after": 30
+}

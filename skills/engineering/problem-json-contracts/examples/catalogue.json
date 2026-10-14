@@ -3,21 +3,27 @@
   "codes": {
     "400": {
       "status": 400,
-      "retry": false,
+      "retryable": false,
+      "retry_after": null,
       "title": "Validation failed",
       "detail": "One or more fields failed validation.",
-      "schema": "https://ottili.example/problems/validation-failed.json"
+      "schema": "https://api.ottili.dev/schemas/problem/validation-failed/v1.json"
     },
     "404": {
       "status": 404,
-      "retry": false,
-      "title": "Tenant not found"
+      "retryable": false,
+      "retry_after": null,
+      "title": "Tenant not found",
+      "detail": "No tenant matching the supplied identifier.",
+      "schema": "https://api.ottili.dev/schemas/problem/tenant-not-found/v1.json"
     },
     "409": {
       "status": 409,
-      "retry": true,
+      "retryable": true,
+      "retry_after": 30,
       "title": "Version conflict",
-      "detail": "Concurrent modification detected."
+      "detail": "Concurrent modification detected.",
+      "schema": "https://api.ottili.dev/schemas/problem/version-conflict/v1.json"
     }
   }
 }
