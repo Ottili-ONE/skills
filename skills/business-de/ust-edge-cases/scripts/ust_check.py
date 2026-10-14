@@ -14,6 +14,7 @@ Edge cases handled:
   - unrounded tax amount -> rejected
   - 0% rate with a tax-account amount -> rejected (no tax line expected)
 """
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -98,18 +99,61 @@ def check(rows, prior_turnover=None, kleinunternehmer=False, rounding="half_up",
     return errors
 
 
+def _rows_arg(value: str) -> list:
+    """Accept a JSON file path, a JSON array literal, or stdin ('-')."""
+    if value == "-":
+        raw = sys.stdin.read()
+    elif value.lstrip().startswith("["):
+        raw = value
+    else:
+        raw = Path(value).read_text(encoding="utf-8")
+    data = json.loads(raw)
+    return data if isinstance(data, list) else data.get("lines", [data])
+
+
 def main(argv):
-    if len(argv) != 2:
-        print("usage: ust_check.py <invoice.json>", file=sys.stderr)
-        return 2
-    data = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
-    rows = data if isinstance(data, list) else data.get("lines", [data])
-    cfg = data if isinstance(data, dict) else {}
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--rows", default="invoice.json",
+                    help="JSON file, JSON array literal, or '-' for stdin")
+    ap.add_argument("--prior-turnover", dest="prior_turnover", type=float)
+    ap.add_argument("--kleinunternehmer", action="store_true")
+    ap.add_argument("--reverse-charge", dest="reverse_charge", action="store_true")
+    ap.add_argument("--supply-type", dest="supply_type",
+                    choices=["goods", "service"])
+    ap.add_argument("--customer-vat-id", dest="customer_vat_id")
+    ap.add_argument("--e-invoice", dest="e_invoice", action="store_true")
+    ap.add_argument("--rounding", default="half_up",
+                    choices=["half_up", "half_even"])
+    ap.add_argument("--config", default="config/versions.json")
+    args = ap.parse_args(argv)
+
+    rows = _rows_arg(args.rows)
+    # CLI flags override per-row fields, so a one-liner can carry the
+    # scenario without a JSON file (verified 2026-10-14, r3-05).
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        if args.prior_turnover is not None:
+            r.setdefault("prior_turnover", args.prior_turnover)
+        if args.kleinunternehmer:
+            r["kleinunternehmer"] = True
+        if args.reverse_charge:
+            r["reverse_charge"] = True
+        if args.supply_type:
+            r["supply_type"] = args.supply_type
+        if args.customer_vat_id:
+            r["customer_vat_id"] = args.customer_vat_id
+        if args.e_invoice:
+            r["e_invoice"] = True
+
+    cfg = {"prior_turnover": args.prior_turnover,
+           "kleinunternehmer": args.kleinunternehmer,
+           "rounding": args.rounding}
     errs = check(
         rows,
-        prior_turnover=cfg.get("prior_turnover"),
-        kleinunternehmer=cfg.get("kleinunternehmer", False),
-        rounding=cfg.get("rounding", "half_up"),
+        prior_turnover=cfg["prior_turnover"],
+        kleinunternehmer=cfg["kleinunternehmer"],
+        rounding=cfg["rounding"],
     )
     if errs:
         for e in errs:
@@ -120,4 +164,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main(sys.argv[1:]))

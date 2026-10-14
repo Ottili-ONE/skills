@@ -32,7 +32,12 @@ def main():
     ap.add_argument("--skr", default="04", choices=["03", "04"])
     ap.add_argument("--intra-eu", action="store_true",
                     help="override to 0% for intra-EU supplies")
-    ap.add_argument("--config", default=str(Path(__file__).resolve().parent.parent / "config" / "versions.json"))
+    # Default is the repo-root-relative path: load_config() resolves it via
+    # the repo-root fallback, so the script works from any CWD. The skill's
+    # own config/ dir holds period_lock.json, NOT versions.json -- a default
+    # pointing at <skill>/config/versions.json raises FileNotFoundError
+    # (verified 2026-10-14, skills-business-de-r3-05).
+    ap.add_argument("--config", default="config/versions.json")
     args = ap.parse_args()
 
     pinned = load_config(args.config)["skr-journal-mapping"]

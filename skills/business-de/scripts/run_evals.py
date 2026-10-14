@@ -19,7 +19,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = ROOT / "skills" / "business-de"
 
-CMD_RE = re.compile(r"`(python3\s+\S+[^`]*?)`", re.M)
+# Match `python3 ...` code spans, including ones whose argument is a JSON
+# array literal (the common one-line form in these EVALS files).
+CMD_RE = re.compile(r"`(python3\s+\S.*?)`", re.M)
 
 
 def evals_files(skills):
