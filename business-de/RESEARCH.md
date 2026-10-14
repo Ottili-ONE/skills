@@ -56,6 +56,56 @@ are different failures.
   mapping in xrechnung-zugferd is the best available but not independently
   re-verified from source.
 
+## PASS 6 — 2026-10-14 (scripts + validation close-out)
+
+The research and design deliverable (RESEARCH.md, SOURCES.md, DESIGN.md per
+skill) was accepted on 2026-10-13. This pass closed the remaining gap: every
+skill now has the scripts its DESIGN.md "Scripts planned" table names, plus
+tests, and all ten skills validate clean.
+
+| # | Skill | DESIGN | SOURCES | EVALS | SKILL.md | scripts | tests |
+|---|---|---|---|---|---|---|---|
+| 1 | xrechnung-zugferd | done | 13 | 7 | 125 L | 3 | 1 |
+| 2 | gobd-archive | done | 9 | 6 | 144 L | 4 | 4 |
+| 3 | datev-extf | done | 8 | 7 | 181 L | 4 | 1 |
+| 4 | skr-journal-mapping | done | 7 | 8 | 140 L | 5 | 2 |
+| 5 | ust-edge-cases | done | 6 | 9 | 83 L | 1 | 1 |
+| 6 | bank-reconciliation-camt | done | 6 | 8 | 100 L | 1 | 1 |
+| 7 | carrier-apis-de | done | 11 | 6 | 96 L | 3 | 5 |
+| 8 | webhooks-safe | done | 8 | 7 | 87 L | 3 | 6 |
+| 9 | publish-reconcile-wp-meta | done | 6 | 6 | 85 L | 2 | 6 |
+| 10 | dsgvo-ai-act-labeling | done | 8 | 6 | 109 L | 3 | 8 |
+
+### What was built this pass (2026-10-14)
+
+- **Scripts for the four skills that had none**: `carrier-apis-de`
+  (`create_label.py`, `track_shipment.py`, `reconcile_charges.py`),
+  `webhooks-safe` (`verify_webhook.py`, `dedup_event.py`,
+  `webhook_forward.py`), `publish-reconcile-wp-meta`
+  (`publish_post.py`, `reconcile_publish.py`), `dsgvo-ai-act-labeling`
+  (`classify_content.py`, `label_check.py`, `processing_register.py`).
+- **`scripts/common.py`** — shared `load_config` (reads `config/versions.json`,
+  never hardcodes a version) and `sha256_of`, used by all 24 scripts.
+- **`## Scripts` section in every SKILL.md** — lists the real scripts so an
+  agent loading the skill sees what is available without opening DESIGN.md.
+- **Pinned versions** for `webhooks-safe`, `carrier-apis-de`,
+  `publish-reconcile-wp-meta` and `dsgvo-ai-act-labeling` in
+  `config/versions.json` (the four skills that had no config block before).
+- **EVALS.md script-name sync** — dsgvo EVALS referenced `scripts/ai_label_check.py`
+  after the script was renamed to `label_check.py`.
+
+### Verification
+
+- `python3 ../scripts/validate_skill.py --all` on the 10 business-de skills
+  -> all 10 `ok`, exit 0 (2026-10-14).
+- `python3 ../scripts/validate_skills.py <10 dirs>` -> **0 findings** for all
+  10 (EVALS >= 5 prompts, SOURCES links, trigger present, scripts referenced).
+- `python3 -m pytest -q` in `business-de` -> **109 passed**, 0 failed.
+- The 8 `validate_skill.py --all` findings that remain are in *other* jobs'
+  skills (acceptance-harness, foundation-v2-conformance, honest-status,
+  long-test-discipline, module-contract-first, playwright-a11y-e2e,
+  shared-tree-git) and are outside this job's ownership.
+
 ## CLOSE-OUT — 2026-10-13 (research + design deliverable)
 
 Acceptance check: `RESEARCH.md` + `SOURCES.md` + `DESIGN.md` for each of the
