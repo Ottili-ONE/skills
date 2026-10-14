@@ -37,11 +37,33 @@ the number is circular.
    specific agent pass.
 
 ## Decision tables
-- **Agreement**: >=0.6 usable; 0.4-0.6 fix the rubric; <0.4 unusable.
-- **Drift**: mean shift 0-0.2 = stable; 0.2-0.3 = watch; >0.3 = re-calibrate.
-- **Position bias**: 0-0.3 = acceptable; >0.5 = aggregate across shuffles.
-- **Judge/teacher separation**: same model + same prompt = fail; different model
-  or different prompt = acceptable; different model = preferred.
+
+### D1 — Agreement threshold
+| Agreement | Verdict | Action |
+|-----------|---------|--------|
+| >= 0.6 | usable | ship the judge |
+| 0.4-0.6 | fix the rubric | add per-level examples, re-annotate |
+| < 0.4 | unusable | retire or rebuild the rubric |
+
+### D2 — Drift
+| Mean shift | Verdict | Action |
+|-----------|---------|--------|
+| 0-0.2 | stable | keep the judge |
+| 0.2-0.3 | watch | re-check next week |
+| > 0.3 | drift | re-calibrate or retire |
+
+### D3 — Position bias
+| Bias | Verdict | Action |
+|------|---------|--------|
+| 0-0.3 | acceptable | ship |
+| > 0.5 | order-sensitive | aggregate scores across shuffles |
+
+### D4 — Judge/teacher separation
+| Setup | Verdict |
+|-------|---------|
+| same model + same prompt | fail - agreement is circular |
+| different model or different prompt | acceptable |
+| different model | preferred |
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - Judge and generator are the same model -> agreement is circular.
