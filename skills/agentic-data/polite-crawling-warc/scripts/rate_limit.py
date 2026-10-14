@@ -104,3 +104,21 @@ def main() -> int:
         return cmd_check(args.check, args.crawl_delay)
 
     if args.crawl_delay is None and args.request_rate is None:
+        print(f"WARN: no rate given, using default crawl-delay {DEFAULT_CRAWL_DELAY}s",
+              file=sys.stderr)
+        rl = RateLimiter(crawl_delay=DEFAULT_CRAWL_DELAY)
+    elif args.crawl_delay is not None:
+        rl = RateLimiter(crawl_delay=args.crawl_delay)
+    else:
+        rl = RateLimiter(rate=args.request_rate)
+
+    total = 0.0
+    for _ in range(args.n):
+        total += rl.wait()
+    print(f"rate={rl.rate:.3f}/s waits={args.n} total_sleep={total:.3f}s")
+    print("PASS: rate limiter ran", file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

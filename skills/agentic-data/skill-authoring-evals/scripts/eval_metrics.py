@@ -98,11 +98,11 @@ def cmd_delta(with_dir: Path, without_dir: Path, min_delta: float = 0.05) -> int
     without_files = {p.stem: p for p in without_dir.glob("*.txt")}
     cases = sorted(set(with_files) & set(without_files))
     missing = sorted(set(without_files) - set(with_files)) + sorted(set(with_files) - set(without_files))
+    for m in missing:
+        print(f"FAIL: case {m} missing from one side (baseline incomplete)", file=sys.stderr)
     if not cases:
         print("FAIL: no case id present in both directories", file=sys.stderr)
         return 1
-    for m in missing:
-        print(f"FAIL: case {m} missing from one side (baseline incomplete)", file=sys.stderr)
     missing = sorted(set(without_files) - set(with_files)) + sorted(set(with_files) - set(without_files))
     for m in missing:
         print(f"FAIL: case {m} missing from one side (baseline incomplete)", file=sys.stderr)

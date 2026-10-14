@@ -81,20 +81,81 @@ def cosine(a, b) -> float:
     return dot / (na * nb)
 
 
+def cmd_calibrate(docs_path: str, clean_ids_path: str, prompt_ids_path: str,
+                  model: str, out_path: str) -> int:
+    """Derive an embedding threshold from a held-out CLEAN set.
+
+    The threshold is model-dependent (SKILL.md pitfall P6): a value copied from
+    another model's blog post does not transfer. This command measures the
+    cosine distribution between clean documents and the prompts, and reports
+    the 95th percentile as the recommended threshold plus the margin to the
+    nearest flagged pair. The caller pins the returned value in config; the
+    script never bakes a constant into logic.
+
+    Exit 0 with the recommendation on stderr; exit 1 if the data is unusable.
+    """
+    docs = load_embeddings(docs_path)
+    prompts = load_embeddings(prompt_ids_path)
+    if docs is None or prompts is None:
+        return 1
+    doc_ids = load_ids(clean_ids_path)
+    pr_ids = load_ids(prompt_ids_path)
+    if not doc_ids or not pr_ids:
+        return 1
+    if len(docs) != len(doc_ids) or len(prompts) != len(pr_ids):
+        print("FAIL: row/id length mismatch", file=sys.stderr)
+        return 1
+    scores = []
+    for d in docs:
+        for p in prompts:
+            scores.append(cosine(d, p))
+    if not scores:
+        print("FAIL: no pairs to score", file=sys.stderr)
+        return 1
+    scores_sorted = sorted(scores)
+    n = len(scores_sorted)
+    p95 = scores_sorted[min(n - 1, int(math.ceil(0.95 * n)) - 1)]
+    p99 = scores_sorted[min(n - 1, int(math.ceil(0.99 * n)) - 1)]
+    margin = p99 - p95
+    rec = {
+        "model": model,
+        "n_pairs": n,
+        "p95": round(p95, 4),
+        "p99": round(p99, 4),
+        "margin": round(margin, 4),
+        "recommended_threshold": round(p95, 4),
+        "note": "pin this value in config and re-derive on every model change; "
+                "do not hardcode it in logic",
+    }
+    with open(out_path, "w", encoding="utf-8") as fh:
+        json.dump(rec, fh, indent=2, sort_keys=True)
+    print(f"INFO: calibrated threshold {rec['recommended_threshold']} "
+          f"(p95={rec['p95']}, p99={rec['p99']}, margin={rec['margin']}) "
+          f"from {n} clean pairs for model {model}", file=sys.stderr)
+    print(f"PASS: calibration written to {out_path}", file=sys.stderr)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--docs", required=True, help="embeddings file (.json list-of-lists or .npy)")
-    ap.add_argument("--doc_ids", required=True)
-    ap.add_argument("--prompts", required=True)
-    ap.add_argument("--prompt_ids", required=True)
+    ap.add_argument("--docs", help="embeddings file (.json list-of-lists or .npy)")
+    ap.add_argument("--doc_ids", help="document id list")
+    ap.add_argument("--prompts", help="prompt embeddings file")
+    ap.add_argument("--prompt_ids", help="prompt id list")
     ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD)
     ap.add_argument("--model", required=True, help="embedding model used; threshold is pinned to it")
     ap.add_argument("--manifest", default=None)
+    ap.add_argument("--calibrate-out", default=None,
+                    help="if set, write a calibration JSON here instead of running decontamination")
     args = ap.parse_args()
 
-    if not (-1.0 <= args.threshold < 1.0):
-        print(f"FAIL: --threshold must be in [-1, 1), got {args.threshold}", file=sys.stderr)
-        return 1
+    if args.calibrate_out is not None:
+        if not (args.docs and args.doc_ids and args.prompts and args.prompt_ids):
+            print("FAIL: --calibrate-out requires --docs --doc_ids --prompts --prompt_ids",
+                  file=sys.stderr)
+            return 2
+        return cmd_calibrate(args.docs, args.doc_ids, args.prompts,
+                             args.model, args.calibrate_out)
 
     docs = load_embeddings(args.docs)
     prompts = load_embeddings(args.prompts)

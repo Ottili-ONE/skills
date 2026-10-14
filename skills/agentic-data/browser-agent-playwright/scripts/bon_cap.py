@@ -114,7 +114,10 @@ def main() -> int:
         rc = cmd_check(state, args.task)
     else:
         rc = cmd_reset(state, args.task)
-    if args.state.is_file() and not state.get("_bad"):
+    # Persist unconditionally once the state was readable: a missing file is a
+    # valid initial state, and skipping the save when the file does not yet
+    # exist means the counters never survive to the next call.
+    if not state.get("_bad"):
         save(args.state, state)
     return rc
 
