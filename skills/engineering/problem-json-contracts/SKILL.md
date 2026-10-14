@@ -18,6 +18,15 @@ Any of these fires it:
 - Code review mentions `{"error": "..."}` without type/instance/status fields.
 - Adding a new language SDK and needing stable error shapes.
 
+## Disambiguation
+- Fires: designing or reviewing an HTTP API's >=400 responses, adding an error code, or
+  investigating "client cannot parse the error" / "retry loop hammered us" incidents.
+- Does NOT fire for: in-process module boundaries (use module-contract-first — that skill
+  governs internal signatures and export snapshots, not HTTP envelopes); status reporting
+  (use [honest-status](../honest-status/SKILL.md) — an unhandled error is a status item, but
+  the *shape* of the error is this skill's job); or a success response (2xx), which this skill
+  does not govern.
+
 ## When NOT to use this skill
 - Internal CLI-only tools with no HTTP transport.
 - Health-check endpoints that return plain text 200.
