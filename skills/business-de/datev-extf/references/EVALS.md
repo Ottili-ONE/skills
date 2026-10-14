@@ -124,7 +124,7 @@ Sachkontenlaenge (5-8) or shorten the account.
 *text* field. A row with the key at index 124 instead of 96 still has 125
 cells, so the column-count check passes and the validator reports
 `tax_key_missing` — the key is simply in the wrong place. Verified:
-`python3 scripts/validate_extf.py` on such a row exits 1 with
+`python3 scripts/validate_extf.py evals_fixtures/stapel_key125.csv` on such a row exits 1 with
 `tax_key_missing`.
 
 ### N7. "The row has 124 columns, just pad the last one"
@@ -170,6 +170,14 @@ python3 scripts/build_stapel.py --berater 29098 --mandant 55003 --wj-start 20260
 # row has 125 columns: col 10 (index 9) = "0206", col 97 (index 96) = "19"
 python3 scripts/validate_extf.py stapel.csv
 # {"ok": true, "checked_lines": 2, "error_count": 0}
+
+# 6b. tax key at column 125 (wrong place) -> exit 1
+python3 scripts/validate_extf.py evals_fixtures/stapel_key125.csv
+# {"ok": false, "errors": [{"code": "tax_key_missing", "severity": "error", ...}]}
+
+# 6c. row with 124 columns -> exit 1, booking-column-count
+python3 scripts/validate_extf.py evals_fixtures/stapel_124.csv
+# {"ok": false, "errors": [{"code": "booking-column-count", "severity": "error", ...}]}
 ```
 
 Verified 2026-10-14 against `seamless-engineering/datev-extf`

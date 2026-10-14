@@ -127,9 +127,11 @@ is empty.
 ### N7. "The state file is just a cache, delete it after the check"
 **Trap:** the immutability state is the hash chain that proves no
 in-place modification. A state whose stored hash does not match the file
-(e.g. `{'a.txt': 'deadbeef'}`) is a violation, and deleting the state means
-the next run cannot detect edits. `immutability_check.py --strict` exits 1
-on a mismatch; keep the state under version control alongside the archive.
+(e.g. `{'a.txt': 'deadbeef'}`) is a violation: `immutability_check.py` exits 1
+with `violations: ["files (deleted)", "a.txt"]`. Deleting the state means the
+next run cannot detect edits. The checker is read-only by default
+(`--write-state` is opt-in) — keep the state under version control alongside
+the archive.
 
 
 ---
@@ -162,8 +164,8 @@ python3 scripts/purge_decision.py --type invoice --year 2017 --approver "M. Must
 #  "record_retention_until": "2025-12-31"}
 
 # 7c. Verfahrensdokumentation, complete envelope -> exit 0
-python3 scripts/verfahrensdokumentation.py --system "ERP v5.2" --medium "S3 encrypted" --export "DATEV EXTF" --access "RBAC" --backup "daily" --retention "8y" --year 2026 --out vd.json
-python3 scripts/verfahrensdokumentation.py --check vd.json
+python3 scripts/verfahrensdokumentation.py --system "ERP v5.2" --medium "S3 encrypted" --export "DATEV EXTF" --access "RBAC" --backup "daily" --retention "8y" --year 2026 --out /tmp/vd.json
+python3 scripts/verfahrensdokumentation.py --check /tmp/vd.json
 # {"ok": true, "missing_sections": [], "checked": 6}
 
 # 7d. Verfahrensdokumentation, flat envelope -> exit 1 (all six missing)
@@ -173,7 +175,7 @@ python3 scripts/verfahrensdokumentation.py --check evals_fixtures/vd_flat.json
 
 # 7e. immutability state, hash mismatch -> exit 1
 python3 scripts/immutability_check.py --archive evals_fixtures/sample_archive --state evals_fixtures/state_bad.json
-# {"ok": false, "violations": ["a.txt"], ...}
+# {"ok": false, "violations": ["files (deleted)", "a.txt"], "new_files": ["a.txt"]}
 
 # 7f. immutability state, matching hash -> exit 0
 python3 scripts/immutability_check.py --archive evals_fixtures/sample_archive --state evals_fixtures/state_ok.json

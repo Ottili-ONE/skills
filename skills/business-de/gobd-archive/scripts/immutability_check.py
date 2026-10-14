@@ -32,6 +32,12 @@ def main() -> int:
     ap.add_argument("--strict", action="store_true",
                     help="fail if any file is new (append-only is expected, "
                          "not required for a first run)")
+    ap.add_argument("--write-state", action="store_true",
+                    help="persist the current hashes back to the state file. "
+                         "Off by default: a check must not modify the artefact "
+                         "it is auditing (GoBD non-modifiability applies to the "
+                         "checker too). Pass it when the state is being created "
+                         "or legitimately updated.")
     args = ap.parse_args()
 
     archive = Path(args.archive)
@@ -69,7 +75,8 @@ def main() -> int:
         ok = False
         violations.append(f"new files under --strict: {new_files}")
 
-    state_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
+    if args.write_state:
+        state_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
     print(json.dumps({
         "ok": ok,
         "checked": len(current),
