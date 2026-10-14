@@ -12,6 +12,9 @@ EVALS = ROOT / "fixtures" / "sample_evals.json"
 FIRINGS = ROOT / "fixtures" / "sample_firings.txt"
 
 
+EVALS_DATA = json.loads(EVALS.read_text(encoding="utf-8"))
+
+
 def run(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
@@ -20,14 +23,14 @@ def run(*args: str) -> subprocess.CompletedProcess:
 
 
 def test_perfect_scores_pass():
-    r = run(str(EVALS), str(FIRINGS))
+    r = run("metrics", str(EVALS), str(FIRINGS))
     assert r.returncode == 0, r.stderr
     assert "PASS" in r.stderr
     assert "1 0 0" in r.stdout
 
 
 def test_json_output_shape():
-    r = run(str(EVALS), str(FIRINGS), "--json")
+    r = run("metrics", str(EVALS), str(FIRINGS), "--json")
     assert r.returncode == 0
     data = json.loads(r.stdout)
     assert data["precision"] == 1.0
@@ -39,13 +42,12 @@ def test_json_output_shape():
 
 
 def test_low_recall_fails():
-    # every should-fire case misses
     firings = FIRINGS.with_suffix(".miss.txt")
     firings.write_text("\n".join(
         f"{e} 0" for e in ["E1", "E2", "E3", "E4", "E5", "E6"]
     ) + "\n", encoding="utf-8")
     try:
-        r = run(str(EVALS), str(firings))
+        r = run("metrics", str(EVALS), str(firings))
         assert r.returncode == 1
         assert "FAIL" in r.stderr
         assert "recall" in r.stderr.lower()
@@ -54,13 +56,12 @@ def test_low_recall_fails():
 
 
 def test_broad_description_fails_precision():
-    # every should-not-fire case fires
     firings = FIRINGS.with_suffix(".broad.txt")
     firings.write_text("\n".join(
         f"{e} 1" for e in ["E1", "E2", "E3", "E4", "E5", "E6", "N1", "N2", "N3"]
     ) + "\n", encoding="utf-8")
     try:
-        r = run(str(EVALS), str(firings))
+        r = run("metrics", str(EVALS), str(firings))
         assert r.returncode == 1
         assert "precision" in r.stderr.lower()
     finally:
@@ -68,14 +69,13 @@ def test_broad_description_fails_precision():
 
 
 def test_missing_firing_record_counts_as_miss():
-    # E1 has no firing line at all
     firings = FIRINGS.with_suffix(".gap.txt")
     body = "\n".join(
         line for line in FIRINGS.read_text().splitlines() if not line.startswith("E1 ")
     )
     firings.write_text(body + "\n", encoding="utf-8")
     try:
-        r = run(str(EVALS), str(firings))
+        r = run("metrics", str(EVALS), str(firings))
         assert r.returncode == 1
         assert "FAIL" in r.stderr
     finally:
@@ -86,7 +86,7 @@ def test_bad_firing_line_format():
     bad = FIRINGS.with_suffix(".malformed.txt")
     bad.write_text("E1 notabool\n", encoding="utf-8")
     try:
-        r = run(str(EVALS), str(bad))
+        r = run("metrics", str(EVALS), str(bad))
         assert r.returncode == 2
         assert "FAIL" in r.stderr
     finally:
@@ -96,5 +96,63 @@ def test_bad_firing_line_format():
 def test_evals_json_must_be_list(tmp_path):
     ev = tmp_path / "bad.json"
     ev.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
-    r = run(str(ev), str(FIRINGS))
+    r = run("metrics", str(ev), str(FIRINGS))
     assert r.returncode == 2
+
+
+def test_delta_identical_output_fails(tmp_path):
+    w = tmp_path / "with"
+    b = tmp_path / "without"
+    w.mkdir()
+    b.mkdir()
+    (w / "E1.txt").write_text("same answer\n", encoding="utf-8")
+    (b / "E1.txt").write_text("same answer\n", encoding="utf-8")
+    r = run("delta", str(w), str(b))
+    assert r.returncode == 1
+    assert "identical to baseline" in r.stderr
+
+
+def test_delta_changed_output_passes(tmp_path):
+    w = tmp_path / "with"
+    b = tmp_path / "without"
+    w.mkdir()
+    b.mkdir()
+    (w / "E1.txt").write_text("a much longer answer than the baseline\n", encoding="utf-8")
+    (b / "E1.txt").write_text("no\n", encoding="utf-8")
+    r = run("delta", str(w), str(b))
+    assert r.returncode == 0
+    assert "PASS" in r.stderr
+
+
+def test_delta_missing_side_fails(tmp_path):
+    w = tmp_path / "with"
+    b = tmp_path / "without"
+    w.mkdir()
+    b.mkdir()
+    (w / "E1.txt").write_text("x\n", encoding="utf-8")
+    (b / "E2.txt").write_text("y\n", encoding="utf-8")
+    r = run("delta", str(w), str(b))
+    assert r.returncode == 1
+    assert "missing from one side" in r.stderr
+
+
+def test_split_missing_field_fails(tmp_path):
+    ev = tmp_path / "no_split.json"
+    ev.write_text(json.dumps(EVALS_DATA), encoding="utf-8")
+    r = run("split", str(ev))
+    assert r.returncode == 1
+    assert "split" in r.stderr.lower()
+
+
+def test_split_both_splits_pass(tmp_path):
+    ev = tmp_path / "split.json"
+    data = [
+        {**EVALS_DATA[0], "split": "train"},
+        {**EVALS_DATA[1], "split": "val"},
+    ]
+    ev.write_text(json.dumps(data), encoding="utf-8")
+    r = run("split", str(ev))
+    assert r.returncode == 0
+    assert "PASS" in r.stderr
+
+

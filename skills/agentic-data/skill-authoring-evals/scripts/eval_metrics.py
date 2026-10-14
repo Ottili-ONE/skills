@@ -97,9 +97,12 @@ def cmd_delta(with_dir: Path, without_dir: Path, min_delta: float = 0.05) -> int
     with_files = {p.stem: p for p in with_dir.glob("*.txt")}
     without_files = {p.stem: p for p in without_dir.glob("*.txt")}
     cases = sorted(set(with_files) & set(without_files))
+    missing = sorted(set(without_files) - set(with_files)) + sorted(set(with_files) - set(without_files))
     if not cases:
         print("FAIL: no case id present in both directories", file=sys.stderr)
         return 1
+    for m in missing:
+        print(f"FAIL: case {m} missing from one side (baseline incomplete)", file=sys.stderr)
     missing = sorted(set(without_files) - set(with_files)) + sorted(set(with_files) - set(without_files))
     for m in missing:
         print(f"FAIL: case {m} missing from one side (baseline incomplete)", file=sys.stderr)
@@ -179,6 +182,7 @@ def main() -> int:
         m = metrics(evals, firings)
         if args.json:
             print(json.dumps(m))
+            return 0 if m["pass"] else 1
         print(f"{1 if m['pass'] else 0} {0 if m['pass'] else 1} 0")
         if m["pass"]:
             print(f"PASS: precision {m['precision']}, recall {m['recall']}", file=sys.stderr)
