@@ -35,6 +35,47 @@ research (documented in the individual DESIGN.md files):
 - `publish-reconcile-wp-meta` is scoped to **idempotent publishing + reconciliation of unknown
   results**, not to a full WordPress/Meta API client.
 
+## PASS 3 (DEEPEN) — 2026-10-14
+
+The BUILD and PASS-2 passes produced full skeletons; PASS 3 deepened them.
+What changed:
+
+### Version-sensitive facts re-verified online (retrieval 2026-10-14)
+
+| Skill | Finding | Source |
+|---|---|---|
+| all ten | Re-fetched 11 primary URLs. Factur-X 1.09.2 / ZUGFeRD 2.5.2, KoSIT config tag v2026-08-31, UStG §14 and §13b via dejure.org, whk-controlling GoBD classes all confirmed. | curl, HTTP 200 |
+| all ten | `gesetze-im-internet.de/ustg/` and `/ao/` **still 404** (re-confirmed on 2026-10-14). The dejure.org mirrors carry the authoritative text. | curl, HTTP 404 |
+| `ust-edge-cases` | dejure.org §13b resolves as "Leistungsempfänger als Steuerschuldner" — confirms the PASS-2 renumber from §3g. | dejure.org, HTTP 200 |
+
+A `Re-check 2026-10-14` block was appended to all ten `references/SOURCES.md`
+files. Net effect on pinned versions: none.
+
+### Worked good/bad examples
+
+Every `references/procedures.md` now carries at least two GOOD/BAD pairs. Five
+skills had none before PASS 3 (`gobd-archive`, `dsgvo-ai-act-labeling`,
+`publish-reconcile-wp-meta`, `ust-edge-cases`, `skr-journal-mapping`); the other
+five had partial coverage. The pairs target each skill's highest-error-rate
+operation (amount-only matching, BT-18/BT-20 swap, comma-decimal, reverse-charge
+misclassification, raw-body verification, etc.).
+
+### Script hardening
+
+Two real bugs fixed and caught by new tests:
+
+- `carrier-apis-de/scripts/track.py` — the live branch built the request
+  envelope but then sent the bare base URL, silently dropping the carrier
+  tracking path. Now `main()` uses the URL returned by `build_request()`.
+- `webhooks-safe/scripts/verify.py` — PayPal/Twilio verification accepted a
+  bare HMAC with no replay window. Now `--now` is required for
+  stripe/paypal/twilio and a signature with no timestamp is rejected.
+
+### Gate
+
+`scripts/validate_skills.py` → 10 skills, 0 issues. `pytest` → 216 passed
+(was 212 in PASS 2).
+
 ## Sources reused across skills
 
 - Agent Skills open standard: <https://agentskills.io/specification> (retrieved 2026-10-07).
