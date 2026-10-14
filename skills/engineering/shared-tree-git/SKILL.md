@@ -103,6 +103,11 @@ outgoing dependencies. It appears only as the *target* of other skills' links:
 - honest-status — status buckets keep the shared tree readable across agents.
 - long-test-discipline — commit the wrapper script with explicit paths only.
 - problem-json-contracts — the catalogue and schema are committed with a task-id prefix.
+- acceptance-harness — the scenario file, evidence and outcome are committed with a task-id prefix.
+- outbox-idempotency — the outbox migration and leak-test evidence are committed with a task-id prefix.
+- pg-rls-multitenant — the migration and leak-test evidence are committed with a task-id prefix.
+- playwright-a11y-e2e — the evidence artifacts and the test script are committed with a task-id prefix.
+- foundation-v2-conformance — the conformance report and the fresh-consumer test are committed with a task-id prefix.
 
 These are informational mentions only (no outgoing dependency): the one-way graph
 keeps the Related-section graph acyclic.
