@@ -37,6 +37,34 @@ allowed-tools: []
 4. **Verify isolation** — `git show --stat HEAD` must list only your paths.
 5. **Handle divergence** — if your commit fails due to a conflicting update, re-fetch only your paths and rebase mentally (never rebase/merge/pull).
 
+## Worked examples
+Good (explicit paths, task-id prefix, verified isolation):
+```bash
+$ git add skills/engineering/honest-status/SKILL.md skills/engineering/honest-status/references/honest-status-procedure.md
+$ git commit -m "skills-engineering-r3-01: add worked examples" -- skills/engineering/honest-status/SKILL.md skills/engineering/honest-status/references/honest-status-procedure.md
+$ git show --stat HEAD
+skills-engineering-r3-01: add worked examples
+ ... skills/engineering/honest-status/SKILL.md  | 12 ++++++++++++
+ ... skills/engineering/honest-status/references/honest-status-procedure.md | 8 +++++++++
+ 2 files changed, 20 insertions(+)
+# only MY paths listed — isolation verified
+```
+Bad (blocked form — stages another agent's accidental edit and your commit owns their file):
+```bash
+$ git add -A            # AGENTS.md forbids this; blocked technically
+$ git commit -a        # same; blocked
+```
+Bad (commit message without the task-id prefix — rejected by policy):
+```bash
+$ git commit -m "fix typo" -- skills/engineering/honest-status/SKILL.md
+# error: commit message missing task-id prefix; got: 'fix typo'
+```
+Bad (checkout of a path you do not own — silently overwrites another agent):
+```bash
+$ git checkout main -- skills/business-de/webhooks-safe/SKILL.md
+# overwrites the business-de agent's uncommitted work; never do this
+```
+
 ## Pitfalls from research (real incidents)
 - `index.lock` left by a killed CI job looks stale but is still live; removing it corrupts the index for the other agent ([git index docs](references/SOURCES.md#primary-sources)).
 - `git add -A` stages another agent's accidental edit and your commit owns their file ([shared-tree policy](references/SOURCES.md#primary-sources)).
