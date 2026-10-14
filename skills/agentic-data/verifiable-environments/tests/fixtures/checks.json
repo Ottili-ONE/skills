@@ -13,7 +13,14 @@
       "name": "summary_file",
       "path": "summary.md",
       "exists": true,
-      "spec_ref": "The file must exist."
+      "spec_ref": "The file must exist and be a markdown file of at least 20 words describing the output.",
+      "min_words": 20,
+      "keywords": [
+        "output",
+        "summary"
+      ],
+      "min_keywords": 1,
+      "max_words": 400
     }
   ]
 }

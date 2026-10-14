@@ -57,6 +57,12 @@ Without those four properties the run cannot be replayed or audited.
   record it and stop the replay.
 - **Cost units**: tokens = model counts; time = seconds; money = USD at the
   pinned rate. Never mix units.
+- **Step monotonicity**: `step` must be strictly increasing across the file.
+  A ledger whose steps are not a sequence cannot be replayed deterministically
+  and is rejected by the audit.
+- **Schema version**: the first event must declare `schema` equal to
+  `trajectory-ledger-v1`. A ledger written against a draft schema cannot be
+  replayed against the current one. Mixing versions in one file is rejected.
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - A `succeeded` event with no result -> fabricated success.
@@ -82,6 +88,11 @@ Without those four properties the run cannot be replayed or audited.
 - [ ] Cost has units.
 - [ ] Replay reproduces the hash sequence (or divergence is recorded).
 - [ ] Audit walk passes.
+- [ ] Steps are strictly increasing (the ledger is a sequence).
+- [ ] The schema version is `trajectory-ledger-v1` and is not mixed.
+- [ ] A non-determinism record is appended with a step strictly greater than
+  the last recorded step (scripts/ledger.py record-non-det rejects
+  out-of-order steps).
 
 ## Worked examples
 

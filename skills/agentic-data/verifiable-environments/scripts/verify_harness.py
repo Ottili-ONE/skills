@@ -83,6 +83,36 @@ def assert_checks_spec_ref(checks: list[dict], spec_path: Path | None) -> list[s
     return failures
 
 
+def assert_check_defences(checks: list[dict]) -> list[str]:
+    """Every check needs at least two independent defences (rule of two).
+
+    A check with exactly one defence is a single point of failure: the agent
+    either does the intended work or finds the one unintended path. Defence
+    families are: existence, content equality, JSON field, word count, and
+    the sandbox contract. A check that asserts only existence has one defence
+    and is flagged here so it can be given a second one before shipping.
+    """
+    failures: list[str] = []
+    for c in checks:
+        defences = 0
+        if c.get("exists", True):
+            defences += 1
+        if "content_equals" in c:
+            defences += 1
+        if "json_field" in c:
+            defences += 1
+        if "min_words" in c or "max_words" in c:
+            defences += 1
+        if "keywords" in c:
+            defences += 1
+        if defences < 2:
+            failures.append(
+                f"FAIL: check '{c.get('name', 'unnamed')}' has {defences} defence(s); "
+                f"the rule of two requires >= 2 independent defences"
+            )
+    return failures
+
+
 def assert_checks_bypass_register(checks: list[dict], register_path: Path | None) -> list[str]:
     """Every check must have a written bypass entry in the register."""
     failures: list[str] = []
@@ -116,6 +146,18 @@ def run_checks(checks: list[dict], agent_dir: Path) -> tuple[int, int, list[str]
                 ok = obj.get(c["json_field"]) == c["json_value"]
             except (json.JSONDecodeError, OSError):
                 ok = False
+        if ok and "min_words" in c:
+            words = len(path.read_text(encoding="utf-8").split())
+            ok = words >= int(c["min_words"])
+            details.append(f"INFO: {name} word_count={words} min={c['min_words']}")
+        if ok and "max_words" in c:
+            words = len(path.read_text(encoding="utf-8").split())
+            ok = words <= int(c["max_words"])
+        if ok and "keywords" in c:
+            text = path.read_text(encoding="utf-8").lower()
+            hits = [k for k in c["keywords"] if k.lower() in text]
+            ok = len(hits) >= int(c.get("min_keywords", 1))
+            details.append(f"INFO: {name} keyword_hits={len(hits)} need>={c.get('min_keywords', 1)}")
         passed += 1 if ok else 0
         details.append(f"{'PASS' if ok else 'FAIL'}: {name} ({c['path']})")
     return passed, total, details
@@ -189,10 +231,15 @@ def main() -> int:
             print(str(e), file=sys.stderr)
             return 2
         bypass_failures = audit_bypass_register(register_rows, spec_obj.get("checks", []))
-        for f in bypass_failures:
+        rule_of_two_failures = assert_check_defences(spec_obj.get("checks", []))
+        for f in bypass_failures + rule_of_two_failures:
             print(f, file=sys.stderr)
-        if bypass_failures:
-            print(f"FAIL: {len(bypass_failures)} bypass-register problem(s)", file=sys.stderr)
+        if bypass_failures or rule_of_two_failures:
+            print(
+                f"FAIL: {len(bypass_failures) + len(rule_of_two_failures)} "
+                f"bypass-register problem(s)",
+                file=sys.stderr,
+            )
             return 1
         print("PASS: every check has a bypass-register entry with >= 2 defences", file=sys.stderr)
 

@@ -45,6 +45,9 @@ the number is circular.
 
 ## Near-miss triggers (stop and re-check before proceeding)
 - Judge and generator are the same model -> agreement is circular.
+- A calibration report with no provenance fields -> the score is not
+  auditable; re-run with --judge-model, --generator-model and both prompt
+  hashes.
 - Rubric has no per-level examples -> ambiguous, low agreement.
 - Calibration set is the training set -> overfit, does not transfer.
 - Agreement measured on a set the rubric was tuned on -> inflated.
@@ -69,6 +72,9 @@ the number is circular.
 - [ ] Drift check scheduled weekly with thresholds recorded.
 - [ ] Pass-rate threshold derived from the calibration set, not the training set.
 - [ ] Judge model, generator model and prompt hashes recorded in the report.
+- [ ] The report carries all four provenance fields; a report missing any of
+  them is not auditable and `scripts/calibrate_judge.py` rejects it.
+- [ ] Judge and generator are not the same model with the same prompt.
 
 ## Worked examples
 
@@ -102,3 +108,11 @@ needs a definition AND at least one example.
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/calibrate_judge.py (calibrate, rubric), scripts/rubric_lint.py, scripts/gen_rubric.py
+
+## Provenance gate
+Every calibration report must record the judge model, the generator model and
+the hash of both prompts. A score with no provenance cannot be reproduced or
+audited, so `scripts/calibrate_judge.py calibrate` requires all four fields
+and rejects a report where judge and generator are the same model with the
+same prompt. Decision table: same model + same prompt = fail; different model
+or different prompt = acceptable; different model = preferred.

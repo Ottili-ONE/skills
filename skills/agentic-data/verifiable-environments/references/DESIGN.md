@@ -46,6 +46,11 @@ you have not audited it.
   indirect (agent finds an unintended path) = high; cosmetic (reorders output) = low.
 - **Discriminating power**: `min(pass_good - pass_lazy, pass_good - pass_broken)` must
   be >= 0.30.
+- **Rule of two**: every check needs at least two independent defences (existence,
+  content equality, JSON field, word count, keyword match, max length). A check with
+  exactly one defence is a single point of failure: the agent either does the
+  intended work or finds the one unintended path. `scripts/verify_harness.py
+  --bypass-audit SPEC REGISTER` enforces this.
 
 ## Scripts planned
 - `scripts/verify_harness.py` — runs the three agents (good/broken/lazy), reports pass
@@ -62,6 +67,11 @@ you have not audited it.
    fails the whole harness before any agent runs.
 5. "I flipped one check to always-pass and the power did not drop." -> The check was
    not load-bearing; find another one and repeat.
+6. "My check only asserts that a file exists. Is that enough?" -> No: one defence is a
+   single point of failure. The agent can `touch` the file. Add a second independent
+   defence (content equality, a JSON field, a word count, a keyword match) and record
+   both in the bypass register. `scripts/verify_harness.py --bypass-audit` rejects
+   single-defence checks.
 
 ## What this skill does better than a generic agent
 A generic agent writes tests that check the happy path. This skill ships a
@@ -87,6 +97,11 @@ This skill is the only Agent Skill that treats the verifier as a system to be au
   always-pass. This proves the checks are load-bearing rather than decorative.
 - **Explicit pass-rate floors**: `pass_good >= 0.80` and discriminating power
   `>= 0.30` are concrete numbers, not vibes.
+- **Rule of two enforced by the harness**: `scripts/verify_harness.py
+  --bypass-audit SPEC REGISTER` walks the spec checks and rejects any check with
+  fewer than two independent defences. This is what caught the shipped fixture's
+  `summary_file` check, which asserted only existence against a spec that asked
+  for a 20-word summary: the agent could `touch summary.md` and pass.
 
 ## Near-miss triggers
 - Verifier imports the environment module -> shares its bugs; rewrite against SPEC.md.

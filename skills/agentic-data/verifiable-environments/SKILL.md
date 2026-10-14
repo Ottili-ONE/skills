@@ -47,6 +47,11 @@ for a check, you have not audited it.
 ## Decision tables
 - **Check type**: observable outcome > hidden state > process proxy. Never
   process-only (a proxy can be faked).
+- **Defence families**: existence, content equality, JSON field, word count,
+  keyword match, max length. A check with exactly one defence is a single
+  point of failure: the agent either does the intended work or finds the one
+  unintended path. Record the defences in `references/bypass-register.md`.
+  `scripts/verify_harness.py --bypass-audit SPEC REGISTER` enforces this.
 - **Sandbox policy**: network=deny, fs=scoped tmp, exec=allowlisted only,
   time=bounded. Anything else is a leak.
 - **Pass-rate drift**: 0-5 points = noise; 6-20 = re-derive thresholds; >20 =
@@ -100,6 +105,9 @@ for a check, you have not audited it.
 - [ ] Known-good agent passes >=80%.
 - [ ] No check depends on wall-clock time.
 - [ ] Harness re-run after neutering a check drops power and exits 1.
+- [ ] Every check has >= 2 independent defences (rule of two).
+- [ ] `--bypass-audit` passes: every check has a register entry and >= 2
+  defences, and no check is `critical` severity.
 
 ## Worked examples
 
@@ -137,4 +145,4 @@ written entry in `references/bypass-register.md`, and this one has none.
 - neutering: references/neutering.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/verify_harness.py, scripts/gen_fixtures.py
+- scripts: scripts/verify_harness.py (verify, bypass-audit, neuter), scripts/gen_fixtures.py
