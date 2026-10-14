@@ -73,3 +73,11 @@ or high bypass must be closed by a second, independent check.
 - cosmetic bypass: n/a.
 - residual risk: none. This check exists solely to make the neutering step
   observable. If it ever scored a real agent, the harness would be broken.
+
+### summary_file (re-audited 2026-10-14)
+- observable outcome: `summary.md` exists and is a markdown file of at least 20 words describing the output.
+- intended work: the agent summarises the output it produced.
+- direct bypass: agent edits `checks.json` -> critical (out-of-scope file).
+- indirect bypass: agent `touch summary.md` -> high. Closed by `min_words: 20`, which an empty file fails, and by `keywords: ["output", "summary"]`, which a file about something else fails. Two independent defences beyond existence.
+- cosmetic bypass: whitespace/heading style -> low (word count ignores it).
+- residual risk: a 20-word file about an unrelated topic passes `min_words` and `keywords`. Add a content-equality or keyword-specificity check for a real harness. The shipped fixture accepts this residual risk because the sandbox makes hand-authoring the *only* path, which is why the bypass is recorded rather than assumed impossible.

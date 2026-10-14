@@ -105,6 +105,7 @@ needs a definition AND at least one example.
 - rubric template: references/rubric-template.md
 - rubric lint: references/rubric-lint.md
 - robustness: references/robustness.md
+- incidents: references/incidents.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/calibrate_judge.py (calibrate, rubric), scripts/rubric_lint.py, scripts/gen_rubric.py

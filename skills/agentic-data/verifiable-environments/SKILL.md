@@ -143,6 +143,7 @@ written entry in `references/bypass-register.md`, and this one has none.
 - bypass register: references/bypass-register.md
 - calibration: references/calibration.md
 - neutering: references/neutering.md
+- incidents: references/incidents.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - scripts: scripts/verify_harness.py (verify, bypass-audit, neuter), scripts/gen_fixtures.py
