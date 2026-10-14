@@ -114,3 +114,20 @@ weakens security and loses `server/discover`. If the intersection is empty the
 connection is refused with `-32022`, never silently downgraded.
 Failure signs: `min()` in negotiation code; a client that advertises only
 2025-06-18 reaching a 2026-07-28-only server and expecting it to work.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — a non-MCP JSON-RPC service
+Prompt: "I'm building a JSON-RPC 2.0 service that is not MCP. Do I need the 2026-07-28 revision?"
+Expected: No. This skill is about the *Model Context Protocol* specifically — the `initialize`/`server/discover`/`_meta`/`tasks` machinery is MCP-shaped. A plain JSON-RPC service follows JSON-RPC 2.0, not MCP. Loading this skill would add MCP-specific fields to a protocol that has none.
+Failure signs: adding `server/discover` or `_meta` to a non-MCP server; quoting MCP error codes for a JSON-RPC app.
+
+## N2 — a synchronous tool that times out
+Prompt: "My tool call returns an error after three minutes because the client timed out. How do I use the tasks extension?"
+Expected: No. The tasks extension is for *structured* long-running work where the server returns `resultType: "task"` and the client polls `tasks/get`. A client-side timeout is a transport problem, not a tasks problem — there is no `resultType` in the error. Fix the timeout or use a longer one; do not bolt the tasks machinery onto a call that never declared it.
+Failure signs: wrapping every tool call in tasks polling; treating a timeout as a tasks signal.
+
+## N3 — client_credentials OAuth
+Prompt: "I want to register a machine client using the OAuth 2.0 client_credentials grant."
+Expected: No. MCP's OAuth story (2026-07-28) is Authorization Code with PKCE and Client ID Metadata Documents; `client_credentials` is a different grant from a different profile. This skill covers MCP's flow, not OAuth in general. Use an OAuth library or the AS's docs, not this skill.
+Failure signs: citing MCP's `/authorize` and `/token` endpoints for a client_credentials flow; treating DCR as the replacement for client_credentials.

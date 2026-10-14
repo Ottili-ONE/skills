@@ -86,3 +86,20 @@ silently switching to a different element. The cap is enforced by the skill, not
 by the model's judgement.
 Failure signs: the agent keeps clicking past 50 attempts; the run loops without
 a cap check; the cap is mentioned but never counted.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — scraping a site with an API
+Prompt: "Scrape the product listings off example.com — they have a JSON API."
+Expected: No. This skill is for *browser automation*: a real browser, DOM/ARIA grounding, locators, waits. If the site exposes an API, use it — it is faster, cheaper and more reliable than driving a browser. Loading this skill for an API call adds a browser dependency for no reason.
+Failure signs: launching a headless browser to GET an API endpoint; justifying it as "more robust".
+
+## N2 — reading a single PDF
+Prompt: "Read this 40-page PDF and tell me what it says."
+Expected: No. That is document extraction — a PDF/text skill, or a tool like `pdftotext`. This skill drives a *browser*; a PDF is not a web page, it has no DOM, no ARIA and no `getByRole`. Using Playwright to open a PDF renders it as a canvas, which is the worst of both worlds.
+Failure signs: `page.goto('file:///x.pdf')` as the primary path; rendering a PDF page by page.
+
+## N3 — a static-site generator
+Prompt: "Build my portfolio site with Next.js."
+Expected: No. That is software engineering — a framework, build step, components. This skill is for *automating an existing site in a browser*, not for writing the code that produces one. The trigger is "scrape, test, or automate a site with a real browser"; scaffolding an app is not in scope.
+Failure signs: loading this skill to decide how to structure a React component; using Playwright inside a build script.

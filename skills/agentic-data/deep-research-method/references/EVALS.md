@@ -173,3 +173,20 @@ kept source cannot be assigned any confidence above low. Re-score the sources
 or fetch a primary before claiming anything.
 Failure signs: confidence being reported as `none` with exit 0; the empty case
 not checked.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — reading a document you already trust
+Prompt: "Read the Ottili architecture doc and summarise the auth flow."
+Expected: No. That is reading a single known-good document you have locally. This skill is for *evidence from the web* — scoring sources, citing URLs with retrieval dates, resolving contradictions. If the document is on disk, read it directly; do not run a research workflow over it.
+Failure signs: scoring a local file 0-10; citing a file path as a URL; running `score_sources.py` on a local doc.
+
+## N2 — summarising a meeting transcript
+Prompt: "Summarise the 40-page meeting transcript I just pasted."
+Expected: No. That is summarisation, not research. There is no web evidence to score, no contradiction to resolve, no retrieval date to record. Use a summarisation skill or do it inline.
+Failure signs: asking for "sources" on a transcript the user just pasted; inventing URLs to cite.
+
+## N3 — a fact you already know
+Prompt: "What is the capital of France?"
+Expected: No. That is a closed-book fact, not an evidence question. This skill's machinery (source scoring, citation, confidence ladder) adds nothing over a direct answer and would fabricate citations if you tried to apply it. Reserve it for questions where the answer depends on documents you must find and weigh.
+Failure signs: fetching five sources to answer a trivia question; citing a Wikipedia URL for Paris when the user did not ask for sources.

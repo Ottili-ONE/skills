@@ -89,3 +89,20 @@ mutates the shared `input` array or acts on the wrong pixels. Detection:
 `scripts/validate_driver.py` prints `FAIL: ... never scale into a fresh array`.
 Failure signs: no `input.copy()` / `list(input)` / `[*input]` anywhere; `cursor_position`
 reported in display pixels.
+
+## Near-miss prompts (trigger precision — these should NOT fire this skill)
+
+## N1 — controlling a web app in a browser
+Prompt: "Fill in the checkout form on example.com and click Pay."
+Expected: No. That is *browser* automation — a real browser, DOM, ARIA, locators. This skill drives *desktop and remote applications* through accessibility trees (macOS AX, Windows UIA, X11/Wayland) and background input. A web app inside a browser has no desktop accessibility tree exposed to the OS in the way this skill expects. Route to `browser-agent-playwright`.
+Failure signs: using `pyautogui` to click inside a browser window; reading the accessibility tree of a web page and finding nothing.
+
+## N2 — OCR of a scanned document
+Prompt: "Extract the text from this scanned invoice PDF."
+Expected: No. OCR is pixel-to-text, not tree-driving. This skill reads UI state (roles, names, values) from an accessibility tree; a scanned document has no tree at all. Use an OCR or document skill.
+Failure signs: feeding a scanned page through the accessibility tree enumeration; expecting `role: "text"` from a raster image.
+
+## N3 — a canvas-rendered game
+Prompt: "Play this browser-based game — click the buttons and type the moves."
+Expected: No. Canvas apps have no accessibility tree (every node is `role: "unknown"` with no `name`), so this skill's primary path cannot ground a single click. The skill itself says so in its "When not to use" section. Use the game's input API or a different approach.
+Failure signs: enumerating the tree, finding only unknown nodes, and continuing anyway with pixel coordinates.
