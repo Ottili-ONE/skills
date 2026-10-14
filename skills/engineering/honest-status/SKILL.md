@@ -11,14 +11,14 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 # Honest Status Skill — Quick Reference (body <500 lines; full procedure in references/honest-status-procedure.md)
 
 ## When to use this skill (trigger)
-- You are asked to write STATUS.md, a handoff note, or a progress report.
-- You must decide whether a task is really DONE or merely "coded".
-- A previous agent claimed something is finished and you need to audit it.
-- You need evidence pointers that a human or another agent can actually open.
+- You are asked to write STATUS.md, a handoff note, or a progress report *for work another agent will pick up* (a README checkbox is NOT a status ledger).
+- You must decide whether a task is really DONE or merely "coded" — i.e. a check ran and passed, not just that the code is written.
+- A previous agent claimed something is finished and you need to audit it for false-done claims.
+- You need evidence pointers that a human or another agent can actually open in under 60 seconds.
 
 ## When NOT to use this skill
-- Writing a changelog or release notes (use the project's release process).
-- Informal chat updates (use the chat thread).
+- Writing a changelog or release notes (use the project's release process; this skill governs the work ledger, not the product log).
+- Informal chat updates (use the chat thread; a status that is reviewed in the same session with no persistence need not be written down).
 - Status reports that are reviewed in the same session with no persistence need.
 - A task that has no evidence at all — the skill does not invent a pointer, it records FALSE_DONE and names the blocker.
 - A single checkbox in a README — that is a doc, not a status ledger; use the ledger only for work that another agent will pick up.

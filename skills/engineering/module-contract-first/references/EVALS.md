@@ -26,7 +26,7 @@ sorted, deduplicated, produced by `--enumerate`.
 in the payments module. Merge this PR."
 **Expected**: Agent detects the breaking signature change via `--check`, blocks merge,
 asks for a major version bump or a reversion.
-**Failure signs**: agent says "looks fine" and merges; no version bump requested; drift
+**Failure signs**: agent says "looks fine" and merges; no version bump requested; drift detected by `--check` and merge proceeds anyway.
 **What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 test not run.
 **Exact command to verify**: `check_contract_drift.py --check payments` exits 1 with
@@ -38,7 +38,7 @@ Can you check?"
 **Expected**: Agent runs `--check`, sees `DRIFT DETECTED` for `new_func`, asks the
 developer to regenerate the snapshot via `--enumerate` and commit both files together in
 the same PR (never separate commits).
-**Failure signs**: agent ignores drift; snapshot manually edited without regeneration;
+**Failure signs**: agent ignores drift; snapshot manually edited without regeneration; merge proceeds with mismatch.
 **What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 merge proceeds with mismatch.
 ## E4 — Import cycle between modules
@@ -47,7 +47,7 @@ merge proceeds with mismatch.
 `CYCLE DETECTED A -> B -> A`, suggests extracting shared types into an internal-only
 utility module that neither side exports publicly, and updates the boundary doc with
 the forbidden import list.
-**Failure signs**: cycle not detected; agent suggests circular import as acceptable; no
+**Failure signs**: cycle not detected; agent suggests circular import as acceptable; no boundary doc update.
 **What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 boundary doc update.
 **Exact command to verify**:
@@ -57,7 +57,7 @@ boundary doc update.
 **Prompt**: "Module X has no exports yet. What does the contract look like?"
 **Expected**: Snapshot shows an empty `symbols` list; `--check` passes when live is also
 empty; agent notes that adding the first export triggers drift detection automatically.
-**Failure signs**: snapshot missing treated as an error instead of full-add drift; agent
+**Failure signs**: snapshot missing treated as an error instead of full-add drift; agent says no contract is needed for an empty module.
 **What the skill changes vs no skill**: without the skill a breaking rename ships as a patch and every consumer breaks at import time. The skill makes the snapshot the source of truth, blocks merge on drift, and forces a major bump or reversion for any signature change, so "looks fine" is never a review outcome.
 says no contract is needed for an empty module.
 **Worked example good**: `{"symbols": []}` produced by `--enumerate` on an empty module.

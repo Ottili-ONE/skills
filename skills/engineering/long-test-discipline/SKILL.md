@@ -11,11 +11,12 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 # Long Test Discipline Skill — Quick Reference (body <500 lines; full procedure in references/long-test-discipline-procedure.md)
 
 ## When to use this skill (trigger)
-- A test takes more than ~60 seconds or needs a worker process.
-- You are asked to run something "in the background" on a shared host.
-- A test flakes: passes alone, fails in a suite, or fails only on the second run.
+- A single test takes more than ~60 seconds to run (a smoke test that sleeps 5s does NOT fire; a minute-scale integration or load test does).
+- You are asked to run something "in the background" on a shared host (this skill replaces `&`/`nohup` with a foreground wrapper).
+- A test flakes: it passes alone but fails in a suite, or fails only on the second run.
 - You need to prove resource usage (CPU, memory, wall time) for a test.
 - A timeout killed your test and you need to know how far it got.
+- A test spawns workers or forks and the host reports `fork: Resource temporarily unavailable`.
 
 ## When NOT to use this skill
 - Unit tests that finish in under a minute.

@@ -35,7 +35,7 @@ Each prompt below includes expected behaviour and failure signs.
 ## 6. — Prove resource usage for a test
 **Prompt**: "Give me the wall time, peak RSS, and process count for `tests/test_heavy.py`."
 **Expected behaviour**: The agent runs the wrapper with `/usr/bin/time -v` (or pytest `--durations=5`), captures Max RSS from GNU time output, and reports wall time from the log's `WALL=` line plus the exit code.
-**Failure signs**: Agent reports only "it passed"; agent uses `&` and cannot time it; no evidence file produced.
+**Failure signs**: agent reports only "it passed"; agent uses `&` and cannot time it; no evidence recorded; Max RSS not captured; no JSON record produced.
 **What the skill changes vs no skill**: without the skill an agent runs the test with `&` and loses the log, or re-runs until it is green with no seed. The skill makes the foreground wrapper + recorded seed + JSON record the only acceptable evidence, so a flake is a finding, not a shrug.
 
 ## Near-miss prompts (act before the incident)
