@@ -141,11 +141,11 @@ python3 scripts/map_skr.py --account 4100 --skr 04 --intra-eu
 python3 scripts/map_skr.py --account 4000 --skr 04 --intra-eu
 # {"default_tax_key": "00", "rate_percent": 0, "override": "..."}
 
-# 7. invalid tax key 99 -> exit 0, ok:false, file still written
+# 7. invalid tax key 99 -> exits 1 then 2, file still written
 python3 scripts/generate_journal.py --skr 04 --lines "$(cat evals_fixtures/bad_key.json)" --output /tmp/j.json
 # {"ok": false, "entries": 0, "blocking": 1}
-python3 scripts/journal_check.py --journal /tmp/j.json
-# FAIL tax_key must be 19/07/00, got '99'
+python3 scripts/journal_check.py --journal /tmp/j.json  # exits 2
+# FAIL journal is empty -- a close needs at least one posting line
 
 # 3. lock December 2026 -> exit 0
 python3 scripts/period_lock.py --period 2026-12 --action lock --approver "Tax Advisor"

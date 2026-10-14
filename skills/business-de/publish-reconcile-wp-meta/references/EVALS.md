@@ -150,7 +150,7 @@ python3 scripts/meta_publish.py --key ORD-1 --page-id 123
 # "idempotency_field": "idempotency_key", embedded in the POST body
 
 # 8b. WP version pin -> exit 0
-python3 scripts/wp_publish.py --key ORD-1 --dry-run
+python3 scripts/wp_publish.py --key ORD-1
 # reads the pinned WP version from config; warns on Basic Auth + WP 6.7+
 
 # 9. reconcile matching platforms -> exit 0

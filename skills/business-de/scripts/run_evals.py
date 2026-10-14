@@ -48,16 +48,18 @@ def extract_commands(text: str) -> list[tuple[str, int]]:
             if not line:
                 continue
             if line.startswith("#"):
-                mm = re.search(r"#\s*exits?\s+(\d+)", line)
+                mm = re.search(r"\bexits?\s+(\d+)\b", line)
                 if mm:
                     pending = int(mm.group(1))
                 continue
             if not line.startswith("python3 "):
                 continue
-            want = pending
+            # an annotation may sit on the command line itself
+            # (`... --journal x.json  # exits 2`); honour it, then strip it.
+            inline = re.search(r"\bexits?\s+(\d+)\b", line)
+            want = pending or (int(inline.group(1)) if inline else 0)
             pending = 0
-            line = re.sub(r"\s*#\s*exits?\s+\d+\s*$", "", line)
-            line = re.sub(r"\s*#\s*output.*$", "", line).strip()
+            line = re.sub(r"\s*#.*$", "", line).strip()
             if line:
                 cmds.append((line, want))
     return cmds

@@ -133,7 +133,7 @@ the **Belegdatum comes before the tax key**, so `0206,19` is 2 June at 19%.
 
 ```bash
 # 3. pin the EXTF version and re-verify the fixtures -> exit 0
-python3 scripts/validate_extf.py fixtures/buchungsstapel-valid.json
+python3 scripts/validate_extf.py fixtures/buchungsstapel-valid.csv
 # {"ok": true, "pinned_versionsnummer": "700", "pinned_formatversion": "13"}
 
 # 4. generate a valid + a deliberately broken fixture -> exit 0
@@ -142,7 +142,7 @@ python3 scripts/fixture_generator.py --out-dir ./fixtures
 #                                          "Belegdatum must be YYYYMMDD"]}]}
 
 # 4b. the broken fixture MUST fail validation -> exit 1
-python3 scripts/validate_extf.py fixtures/buchungsstapel-broken.json
+python3 scripts/validate_extf.py fixtures/buchungsstapel-broken.csv
 # {"ok": false, "error_count": 2,
 #  "errors": [{"code": "amount-dot-decimal", "value": "12.50"},
 #             {"code": "belegdatum-format", "value": "2026601"}]}
