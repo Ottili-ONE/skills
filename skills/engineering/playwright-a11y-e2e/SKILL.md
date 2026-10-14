@@ -35,24 +35,45 @@ allowed-tools: []
 5. Use stable selectors — prefer role/label/text; never XPath or CSS classes.
 6. Record evidence — axe JSON, screenshots, and a selector audit.
 
-## Near-miss triggers (act before the incident)
-- axe run on a dynamic modal without waiting for `aria-hidden=false` → false violations or missed violations.
-- `:focus-visible` asserted as a WCAG criterion → it is not one; assert focus order instead.
-- `nth-child` or class-only selectors → break on every refactor; use `getByTestId` (or `getByRole`/`getByLabel` for roles).
-- Keyboard tests that skip shadow DOM → fail silently on Web Components.
-- Viewport loop missing 320px → mobile bugs never caught.
-- axe run without frame handling → content in iframes is never scanned.
+## Decision table — selector choice
+| Selector | Safe? | When to pick | Pitfall |
+|----------|-------|-------------|---------|
+| `page.getByTestId('close')` | Always safe | First choice for anything with a test id | Requires the data attribute to exist |
+| `page.getByRole('button', { name: 'Close' })` | Always safe | Roles with accessible names | Name must match exactly; locale-sensitive |
+| `page.getByLabel('Email')` | Always safe | Form fields with a label association | Breaks if the label is removed |
+| `page.getByText('Sign in')` | Use with caution | Visible text only; no markup inside | Matches partial text; flaky on i18n |
+| `.btn:nth-child(3)` | NEVER | — | Breaks when the DOM order changes |
+| `css=.card > div` | NEVER | — | Class-only; breaks on every refactor |
+| `xpath=//button[2]` | NEVER | — | XPath is order-dependent and unreadable |
 
 ## Worked examples
-Good (stable selector + axe):
+Good (stable selector + axe + keyboard):
 ```ts
-await page.getByTestId('close').click();
-const results = await axe.scan(page.locator('main'));
-expect(results.violations).toEqual([]);
+import { test, expect } from '@playwright/test';
+import axe from '@axe-core/playwright';
+
+test('login form is accessible', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill('a@example.com');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  const results = await axe.scan(page.locator('main'));
+  expect(results.violations).toEqual([]);
+});
 ```
-Bad (unstable selector):
+Bad (unstable selector — breaks when the DOM order changes):
 ```ts
-await page.click('.btn:nth-child(3)');  // breaks when the DOM order changes
+await page.click('.btn:nth-child(3)');  // which button is this, exactly?
+```
+Bad (axe on a closed modal — the hidden content is never scanned):
+```ts
+await axe.scan(page);            // modal is aria-hidden; its issues are invisible
+// fix: wait for the dialog to be visible first
+await page.getByRole('dialog').waitFor({ state: 'visible' });
+const results = await axe.scan(page.getByRole('dialog'));
+```
+Bad (keyboard test that skips shadow DOM — fails silently on Web Components):
+```ts
+await page.keyboard.press('Tab');  // stops at the light DOM; shadow controls unreachable
 ```
 
 ## Pitfalls from research
@@ -62,6 +83,15 @@ await page.click('.btn:nth-child(3)');  // breaks when the DOM order changes
 - Keyboard-only tests that skip shadow DOM fail silently on Web Components.
 - Viewport loop must include 320px, 768px, 1024px, 1440px minimum (common trap: only testing desktop).
 - axe run without frame handling misses content in iframes (common trap).
+
+## Near-miss triggers (act before the incident)
+- axe run on a dynamic modal without waiting for `aria-hidden=false` → false violations or missed violations.
+- `:focus-visible` asserted as a WCAG criterion → it is not one; assert focus order instead.
+- `nth-child` or class-only selectors → break on every refactor; use `getByTestId` (or `getByRole`/`getByLabel` for roles).
+- Keyboard tests that skip shadow DOM → fail silently on Web Components.
+- Viewport loop missing 320px → mobile bugs never caught.
+- axe run without frame handling → content in iframes is never scanned.
+- "The axe scan is green, so the page is accessible" → green axe means zero *reported* violations, not that every control is reachable; run the keyboard check too.
 
 ## Verification checklist (all must pass before you finish)
 - [ ] axe scan runs on every route with zero violations of level A/AA [WCAG].
