@@ -93,3 +93,20 @@ authoritative text. Nothing was copied verbatim from any source.
 `config/versions.json` is still current as of 2026-10-14. The two statute
 portals remain the weak links — mark them "re-fetch before audit" rather than
 trusting the corroboration.
+
+## Re-verification 2026-10-15 (PASS 5 of skills-business-de-r3-05)
+
+Re-fetched every primary source with `curl -s -o /dev/null -w "%{http_code}"
+--max-time 20 -L` on 2026-10-15. Full table: `config/REVERIFY_2026-10-15.md`.
+
+- **dejure.org mirror fixed:** `https://dejure.org/gesetze/AO` now returns
+  **200**; the `.html` variant still 404s. SOURCES entries that pointed at the
+  old suffix are corrected here.
+- **No version pin moved.** CEN EN 16931, FNFE-MPE Factur-X 1.09.2, KoSIT
+  `v2026-08-31`, PayPal webhooks and the DHL API catalog all still 200 with
+  the same effective versions.
+- **Still flaky (000/404 at both 2026-10-14 and 2026-10-15):**
+  `gesetze-im-internet.de/beg/`, `/ao/`, `/ustg/`, `akretion.github.io/factur-x/`,
+  `bundesbank.de/...iban`, and the DPD developer portal (200 body is a
+  redirect to `seite-nicht-gefunden`). Corroborate with the recorded mirrors
+  before an audit.
