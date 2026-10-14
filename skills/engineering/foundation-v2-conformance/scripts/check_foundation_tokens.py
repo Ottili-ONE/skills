@@ -19,6 +19,11 @@ import sys
 from pathlib import Path
 
 HEX_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
+# URLs and SVG fragment references contain `#`-prefixed tokens that are NOT colours:
+#   url(#clip-1)   http://example.com/page#section   #fff in a hash
+# Strip these spans before scanning so they do not false-positive as raw colours.
+URL_RE = re.compile(r"[a-z]+://[^\s'\"<>]+")
+SVG_URL_RE = re.compile(r"url\(\s*#[^\s)]+\s*\)")
 RGB_RE = re.compile(r"rgba?\(\s*[\d.%\s,]+\)")
 PX_RE = re.compile(r"(?<![\w-])(\d+(?:\.\d+)?)px\b")
 REM_RE = re.compile(r"(?<![\w-])(\d+(?:\.\d+)?)rem\b")
@@ -55,6 +60,12 @@ def _exempt_lines(text: str, allow_comment: str) -> set[int]:
     return exempt
 
 
+def _strip_urls(line: str) -> str:
+    """Return the line with URL/SVG url() spans blanked, so hash colours inside them
+    are not mistaken for raw design values."""
+    return URL_RE.sub(lambda m: " " * len(m.group(0)), SVG_URL_RE.sub(lambda m: " " * len(m.group(0)), line))
+
+
 def check_file(path: Path, tokens: set[str], allow_comment: str) -> list[str]:
     text = path.read_text(encoding="utf-8", errors="ignore")
     exempt = _exempt_lines(text, allow_comment)
@@ -62,7 +73,8 @@ def check_file(path: Path, tokens: set[str], allow_comment: str) -> list[str]:
     for i, line in enumerate(text.splitlines()):
         if i in exempt:
             continue
-        for m in HEX_RE.finditer(line):
+        scan = _strip_urls(line)
+        for m in HEX_RE.finditer(scan):
             if m.group(0) not in tokens:
                 findings.append(f"{path}:{i + 1}: raw colour {m.group(0)} not in token set")
         for m in RGB_RE.finditer(line):
@@ -88,17 +100,44 @@ def main() -> int:
         help="comment marker that exempts a line from the check",
     )
     ap.add_argument("files", nargs="+", help="consumer source files to scan")
+    ap.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of text")
+    ap.add_argument("--max-findings", type=int, default=0,
+                    help="fail if any single file has more than N findings (0 = no per-file cap)")
     args = ap.parse_args()
 
     tokens = _load_tokens(Path(args.tokens))
+    per_file: dict[str, list[str]] = {}
     findings: list[str] = []
     for f in args.files:
-        findings.extend(check_file(Path(f), tokens, args.allow_comment))
+        f_findings = check_file(Path(f), tokens, args.allow_comment)
+        per_file[str(Path(f).resolve())] = f_findings
+        findings.extend(f_findings)
+
+    if args.json:
+        print(json.dumps({
+            "status": "fail" if findings else "ok",
+            "files_scanned": len(args.files),
+            "total_findings": len(findings),
+            "findings": findings,
+            "per_file": {k: len(v) for k, v in per_file.items()},
+        }, indent=2, sort_keys=True))
+        return 1 if findings else 0
+
+    if args.max_findings:
+        worst = max(per_file.values(), key=len) if per_file else []
+        if len(worst) > args.max_findings:
+            print(f"FAIL: {Path(args.files[0]).name if args.files else '?'} has "
+                  f"{len(worst)} findings, exceeds --max-findings {args.max_findings}")
+            for f in worst[:10]:
+                print(f"  - {f}")
+            return 1
 
     if findings:
         print(f"FAIL: {len(findings)} raw-value finding(s)")
-        for f in findings:
+        for f in findings[:25]:
             print(f"  - {f}")
+        if len(findings) > 25:
+            print(f"  ... and {len(findings) - 25} more (use --json for the full list)")
         return 1
     print(f"ok: all values in {len(args.files)} file(s) are token-derived")
     return 0
