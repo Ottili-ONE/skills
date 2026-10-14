@@ -44,6 +44,31 @@ No new dead URLs, no fact drift between the 2026-10-13 and 2026-10-14 fetches.
   recorded here so the evidence chain is honest.
 - No content conflicts among the surviving sources.
 
+## Re-verification 2026-10-14 (PASS 4 / r3-03 close-out)
+Live re-fetch of every version-sensitive primary URL for this skill with curl
+(2026-10-14); arXiv titles were re-parsed from the live abstract pages:
+
+| URL | HTTP | Fact re-confirmed |
+|-----|------|-------------------|
+| https://github.com/ekzhu/datasketch | 200 | canonical repo is `ekzhu/datasketch`; `datasketch/datasketch` still 404s |
+| https://raw.githubusercontent.com/ekzhu/datasketch/master/README.rst | 200 | v2.0.0 note present verbatim: default permutation scheme changed to `affine32`, fixes similarity over-estimation bias on large sets (issue #212), halves sketch memory, ~4x faster updates |
+| https://raw.githubusercontent.com/openai/gpt-2/master/src/encoder.py | 200 | pre-tokenizer regex at line 53 is byte-identical to `ngram_decontam._GPT2_PAT`: `'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+` |
+| https://github.com/hendrycks/test | 200 | MMLU repo (default branch `master`) is the benchmark source; it contains no decontamination code, so the n=13 window comes from the paper + community practice, not this repo |
+| https://arxiv.org/abs/1811.04633 | 200 | "A Review for Weighted MinHash Algorithms" |
+| https://arxiv.org/abs/1407.4416 | 200 | "In Defense of MinHash Over SimHash" |
+| https://arxiv.org/abs/1710.08436 | 200 | "HyperMinHash: MinHash in LogLog space" |
+| https://arxiv.org/abs/2109.03337 | 200 | "C-MinHash: Rigorously Reducing $K$ Permutations to Two" |
+| https://arxiv.org/abs/2206.07682 | 200 | "Emergent Abilities of Large Language Models" |
+| https://arxiv.org/abs/2309.00986 | 200 | "ModelScope-Agent: Building Your Customizable Agent System with Open-source Large Language Models" |
+| https://arxiv.org/abs/2009.03300 | 200 | "Measuring Massive Multitask Language Understanding" (MMLU paper; the source of the n=13 window) |
+
+**No new dead URLs and no fact drift** between the 2026-10-13 and 2026-10-14
+fetches. The MinHash/LSH threshold table in `references/DESIGN.md` was recomputed
+from first principles this pass and matches the shipped table exactly
+(k=128: b=32/r=4 -> 0.420, b=16/r=8 -> 0.707, b=8/r=16 -> 0.878, b=4/r=32 ->
+0.958; k=256 b=8 r=32 -> 0.937; k=512 b=8 r=64 -> 0.968). 0.94 is not reachable
+with k=128 — the closest is 0.878 — so targeting ~0.94 requires k=256.
+
 ## Re-verified 2026-10-12 (PASS 3 / TEST+FIX)
 Two random sources re-fetched live to confirm nothing had moved:
 - https://raw.githubusercontent.com/ekzhu/datasketch/master/README.rst — HTTP 200, 7,635 B; the v2.0.0 `affine32` note is still present verbatim.

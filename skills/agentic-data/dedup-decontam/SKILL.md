@@ -1,7 +1,7 @@
 ---
 name: dedup-decontam
 description: "Deduplicate and decontaminate text corpora for LLM training: MinHash/LSH near-duplicate detection, n-gram and embedding-based decontamination, planted-item tests with pass/fail criteria. Use when preparing a training or evaluation dataset and you must remove duplicates and test-set leakage; not for single-document similarity."
-compatibility: Python 3.10+, numpy optional; verified 2026-10-08
+compatibility: Python 3.10+, numpy optional; verified 2026-10-14
 license: MIT
 ---
 # Dedup and Decontamination

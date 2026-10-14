@@ -1,6 +1,6 @@
 # Procedures — dedup-decontam
 
-Verified 2026-10-08. Version-sensitive: MinHash/LSH math is stable (Broder 1997,
+Verified 2026-10-14 (re-verified live: datasketch v2.0.0 `affine32` note, GPT-2 pre-tokenizer regex line 53, all seven arXiv titles, 2026-10-14). Version-sensitive: MinHash/LSH math is stable (Broder 1997,
 Charikar 2000); embedding thresholds are model-dependent and must be re-tuned.
 
 ## 0. Shared normalizer
