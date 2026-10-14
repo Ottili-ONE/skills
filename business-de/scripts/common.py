@@ -1,8 +1,11 @@
-"""Shared helpers for the business-de skills scripts.
+#!/usr/bin/env python3
+"""Shared helpers for the business-de skill scripts.
 
-Resolves the pinned versions config relative to the repo root so every script
-can be run from any working directory. Never hardcode a version.
+The only thing this module owns is ``load_config``: every script reads its
+pinned versions from ``config/versions.json`` and never hardcodes a version.
 """
+from __future__ import annotations
+
 import json
 from pathlib import Path
 
@@ -15,21 +18,17 @@ def find_repo_root(start: Path) -> Path:
     return start
 
 
-def load_config(path: str = "config/versions.json") -> dict:
-    """Load the pinned versions config, resolving relative to the repo root."""
+def load_config(path: str | Path = "config/versions.json") -> dict:
+    """Load the pinned-versions config, resolving relative to the repo root.
+
+    The config lives at ``<root>/business-de/config/versions.json``; the
+    default argument is the path *inside* business-de so that scripts can
+    pass it through unchanged.
+    """
     p = Path(path)
-    if not p.is_absolute() and not p.exists():
+    if not p.is_absolute():
         root = find_repo_root(Path(__file__).resolve().parent)
-        alt = root / "business-de" / path
-        if alt.exists():
-            p = alt
+        p = root / "business-de" / p
+    if not p.exists():
+        raise FileNotFoundError(f"config not found: {p}")
     return json.loads(p.read_text(encoding="utf-8"))
-
-
-def sha256_of(path: Path) -> str:
-    import hashlib
-    h = hashlib.sha256()
-    with path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
