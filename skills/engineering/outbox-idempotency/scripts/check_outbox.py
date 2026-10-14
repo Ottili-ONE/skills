@@ -15,6 +15,8 @@ Exit 0 = all checks pass; 1 = findings; 2 = usage error.
 """
 from __future__ import annotations
 
+import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -190,11 +192,11 @@ def check_poller(source: str) -> list[str]:
 
 
 def main() -> int:
-    import argparse
 
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("outbox_sql", help="SQL file defining the outbox schema and writes")
     ap.add_argument("--poller", help="optional poller source file to check")
+    ap.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of text")
     args = ap.parse_args()
 
     try:
@@ -209,6 +211,15 @@ def main() -> int:
         except FileNotFoundError:
             print(f"FAIL: {args.poller}: file not found", file=sys.stderr)
             return 2
+
+    if args.json:
+        print(json.dumps({
+            "status": "fail" if findings else "ok",
+            "file": args.outbox_sql,
+            "poller": args.poller,
+            "findings": findings,
+        }, indent=2, sort_keys=True))
+        return 1 if findings else 0
 
     if findings:
         print(f"FAIL: {args.outbox_sql}")

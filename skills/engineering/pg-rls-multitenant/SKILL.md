@@ -21,28 +21,26 @@ Any of these fires it:
 - Read-only analytics replicas where RLS is enforced upstream.
 - Tables that intentionally share rows across tenants (e.g., global config) — mark them `bypassrls` explicitly instead of omitting policies.
 
-## Decision table — tenant key strategy
-| Pattern | When to pick | Pitfall |
-|---------|-------------|---------|
-| `tenant_id` column on every row table | Default; works with any ORM | Must be NOT NULL; FK from shared tables |
-| JWT claim `tenant_id` via `current_setting('app.current_tenant')` | Serverless / connection-pool reuse | Claim must be set per-request, never cached globally |
-| Security-definer lookup function (`current_tenant()`) | Complex hierarchies (org > team > user) | Function must be IMMUTABLE false; test for SQL injection |
+## Decision table — expand/contract migration
+| Step | Action | Threshold / pitfall |
+|------|--------|---------------------|
+| 1. Add column | `ALTER TABLE t ADD COLUMN tenant_id uuid` | Start `NULL` if the table is non-empty; adding NOT NULL on a non-empty table without a default blocks |
+| 2. Backfill | `UPDATE t SET tenant_id = <owner> WHERE tenant_id IS NULL` | Must run in batches on large tables; record the batch size |
+| 3. Constrain | `ALTER TABLE t ALTER COLUMN tenant_id SET NOT NULL` + `CHECK` | CHECK must match the app tenant format (UUID v4) |
+| 4. Policy | `CREATE POLICY ... USING (tenant_id = current_setting(...))` | Policy must exist before the app depends on isolation |
+| 5. Leak test | Run `scripts/check_rls_migration.py` + Docker harness | All 7 cases must PASS; any FAIL blocks merge |
+| 6. Contract | Separate `V<n>__<desc>__contract_*.sql` migration dropping the old column | N = 4 weeks minimum after expand lands in production; record the date in the migration comment; rollback SQL in a `-- ROLLBACK` block |
 
-## Near-miss triggers (act before the incident)
-- A table is created by a migration role and has no FORCE RLS → that role's sessions see all tenants' rows.
-- A view is created without `security_invoker = true` → it runs as the view owner and bypasses RLS.
-- `GRANT ALL` appears on a protected table → silently overrides the policy grant.
-- `service_role` is used in client-side code → bypasses every RLS policy by design.
-- A policy uses a sub-select on the same table → the check-then-insert race leaks rows under concurrent load.
-- A migration adds the tenant column AFTER data exists, with no backfill → old rows have NULL tenant_id and match no policy (silent exclusion, not a leak, but a data-loss trap).
-
-## Numbered procedure (summary; full recipe in references/pg-rls-procedure.md)
-1. **Choose tenant key** — column preferred; document the choice in the migration comment.
-2. **CREATE POLICY** per role-permission combination; use PERMISSIVE for additive rules, RESTRICTIVE for deny overrides.
-3. **ALTER TABLE ... ENABLE ROW LEVEL SECURITY** then **FORCE ROW LEVEL SECURITY** on every non-dev table (dev tables get NO FORCE with a comment).
-4. **Grant SELECT only** — never GRANT ALL on RLS-protected tables; service_role bypasses RLS so restrict it in Supabase/Postgres auth layer separately.
-5. **Expand/contract migration**: add column → backfill → add policy → verify leak test → contract old data later via separate migration with rollback SQL in same file.
-6. **Run the leak test** against a real Postgres Docker image before merge; expect all PASS or block merge. The harness is a two-session script (one per tenant) that asserts cross-tenant reads return zero rows; `scripts/check_rls_migration.py` is the offline gate that runs before the Docker harness.
+## Decision table — leak-test outcome
+| Test case | Expected | If it fails |
+|-----------|----------|-------------|
+| Same-tenant read | tenant A sees only its rows | Policy expression is wrong — fix the `USING` clause |
+| Cross-tenant read | tenant A sees ZERO of tenant B's rows | RLS not enabled, or view bypasses it — add FORCE / `security_invoker = true` |
+| INSERT wrong tenant | rejected by `WITH CHECK` | `WITH CHECK` missing or wrong — add it |
+| UPDATE tenant_id | rejected when a RESTRICTIVE policy is present | RESTRICTIVE policy missing — add it |
+| View bypass | `security_invoker=false` view exposes cross-tenant rows → FAIL | Set `security_invoker = true` on the view, or exclude it from RLS scope |
+| Owner bypass | table without FORCE exposes all rows → FAIL | Add `FORCE ROW LEVEL SECURITY` |
+| service_role bypass | `service_role` sees everything by design | Never use `service_role` client-side; restrict it in the auth layer |
 
 ## Worked examples
 Good (permissive policy + FORCE + scoped grant):
@@ -51,8 +49,9 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders FORCE ROW LEVEL SECURITY;
 CREATE POLICY orders_tenant_select ON orders
   FOR SELECT
+  TO web_app
   USING (tenant_id = current_setting('app.current_tenant')::uuid);
-GRANT SELECT ON orders TO app_anon;
+GRANT SELECT ON orders TO web_app;
 ```
 Bad (owner bypass — table created by migration role, no FORCE):
 ```sql
@@ -64,13 +63,29 @@ Bad (view bypass):
 CREATE VIEW active_orders AS SELECT * FROM orders;
 -- runs as view owner; RLS on orders is skipped
 ```
+Bad (expand without backfill — old rows silently excluded):
+```sql
+ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
+-- fails: cannot add NOT NULL without a default; and if it succeeds, old rows are NULL
+-- and match no policy — a silent data-loss trap, not a leak
+```
 
 ## Pitfalls from research (real incidents)
-- Owner bypasses RLS unless FORCE is set — a table created by a migration role silently exposes rows to that role's sessions.
+- Owner bypasses RLS unless FORCE is set — a table created by a migration role silently exposes
+  rows to that role's sessions.
 - Views are security-definer by default and bypass RLS unless `security_invoker = true`.
 - Missing GRANT before policy → error 42501 before any policy runs.
 - `service_role` key bypasses all RLS — never use it client-side.
 - Sub-select race condition between policy evaluation and INSERT can leak rows under concurrent load.
+
+## Near-miss triggers (act before the incident)
+- A table is created by a migration role and has no FORCE RLS → that role's sessions see all tenants' rows.
+- A view is created without `security_invoker = true` → it runs as the view owner and bypasses RLS.
+- `GRANT ALL` appears on a protected table → silently overrides the policy grant.
+- `service_role` is used in client-side code → bypasses every RLS policy by design.
+- A policy uses a sub-select on the same table → the check-then-insert race leaks rows under concurrent load.
+- A migration adds the tenant column AFTER data exists, with no backfill → old rows have NULL tenant_id and match no policy (silent exclusion, not a leak, but a data-loss trap).
+- "The leak test passed once, so the policy is fine" — re-run it after every policy change; RLS is not monotonic.
 
 ## Verification checklist (all must pass before merge)
 - [ ] Every row table has at least one policy matching its tenant column
@@ -80,6 +95,9 @@ CREATE VIEW active_orders AS SELECT * FROM orders;
 - [ ] Migration includes rollback SQL
 - [ ] Views use security_invoker = true or are excluded from RLS scope
 
+## Related skills
+- [outbox-idempotency](../outbox-idempotency/SKILL.md)
+- [problem-json-contracts](../problem-json-contracts/SKILL.md)
 ## Related skills
 - [outbox-idempotency](../outbox-idempotency/SKILL.md)
 - [problem-json-contracts](../problem-json-contracts/SKILL.md)
