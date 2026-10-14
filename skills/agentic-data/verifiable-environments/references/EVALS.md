@@ -111,7 +111,7 @@ verifier is not verified. The procedure is in `references/neutering.md`.
 Failure signs: harness exits 0 after a check is neutered; neutering all checks
 instead of exactly one; a neutered check that is not actually always-pass.
 
-## E11 — a check with one defence is a single point of failure
+## E13 — a check with one defence is a single point of failure
 Prompt: "My check asserts that `summary.md` exists. Is that enough?"
 Expected: No. Existence alone is one defence: the agent can `touch summary.md`
 and pass without doing the intended work. Add a second independent defence
@@ -133,3 +133,25 @@ two independent defences AND no check is `critical` severity. Exit 1 with a
 per-check failure naming the missing defences.
 Failure signs: the audit exiting 0 on a check with one defence; a check whose
 register entry is missing; a `critical`-severity bypass that was not closed.
+
+
+## E14 — reject a malformed check before it is run
+Prompt: "My checks file has a check with `min_words: -5` and another with no
+name. Does the harness catch it?"
+Expected: Yes. `scripts/verify_harness.py --checks checks.json ...` validates the
+shape of every check before running it: a missing `name`, a missing `path`, a
+non-boolean `exists`, a negative `min_words`/`max_words`, a `keywords` list that
+is empty, or a `json_field` without a `json_value` each produce a clear
+`FAIL: check '<name>' ...` line and exit 1. The check never reaches the run
+phase, so an opaque `KeyError` cannot occur.
+Failure signs: the harness crashing with a traceback instead of a FAIL line;
+a malformed check being silently treated as passing.
+
+## E15 — the rule-of-two floor is configurable
+Prompt: "My harness uses three defences per check. Can I require more?"
+Expected: Yes, with `--min-defences N`. `scripts/verify_harness.py
+--min-defences 3 ...` rejects any check with fewer than three independent
+defences; `--min-defences 1` accepts a single-defence check. The default is 2
+(the rule of two). Asking for 0 is rejected as out of range.
+Failure signs: the floor being silently ignored; a `--min-defences 0` being
+accepted.

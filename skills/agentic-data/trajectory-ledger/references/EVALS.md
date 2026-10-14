@@ -109,3 +109,26 @@ existing event. `scripts/ledger.py record-non-det` exits 1 with
 with a step strictly greater than the last recorded one.
 Failure signs: a non-determinism record appended with a step equal to or
 smaller than an existing step; the audit then failing on monotonicity.
+
+
+## E13 — reject a trajectory whose cost exceeds the budget
+Prompt: "My run cost $0.175. Is that acceptable?"
+Expected: It depends on the budget. `scripts/ledger.py cost traj_cost.jsonl
+--max-usd 0.01` exits 1 with `FAIL: total cost $0.1750 exceeds --max-usd
+$0.0100`; `--max-seconds` works the same way on wall-clock. The budget is set
+by the operator, not derived from the run, so a run cannot set its own budget
+retroactively. The same gates are available on `audit --max-usd` /
+`--max-seconds`.
+Failure signs: a cost overrun being reported as clean; the budget being read
+from the ledger itself.
+
+## E14 — reject a cost dict that is missing a unit
+Prompt: "My ledger has `cost: {tokens_in: 1, tokens_out: 1}` on one event. Is
+that complete?"
+Expected: No. A cost ledger without a unit is not a ledger. `scripts/ledger.py
+audit partial.jsonl --strict` exits 1 with `FAIL: event 0 cost is missing
+'seconds' (no unit)` and likewise for `usd`. Without `--strict` the partial
+cost is accepted (it sums what it can), but the run is flagged on the strict
+walk. Every event that carries a cost dict must carry all four units.
+Failure signs: a partial cost being treated as complete; the strict walk not
+being run before a cost-sensitive decision.

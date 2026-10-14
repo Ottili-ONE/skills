@@ -104,4 +104,4 @@ claim dressed as a finding, over-long quotation).
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
-- scripts: scripts/score_sources.py (score, audit, contradictions, cite, fetch, staleness, corroboration, provenance)
+- scripts: scripts/score_sources.py (score, audit, contradictions, cite, fetch, staleness, corroboration, provenance, confidence)

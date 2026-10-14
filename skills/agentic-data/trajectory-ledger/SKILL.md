@@ -93,6 +93,10 @@ Without those four properties the run cannot be replayed or audited.
 - [ ] A non-determinism record is appended with a step strictly greater than
   the last recorded step (scripts/ledger.py record-non-det rejects
   out-of-order steps).
+- [ ] Cost carries all four units (tokens_in, tokens_out, seconds, usd) on every
+  event that has a cost dict; `audit --strict` rejects partial cost.
+- [ ] Total cost stays within the operator's `--max-usd` / `--max-seconds`
+  budget on both `cost` and `audit`.
 
 ## Worked examples
 
@@ -128,4 +132,4 @@ exact failure mode the ledger exists to prevent.
 - incidents: references/incidents.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/ledger.py (append, audit, replay, cost, normalize, record-non-det)
+- scripts: scripts/ledger.py (append, audit, replay, cost, normalize, record-non-det; audit/cost accept --max-usd/--max-seconds and audit accepts --strict)

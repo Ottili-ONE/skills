@@ -104,7 +104,7 @@ evidence.
 Failure signs: a report with agreement but no model names; no prompt hashes;
 the calibration run accepted without the four provenance flags.
 
-## E11 — reject a circular judge and teacher
+## E13 — reject a circular judge and teacher
 Prompt: "My judge is the same model that generated the answers, using the same
 prompt. Calibrate it."
 Expected: Reject. Same model + same prompt = circular agreement by construction.
@@ -126,3 +126,25 @@ calibrate --judge-model claude-sonnet-4 --generator-model gpt-4.1
 identical model AND identical prompt is circular.
 Failure signs: rejecting a legitimately separated pair; accepting an identical
 pair.
+
+
+## E14 — reject a calibration set that is too small or too large
+Prompt: "My calibration set has 3 items. Can I calibrate on it?"
+Expected: No. `scripts/calibrate_judge.py calibrate --rows tiny.jsonl` exits 1
+with `FAIL: calibration set has 3 items, minimum is 30`. The default window is
+30-50 items; `--min-items` and `--max-items` are configurable. A set that is too
+small cannot support a meaningful agreement statistic; a set that is too large
+is not held-out.
+Failure signs: calibration passing on a handful of items; the size bounds not
+enforced.
+
+## E15 — reject a calibration set with no gold labels or no spread
+Prompt: "My calibration set has 30 items but no gold labels, and every score is
+3."
+Expected: No, on two grounds. A row with no `gold` fails with
+`FAIL: N item(s) have no gold label`. A set spanning one distinct score fails
+with `FAIL: calibration set spans 1 distinct score(s), minimum is 2; a
+degenerate set cannot be calibrated` -- alpha would be 1.0 for a trivial
+reason. Both checks run before agreement is measured.
+Failure signs: calibration passing on an unlabelled or constant set; the
+degenerate case not checked.

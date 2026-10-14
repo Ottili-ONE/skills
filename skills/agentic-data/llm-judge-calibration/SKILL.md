@@ -74,6 +74,11 @@ the number is circular.
 - [ ] Judge model, generator model and prompt hashes recorded in the report.
 - [ ] The report carries all four provenance fields; a report missing any of
   them is not auditable and `scripts/calibrate_judge.py` rejects it.
+- [ ] The calibration set has 30-50 items, every item has a gold label, and it
+  spans at least 2 distinct scores or the script rejects it before measuring
+  agreement.
+- [ ] The baseline covers the same items as the current set (id alignment) or
+  drift is not comparable.
 - [ ] Judge and generator are not the same model with the same prompt.
 
 ## Worked examples

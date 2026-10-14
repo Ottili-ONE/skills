@@ -108,6 +108,10 @@ for a check, you have not audited it.
 - [ ] Every check has >= 2 independent defences (rule of two).
 - [ ] `--bypass-audit` passes: every check has a register entry and >= 2
   defences, and no check is `critical` severity.
+- [ ] Every check is well-formed (name, path, boolean exists, non-negative
+  word counts, non-empty keywords, json_field+json_value paired) or the
+  harness rejects it before running.
+- [ ] The rule-of-two floor is set explicitly (`--min-defences`, default 2).
 
 ## Worked examples
 
@@ -147,4 +151,4 @@ written entry in `references/bypass-register.md`, and this one has none.
 - incidents: references/incidents.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
-- scripts: scripts/verify_harness.py (verify, bypass-audit, neuter), scripts/gen_fixtures.py
+- scripts: scripts/verify_harness.py (verify, bypass-audit, neuter, --min-defences), scripts/gen_fixtures.py

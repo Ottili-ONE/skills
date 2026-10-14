@@ -154,3 +154,24 @@ swept contradiction, confidence without evidence, quotation that changes
 meaning) each have a named observable signature and recovery procedure.
 Failure signs: the staleness check skipped; a stale source cited without a
 re-fetch attempt; an incident signature matched and ignored.
+
+
+## E16 — compute confidence from upstreams, not from URL count
+Prompt: "I have three kept sources for a claim. What confidence can I claim?"
+Expected: It depends on how many *distinct upstreams* they trace to.
+`scripts/score_sources.py confidence <sources.jsonl>` groups the kept sources
+by `upstream` (falling back to `url`) and reads the ladder: >=2 upstreams =
+high, 1 = medium, none kept = low. Three URLs that all trace to one upstream
+score medium, not high -- that is the fake middle. The command emits
+`{"n_kept": 3, "n_upstreams": 1, "confidence": "medium", ...}`.
+Failure signs: confidence being read off the URL count; the upstream grouping
+being skipped.
+
+## E17 — the confidence subcommand rejects an empty kept set
+Prompt: "I ran `confidence` on a file where every source scored below 6."
+Expected: Reject. `scripts/score_sources.py confidence bad.jsonl` exits 1 with
+`FAIL: no kept sources to compute confidence from`, because a claim with no
+kept source cannot be assigned any confidence above low. Re-score the sources
+or fetch a primary before claiming anything.
+Failure signs: confidence being reported as `none` with exit 0; the empty case
+not checked.
