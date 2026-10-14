@@ -208,3 +208,58 @@ history rewrite, no paths outside `skills/agentic-data/**` touched this pass.
 `skills-agentic-data-r3-01:` DESIGN completeness sweep 2 (3 files),
 `skills-agentic-data-r3-01:` test_design_completeness lock-in (1 file),
 `skills-agentic-data-r3-01:` PASS 4 audit record (2 files). Own paths only.
+
+## PASS 5 (r3-05: Evals, validation, cross-links and handoff) — 2026-10-14
+
+Quality pass over all ten skills per the r3-05 brief.
+
+### What was done
+1. **README.md** (`skills/agentic-data/README.md`, 48 lines) — table of the ten
+   skills with one-line values, install hints (single-folder copy, `install.sh`,
+   `validate_skill.py`, `acceptance_check.py`, pytest), and pointers to
+   `skills/core`, `skills/curated` and `skills/engineering`.
+2. **HANDOFF.md** (`skills/agentic-data/HANDOFF.md`, 95 lines) — five re-verification
+   steps (re-fetch version-sensitive sources, run the per-skill validator, run the
+   test suite, re-execute EVALS.md prompts including the near-miss ones, check the
+   description still triggers) plus ten next-skill ideas with rationale.
+3. **Near-miss trigger prompts** — added a `## Near-miss prompts` section with N1-N3
+   to every skill's `references/EVALS.md` (4 per skill, 40 total). Each asks "would
+   this skill fire on a request it should NOT handle?" and names the failure signs.
+   Counts: browser 4, computer-use 4, dedup 4, deep-research 4, llm-judge 4,
+   mcp 4, polite-crawling 4, skill-authoring 4, trajectory 4, verifiable 4.
+4. **Related sections** — added a `## Related skills` section to all ten SKILL.md
+   files with forward-only links (no cycles). A strict rank ordering was used so
+   every link points to a lower-ranked skill; a DFS cycle check confirmed zero
+   cycles after the first attempt found a 2-cycle (`deep-research-method` ↔
+   `polite-crawling-warc`) and a 6-cycle, both removed by dropping backward edges.
+5. **Version re-verification** — re-fetched the seven MCP 2026-07-28 primary URLs
+   with curl on 2026-10-14: all seven returned HTTP 200. Spot-checked six more
+   across the other skills (Playwright docs, RFC 9309, GPT-2 encoder, arXiv
+   2212.08073, IIPC WARC spec, GitHub Playwright): 200 except two guessed
+   `ISO-28500` paths that 404 — but those URLs were never in SOURCES.md, which
+   uses the correct `warc-format/warc-1.1/index.md` path (HTTP 200). No fact drift
+   found; no SOURCES.md entry needed updating.
+
+### Verification this pass
+- `python3 -m pytest skills/agentic-data/ -q` -> **313 passed** (was 277), 0 failed.
+- `python3 skills/agentic-data/scripts/acceptance_check.py` -> **ACCEPTANCE: PASS**.
+- Per-skill `validate_skill.py`: all ten green (29/22/22/31/22/20/25/24/20/29 oks,
+  0 fails, 0 warns).
+- Cycle check on Related sections: **no cycles**.
+
+### What is stubbed / missing
+None for the r3-05 brief. README and HANDOFF exist, all ten validators are green,
+every EVALS.md has >= 5 prompts and 3 near-miss prompts, Related sections are
+cycle-free, and version-sensitive facts were re-verified live.
+
+### Acceptance verdict
+**PASS.** `skills-agentic-data-r3-05` meets every item of the task prompt.
+
+### Commits this pass
+`skills-agentic-data-r3-05:` README.md (1 file),
+`skills-agentic-data-r3-05:` HANDOFF.md + skill-authoring near-miss prompts (2 files),
+`skills-agentic-data-r3-05:` near-miss prompts for four skills (4 files),
+`skills-agentic-data-r3-05:` near-miss prompts for four more skills (4 files),
+`skills-agentic-data-r3-05:` near-miss prompts for trajectory-ledger (1 file),
+`skills-agentic-data-r3-05:` forward-only Related sections to all ten skills (10 files),
+`skills-agentic-data-r3-05:` PASS 5 record (1 file). Own paths only.
