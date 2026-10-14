@@ -23,6 +23,21 @@ ROUNDING_TOLERANCE = 0.01
 VALID_REASON_CODES = {"ROUNDING", "BANK_FEE", "FX", "UNALLOCATED"}
 
 
+def german_iban_ok(iban: str) -> bool:
+    """Bundesbank Pruefzahlenberechnung for DE IBANs.
+
+    German check digits are NOT generic mod-97: the country code and check
+    digits move to the END of the string before the mod-97 step, and letters
+    are converted to numbers (A=10..Z=35). A valid DE IBAN yields remainder 1.
+    """
+    s = str(iban).replace(" ", "").upper()
+    if len(s) != 22 or not s.startswith("DE") or not s[2:].isdigit():
+        return False
+    rearranged = s[4:] + s[:4]
+    nums = "".join(str(ord(c) - 55) if c.isalpha() else c for c in rearranged)
+    return int(nums) % 97 == 1
+
+
 def check(data):
     errors = []
     entries = data.get("entries", [])
@@ -33,6 +48,10 @@ def check(data):
     expected = round(opening + sum(float(e.get("amount", 0.0)) for e in entries), 2)
     if abs(expected - closing) > ROUNDING_TOLERANCE:
         errors.append(f"balance mismatch: opening+entries={expected:.2f} != closing={closing:.2f}")
+
+    account = str(data.get("account", "")).strip()
+    if account and not german_iban_ok(account):
+        errors.append(f"IBAN {account!r} invalid (Bundesbank Pruefzahlenberechnung)")
 
     seen = set()
     for i, e in enumerate(entries, 1):
