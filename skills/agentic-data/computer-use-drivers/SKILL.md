@@ -131,16 +131,45 @@ the tree is present-but-sparse, never when it is absent.
 
 ## Worked examples
 
-### Good — tree-first click with confirm()
+### Good — full grounded turn, from tree to confirm to result
+
 Goal: type a password into a login dialog that has no API.
 
-1. Enumerate the tree; find a `textbox` with `name: "Password"`.
-2. Resolve its center in screenshot pixels, scale into a fresh array.
-3. Call `confirm("type into the password field")` — the dialog is
-   destructive-input, so the gate is mandatory.
-4. `type` the value; assert the field's `value` now matches.
+1. **Enumerate the tree first.** The first action is never a click.
+   ```
+   tree: role=window name="Acme App"
+         role=dialog name="Sign in"
+           role=textbox name="Password" value="" bounds=[(640,360),(720,392)]
+           role=button name="Sign in"    bounds=[(760,360),(880,392)]
+   ```
+   Every node has a `role` and a `name` — the tree is usable, so proceed.
 
-Result: the action is grounded in a named tree node and gated.
+2. **Scale coordinates into a fresh array.** The model sent `[680, 376]` (the
+   centre of the password field) in full-screenshot pixels on a 1280x720 capture,
+   which is also the display size here, so the scale factor is 1.0. The scaling
+   still runs through a new array — never `input` itself:
+   ```
+   px = [680, 376]
+   scale = [display_w / capture_w, display_h / capture_h]   # [1.0, 1.0]
+   target = [int(px[0] * scale[0]), int(px[1] * scale[1])]  # NEW list, [680, 376]
+   ```
+   `cursor_position` is reported back as `[680, 376]` in screenshot pixels.
+
+3. **Gate the destructive input.** `type` is destructive input, so `confirm()`
+   is mandatory. The confirmation string is a fixed phrase — it carries no
+   screen content, no host name, no token:
+   ```
+   confirm("type into the password field")   # approved -> True
+   ```
+
+4. **Type and verify.** `type("s3cr3t")`, then re-read the field's `value`
+   from the tree. It now reads `"s3cr3t"` — the action is grounded in a named
+   node and the outcome is checked against the tree, not assumed.
+
+Result: the turn is grounded (typed locator), gated (confirm), isolated (one
+container, no host mounts), and the screen was treated as untrusted data
+throughout. The full 17-member set was checked: only `type` was used, and every
+member not overridden is `enabled: false`.
 
 ### Bad — clamped coordinates
 Goal: click a button near the bottom-right corner of the screen.
@@ -151,7 +180,8 @@ Goal: click a button near the bottom-right corner of the screen.
    retries, compounding the mistake.
 
 Why it fails: clamping hides the error. The rule is to throw `ToolError` —
-never silently move the pointer.
+never silently move the pointer. Detection: `scripts/validate_driver.py`
+prints `FAIL: clamping detected`.
 
 ### Bad — screen content in a confirmation string
 `confirm("type the code shown in this dialog: 7F3A9Q")`.
@@ -159,6 +189,28 @@ never silently move the pointer.
 Why it fails: the confirmation string now carries screen content, which is
 untrusted data. Use a fixed phrase only; let the exception path carry the
 content if it must.
+
+### Bad — scaling in place
+```
+px = input[0]            # [1920, 1080] — shared with message history
+px[0] = px[0] * 0.667    # MUTATES the input array
+click(px)
+```
+
+Why it fails: `input` arrays are shared with the message history, so mutating
+them corrupts the conversation for every later turn in the run. Scale into a
+fresh list and leave `input` untouched. Detection:
+`scripts/validate_driver.py` prints `FAIL: ... never scale into a fresh array`.
+
+### Bad — missing member
+A driver overrides 16 of the 17 members and ships. The contract test still
+passes because it only checks the members that *are* present.
+
+Why it fails: `key` is a member in its own right. The un-overridden member is
+sent as `enabled: false` and the call no-ops silently. Re-vendor
+`fixtures/registry_20260801.json` on every SDK release and diff against it with
+`scripts/validate_driver.py --contract`.
+
 ## Related skills
 - [mcp-2026-07-28](../mcp-2026-07-28/SKILL.md) — expose a desktop driver over MCP so the protocol, not raw sockets, carries the tool calls; this skill defines the wire.
 - [skill-authoring-evals](../skill-authoring-evals/SKILL.md) — the confirm() gates, coordinate scaling and tree reads in this skill are verifier components that need a bypass audit before they are trusted; author those evals with the meta-skill.
