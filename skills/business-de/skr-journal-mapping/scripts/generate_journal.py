@@ -69,7 +69,28 @@ def main():
 
     pinned = load_config(args.config)["skr-journal-mapping"]
     rates = pinned["ust_rates_2026"]
-    lines = json.loads(Path(args.lines).read_text(encoding="utf-8"))
+    raw = args.lines
+    # Accept either a JSON array literal on the command line or a path to a
+    # JSON file. The EVALS prompts pass the array inline; agents do too.
+    stripped = raw.lstrip()
+    if stripped.startswith(("[", "{")):
+        try:
+            lines = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            print(json.dumps({"ok": False, "error": "invalid --lines JSON: %s" % exc},
+                             indent=2, ensure_ascii=False))
+            return 2
+    else:
+        try:
+            lines = json.loads(Path(raw).read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            print(json.dumps({"ok": False, "error": "lines file not found: %s" % raw},
+                             indent=2, ensure_ascii=False))
+            return 2
+        except json.JSONDecodeError as exc:
+            print(json.dumps({"ok": False, "error": "invalid JSON in %s: %s" % (raw, exc)},
+                             indent=2, ensure_ascii=False))
+            return 2
 
     if not isinstance(lines, list):
         print(json.dumps({"ok": False, "error": "--lines must be a JSON array"},
