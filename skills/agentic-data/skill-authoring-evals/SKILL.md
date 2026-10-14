@@ -84,6 +84,8 @@ fires when it should.
 - [ ] Every `references/` link resolves.
 - [ ] Scripts deterministic, runnable offline, machine-readable to stdout.
 - [ ] `evals.json` passes `scripts/evals_check.py` (unique ids, prompts, should_fire, expected_output).
+- [ ] Every case carries a `split` field (`train`/`val`) — verified by `scripts/eval_metrics.py split`.
+- [ ] Every case has both `with_skill/` and `without_skill/` output — verified by `scripts/eval_metrics.py delta` (zero identical-to-baseline cases).
 - [ ] Trigger evals: should-fire and should-not-fire sets, with a train/validation split.
 - [ ] Each eval run has with_skill and without_skill outputs.
 - [ ] Weakest section identified and rewritten.
@@ -108,4 +110,4 @@ The four that matter most:
 - SOURCES: references/SOURCES.md
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
-- scripts: scripts/validate_skill.py, scripts/eval_metrics.py (precision, recall, output delta), scripts/evals_check.py (evals.json schema)
+- scripts: scripts/validate_skill.py (front matter), scripts/eval_metrics.py (precision, recall, output delta, train/val split), scripts/evals_check.py (evals.json schema)

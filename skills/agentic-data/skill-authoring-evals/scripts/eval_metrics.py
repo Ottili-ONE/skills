@@ -81,33 +81,116 @@ def metrics(evals: list[dict], firings: dict[str, bool]) -> dict:
     }
 
 
+def cmd_delta(with_dir: Path, without_dir: Path, min_delta: float = 0.05) -> int:
+    """Compare with_skill vs without_skill outputs and report the delta.
+
+    A skill that produces output identical to the baseline did nothing; a skill
+    that makes output worse is worse than no skill. Reads one text file per case
+    (<case_id>.txt) from each directory. Fully offline.
+    """
+    if not with_dir.is_dir():
+        print(f"FAIL: with_skill dir not found: {with_dir}", file=sys.stderr)
+        return 2
+    if not without_dir.is_dir():
+        print(f"FAIL: without_skill dir not found: {without_dir}", file=sys.stderr)
+        return 2
+    with_files = {p.stem: p for p in with_dir.glob("*.txt")}
+    without_files = {p.stem: p for p in without_dir.glob("*.txt")}
+    cases = sorted(set(with_files) & set(without_files))
+    if not cases:
+        print("FAIL: no case id present in both directories", file=sys.stderr)
+        return 1
+    missing = sorted(set(without_files) - set(with_files)) + sorted(set(with_files) - set(without_files))
+    for m in missing:
+        print(f"FAIL: case {m} missing from one side (baseline incomplete)", file=sys.stderr)
+    failures = 0
+    for cid in cases:
+        w = with_files[cid].read_text(encoding="utf-8")
+        b = without_files[cid].read_text(encoding="utf-8")
+        if w == b:
+            print(f"FAIL: case {cid} output identical to baseline -- skill did nothing", file=sys.stderr)
+            failures += 1
+        else:
+            ratio = abs(len(w) - len(b)) / max(1, max(len(w), len(b)))
+            if ratio < min_delta:
+                print(f"WARN: case {cid} output delta {ratio:.3f} below {min_delta}", file=sys.stderr)
+            else:
+                print(f"INFO: case {cid} output changed ({ratio:.0%} length delta)", file=sys.stderr)
+    if failures:
+        print(f"FAIL: {failures}/{len(cases)} cases identical to baseline", file=sys.stderr)
+        return 1
+    print(f"PASS: all {len(cases)} cases differ from baseline", file=sys.stderr)
+    return 0
+
+
+def cmd_split(evals_path: Path, train_ratio: float = 0.7) -> int:
+    """Verify a train/validation split exists and is not degenerate.
+
+    A single eval set used for both tuning and declaring success is overfitting.
+    Expects evals.json to carry a `split` field per case (`train` or `val`).
+    """
+    try:
+        evals = json.loads(evals_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"FAIL: cannot read evals: {exc}", file=sys.stderr)
+        return 2
+    if not isinstance(evals, list) or not evals:
+        print("FAIL: evals must be a non-empty list", file=sys.stderr)
+        return 2
+    splits = [str(e.get("split", "")).lower() for e in evals if isinstance(e, dict)]
+    if not any(s in ("train", "val", "validation") for s in splits):
+        print("FAIL: no case carries a `split` field -- you tuned and declared on the same set", file=sys.stderr)
+        return 1
+    train = [e for e in evals if str(e.get("split", "")).lower() == "train"]
+    val = [e for e in evals if str(e.get("split", "")).lower() in ("val", "validation")]
+    if not train or not val:
+        print("FAIL: both train and val splits must be non-empty", file=sys.stderr)
+        return 1
+    print(f"PASS: {len(train)} train / {len(val)} val cases", file=sys.stderr)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("evals", help="evals.json path")
-    ap.add_argument("firings", help="firing log: '<id> <0|1>' per line")
-    ap.add_argument("--json", action="store_true", help="emit benchmark object")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("metrics")
+    p.add_argument("evals")
+    p.add_argument("firings")
+    p.add_argument("--json", action="store_true")
+
+    p = sub.add_parser("delta")
+    p.add_argument("with_dir", type=Path)
+    p.add_argument("without_dir", type=Path)
+    p.add_argument("--min-delta", type=float, default=0.05)
+
+    p = sub.add_parser("split")
+    p.add_argument("evals", type=Path)
+    p.add_argument("--train-ratio", type=float, default=0.7)
+
     args = ap.parse_args()
-
-    try:
-        evals = load_evals(args.evals)
-        firings = load_firings(args.firings)
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f"FAIL: {exc}", file=sys.stderr)
-        return 2
-
-    m = metrics(evals, firings)
-    ok = 1 if m["pass"] else 0
-    bad = 0 if m["pass"] else 1
-    if args.json:
-        print(json.dumps(m))
+    if args.cmd == "metrics":
+        try:
+            evals = load_evals(args.evals)
+            firings = load_firings(args.firings)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"FAIL: {exc}", file=sys.stderr)
+            return 2
+        m = metrics(evals, firings)
+        if args.json:
+            print(json.dumps(m))
+        print(f"{1 if m['pass'] else 0} {0 if m['pass'] else 1} 0")
+        if m["pass"]:
+            print(f"PASS: precision {m['precision']}, recall {m['recall']}", file=sys.stderr)
+        else:
+            print(f"FAIL: precision {m['precision']} (target {TARGET_PRECISION}), "
+                  f"recall {m['recall']} (target {TARGET_RECALL})", file=sys.stderr)
         return 0 if m["pass"] else 1
-    print(f"{ok} {bad} 0")
-    if m["pass"]:
-        print(f"PASS: precision {m['precision']}, recall {m['recall']}", file=sys.stderr)
-    else:
-        print(f"FAIL: precision {m['precision']} (target {TARGET_PRECISION}), "
-              f"recall {m['recall']} (target {TARGET_RECALL})", file=sys.stderr)
-    return 0 if m["pass"] else 1
+    if args.cmd == "delta":
+        return cmd_delta(args.with_dir, args.without_dir, args.min_delta)
+    if args.cmd == "split":
+        return cmd_split(args.evals, args.train_ratio)
+    return 2
 
 
 if __name__ == "__main__":

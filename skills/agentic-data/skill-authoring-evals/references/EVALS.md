@@ -111,3 +111,23 @@ helped or the model would have done the same thing alone. Run the baseline first
 then compare. A skill that produces identical output to the baseline did nothing;
 a skill that makes output worse is worse than no skill.
 Failure signs: only with_skill outputs recorded; "it looks good" as a substitute.
+
+## E16 — the identical-output trap
+Prompt: "My skill's output is exactly the same as the baseline on every case. Is
+that a good result?"
+Expected: No. Identical output means the skill did nothing — the model would have
+produced the same answer without it. A skill that makes output worse is worse than
+no skill at all. Detection: `scripts/eval_metrics.py delta with_skill without_skill`
+prints `FAIL: case X output identical to baseline`.
+Failure signs: declaring victory because "the output is correct".
+
+## E17 — tuned and declared on the same set
+Prompt: "I tuned my description until every eval passed, then shipped it. What did
+I miss?"
+Expected: You tuned on the validation set, so the validation set is now part of the
+training set. Every case must carry a `split` field (`train` or `val`), and both
+splits must be non-empty. Re-split, recruit fresh prompts, re-measure. If train and
+validation scores diverge after the re-split, the description is still overfit.
+Detection: `scripts/eval_metrics.py split evals.json` prints `FAIL: no case carries
+a split field` when the field is absent.
+Failure signs: a single eval set used for both tuning and declaring success.
