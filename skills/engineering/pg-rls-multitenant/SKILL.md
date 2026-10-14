@@ -18,6 +18,10 @@ Any of these fires it:
 - An incident report says "user X saw user Y's data".
 - Reviewing Supabase, Hasura, Prisma, or direct SQL for missing RLS.
 
+## Disambiguation
+- Fires: new tenant-isolated table/view, tenant_id/organization_id/namespace columns without RLS, a column becoming the tenant discriminator, 'user X saw user Y data', reviewing Supabase/Hasura/Prisma for missing RLS.
+- Does NOT fire for: a single-user app with no tenants, or event delivery idempotency (use outbox-idempotency).
+
 ## When NOT to use this skill
 - Single-tenant databases (no tenant discriminator needed).
 - Read-only analytics replicas where RLS is enforced upstream.

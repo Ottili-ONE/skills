@@ -21,6 +21,10 @@ Helpers: scripts/
 - You have added a workaround and need to track it until a proper fix lands.
 - A reviewer asks "is this component actually conformant, or is it bypassing the tokens?"
 
+## Disambiguation
+- Fires: building on @ottili/foundation-ui, proving a consumer uses the public API, tracking an FV2-WA workaround, reviewing a component for token drift.
+- Does NOT fire for: styling a non-Foundation app, reviewing backend code, or checking a11y conformance (use playwright-a11y-e2e).
+
 ## When NOT to use this skill (neighbour prompts — do not fire)
 - Styling that lives only in a theme file and is never referenced by a component — the skill governs component imports and literals, not the token library itself.
 - A brand-new component that is not yet consumed by anything — there is no consumer to test yet; the skill fires once the first consumer lands.

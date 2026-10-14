@@ -42,11 +42,31 @@ procedure docs), and optionally `scripts/`.
 - `playwright-a11y-e2e` and `foundation-v2-conformance` both check UI conformance;
   run the e2e suite after the conformance gate passes.
 
-## Validation
+## How to verify this pass
+
+Every check is offline and deterministic; run all of them before claiming the
+playbook changed:
 
 ```
-python3 scripts/validate_skill.py --all
-python3 skills/engineering/tests/test_evals_completeness.py
+python3 scripts/validate_skills.py                    # agentskills.io standard
+python3 scripts/validate.py                           # catalog consistency
+python3 skills/engineering/tests/test_evals_completeness.py      # >=5 prompts, >=3 near-misses
+python3 skills/engineering/tests/test_sources_freshness.py       # dated SOURCES, <=180 days old
+python3 skills/engineering/tests/test_collection_acceptance.py   # RESEARCH + DESIGN + EVALS
+python3 skills/engineering/tests/test_research_design_acceptance.py
+python3 scripts/check_related_graph.py                # Related graph is acyclic
+for t in skills/engineering/*/scripts/*_test.py; do python3 "$t"; done   # every checker self-tests
 ```
+
+Each skill's own checker also runs against its `references/examples/` fixtures:
+the good file exits 0, every bad file exits 1 with findings.
+
+## Cross-links
+
+The `Related skills` section of every SKILL.md forms a **directed graph** with
+`shared-tree-git` as the unique sink (every other skill links to it, it links to
+nothing). `scripts/check_related_graph.py` verifies the graph is acyclic. The
+edges are informational mentions, not runtime dependencies — a skill works
+without its Related neighbours being present.
 
 See `HANDOFF.md` for what to re-verify and when.

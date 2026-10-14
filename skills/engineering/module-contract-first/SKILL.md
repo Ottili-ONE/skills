@@ -17,6 +17,10 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - Sibling modules import each other and you must enforce a boundary (no cycles).
 - CI is red with "DRIFT DETECTED" or "CYCLE DETECTED".
 
+## Disambiguation
+- Fires: starting a new module or public exports, a consumer imports an unlisted symbol, deciding breaking vs non-breaking, sibling-module cycle detection, CI red with DRIFT/CYCLE.
+- Does NOT fire for: an HTTP API error contract (use problem-json-contracts) or a single internal helper with no consumers.
+
 ## When NOT to use this skill
 - Private/internal helpers that no consumer imports — they are not part of the public surface, so no snapshot covers them.
 - A change to a private helper that no symbol table can see — the skill governs the public surface, not your local functions.

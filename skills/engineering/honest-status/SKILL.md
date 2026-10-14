@@ -16,6 +16,10 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - A previous agent claimed something is finished and you need to audit it for false-done claims.
 - You need evidence pointers that a human or another agent can actually open in under 60 seconds.
 
+## Disambiguation
+- Fires: writing STATUS.md/handoff for work another agent picks up, auditing for false-done, deciding DONE vs coded.
+- Does NOT fire for: a changelog/release notes, a chat update reviewed in the same session, or a single README checkbox (that is a doc, not a ledger).
+
 ## When NOT to use this skill
 - Writing a changelog or release notes (use the project's release process; this skill governs the work ledger, not the product log).
 - Informal chat updates (use the chat thread; a status that is reviewed in the same session with no persistence need not be written down).

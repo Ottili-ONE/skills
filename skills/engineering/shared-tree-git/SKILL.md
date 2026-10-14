@@ -17,6 +17,10 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - Someone else's uncommitted change blocks your checkout/merge.
 - You must verify your commit did not disturb other lanes.
 
+## Disambiguation
+- Fires: multiple agents/lanes share one working tree, committing only own paths with a task-id prefix, diagnosing index.lock, another agent's uncommitted change blocking you, verifying your commit disturbed no other lane.
+- Does NOT fire for: a solo developer's personal repo, or a normal git push/pull to a private remote.
+
 ## When NOT to use this skill
 - Single-developer repos with normal git workflow.
 - Repos where `git reset --hard`, `git checkout`, or `git stash` are permitted.

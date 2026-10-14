@@ -18,6 +18,10 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - A timeout killed your test and you need to know how far it got.
 - A test spawns workers or forks and the host reports `fork: Resource temporarily unavailable`.
 
+## Disambiguation
+- Fires: a test takes more than ~60s, asked to run in the background on a shared host, a test flakes, proving resource usage, a timeout killed the test, a fork/worker resource error.
+- Does NOT fire for: a 5-second smoke test, a one-off local run with no persistence, or CI wiring that is not a long test.
+
 ## When NOT to use this skill
 - Unit tests that finish in under a minute.
 - Tests that require a live human operator.

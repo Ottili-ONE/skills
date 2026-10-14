@@ -16,6 +16,10 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 - You need responsive breakpoint checks.
 - You are choosing selectors that survive refactors.
 
+## Disambiguation
+- Fires: automated E2E coverage, accessibility conformance evidence, responsive breakpoint checks, choosing refactor-proof selectors.
+- Does NOT fire for: a static unit test of a pure function, a design-token audit (use foundation-v2-conformance), or a non-web target.
+
 ## When NOT to use this skill
 - Unit or API tests (use pytest or contract tests).
 - Static HTML/CSS inspection (use axe-core directly).

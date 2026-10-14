@@ -18,6 +18,10 @@ Any of these fires it:
 - Code review mentions `INSERT INTO outbox` without a unique key or replay logic.
 - Designing retry semantics for a service that writes events and sends them.
 
+## Disambiguation
+- Fires: event-driven integrations that must not lose/duplicate events, an outbox/idempotency_key migration, 'event delivered twice/never arrived', retry semantics for an event writer.
+- Does NOT fire for: a plain CRUD endpoint with no events, or tenant isolation (use pg-rls-multitenant).
+
 ## When NOT to use this skill (neighbour prompts — do not fire)
 - Fire-and-forget logging or metrics where ordering does not matter and duplicates are
   harmless — there is no outbox to protect and no idempotency key is needed.

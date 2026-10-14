@@ -27,6 +27,10 @@ Helpers: scripts/ (shipped: `check_audit_selectors.py`, `report_result.py`,
 - Proving failure paths and recovery (fault injection).
 - A reviewer asks "what would break this, and how do we know?"
 
+## Disambiguation
+- Fires: defining what 'done' means, writing PASS/FAIL/BLOCKED scenarios, fault injection, collecting evidence a requirement is met.
+- Does NOT fire for: a unit test (that is a test, not an acceptance gate), a code-review checklist, or a release checklist.
+
 ## When NOT to use this skill
 - Exploratory testing without a defined scenario (use a QA session).
 - Pure performance or load testing (use a benchmark harness).

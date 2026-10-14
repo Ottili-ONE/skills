@@ -10,7 +10,7 @@ What to re-verify and when, plus ideas for the next ten skills.
 
 | Cadence | What | Why |
 |---------|------|-----|
-| **Every skill change** | `python3 scripts/validate_skill.py --all` + `python3 scripts/validate.py` | Structural drift is silent; a broken frontmatter or catalog entry ships unnoticed. |
+| **Every skill change** | `python3 scripts/validate_skills.py` + `python3 scripts/validate.py` | Structural drift is silent; a broken frontmatter or catalog entry ships unnoticed. |
 | **Every release of a dependency** | Re-fetch the primary source and update the date in `references/SOURCES.md` | Versions are the most-stale facts in any SKILL.md (axe-core, Playwright, PG, WCAG). |
 | **Before Freeze 4 bump** | Re-run every `EVALS.md` prompt mentally + with real inputs | The Freeze bump changes `DEV_FIXTURE_ALIAS` and any version-sensitive threshold. |
 | **Quarterly** | Cross-link graph: `python3 scripts/check_related_graph.py --skills skills/engineering` | Circular edges sneak in when two skills are edited in the same pass. |
@@ -20,6 +20,17 @@ What to re-verify and when, plus ideas for the next ten skills.
 All ten validate green against the agentskills.io standard (`validate_skill.py --all`) and the
 catalog (`validate.py`). Every `EVALS.md` has ≥5 prompts and ≥3 near-miss prompts. The
 `## Related skills` graph is acyclic with `shared-tree-git` as the unique sink.
+
+### Pass 6 (evals deep-dive, trigger sharpening, worked examples, source freshness) findings and repairs
+
+| Area | Defect found | Repair |
+|------|--------------|--------|
+| Truncated near-miss prompts | `honest-status/references/EVALS.md` N6, N7, N8 ended mid-sentence (a copy-paste truncation), so the prompts read as fragments. | Completed all three and added N9 (evidence file on my machine); near-miss count is now 9. |
+| Worked examples missing | Four EVALS.md files (`long-test-discipline`, `pg-rls-multitenant`, `playwright-a11y-e2e`, `shared-tree-git`) had no worked example at all, so the good/bad contrast the other six files provide was absent. | Added a "Worked examples" section to each: good and bad code blocks plus good and bad evidence JSON. |
+| Near-miss coverage | `pg-rls-multitenant` (5), `playwright-a11y-e2e` (6), `long-test-discipline` (5) were at the floor. | Added 3 to pg-rls (cast setting, security_invoker, laptop vs Biest leak test), 2 to playwright (green axe != reachable, :focus-visible is not a WCAG criterion), 2 to long-test (single green run, background worker log). |
+| Source freshness | No automated check existed for whether a `retrieved/verified/re-verified` date was present and recent. | Added `skills/engineering/tests/test_sources_freshness.py`: every skill's SOURCES.md must carry at least one dated line and the newest must be <=180 days old. |
+| Trigger precision | Ten triggers were written as bare bullet lists with no disambiguation against neighbouring skills, so an agent could fire `pg-rls-multitenant` for an outbox question. | Added a "Disambiguation" subsection to every SKILL.md: fires / does NOT fire, with the neighbouring skill to use instead. |
+| Version-sensitive facts | Re-fetched live on 2026-10-14: `axe-core` 4.14.0 (unchanged), `@axe-core/playwright` 4.13.0 (unchanged), `@ottili/foundation-ui` 1.0.13 (unchanged), Postgres 15 + current docs both HTTP 200. | No version moved; recorded the re-verification date in each affected SOURCES.md. |
 
 ### Pass 5 (evals, validation, cross-links, handoff) findings and repairs
 
@@ -35,7 +46,7 @@ catalog (`validate.py`). Every `EVALS.md` has ≥5 prompts and ≥3 near-miss pr
 Re-verification commands (all green on 2026-10-14):
 
 ```
-python3 scripts/validate_skill.py --all
+python3 scripts/validate_skills.py
 python3 scripts/validate.py
 python3 skills/engineering/tests/test_research_design_acceptance.py
 python3 skills/engineering/tests/test_evals_completeness.py
