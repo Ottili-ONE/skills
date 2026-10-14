@@ -110,6 +110,27 @@ until 2025-12-31 for vouchers).
 **Trap:** an audit export must be chronological, complete, checksummed and
 carry a manifest (MANIFEST.json). A raw DB dump is not an audit export.
 
+### N5. "The Verfahrensdokumentation is a flat JSON file with six keys"
+**Trap:** the checker expects a nested `verfahrensdokumentation.sections`
+object where each section carries `complete: true`. A flat file with the six
+keys reports every section as missing — `verfahrensdokumentation.py --check`
+exits 1 with all six in `missing_sections`, even though the *content* is
+there. Build the document with `--out` and `--check` it, never hand-write
+the envelope.
+
+### N6. "One section is incomplete, the rest are fine"
+**Trap:** the check is all-or-nothing. A document missing only `backup`
+still exits 1 — a partial Verfahrensdokumentation is not acceptable to the
+auditor. Fill every section, then re-run `--check` until `missing_sections`
+is empty.
+
+### N7. "The state file is just a cache, delete it after the check"
+**Trap:** the immutability state is the hash chain that proves no
+in-place modification. A state whose stored hash does not match the file
+(e.g. `{'a.txt': 'deadbeef'}`) is a violation, and deleting the state means
+the next run cannot detect edits. `immutability_check.py --strict` exits 1
+on a mismatch; keep the state under version control alongside the archive.
+
 
 ---
 
@@ -139,6 +160,24 @@ python3 scripts/purge_decision.py --type invoice --year 2017 --approver "M. Must
 python3 scripts/purge_decision.py --type invoice --year 2017 --approver "M. Mustermann (Steuerberater)" --reason "retention ended" --today 2026-10-14
 # {"purge_permitted": true, "blockers": [],
 #  "record_retention_until": "2025-12-31"}
+
+# 7c. Verfahrensdokumentation, complete envelope -> exit 0
+python3 scripts/verfahrensdokumentation.py --system "ERP v5.2" --medium "S3 encrypted" --export "DATEV EXTF" --access "RBAC" --backup "daily" --retention "8y" --year 2026 --out vd.json
+python3 scripts/verfahrensdokumentation.py --check vd.json
+# {"ok": true, "missing_sections": [], "checked": 6}
+
+# 7d. Verfahrensdokumentation, flat envelope -> exit 1 (all six missing)
+python3 scripts/verfahrensdokumentation.py --check evals_fixtures/vd_flat.json
+# {"ok": false, "missing_sections": ["system", "medium", "retention",
+#  "export", "access", "backup"], "checked": 0}
+
+# 7e. immutability state, hash mismatch -> exit 1
+python3 scripts/immutability_check.py --archive evals_fixtures/sample_archive --state evals_fixtures/state_bad.json
+# {"ok": false, "violations": ["a.txt"], ...}
+
+# 7f. immutability state, matching hash -> exit 0
+python3 scripts/immutability_check.py --archive evals_fixtures/sample_archive --state evals_fixtures/state_ok.json
+# {"ok": true, "violations": [], "checked": 1}
 ```
 
 The purge record itself is a document: keep it until the retention end of the

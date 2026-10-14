@@ -1,0 +1,32 @@
+{
+  "verfahrensdokumentation": {
+    "generated": "2026-10-14",
+    "effective_date": "2025-01-01",
+    "sections": {
+      "system": {
+        "description": "x",
+        "complete": true
+      },
+      "medium": {
+        "description": "x",
+        "complete": true
+      },
+      "retention": {
+        "description": "x",
+        "complete": true
+      },
+      "export": {
+        "description": "x",
+        "complete": true
+      },
+      "access": {
+        "description": "x",
+        "complete": true
+      },
+      "backup": {
+        "description": "x",
+        "complete": true
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "system": "ERP",
+  "medium": "S3",
+  "export": "DATEV",
+  "retention": "8y",
+  "access": "RBAC",
+  "backup": "daily"
+}
