@@ -7,9 +7,11 @@ Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
    design system: SoT §14 tokens, themes, density, and the §47 component inventory." Full
    version list: 1.0.1-1.1, 1.0.10, 1.0.11, 1.0.12, 1.0.13. URL:
    https://registry.npmjs.org/@ottili/foundation-ui — retrieved 2026-10-14.
-2. **Foundation v2 changelog / releases** — https://github.com/ottili/foundation. Verified
-   2026-10-13 (HTTP 200). Source for the public API contract (named exports, `exports` map,
-   no deep imports). URL: https://github.com/ottili/foundation — retrieved 2026-10-14.
+2. **Foundation v2 public API contract** — https://registry.npmjs.org/@ottili/foundation-ui.
+   Verified 2026-10-14 (HTTP 200). The `ottili/foundation` GitHub URL returns **404** (the repo
+   does not resolve), so the npm registry metadata is the live source for the public API
+   contract: named exports, the `exports` map, the version list, and the license. URL:
+   https://registry.npmjs.org/@ottili/foundation-ui — retrieved 2026-10-14.
 3. **WCAG 2.2** — https://www.w3.org/WAI/standards-guidelines/wcag/. Verified 2026-10-14
    (HTTP 200). A/AA success criteria are the conformance bar for Foundation components.
    URL: https://www.w3.org/WAI/standards-guidelines/wcag/ — retrieved 2026-10-14 (the
@@ -28,6 +30,11 @@ Retrieval date: 2026-10-13. All URLs fetched with curl; HTTP status recorded.
    unless the integrator announces the Freeze 4 bump in docs/STATUS_ALL.md." This skill's
    version-pinning and refusal-to-bump behaviour is a direct implementation of that rule.
    Verified 2026-10-13; offline copy at docs/R3_OWNERS.json.
+
+## Dead / moved URLs (recorded 2026-10-14)
+- `https://github.com/ottili/foundation` — **404 as of 2026-10-14** (the `ottili/foundation`
+  GitHub repo does not resolve). Replaced by `registry.npmjs.org/@ottili/foundation-ui`, which
+  carries the version list, the `exports` map and the license.
 
 ## Version-sensitive facts
 | Fact | Value | Verified |
