@@ -25,3 +25,40 @@ Acceptance: `RESEARCH.md` + `SOURCES.md` (>=6 primary URLs each) + `DESIGN.md` p
 - Replaced 8 dead/moved URLs with their live equivalents (hilfe.datev.de, bundesbank MT940, DATEV SK-Schlüssel, gesetze-im-internet paths, iso20022 CAMT.053, swift.com/standards). No fact changed.
 - Re-confirmed: XRechnung tags `v2026-08-31`/`v2026-01-31`, FERD profile model, Stripe 5-min replay window, GitHub/Meta signature schemes, OWASP SSRF checklist, WordPress REST API, EU AI Act Art. 50 dates (Omnibus `32026R1744` served, 202).
 
+
+---
+
+## This pass (2026-10-15) — PASS 8 acceptance re-check
+
+Task requirement: re-check the PASS-1 acceptance criteria (`RESEARCH.md` +
+`SOURCES.md` >=6 primary URLs each + `DESIGN.md` per skill) against the
+shipped tree and record the result.
+
+### Verification run
+1. `python3 business-de/scripts/validate_skills.py <10 dirs>` → **10 skills
+   checked, 0 total issues** (exit 0).
+2. `python3 -m pytest -q` in business-de → **124 passed, 0 failed** (47.7 s).
+3. Per-skill unique-URL census in `references/SOURCES.md`:
+   xrechnung-zugferd **14**, gobd-archive **9**, datev-extf **8**,
+   skr-journal-mapping **7**, ust-edge-cases **6**, bank-reconciliation-camt **6**,
+   carrier-apis-de **16**, webhooks-safe **8**, publish-reconcile-wp-meta **6**,
+   dsgvo-ai-act-labeling **8**. All ≥ 6. (An earlier 5-URL read of
+   dsgvo-ai-act-labeling was a grep artifact — query-string eur-lex URLs
+   collapse; the S-row count is 8.)
+4. All ten `references/DESIGN.md` exist; all ten `references/EVALS.md` carry
+   ≥5 numbered prompts (5–10 range).
+
+### Result
+**ACCEPTANCE MET** for task `skills-business-de-r3-01`. No new files were
+written this pass — the deliverable was already complete and green, and this
+entry records the re-check so the next pass arrives with evidence rather than
+a re-derivation. Continuity note: `.germo/notes/pass8-skills-business-de-r3-01.md`.
+
+### Open items (unchanged, not this job's paths)
+- `scripts/validate.py`, `install.sh`, `build-index.py` at repo root owned by
+  skills-engineering-r3.
+- DPD / GLS / Hermes / UPS carrier facts unverified (partner portals
+  bot-protected).
+- KoSIT validator JAR / changelog 503 (2026-10-13); not re-probed.
+- `gesetze-im-internet.de` law paths 000; corroborated by dejure.org + IHK.
+- Art. 50(2) machine-readable marking date (2026-12-02) is secondary-source.
