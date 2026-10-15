@@ -12,6 +12,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SKILLS_DIR="$ROOT/skills"
 TARGET=""
 DRY_RUN=0
 FORCE=0
@@ -25,11 +26,16 @@ Usage: $0 --target <codex|claude|cursor|agents|/path> [options] <skill...>
 
 Options:
   --target <name|path>   Agent skills directory (required).
-  --package <name>       Install every skill in a package (from catalog.json).
+  --package <name>       Install every skill in a package.
   --dry-run              Print actions, write nothing, exit 0.
   --force                Overwrite an existing destination folder.
   --link                 Create a symlink instead of copying.
   -h | --help            Show this help.
+
+Packages are DERIVED from the skills/ folders at install time (never a hand-maintained
+list). A package is any top-level folder under skills/ that contains skill subfolders.
+Virtual packages: 'generic' installs every skill; 'meta' and 'ref-*' are reserved and
+currently resolve to the empty set.
 USAGE
 }
 
@@ -69,29 +75,60 @@ case "$TARGET" in
 esac
 mkdir -p "$TARGET"
 
-CATALOG="$ROOT/catalog.json"
-if [[ ! -f "$CATALOG" ]]; then
-  echo "error: catalog.json not found at $CATALOG" >&2
-  exit 1
-fi
+# --- Derive the package list from the skills/ folders at install time. ---
+# A package is a top-level folder under skills/ that contains at least one
+# subfolder with a SKILL.md. No hand-maintained list, no dependency on catalog.json.
+derive_packages() {
+  local pkg
+  for pkg in "$SKILLS_DIR"/*/; do
+    pkg="$(basename "$pkg")"
+    [[ -d "$SKILLS_DIR/$pkg" ]] || continue
+    case "$pkg" in
+      .git|node_modules|.pytest_cache) continue ;;
+    esac
+    local sub
+    for sub in "$SKILLS_DIR/$pkg"/*/; do
+      if [[ -f "$SKILLS_DIR/$pkg/$(basename "$sub")/SKILL.md" ]]; then
+        echo "$pkg"
+        break
+      fi
+    done
+  done
+}
 
-# Expand --package into individual skill names using python (json is available).
+# Expand --package into individual skill names.
 if [[ -n "$PACKAGE" ]]; then
-  mapfile -t PKG_SKILLS < <(python3 -c "
-import json, sys
-cat = json.load(open('$CATALOG'))
-pkgs = cat.get('packages', {})
-if '$PACKAGE' not in pkgs:
-    print('error: unknown package $PACKAGE', file=sys.stderr); sys.exit(1)
-for s in cat.get('skills', []):
-    if s.get('package') == '$PACKAGE':
-        print(s['name'])
-")
-  if [[ ${#PKG_SKILLS[@]} -eq 0 ]]; then
-    echo "error: no skills in package '$PACKAGE'" >&2
-    exit 1
-  fi
-  SKILLS+=("${PKG_SKILLS[@]}")
+  case "$PACKAGE" in
+    generic)
+      # Every skill in every package.
+      while IFS= read -r pkg; do
+        for sub in "$SKILLS_DIR/$pkg"/*/; do
+          [[ -f "$sub/SKILL.md" ]] || continue
+          SKILLS+=("$(basename "$sub")")
+        done
+      done < <(derive_packages)
+      ;;
+    meta|ref-*)
+      # Reserved virtual package: no skills shipped today.
+      echo "note: package '$PACKAGE' resolves to no skills (reserved / on-demand)"
+      ;;
+    *)
+      # Real package: must be a folder under skills/ that contains skills.
+      if ! grep -qx "$PACKAGE" <(derive_packages); then
+        echo "error: unknown package '$PACKAGE'" >&2
+        echo "known packages: $(derive_packages | tr '\n' ' ')" >&2
+        exit 1
+      fi
+      for sub in "$SKILLS_DIR/$PACKAGE"/*/; do
+        [[ -f "$sub/SKILL.md" ]] || continue
+        SKILLS+=("$(basename "$sub")")
+      done
+      if [[ ${#SKILLS[@]} -eq 0 ]]; then
+        echo "error: no skills in package '$PACKAGE'" >&2
+        exit 1
+      fi
+      ;;
+  esac
 fi
 
 # Deduplicate while preserving order.
@@ -106,21 +143,11 @@ SKILLS=("${UNIQ[@]}")
 
 rc=0
 for name in "${SKILLS[@]}"; do
-  src_dir="$ROOT/skills/$(python3 -c "
-import json
-cat = json.load(open('$CATALOG'))
-for s in cat.get('skills', []):
-    if s['name'] == '$name' or s['id'] == '$name':
-        print(s['path']); break
-else:
-    print('')
-")
-"
-  if [[ -z "$src_dir" ]]; then
-    echo "error: skill '$name' not found in catalog" >&2
-    rc=1; continue
-  fi
-  src="$ROOT/$src_dir"
+  # Source resolution: the skill folder lives at $SKILLS_DIR/$name. The folder name
+  # IS the skill name, so no catalog lookup is needed and there is no
+  # relative-to-script mistake. (The old code computed src_dir via catalog.json and
+  # then did src="$ROOT/$src_dir", which doubled the path when the lookup failed.)
+  src="$SKILLS_DIR/$name"
   dest="$TARGET/$name"
 
   if [[ ! -d "$src" ]]; then

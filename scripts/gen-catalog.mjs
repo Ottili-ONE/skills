@@ -12,7 +12,7 @@
 //   --out P   write to P (default: <repo>/catalog.json).
 
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
-import { resolve, dirname, basename, join } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -20,27 +20,69 @@ const REPO = resolve(HERE, '..');
 const SKILLS_DIR = resolve(REPO, 'skills');
 const DEFAULT_OUT = resolve(REPO, 'catalog.json');
 
+// Cache/build artefacts that must never appear in a generated catalogue.
+const IGNORE_DIRS = new Set(['.pytest_cache', '__pycache__', 'node_modules', '.git']);
+const IGNORE_FILES = new Set(['.DS_Store']);
+
 const args = process.argv.slice(2);
 let check = false;
 let outPath = DEFAULT_OUT;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--check') check = true;
-  else if (args[i] === '--out') { outPath = resolve(args[++i]); }
-  else if (args[i].startsWith('--out=')) { outPath = resolve(args[i].slice(7)); }
+  else if (args[i] === '--out') outPath = resolve(args[++i]);
+  else if (args[i].startsWith('--out=')) outPath = resolve(args[i].slice(7));
 }
 
-// --- minimal YAML-frontmatter parser (frontmatter only, no YAML lib needed) ---
+// --- minimal block-style YAML frontmatter parser (frontmatter only) ---
+// Handles scalar values (quoted or bare), multi-line list values and nested
+// maps such as `compatibility:` / `metadata:`. No YAML library is needed.
+function unquote(v) {
+  v = v.trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    return v.slice(1, -1);
+  }
+  return v;
+}
+
 function parseFrontmatter(text) {
   const m = text.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
   if (!m) return {};
   const fields = {};
-  for (const line of m[1].split('\n')) {
-    if (!line || line.trim().startsWith('#') || !line.includes(':')) continue;
+  const lines = m[1].split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line || line.trim().startsWith('#') || !line.includes(':')) { i++; continue; }
     const idx = line.indexOf(':');
-    let k = line.slice(0, idx).trim();
-    let v = line.slice(idx + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    if (k) fields[k] = v;
+    const key = line.slice(0, idx).trim();
+    let rest = line.slice(idx + 1).trim();
+    if (!key) { i++; continue; }
+
+    if (rest === '' || rest === '|' || rest === '>' || rest === '-') {
+      // Block scalar or list: collect following indented lines.
+      const block = [];
+      i++;
+      while (i < lines.length && (lines[i] === '' || /^\s+/.test(lines[i]))) {
+        block.push(lines[i]);
+        i++;
+      }
+      const items = block
+        .map((l) => l.replace(/^\s+-\s*/, '').trim())
+        .filter((l) => l.length > 0);
+      if (items.length) {
+        fields[key] = items.map(unquote);
+      } else {
+        fields[key] = block.join('\n').trim();
+      }
+    } else if (rest.startsWith('-')) {
+      // Inline list on the same line (rare in these files).
+      const items = rest.split(',').map((s) => unquote(s.replace(/^-\s*/, ''))).filter(Boolean);
+      fields[key] = items;
+      i++;
+    } else {
+      fields[key] = unquote(rest);
+      i++;
+    }
   }
   return fields;
 }
@@ -50,8 +92,7 @@ function listSkillDirs(dir) {
   const out = [];
   if (!existsSync(dir)) return out;
   for (const pkg of readdirSync(dir, { withFileTypes: true })) {
-    if (!pkg.isDirectory()) continue;
-    if (pkg.name.startsWith('.') || pkg.name === 'node_modules') continue;
+    if (!pkg.isDirectory() || IGNORE_DIRS.has(pkg.name)) continue;
     const pkgDir = join(dir, pkg.name);
     for (const skill of readdirSync(pkgDir, { withFileTypes: true })) {
       if (!skill.isDirectory()) continue;
@@ -66,6 +107,7 @@ function listSkillDirs(dir) {
 
 function walkFiles(dir, files = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (IGNORE_DIRS.has(e.name) || IGNORE_FILES.has(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) walkFiles(p, files);
     else files.push(p);
@@ -96,6 +138,7 @@ function main() {
     const fm = parseFrontmatter(readFileSync(join(dir, 'SKILL.md'), 'utf8'));
     const rel = `skills/${pkg}/${name}`;
     const paths = walkFiles(dir).map((p) => p.replace(REPO + '/', ''));
+    const compat = fm.compatibility;
     skills.push({
       id: fm.name || name,
       name: fm.name || name,
@@ -106,8 +149,7 @@ function main() {
       category: fm.category || '',
       license: fm.license || '',
       author: fm.author || '',
-      compatibility: Array.isArray(fm.compatibility) ? fm.compatibility
-        : (fm.compatibility ? fm.compatibility.split(',').map((s) => s.trim()).filter(Boolean) : []),
+      compatibility: Array.isArray(compat) ? compat : (compat ? [compat] : []),
       description: fm.description || '',
       paths,
     });
