@@ -60,6 +60,17 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
    account number (plausibility check), wrong amount format (dot instead of
    comma), wrong date format (missing leading zero), duplicate Belegnummer.
    Each error has a specific fix; never guess.
+5b. **Map the error code to the fix — never guess.** `scripts/validate_extf.py`
+   emits 32 distinct error/warning codes; the ones an agent hits most often
+   are listed in `references/procedures.md` §5. The codes are stable across
+   Formatversion 13 runs, but the *list* is the contract, not memory: if a
+   code appears that is not in the table, re-run the validator and read the
+   code before inventing a fix. Two codes are easy to confuse:
+   - `taxkey-missing` (col 97 empty on a non-blank booking) vs
+     `taxkey-invalid` (col 97 holds a value not in the SKR tax-key set);
+   - `belegdatum-format` (not exactly 4 digits TTMM) vs
+     `belegdatum-impossible` (4 digits that are not a real calendar day,
+     e.g. `1345` — a warning, not a blocker).
 6. **Generate test fixtures** — produce a minimal valid Buchungsstapel plus a
    deliberately broken one for negative testing. Fixtures must be deterministic
    and runnable offline.
