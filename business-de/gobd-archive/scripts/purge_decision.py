@@ -36,7 +36,14 @@ def retention_end(year: int, years: int) -> str:
 
 
 def decide(doc_type: str, year: int, approver: str, reason: str,
-           open_audit: bool = False, config: dict = None) -> dict:
+           open_audit: bool = False, config: dict = None,
+           today: date = None) -> dict:
+    """Decide whether a purge is permitted.
+
+    ``today`` is injectable so callers (and the test suite) can pin the
+    "current" date; without it the script uses the wall clock, which makes
+    the outcome non-deterministic across year boundaries.
+    """
     if doc_type not in CLASSES:
         raise ValueError(f"unknown document type: {doc_type!r}; "
                          f"choose from {sorted(CLASSES)}")
@@ -48,7 +55,8 @@ def decide(doc_type: str, year: int, approver: str, reason: str,
         raise ValueError("reason must be a non-empty justification")
     label, years = CLASSES[doc_type]
     end = retention_end(year, years)
-    today = date.today()
+    if today is None:
+        today = date.today()
     permitted = (today > date.fromisoformat(end)) and not open_audit
     return {
         "document_type": doc_type,
@@ -84,12 +92,16 @@ def main() -> int:
                     help="an audit is currently open -> purge blocked")
     ap.add_argument("--config", default="config/versions.json")
     ap.add_argument("--out", help="write the decision record as JSON")
+    ap.add_argument("--today", default=None,
+                    help="override today's date (YYYY-MM-DD); default = the "
+                         "wall clock, which makes the result non-deterministic")
     args = ap.parse_args()
 
     try:
         config = load_config(args.config)
+        today = date.fromisoformat(args.today) if args.today else None
         rec = decide(args.type, args.year, args.approver, args.reason,
-                     args.open_audit, config)
+                     args.open_audit, config, today=today)
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as e:
         print(json.dumps({"ok": False, "error": str(e)}, indent=2,
                          ensure_ascii=False), file=sys.stderr)

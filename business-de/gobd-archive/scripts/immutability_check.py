@@ -4,6 +4,12 @@
 Usage:
     python3 immutability_check.py --archive ./archive --state ./state.json
     python3 immutability_check.py --archive ./archive --state ./state.json --strict
+    python3 immutability_check.py --archive ./archive --state ./state.json --write-state
+
+The script is **read-only by default**: it never rewrites the state file
+unless ``--write-state`` is passed. A GoBD audit check must not modify the
+archive's own bookkeeping; pass ``--write-state`` only when you are seeding a
+first state or knowingly refreshing it.
 """
 import argparse
 import hashlib
@@ -32,6 +38,9 @@ def main() -> int:
     ap.add_argument("--strict", action="store_true",
                     help="fail if any file is new (append-only is expected, "
                          "not required for a first run)")
+    ap.add_argument("--write-state", action="store_true",
+                    help="actually rewrite the state file (opt-in; "
+                         "the default is read-only)")
     args = ap.parse_args()
 
     archive = Path(args.archive)
@@ -69,13 +78,15 @@ def main() -> int:
         ok = False
         violations.append(f"new files under --strict: {new_files}")
 
-    state_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
+    if args.write_state:
+        state_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
     print(json.dumps({
         "ok": ok,
         "checked": len(current),
         "violations": violations,
         "new_files": new_files,
         "state": str(state_path),
+        "state_written": bool(args.write_state),
     }, indent=2))
     return 0 if ok else 1
 

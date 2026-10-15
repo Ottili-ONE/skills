@@ -6,6 +6,8 @@ Usage:
     python3 audit_export.py --source ./archive --output ./export --year 2026 --verify
 """
 import argparse
+import datetime as _dt
+from datetime import date
 import hashlib
 import json
 import shutil
@@ -24,7 +26,12 @@ def export(source: Path, output: Path, year: int, today: str) -> dict:
         raise NotADirectoryError(f"source is not a directory: {source}")
     output.mkdir(parents=True, exist_ok=True)
 
-    files = sorted(p for p in source.iterdir() if p.is_file() and p.name != MANIFEST)
+    files = sorted(p for p in source.iterdir()
+                    if p.is_file() and p.name != MANIFEST)
+    if not files:
+        # An empty archive is not an audit failure -- it is an empty export.
+        # But it must still carry a manifest so the auditor can see that.
+        pass
     manifest = []
     for f in files:
         dest = output / f.name
@@ -48,18 +55,28 @@ def export(source: Path, output: Path, year: int, today: str) -> dict:
 
 
 def verify_export(output: Path, today: str) -> dict:
-    """Re-check every exported file against the manifest."""
+    """Re-check every exported file against the manifest.
+
+    Two checks: (1) every manifest entry is present and its SHA-256 still
+    matches, (2) every file physically present in the export is listed in
+    the manifest -- an unlisted file is an incomplete export, not a silent
+    omission.
+    """
     manifest_path = output / MANIFEST
     if not manifest_path.exists():
         raise FileNotFoundError(f"no manifest at {manifest_path}")
     doc = json.loads(manifest_path.read_text(encoding="utf-8"))
     mismatches = []
+    listed = {entry["file"] for entry in doc.get("files", [])}
     for entry in doc.get("files", []):
         p = output / entry["file"]
         if not p.exists():
             mismatches.append(f"{entry['file']} missing from export")
         elif sha256_of(p) != entry["sha256"]:
             mismatches.append(f"{entry['file']} checksum mismatch")
+    for p in sorted(output.iterdir()):
+        if p.is_file() and p.name != MANIFEST and p.name not in listed:
+            mismatches.append(f"{p.name} present in export but absent from manifest")
     return {"ok": not mismatches, "mismatches": mismatches,
             "verified": today, "files": len(doc.get("files", []))}
 
@@ -71,14 +88,16 @@ def main() -> int:
     ap.add_argument("--year", type=int, default=2026)
     ap.add_argument("--verify", action="store_true",
                     help="re-check exported files against the manifest")
-    ap.add_argument("--today", default="2026-10-08",
-                    help="export timestamp (default 2026-10-08)")
+    ap.add_argument("--today", default=None,
+                    help="export timestamp (default = today's date, so the "
+                         "export is never stamped with a stale date)")
     args = ap.parse_args()
 
+    today = args.today or date.today().isoformat()
     try:
-        result = export(Path(args.source), Path(args.output), args.year, args.today)
+        result = export(Path(args.source), Path(args.output), args.year, today)
         if args.verify:
-            result["verify"] = verify_export(Path(args.output), args.today)
+            result["verify"] = verify_export(Path(args.output), today)
     except (NotADirectoryError, FileNotFoundError, json.JSONDecodeError) as e:
         print(json.dumps({"ok": False, "error": str(e)}, indent=2,
                          ensure_ascii=False), file=sys.stderr)

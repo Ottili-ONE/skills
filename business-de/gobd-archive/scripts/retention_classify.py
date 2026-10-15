@@ -37,7 +37,7 @@ def classify(doc_type: str, year: int, config: dict) -> dict:
     if doc_type not in CLASSES:
         raise ValueError(f"unknown document type: {doc_type!r}; "
                          f"choose from {sorted(CLASSES)}")
-    if not isinstance(year, int) or year < 1900 or year > 2100:
+    if not isinstance(year, int) or isinstance(year, bool) or year < 1900 or year > 2100:
         raise ValueError(f"implausible invoice year: {year!r}")
     label, years = CLASSES[doc_type]
     pinned = config["gobd-archive"]
@@ -66,6 +66,8 @@ def main() -> int:
     ap.add_argument("--config", default="config/versions.json")
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON")
+    ap.add_argument("--retention-end", action="store_true",
+                    help="also print the computed retention end date")
     args = ap.parse_args()
 
     try:
@@ -80,8 +82,11 @@ def main() -> int:
         rec = {"ok": True, **rec}
         print(json.dumps(rec, indent=2, ensure_ascii=False))
     else:
-        print(f"{rec['document_type']} -> {rec['retention_class']} "
-              f"({rec['retention_years']}y), retention end {rec['retention_end']}")
+        line = (f"{rec['document_type']} -> {rec['retention_class']} "
+                f"({rec['retention_years']}y), retention end {rec['retention_end']}")
+        if args.retention_end:
+            line += f", purge permitted after {rec['retention_end']}"
+        print(line)
     return 0
 
 
