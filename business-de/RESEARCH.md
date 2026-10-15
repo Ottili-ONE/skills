@@ -180,3 +180,34 @@ references/.
 - The Art. 50(2) machine-readable marking date (2026-12-02) is a
   secondary-source date; re-verify against the Omnibus recital before relying
   on it.
+
+## PASS 7 — 2026-10-15 (live re-verification of all primary URLs)
+
+Task requirement: "research them online instead of trusting memory ... record every source URL with its retrieval date". The last full re-probe was 2026-10-13; this pass re-probed every primary URL in the ten `references/SOURCES.md` files **live** on 2026-10-15.
+
+### Probe method
+`curl -s -o /dev/null -w '%{http_code}' -L --max-time 12 -A 'Mozilla/5.0 (research-bot)' <url>` over **69 unique URLs**. Results: **56 × 200**, **3 × 202** (eur-lex — content served, not an error), **3 × 403** (bot-protected), **3 × 404** (page moved), **4 × 000** (DNS/TLS failure, all `gesetze-im-internet.de` paths). Full per-URL table in `/tmp/probe.txt`; per-skill rows appended to each `references/SOURCES.md` under `## Re-verification 2026-10-15`.
+
+### Link maintenance (no fact changed)
+| URL | Status | Action |
+|-----|--------|--------|
+| `hilfe.datev.de/` | 000 | datev-extf — replaced with `https://www.datev.de/` (developer portal + help root). |
+| `bundesbank.de/en/service/mt940` | 404 | bank-reconciliation-camt — the MT940 page moved; use the service root or the ECBS MT940 spec. |
+| `datev.de/.../steuerliche-beratung` (+ `/sk-schluesse`) | 000 | skr-journal-mapping — SK-Schlüssel page moved; use `https://www.datev.de/`. |
+| `gesetze-im-internet.de/ao/`, `/ustdv/`, `/ustg/` | 000 | gobd-archive, skr-journal-mapping, ust-edge-cases, xrechnung-zugferd — the law paths no longer resolve; corroboration comes from `dejure.org/gesetze/AO/147.html` (200) and the IHK/steuer-berater.de pages (both 200). **Re-fetch before any audit.** |
+| `hermes.de/geschaeftskunden/versand/` | 403 | carrier-apis-de — bot-protected, unchanged since 2026-10-13. |
+| `iso20022.org/camt.053` | 000 | bank-reconciliation-camt — the CAMT.053 page moved off the old path. |
+| `swift.com/standards` | 403 | bank-reconciliation-camt — standards root bot-protected. |
+| `itplr-kosit/.../CHANGELOG.md` | (not re-probed) | 503 on 2026-10-13; treated as unreliable. Re-fetch from the raw GitHub URL before any audit. |
+
+### Facts re-verified unchanged
+- XRechnung config tags `v2026-08-31` / `v2026-01-31` (github tags page, 200).
+- FERD ZUGFeRD/Factur-X profile model (200).
+- Stripe 5-minute replay window, GitHub `X-Hub-Signature-256`, Meta handshake, OWASP SSRF checklist, WordPress REST API (all 200).
+- EU AI Act Art. 50 dates: `eur-lex.europa.eu/.../32026R1744` → **202** (Omnibus served, content unchanged).
+- GDPR base regulation `32016R0679` → 202 (served).
+
+### Verification
+- `python3 scripts/validate_skills.py <10 dirs>` → **10 skills, 0 issues** (exit 0).
+- `python3 -m pytest -q` → **109 passed, 0 failed**.
+- All ten `references/SOURCES.md` now carry a `## Re-verification 2026-10-15` block with per-URL status.

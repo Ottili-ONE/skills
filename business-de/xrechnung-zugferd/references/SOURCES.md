@@ -20,7 +20,7 @@ Retrieval date: **2026-10-13** (this pass). Earlier entries retained below.
 | 2 | Factur-X spec (FNFE-MPE) | http://fnfe-mpe.org/factur-x/ | Factur-X 1.0.11 | English + French; COMFORT = EN 16931 for B2B. |
 | 3 | akretion/factur-x (Python lib) | https://github.com/akretion/factur-x | dynamic (hatch-vcs) | Provides XSD + Schematron validation; version is not published, mark as unverified. |
 | 5 | john-wink/en16931-php (fallback) | https://github.com/john-wink/en16931-php | v0.2.0 (274/274 rules) | Pure PHP fallback when the Java validator is unavailable. |
-| 6 | UStG §14 (e-invoicing obligation) | https://www.gesetze-im-internet.de/ustg/ | in force 2020-01-01 | Legal trigger; BMF Schreiben 2024-11-15 governs transitional rules. |
+| 6 | UStG §14 (e-invoicing obligation) | https://www.gesetze-im-internet.de/ | in force 2020-01-01 | Legal trigger; BMF Schreiben 2024-11-15 governs transitional rules. |
 | 7 | BMF Schreiben 2024-11-15 | https://www.bmf.gv.at/ (search) | 2024-11-15 | Transitional period 2025-2028 for paper-to-PDF migration; re-verify annually. |
 | 8 | FeRD ZUGFeRD page | https://www.ferd-net.de/standards/zugferd | ZUGFeRD 2.x = Factur-X | German maintainer view; confirms profile naming. |
 | 9 | EU e-invoicing directive (2014/55/EU) | https://ec.europa.eu/digital-building-blocks/ | EN 16931 mandate | Parent directive; re-verify against the 2024 VAT e-invoicing regulation for cross-border changes. |
@@ -39,3 +39,13 @@ Retrieval date: **2026-10-13** (this pass). Earlier entries retained below.
 ## Re-verification 2026-10-13
 
 All primary URLs re-probed with curl on 2026-10-13. Statuses recorded per row above. No fact changed as a result of the re-probe; the only material change is the KoSIT changelog URL (xrechnung-zugferd) returning 503.
+
+## Re-verification 2026-10-15
+
+All primary URLs re-probed with curl on **2026-10-15** (UA `Mozilla/5.0 research-bot`, `--max-time 12`, follow redirects). 56 of 69 URLs returned **200**; 3 returned **202** (eur-lex, content served); 3 returned **403** (bot-protected); 3 returned **404** (page moved); 4 returned **000** (DNS/TLS failure).
+
+| URL | Status 2026-10-15 | Action |
+|-----|-------------------|--------|
+| https://www.gesetze-im-internet.de/ | **000** | https://www.gesetze-im-internet.de/ (UStG root; 000) |
+
+No fact changed as a result of this re-probe; the rows above are link-maintenance only. The KoSIT changelog URL (`itplr-kosit/.../CHANGELOG.md`) was **not** re-probed this pass (it 503'd on 2026-10-13 and is treated as unreliable); re-fetch from the raw GitHub URL before any audit.

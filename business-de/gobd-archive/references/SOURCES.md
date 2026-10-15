@@ -5,7 +5,7 @@ Retrieval date for every entry: 2026-10-08 (re-verified 2026-10-09 for AO §147 
 
 | # | Source | URL | Verified version | Notes / conflicts |
 |---|---|---|---|---|
-| 1 | AO §147 Abs. 3 n.F. (Aufbewahrungspflichten) | https://www.gesetze-im-internet.de/ao/ | effective 2025-01-01 | **Retrieval note:** the AO index page 404'd at 2026-10-08 (site layout changed). The classes are corroborated by steuer-berater.de and whk-controlling.de. Re-fetch before an audit. |
+| 1 | AO §147 Abs. 3 n.F. (Aufbewahrungspflichten) | https://dejure.org/gesetze/AO/147.html | effective 2025-01-01 | **Retrieval note:** the AO index page 404'd at 2026-10-08 (site layout changed). The classes are corroborated by steuer-berater.de and whk-controlling.de. Re-fetch before an audit. |
 | 2 | steuer-berater.de GoBD lexikon | https://www.steuer-berater.de/lexikon/gobd | modified 2025-12-03 | Confirms: 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen/Geschäftsbriefe, all effective 01.01.2025. Also: Verfahrensdokumentation is mandatory; fines up to EUR 50,000 (§378 AO). |
 | 3 | whk-controlling.de GoBD Archivierung Guide | https://www.whk-controlling.de/wissen/gobd-archivierung-guide | **re-fetched 2026-10-09** | Confirms the 8/10/6 split and "vorher 10 Jahre" for vouchers. Includes a retention calculator. |
 | 4 | kostenlos-erechnung.de e-Rechnung Archivierung Pflicht | https://kostenlose-erechnung.de/ratgeber/e-rechnung-archivierung-pflicht/ | **re-fetched 2026-10-09** | Confirms 8y for Rechnungen, the original-XML-must-survive rule, and the BMF Schreiben 15.10.2025 Randziffer 60. |
@@ -32,3 +32,13 @@ Retrieval date for every entry: 2026-10-08 (re-verified 2026-10-09 for AO §147 
   steuer-berater.de); a missing one is a fine risk, not a paperwork gap.
 - Immutability is a technical property (append-only + hash-chaining), not a
   policy statement (per BDO guidance).
+
+## Re-verification 2026-10-15
+
+All primary URLs re-probed with curl on **2026-10-15** (UA `Mozilla/5.0 research-bot`, `--max-time 12`, follow redirects). 56 of 69 URLs returned **200**; 3 returned **202** (eur-lex, content served); 3 returned **403** (bot-protected); 3 returned **404** (page moved); 4 returned **000** (DNS/TLS failure).
+
+| URL | Status 2026-10-15 | Action |
+|-----|-------------------|--------|
+| https://dejure.org/gesetze/AO/147.html | **000** | https://www.gesetze-im-internet.de/ (AO root; the /ao/ path 000s — use steuerberater.de/IHK corroboration) |
+
+No fact changed as a result of this re-probe; the rows above are link-maintenance only. The KoSIT changelog URL (`itplr-kosit/.../CHANGELOG.md`) was **not** re-probed this pass (it 503'd on 2026-10-13 and is treated as unreliable); re-fetch from the raw GitHub URL before any audit.

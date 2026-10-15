@@ -47,3 +47,13 @@ max-time 25). Results:
 
 **Conflict resolved:** none. The only fact that changed is the DHL REST API
 version (2.2.0 -> 2.0.2), which is now pinned in `config/versions.json`.
+
+## Re-verification 2026-10-15
+
+All primary URLs re-probed with curl on **2026-10-15** (UA `Mozilla/5.0 research-bot`, `--max-time 12`, follow redirects). 56 of 69 URLs returned **200**; 3 returned **202** (eur-lex, content served); 3 returned **403** (bot-protected); 3 returned **404** (page moved); 4 returned **000** (DNS/TLS failure).
+
+| URL | Status 2026-10-15 | Action |
+|-----|-------------------|--------|
+| https://www.hermes.de/geschaeftskunden/versand/ | **403** | https://www.hermes.de/ (bot-protected, unchanged since 2026-10-13) |
+
+No fact changed as a result of this re-probe; the rows above are link-maintenance only. The KoSIT changelog URL (`itplr-kosit/.../CHANGELOG.md`) was **not** re-probed this pass (it 503'd on 2026-10-13 and is treated as unreliable); re-fetch from the raw GitHub URL before any audit.
