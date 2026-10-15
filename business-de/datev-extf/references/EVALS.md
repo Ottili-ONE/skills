@@ -118,3 +118,31 @@ Sachkontenlaenge (5-8) or shorten the account.
 ### N5. "Generate a fixture with a dot decimal to test the validator"
 **Trap:** the broken fixture must *actually* fail — `12.50` produces
 `amount-dot-decimal`. A fixture that still validates is not a negative test.
+
+## Near-miss triggers
+
+### N6. "The account is 42000, it fits fine"
+**Trap:** account numbers must not exceed Sachkontenlaenge (field 14, default
+4). `42000` with Sachkontenlaenge 4 is `account-too-long`. Either widen
+Sachkontenlaenge (5-8) or shorten the account.
+
+### N7. "We changed the advisor number to 8 digits"
+**Trap:** Beraternummer must be 4-7 digits and >= 1001. An 8-digit value is
+`header-berater`. DATEV rejects it at import.
+
+### N8. "Generate a fixture with a dot decimal to test the validator"
+**Trap:** the broken fixture must *actually* fail -- `12.50` produces
+`amount-dot-decimal`. A fixture that still validates is not a negative test.
+
+### N9. "The Automatikkonto rule only applies to SKR 03"
+**Trap:** the AM set is SKR-aware. SKR 04 AM accounts are 4120, 4125, 4300,
+4310, 4315, 4336, 4338, 4400, 4449. A BU-Schlüssel other than `40` on any
+of them is `bu-on-automatic-account`, and an *empty* BU on an AM account is
+wrong too. Verified 2026-10-08 against
+`seamless-engineering/datev-extf src/extf.ts automaticAccounts`.
+
+### N10. "build_stapel.py writes the file without a heading row"
+**Trap:** `build_stapel.py` now emits the 125-column heading row (line 2) by
+default. Without it the validator treats the first booking row as the heading
+and silently skips that booking's checks. Pass `--no-heading` only when you
+know the heading row is supplied elsewhere.

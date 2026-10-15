@@ -68,6 +68,16 @@ data, validate a booking stack, or build test fixtures for DATEV integration.
    dump. Produce it with `scripts/audit_export.py --source ./archive --output
    ./export --year <WJ> --verify`.
 
+   **Script hardening (2026-10-15):**
+   - `build_stapel.py` emits the 125-column heading row (line 2) by default;
+     `--no-heading` omits it only when the heading is supplied elsewhere.
+   - `validate_extf.py` checks the **SKR-aware** Automatikkonto set (03 *and*
+     04) and validates the Steuerschlüssel at column 97 against the known
+     key range; an empty key on a booking line is `taxkey-missing`.
+   - `audit_export.py --verify` checks **both** directions: every manifest
+     entry present with a matching SHA-256, **and** every file physically
+     present listed in the manifest.
+
 ## Decision tables
 
 ### EXTF header fields (Buchungsstapel)

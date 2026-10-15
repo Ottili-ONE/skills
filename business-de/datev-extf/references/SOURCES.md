@@ -57,3 +57,16 @@ All primary URLs re-probed with curl on **2026-10-15** (UA `Mozilla/5.0 research
 | https://www.datev.de/ | **000** | https://www.datev.de/ (developer portal + help root; hilfe.datev.de no longer resolves) |
 
 No fact changed as a result of this re-probe; the rows above are link-maintenance only. The KoSIT changelog URL (`itplr-kosit/.../CHANGELOG.md`) was **not** re-probed this pass (it 503'd on 2026-10-13 and is treated as unreliable); re-fetch from the raw GitHub URL before any audit.
+
+## Re-verification 2026-10-15 (PASS 2 deepen, datev-extf)
+
+| URL | Status 2026-10-15 | Fact re-checked |
+|-----|-------------------|-----------------|
+| https://raw.githubusercontent.com/seamless-engineering/datev-extf/main/src/columns.ts | **200** | col 97 = "USt-Schlüssel (Anzahlungen)"; col 125 = "Abw. Skontokonto"; EXTF_AS_OF 2026-09-25. The Steuerschlüssel-at-125 trap is re-confirmed. |
+| https://github.com/seamless-engineering/datev-extf | **200** | AM-Konten per SKR (03 and 04 sets) confirmed; the SKR-aware check added this pass is grounded in this source. |
+| https://developer.datev.de/ | **200** | DATEV developer portal; EXTF/Datenservices reference. |
+| https://www.datev.de/ | **200** | DATEV corporate site. |
+
+**No pinned version changed.** The EXTF schema pin (Versionsnummer 700 /
+Formatversion 13) remains "unverified until DATEV confirms" because DATEV does
+not publish a public version page; re-verify on every integration test run.

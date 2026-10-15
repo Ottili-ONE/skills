@@ -129,8 +129,36 @@ count. Verified 2026-10-09 against seamless-engineering/datev-extf
 | Belegdatum must be TTMM | wrong length or swapped day/month | use 4 digits DDMM, e.g. `0206` for 2 June |
 | Soll/Haben invalid | not `S` or `H` | use `S` for debit, `H` for credit |
 | header too short | fewer than 31 fields | pad to 31 fields |
-| BU-Schlüssel on Automatikkonto | col 9 populated on a ledger account | remove the BU-Schlüssel |
+| BU-Schlüssel on Automatikkonto | col 9 populated on an AM account | set the BU-Schlüssel to `40` (the AM default) or remove it |
 | Steuerschlüssel at the wrong column | key written at col 125 instead of col 97 | write it at index 96 (column 97) |
+| Steuerschlüssel missing | empty col 97 on a booking line | add the correct key for the account's rate |
+| Steuerschlüssel invalid | a value outside the known key range | use a valid DATEV Steuerschlüssel (00-99) |
+
+## 5b. Automatikkonto set (SKR-aware)
+
+The AM set is not "ledger accounts 1000-1999" -- it is the specific list
+DATEV maintains per SKR. Verified 2026-10-08 against
+`seamless-engineering/datev-extf src/extf.ts automaticAccounts`:
+
+| SKR | AM accounts |
+|---|---|
+| 03 | 8120, 8125, 8300, 8310, 8315, 8336, 8338, 8400, 8449 |
+| 04 | 4120, 4125, 4300, 4310, 4315, 4336, 4338, 4400, 4449 |
+
+A BU-Schlüssel other than `40` on any of these is `bu-on-automatic-account`.
+An *empty* BU on an AM account is wrong too -- earlier drafts only flagged a
+non-empty wrong value, so a missing BU on an AM account sailed through.
+
+## 5c. Steuerschlüssel at column 97
+
+The tax key is **column 97** ("USt-Schlüssel (Anzahlungen)"), NOT column 125
+("Abw. Skontokonto"). Verified 2026-10-09 against
+`seamless-engineering/datev-extf src/columns.ts BUCHUNGSSTAPEL_COLUMNS`.
+
+A key written at index 124 is read by DATEV as "Abw. Skontokonto" and the
+real tax key is silently dropped -- the import proceeds with no
+Steuerschlüssel. The validator now checks col 97 against the known key
+range (00-99) and reports `taxkey-missing` when a booking line has no key.
 
 ## 6. Generate test fixtures
 

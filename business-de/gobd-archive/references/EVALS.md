@@ -82,3 +82,28 @@ until 2025-12-31 for vouchers).
 ### N4. "A raw DB dump is fine for the auditor"
 **Trap:** an audit export must be chronological, complete, checksummed and
 carry a manifest (MANIFEST.json). A raw DB dump is not an audit export.
+
+## Near-miss triggers
+
+### N5. "The state file is bookkeeping, so the audit check rewrites it"
+**Trap:** `scripts/immutability_check.py` is **read-only by default**. It
+never rewrites the state file unless `--write-state` is passed (or
+`--init-state` on a first run). A GoBD audit check must not modify the
+archive's own bookkeeping. Verified 2026-10-15.
+
+### N6. "The manifest only needs to list what we exported"
+**Trap:** `scripts/audit_export.py --verify` checks **both** directions --
+every manifest entry must be present with a matching SHA-256, **and** every
+file physically present in the export must be listed in the manifest. A
+"rogue" file is an incomplete export, not a silent omission.
+
+### N7. "The purge decision depends on today's date"
+**Trap:** `scripts/purge_decision.py` accepts `--today YYYY-MM-DD`, so the
+outcome is deterministic. Without it the wall clock decides, which flips the
+answer across year boundaries. A 2020 invoice is blocked under `--today
+2027-01-01` and permitted under `--today 2029-01-01`.
+
+### N8. "An empty archive fails the export"
+**Trap:** an empty archive produces a valid (empty) export with a manifest --
+it is not an audit failure. `scripts/audit_export.py` exits 0 with
+`file_count: 0`.

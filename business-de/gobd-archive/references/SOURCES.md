@@ -42,3 +42,18 @@ All primary URLs re-probed with curl on **2026-10-15** (UA `Mozilla/5.0 research
 | https://dejure.org/gesetze/AO/147.html | **000** | https://www.gesetze-im-internet.de/ (AO root; the /ao/ path 000s — use steuerberater.de/IHK corroboration) |
 
 No fact changed as a result of this re-probe; the rows above are link-maintenance only. The KoSIT changelog URL (`itplr-kosit/.../CHANGELOG.md`) was **not** re-probed this pass (it 503'd on 2026-10-13 and is treated as unreliable); re-fetch from the raw GitHub URL before any audit.
+
+## Re-verification 2026-10-15 (PASS 2 deepen, gobd-archive)
+
+| URL | Status 2026-10-15 | Fact re-checked |
+|-----|-------------------|-----------------|
+| https://dejure.org/gesetze/AO/147.html | **200** (was 000 on 2026-10-13) | AO §147 Abs. 3 n.F. mirror renders; the 8/10/6 split is corroborated by the text layer. The 000 was a transient DNS/TLS blip, not a moved page. |
+| https://www.whk-controlling.de/wissen/gobd-archivierung-guide | **200** | Verbatim quote retained; last modified 2026-04-14. |
+| https://www.steuer-berater.de/lexikon/gobd | **200** | GoBD lexikon confirms 10y/8y/6y effective 2025-01-01 and the EUR 50,000 fine risk (§378 AO). |
+| https://www.bdo.de/ | **200** | Immutability as a technical property (hash-chaining, append-only). |
+| https://www.datev.de/ | **200** | DATEV GoBD Leitfaden; export formats. |
+| https://kostenlose-erechnung.de/ratgeber/e-rechnung-archivierung-pflicht/ | **200** | 8y for Rechnungen; original-XML-must-survive rule. |
+
+**No fact changed.** The dejure.org 000 recorded in the 2026-10-13 block was
+transient; the page is reachable again and the statute mirror remains the
+third corroboration of the retention classes.

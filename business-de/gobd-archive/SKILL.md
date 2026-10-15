@@ -49,6 +49,17 @@ policy, produce an audit export, or decide whether a document can be deleted.
    Produce the record with `scripts/purge_decision.py` (it exits non-zero
    when the purge is blocked, so it is safe to wire into a CI gate).
 
+   **Script hardening (2026-10-15):**
+   - `immutability_check.py` is **read-only by default** -- it never rewrites
+     the state file unless `--write-state` (or `--init-state` on a first run)
+     is passed. A GoBD audit check must not modify the archive's own
+     bookkeeping.
+   - `audit_export.py --verify` checks **both** directions: every manifest
+     entry must be present with a matching SHA-256, **and** every file
+     physically present must be listed in the manifest.
+   - `purge_decision.py` accepts `--today YYYY-MM-DD`, so the outcome is
+     deterministic instead of flipping on the wall clock.
+
 ## Decision tables
 
 ### Retention classes (BEG IV, effective 2025-01-01)
