@@ -65,3 +65,29 @@ def test_writes_record(tmp_path):
     rec = json.loads(out_file.read_text(encoding="utf-8"))
     assert rec["purge_permitted"] is True
     assert "record_retention_until" in rec
+
+
+def test_purge_decision_deterministic_with_injected_today(tmp_path):
+    """Injecting --today makes the outcome independent of the wall clock."""
+    # 2020 invoice: retention end 2028-12-31. With today=2027-01-01 it is
+    # still blocked (end not reached); with today=2029-01-01 it is permitted.
+    code_blocked, out_blocked = run(["--type", "invoice", "--year", "2020",
+                                     "--approver", "M. Mustermann", "--reason", "x",
+                                     "--today", "2027-01-01"])
+    assert code_blocked == 1 and out_blocked["purge_permitted"] is False
+    code_ok, out_ok = run(["--type", "invoice", "--year", "2020",
+                           "--approver", "M. Mustermann", "--reason", "x",
+                           "--today", "2029-01-01"])
+    assert code_ok == 0 and out_ok["purge_permitted"] is True
+    assert out_ok["decision_date"] == "2029-01-01"
+
+
+def test_purge_record_retention_derived_from_document_year():
+    """The purge record is kept for the retention period of the documents
+    it describes -- a 2017 voucher record is kept until 2025-12-31, NOT
+    until today + 8 years."""
+    code, out = run(["--type", "invoice", "--year", "2017",
+                     "--approver", "M. Mustermann", "--reason", "x",
+                     "--today", "2026-10-09"])
+    assert code == 0
+    assert out["record_retention_until"] == "2025-12-31"

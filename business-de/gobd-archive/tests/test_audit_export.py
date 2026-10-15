@@ -50,3 +50,18 @@ def test_missing_source_errors(tmp_path):
     code, out_json = run(["--source", str(tmp_path / "nope"),
                           "--output", str(tmp_path / "out"), "--year", "2026"])
     assert code == 2 and "not a directory" in out_json["error"]
+
+
+def test_verify_rejects_unlisted_file(tmp_path):
+    """A file physically present in the export but absent from the manifest
+    is an incomplete export, not a silent omission."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "inv.xml").write_text("<x/>")
+    out = tmp_path / "out"
+    run(["--source", str(src), "--output", str(out), "--year", "2026"])
+    (out / "rogue.txt").write_text("not in manifest")
+    code, out_json = run(["--source", str(src), "--output", str(out),
+                          "--year", "2026", "--verify"])
+    assert code == 1
+    assert any("rogue.txt" in m for m in out_json["verify"]["mismatches"])
