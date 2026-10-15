@@ -28,13 +28,13 @@ from common import load_config  # noqa: E402
 # BT-18 is PaymentAllowedAccountID (the bank account), NOT PaymentTerms — earlier
 # drafts wrongly grouped it with BT-20.
 BT_RULES = {
-    "BT-10": (["cbc:EndpointID", "EndpointID", "LeitwegID"], r"[0-9A-Fa-f]{2,16}", True),
-    "BT-14": (["cbc:IssueDate", "IssueDate"], r"(?:\d{8}|\d{4}-\d{2}-\d{2})", True),
-    "BT-20": (["cbc:PaymentTerms", "PaymentTerms"], r"\d", True),
-    "BT-17": (["cbc:PaymentDueDate", "PaymentDueDate"], r"\d{8}", False),
+    "BT-10": (["cbc:EndpointID", "EndpointID", "LeitwegID"], r"[0-9A-Fa-f]{2,16}", "B2B"),
+    "BT-14": (["cbc:IssueDate", "IssueDate"], r"(?:\d{8}|\d{4}-\d{2}-\d{2})", "always"),
+    "BT-20": (["cbc:PaymentTerms", "PaymentTerms"], r"\d", "always"),
+    "BT-17": (["cbc:PaymentDueDate", "PaymentDueDate"], r"\d{8}", "COMFORT+"),
     "BT-18": (["cbc:PaymentAllowedAccountID", "PaymentAllowedAccountID",
-              "cbc:AccountID", "AccountID"], r"[A-Z]{2}[0-9A-Z]{11,}", False),
-    "BT-19": (["cbc:TaxAmount", "TaxAmount"], r"\S", False),
+              "cbc:AccountID", "AccountID"], r"[A-Z]{2}[0-9A-Z]{11,}", "COMFORT+"),
+    "BT-19": (["cbc:TaxAmount", "TaxAmount", "TaxAmountLine"], r"\S", "COMFORT+"),
     "BT-15": (["cbc:DeliveryDate", "DeliveryDate"], r"(?:\d{8}|\d{4}-\d{2}-\d{2})", "BASIC WL"),
 }
 
@@ -99,6 +99,41 @@ def _element_text(xml_text: str, names) -> str:
         if m:
             return m.group(1).strip()
     return ""
+
+
+def _scope(rule_id: str, profile: str) -> bool:
+    """Decide whether a rule applies to the chosen profile."""
+    when = BT_RULES[rule_id][2]
+    if when == "always":
+        return True
+    if when == "B2B":
+        return profile in ("BASIC", "BASIC WL", "COMFORT", "EXTENDED")
+    if when == "BASIC WL":
+        return profile == "BASIC WL"
+    # COMFORT+ = COMFORT or EXTENDED
+    return profile in ("COMFORT", "EXTENDED")
+
+
+def _parse_date(text: str):
+    """Return a date object for YYYYMMDD or YYYY-MM-DD, else None."""
+    import datetime as _dt
+    t = text.strip()
+    for fmt in ("%Y%m%d", "%Y-%m-%d"):
+        try:
+            return _dt.datetime.strptime(t, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _future_or_invalid_date(rule_id, text, today):
+    """A date that is in the future or unparseable is a content failure."""
+    d = _parse_date(text)
+    if d is None:
+        return f"{rule_id} content invalid (value={text[:40]!r} not a date)"
+    if d > today:
+        return f"{rule_id} content invalid (value={text[:40]!r} is in the future)"
+    return None
 
 
 def bt_checks(xml_text: str, profile: str,
