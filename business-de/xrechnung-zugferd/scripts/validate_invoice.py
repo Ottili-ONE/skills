@@ -35,7 +35,7 @@ BT_RULES = {
     "BT-18": (["cbc:PaymentAllowedAccountID", "PaymentAllowedAccountID",
               "cbc:AccountID", "AccountID"], r"[A-Z]{2}[0-9A-Z]{11,}", False),
     "BT-19": (["cbc:TaxAmount", "TaxAmount"], r"\S", False),
-    "BT-15": (["cbc:IssueDate", "IssueDate"], r"(?:\d{8}|\d{4}-\d{2}-\d{2})", False),
+    "BT-15": (["cbc:DeliveryDate", "DeliveryDate"], r"(?:\d{8}|\d{4}-\d{2}-\d{2})", "BASIC WL"),
 }
 
 
@@ -101,16 +101,18 @@ def _element_text(xml_text: str, names) -> str:
     return ""
 
 
-def bt_checks(xml_text: str, profile: str) -> list:
+def bt_checks(xml_text: str, profile: str,
+              today=None) -> list:
     """Run the offline EN 16931 business-rule subset on the XML text."""
+    import datetime as _dt
+    if today is None:
+        today = _dt.date.today()
     failures = []
     if not xml_text:
         failures.append("no structured XML attachment found in PDF")
         return failures
-    for rule_id, (names, regex, mandatory) in BT_RULES.items():
-        if rule_id == "BT-15" and profile != "BASIC WL":
-            continue
-        if not mandatory and profile not in ("COMFORT", "EXTENDED"):
+    for rule_id, (names, regex, scope) in BT_RULES.items():
+        if not _scope(rule_id, profile):
             continue
         text = _element_text(xml_text, names)
         if not text:
@@ -120,6 +122,14 @@ def bt_checks(xml_text: str, profile: str) -> list:
         if not re.search(regex, text):
             failures.append(f"{rule_id} content invalid "
                             f"(value={text[:40]!r} regex {regex})")
+            continue
+        # Date-valued rules: reject future dates. An invoice cannot be
+        # issued in the future; a future date is a data-entry trap that a
+        # content regex alone lets through (it still "looks like a date").
+        if rule_id in ("BT-14", "BT-15", "BT-17"):
+            err = _future_or_invalid_date(rule_id, text, today)
+            if err:
+                failures.append(err)
     return failures
 
 
