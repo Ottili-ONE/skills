@@ -50,6 +50,22 @@ Verified skill-directory conventions (retrieved 2026-10-07):
   reusable skill folders in exactly this layout; use it as a reference for what a well-formed
   skill looks like.
 
+### `scripts/gen-catalog.mjs`
+
+`catalog.json` is **generated**, never hand-edited. `scripts/gen-catalog.mjs` walks
+every `skills/<package>/<name>/SKILL.md`, reads the YAML frontmatter and writes one
+entry per skill. Packages are **derived from the skills/ folders** at generation time —
+a package is any top-level folder under `skills/` that contains skill subfolders — so
+there is no hand-maintained package or skill list.
+
+```sh
+node scripts/gen-catalog.mjs            # regenerate catalog.json
+node scripts/gen-catalog.mjs --check    # fail if catalog.json is out of date
+```
+
+CI runs `node scripts/gen-catalog.mjs --check` on every push and PR
+(`.github/workflows/validate.yml`), so a hand-edited `catalog.json` cannot land.
+
 ### `scripts/install.sh`
 
 ```sh
@@ -66,6 +82,24 @@ Verified skill-directory conventions (retrieved 2026-10-07):
 `--target` accepts `codex`, `claude`, `cursor`, `agents`, or an explicit directory path.
 Without `--force`, an existing target folder is left untouched and the script exits non-zero.
 `--dry-run` prints the source and destination paths it would touch and exits without writing.
+
+Packages are **derived from the `skills/` folders at install time** — never a
+hand-maintained list and never read from `catalog.json`. A package is any top-level
+folder under `skills/` that contains at least one subfolder with a `SKILL.md`, so a
+new package or skill appears automatically. `--package <name>` installs every skill in
+that package:
+
+```sh
+./scripts/install.sh --target cursor --package engineering   # 10 engineering skills
+./scripts/install.sh --target cursor --package business-de   # 11 German business skills
+./scripts/install.sh --target cursor --package agentic-data  # 10 data-plane skills
+./scripts/install.sh --target cursor --package generic       # every skill in the repo
+```
+
+Virtual packages: `generic` installs every skill; `meta` and `ref-*` are reserved
+on-demand names that currently resolve to the empty set. The source path for each
+skill is resolved by searching the `skills/` tree rooted at the script's own
+directory, so the folder name alone is enough — no catalog lookup.
 
 ### `scripts/validate.py`
 

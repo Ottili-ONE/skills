@@ -143,11 +143,24 @@ SKILLS=("${UNIQ[@]}")
 
 rc=0
 for name in "${SKILLS[@]}"; do
-  # Source resolution: the skill folder lives at $SKILLS_DIR/$name. The folder name
-  # IS the skill name, so no catalog lookup is needed and there is no
-  # relative-to-script mistake. (The old code computed src_dir via catalog.json and
-  # then did src="$ROOT/$src_dir", which doubled the path when the lookup failed.)
-  src="$SKILLS_DIR/$name"
+  # Source resolution: a skill folder is skills/<package>/<name>. The package is NOT
+  # part of the name the caller passes, so resolve it by searching the skills tree
+  # rooted at the script's own directory. This is the ONLY place the source path is
+  # computed — the old code did src="$ROOT/$src_dir" where $src_dir came from a
+  # python3 -c print() that always appended a newline, so every path carried a
+  # trailing newline and the directory check failed for every skill; when the
+  # catalog lookup returned nothing the path was also doubled onto $ROOT.
+  src=""
+  for pkg in "$SKILLS_DIR"/*/; do
+    pkg="$(basename "$pkg")"
+    [[ -d "$SKILLS_DIR/$pkg/$name" ]] || continue
+    src="$SKILLS_DIR/$pkg/$name"
+    break
+  done
+  if [[ -z "$src" ]]; then
+    echo "error: source skill directory missing: $SKILLS_DIR/*/$name" >&2
+    rc=1; continue
+  fi
   dest="$TARGET/$name"
 
   if [[ ! -d "$src" ]]; then

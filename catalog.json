@@ -41,16 +41,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "Playwright 1.49+ (verified 1.64.0 on 2026-10-13",
-        "PyPI latest); Node/Python/Go drivers"
+        "Playwright 1.49+ (verified 1.64.0 on 2026-10-13, PyPI latest); Node/Python/Go drivers"
       ],
       "description": "Drive a browser with Playwright for agents: grounding in DOM/ARIA, robust locators, network waits, prompt-injection defense for page content, and safe hand-off between browser and code. Use when an agent must scrape, test, or automate a site; never use raw page.evaluate for extraction; not for server-side scraping or non-browser automation. Verified 2026-10-14.",
       "paths": [
-        "skills/agentic-data/browser-agent-playwright/.pytest_cache/.gitignore",
-        "skills/agentic-data/browser-agent-playwright/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/browser-agent-playwright/.pytest_cache/README.md",
-        "skills/agentic-data/browser-agent-playwright/.pytest_cache/v/cache/lastfailed",
-        "skills/agentic-data/browser-agent-playwright/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/browser-agent-playwright/SKILL.md",
         "skills/agentic-data/browser-agent-playwright/STATUS.md",
         "skills/agentic-data/browser-agent-playwright/references/DESIGN.md",
@@ -64,16 +58,11 @@
         "skills/agentic-data/browser-agent-playwright/references/locator-catalog.md",
         "skills/agentic-data/browser-agent-playwright/references/network-waits.md",
         "skills/agentic-data/browser-agent-playwright/references/procedures.md",
-        "skills/agentic-data/browser-agent-playwright/scripts/__pycache__/handoff.cpython-312.pyc",
         "skills/agentic-data/browser-agent-playwright/scripts/bon_cap.py",
         "skills/agentic-data/browser-agent-playwright/scripts/gen_hostile.py",
         "skills/agentic-data/browser-agent-playwright/scripts/handoff.py",
         "skills/agentic-data/browser-agent-playwright/scripts/sanitize.py",
         "skills/agentic-data/browser-agent-playwright/scripts/validate_skill.py",
-        "skills/agentic-data/browser-agent-playwright/tests/__pycache__/test_bon_cap.cpython-312-pytest-9.1.1.pyc",
-        "skills/agentic-data/browser-agent-playwright/tests/__pycache__/test_handoff.cpython-312-pytest-9.1.1.pyc",
-        "skills/agentic-data/browser-agent-playwright/tests/__pycache__/test_roundtrip.cpython-312-pytest-9.1.1.pyc",
-        "skills/agentic-data/browser-agent-playwright/tests/__pycache__/test_sanitize.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/browser-agent-playwright/tests/test_bon_cap.py",
         "skills/agentic-data/browser-agent-playwright/tests/test_handoff.py",
         "skills/agentic-data/browser-agent-playwright/tests/test_roundtrip.py",
@@ -91,17 +80,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "macOS (AX)",
-        "Windows (UIA)",
-        "Linux (X11/Wayland); Python 3.10+"
+        "macOS (AX), Windows (UIA), Linux (X11/Wayland); Python 3.10+"
       ],
       "description": "Drive desktop and remote apps through accessibility trees and background input with safety layers: coordinate scaling, confirm() gates on destructive actions, screen-as-untrusted-data handling, platform quirks (macOS AX, Windows UIA, X11/Wayland). Use when an agent must click, type into or scroll an app it cannot reach through its API; never use raw screen scraping as the primary path. Verified 2026-10-13.",
       "paths": [
-        "skills/agentic-data/computer-use-drivers/.pytest_cache/.gitignore",
-        "skills/agentic-data/computer-use-drivers/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/computer-use-drivers/.pytest_cache/README.md",
-        "skills/agentic-data/computer-use-drivers/.pytest_cache/v/cache/lastfailed",
-        "skills/agentic-data/computer-use-drivers/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/computer-use-drivers/SKILL.md",
         "skills/agentic-data/computer-use-drivers/STATUS.md",
         "skills/agentic-data/computer-use-drivers/fixtures/registry_20260801.json",
@@ -116,7 +98,6 @@
         "skills/agentic-data/computer-use-drivers/references/safety-layers.md",
         "skills/agentic-data/computer-use-drivers/references/tree-protocol.md",
         "skills/agentic-data/computer-use-drivers/scripts/validate_driver.py",
-        "skills/agentic-data/computer-use-drivers/tests/__pycache__/test_validate_driver.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/computer-use-drivers/tests/test_validate_driver.py"
       ]
     },
@@ -131,16 +112,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "Python 3.10+",
-        "numpy optional; verified 2026-10-14"
+        "Python 3.10+, numpy optional; verified 2026-10-14"
       ],
       "description": "Deduplicate and decontaminate text corpora for LLM training: MinHash/LSH near-duplicate detection, n-gram and embedding-based decontamination, planted-item tests with pass/fail criteria. Use when preparing a training or evaluation dataset and you must remove duplicates and test-set leakage; not for single-document similarity.",
       "paths": [
-        "skills/agentic-data/dedup-decontam/.pytest_cache/.gitignore",
-        "skills/agentic-data/dedup-decontam/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/dedup-decontam/.pytest_cache/README.md",
-        "skills/agentic-data/dedup-decontam/.pytest_cache/v/cache/lastfailed",
-        "skills/agentic-data/dedup-decontam/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/dedup-decontam/SKILL.md",
         "skills/agentic-data/dedup-decontam/STATUS.md",
         "skills/agentic-data/dedup-decontam/references/DESIGN.md",
@@ -148,18 +123,12 @@
         "skills/agentic-data/dedup-decontam/references/SOURCES.md",
         "skills/agentic-data/dedup-decontam/references/planted-item-tests.md",
         "skills/agentic-data/dedup-decontam/references/procedures.md",
-        "skills/agentic-data/dedup-decontam/scripts/__pycache__/minhash_lsh.cpython-312.pyc",
-        "skills/agentic-data/dedup-decontam/scripts/__pycache__/ngram_decontam.cpython-312.pyc",
-        "skills/agentic-data/dedup-decontam/scripts/__pycache__/normalize.cpython-312.pyc",
-        "skills/agentic-data/dedup-decontam/scripts/__pycache__/plant_test.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/dedup-decontam/scripts/embed_decontam.py",
         "skills/agentic-data/dedup-decontam/scripts/minhash_lsh.py",
         "skills/agentic-data/dedup-decontam/scripts/ngram_decontam.py",
         "skills/agentic-data/dedup-decontam/scripts/normalize.py",
         "skills/agentic-data/dedup-decontam/scripts/plant_test.py",
         "skills/agentic-data/dedup-decontam/scripts/validate_skill.py",
-        "skills/agentic-data/dedup-decontam/tests/__pycache__/test_dedup_scripts.cpython-312-pytest-9.1.1.pyc",
-        "skills/agentic-data/dedup-decontam/tests/__pycache__/test_pipeline.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/dedup-decontam/tests/test_dedup_scripts.py",
         "skills/agentic-data/dedup-decontam/tests/test_pipeline.py"
       ]
@@ -179,10 +148,6 @@
       ],
       "description": "Run evidence-backed research for Ottili agents: score sources 0-10 (authority/recency/corroboration, keep >=6), cite every claim with URL + retrieval date + pinned version, resolve contradictions by quality weight, and state confidence high/medium/low. Use when an agent must answer a question from the web, write a research brief, audit a source, or decide which of two conflicting facts to trust. Not for reading a single known-good document.",
       "paths": [
-        "skills/agentic-data/deep-research-method/.pytest_cache/.gitignore",
-        "skills/agentic-data/deep-research-method/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/deep-research-method/.pytest_cache/README.md",
-        "skills/agentic-data/deep-research-method/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/deep-research-method/SKILL.md",
         "skills/agentic-data/deep-research-method/references/DESIGN.md",
         "skills/agentic-data/deep-research-method/references/EVALS.md",
@@ -197,7 +162,6 @@
         "skills/agentic-data/deep-research-method/references/source-scoring.md",
         "skills/agentic-data/deep-research-method/references/staleness.md",
         "skills/agentic-data/deep-research-method/scripts/score_sources.py",
-        "skills/agentic-data/deep-research-method/tests/__pycache__/test_score_sources.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/deep-research-method/tests/fixtures/bad.jsonl",
         "skills/agentic-data/deep-research-method/tests/fixtures/claims.json",
         "skills/agentic-data/deep-research-method/tests/fixtures/claims_bad.json",
@@ -230,15 +194,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "Python 3.10+",
-        "any LLM API; verified 2026-10-09"
+        "Python 3.10+, any LLM API; verified 2026-10-09"
       ],
       "description": "Calibrate LLM judges: rubrics, calibration sets, inter-annotator agreement, drift detection and judge/teacher separation. Use when an agent must build or audit an LLM-as-judge scoring pipeline; not for building a single rubric from scratch. Verified 2026-10-13.",
       "paths": [
-        "skills/agentic-data/llm-judge-calibration/.pytest_cache/.gitignore",
-        "skills/agentic-data/llm-judge-calibration/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/llm-judge-calibration/.pytest_cache/README.md",
-        "skills/agentic-data/llm-judge-calibration/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/llm-judge-calibration/SKILL.md",
         "skills/agentic-data/llm-judge-calibration/references/DESIGN.md",
         "skills/agentic-data/llm-judge-calibration/references/EVALS.md",
@@ -252,7 +211,6 @@
         "skills/agentic-data/llm-judge-calibration/scripts/calibrate_judge.py",
         "skills/agentic-data/llm-judge-calibration/scripts/gen_rubric.py",
         "skills/agentic-data/llm-judge-calibration/scripts/rubric_lint.py",
-        "skills/agentic-data/llm-judge-calibration/tests/__pycache__/test_calibrate_judge.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/llm-judge-calibration/tests/fixtures/baseline.jsonl",
         "skills/agentic-data/llm-judge-calibration/tests/fixtures/biased.jsonl",
         "skills/agentic-data/llm-judge-calibration/tests/fixtures/degenerate.jsonl",
@@ -281,17 +239,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "MCP spec revisions 2026-07-28 (primary)",
-        "2025-11-25",
-        "2025-06-18 (fallback)"
+        "MCP spec revisions 2026-07-28 (primary), 2025-11-25, 2025-06-18 (fallback)"
       ],
       "description": "Build and consume stateless MCP servers and clients on the 2026-07-28 revision: server/discover, per-request metadata via _meta, tasks extension, OAuth 2.1 with PKCE, backward-compat negotiation down to 2025-11-25 and 2025-06-18. Use when an agent must scaffold an MCP server or client, debug a protocol handshake, map error codes to actions, or verify that a deployment is stateless and version-pinned. Not for general API design or non-MCP integrations.",
       "paths": [
-        "skills/agentic-data/mcp-2026-07-28/.pytest_cache/.gitignore",
-        "skills/agentic-data/mcp-2026-07-28/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/mcp-2026-07-28/.pytest_cache/README.md",
-        "skills/agentic-data/mcp-2026-07-28/.pytest_cache/v/cache/lastfailed",
-        "skills/agentic-data/mcp-2026-07-28/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/mcp-2026-07-28/SKILL.md",
         "skills/agentic-data/mcp-2026-07-28/STATUS.md",
         "skills/agentic-data/mcp-2026-07-28/references/DESIGN.md",
@@ -309,7 +260,6 @@
         "skills/agentic-data/mcp-2026-07-28/scripts/protocol_check.py",
         "skills/agentic-data/mcp-2026-07-28/scripts/stateless_probe.py",
         "skills/agentic-data/mcp-2026-07-28/scripts/version_negotiate.py",
-        "skills/agentic-data/mcp-2026-07-28/tests/__pycache__/test_mcp_scripts.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/mcp-2026-07-28/tests/test_mcp_scripts.py"
       ]
     },
@@ -324,16 +274,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "WARC 1.1 (ISO 28500:2017)",
-        "RFC 9309 (2022)",
-        "Python 3.10+"
+        "WARC 1.1 (ISO 28500:2017), RFC 9309 (2022), Python 3.10+"
       ],
       "description": "Polite web crawling with WARC output: robots.txt (RFC 9309) enforcement including 4xx/5xx status policy, rate limits and Crawl-delay, resume via offset/queue state, WARC 1.1 record hygiene, and defense against hostile inputs. Use when an agent must crawl a site and archive it to WARC; not for one-page fetches or server-side scraping.",
       "paths": [
-        "skills/agentic-data/polite-crawling-warc/.pytest_cache/.gitignore",
-        "skills/agentic-data/polite-crawling-warc/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/polite-crawling-warc/.pytest_cache/README.md",
-        "skills/agentic-data/polite-crawling-warc/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/polite-crawling-warc/SKILL.md",
         "skills/agentic-data/polite-crawling-warc/STATUS.md",
         "skills/agentic-data/polite-crawling-warc/references/DESIGN.md",
@@ -342,15 +286,12 @@
         "skills/agentic-data/polite-crawling-warc/references/crawl-policy.md",
         "skills/agentic-data/polite-crawling-warc/references/procedures.md",
         "skills/agentic-data/polite-crawling-warc/references/warc-validation.md",
-        "skills/agentic-data/polite-crawling-warc/scripts/__pycache__/robots.cpython-312.pyc",
         "skills/agentic-data/polite-crawling-warc/scripts/rate_limit.py",
         "skills/agentic-data/polite-crawling-warc/scripts/resume_state.py",
         "skills/agentic-data/polite-crawling-warc/scripts/robots.py",
         "skills/agentic-data/polite-crawling-warc/scripts/validate_skill.py",
         "skills/agentic-data/polite-crawling-warc/scripts/validate_warc.py",
         "skills/agentic-data/polite-crawling-warc/scripts/warc_writer.py",
-        "skills/agentic-data/polite-crawling-warc/tests/__pycache__/test_cli_edge.cpython-312-pytest-9.1.1.pyc",
-        "skills/agentic-data/polite-crawling-warc/tests/__pycache__/test_scripts.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/polite-crawling-warc/tests/test_cli_edge.py",
         "skills/agentic-data/polite-crawling-warc/tests/test_scripts.py"
       ]
@@ -366,19 +307,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "Agent Skills standard (agentskills.io); Claude Code",
-        "Codex",
-        "Cursor",
-        "Gemini CLI",
-        "VS Code/Copilot"
+        "Agent Skills standard (agentskills.io); Claude Code, Codex, Cursor, Gemini CLI, VS Code/Copilot"
       ],
       "description": "Write, validate and evaluate Agent Skills against the open standard: description design that triggers reliably, progressive disclosure, front-matter validation, and eval-driven iteration with_skill/without_skill baselines. Use when an agent must author a skill, audit an existing one for standard compliance, or measure whether a skill fires on the prompts it should; not for writing ordinary documentation.",
       "paths": [
-        "skills/agentic-data/skill-authoring-evals/.pytest_cache/.gitignore",
-        "skills/agentic-data/skill-authoring-evals/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/skill-authoring-evals/.pytest_cache/README.md",
-        "skills/agentic-data/skill-authoring-evals/.pytest_cache/v/cache/lastfailed",
-        "skills/agentic-data/skill-authoring-evals/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/skill-authoring-evals/SKILL.md",
         "skills/agentic-data/skill-authoring-evals/STATUS.md",
         "skills/agentic-data/skill-authoring-evals/fixtures/sample_evals.json",
@@ -392,14 +324,10 @@
         "skills/agentic-data/skill-authoring-evals/references/procedures.md",
         "skills/agentic-data/skill-authoring-evals/references/trigger-evals.md",
         "skills/agentic-data/skill-authoring-evals/report_test.json",
-        "skills/agentic-data/skill-authoring-evals/scripts/__pycache__/evals_check.cpython-312.pyc",
-        "skills/agentic-data/skill-authoring-evals/scripts/__pycache__/evals_md.cpython-312.pyc",
         "skills/agentic-data/skill-authoring-evals/scripts/eval_metrics.py",
         "skills/agentic-data/skill-authoring-evals/scripts/evals_check.py",
         "skills/agentic-data/skill-authoring-evals/scripts/evals_md.py",
         "skills/agentic-data/skill-authoring-evals/scripts/validate_skill.py",
-        "skills/agentic-data/skill-authoring-evals/tests/__pycache__/test_eval_metrics.cpython-312-pytest-9.1.1.pyc",
-        "skills/agentic-data/skill-authoring-evals/tests/__pycache__/test_validate_skill.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/skill-authoring-evals/tests/test_eval_metrics.py",
         "skills/agentic-data/skill-authoring-evals/tests/test_validate_skill.py"
       ]
@@ -415,15 +343,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "Python 3.10+",
-        "JSONL storage; verified 2026-10-09"
+        "Python 3.10+, JSONL storage; verified 2026-10-09"
       ],
       "description": "Schema, grounding rules, outcome status and cost ledgers for agent trajectories. Use when an agent must record, replay or audit a multi-step run (task, tools, state transitions, cost, outcome) so that results are reproducible and auditable; not for logging application telemetry. Verified 2026-10-13.",
       "paths": [
-        "skills/agentic-data/trajectory-ledger/.pytest_cache/.gitignore",
-        "skills/agentic-data/trajectory-ledger/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/trajectory-ledger/.pytest_cache/README.md",
-        "skills/agentic-data/trajectory-ledger/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/trajectory-ledger/SKILL.md",
         "skills/agentic-data/trajectory-ledger/references/DESIGN.md",
         "skills/agentic-data/trajectory-ledger/references/EVALS.md",
@@ -435,7 +358,6 @@
         "skills/agentic-data/trajectory-ledger/references/procedures.md",
         "skills/agentic-data/trajectory-ledger/references/schema.md",
         "skills/agentic-data/trajectory-ledger/scripts/ledger.py",
-        "skills/agentic-data/trajectory-ledger/tests/__pycache__/test_ledger.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/trajectory-ledger/tests/fixtures/gen_fixtures.py",
         "skills/agentic-data/trajectory-ledger/tests/fixtures/traj.jsonl",
         "skills/agentic-data/trajectory-ledger/tests/fixtures/traj_bad.jsonl",
@@ -456,16 +378,10 @@
       "license": "MIT",
       "author": "",
       "compatibility": [
-        "Python 3.10+",
-        "any sandbox API; verified 2026-10-09"
+        "Python 3.10+, any sandbox API; verified 2026-10-09"
       ],
       "description": "Design verifiers that resist reward hacking: spec-derived checks, oracle-free tests, pass-rate calibration, sandboxing and failure-mode auditing. Use when building or auditing an eval harness, benchmark or agent-environment pair so that an agent cannot game its own score; not for writing unit tests for ordinary software.",
       "paths": [
-        "skills/agentic-data/verifiable-environments/.pytest_cache/.gitignore",
-        "skills/agentic-data/verifiable-environments/.pytest_cache/CACHEDIR.TAG",
-        "skills/agentic-data/verifiable-environments/.pytest_cache/README.md",
-        "skills/agentic-data/verifiable-environments/.pytest_cache/v/cache/lastfailed",
-        "skills/agentic-data/verifiable-environments/.pytest_cache/v/cache/nodeids",
         "skills/agentic-data/verifiable-environments/SKILL.md",
         "skills/agentic-data/verifiable-environments/references/DESIGN.md",
         "skills/agentic-data/verifiable-environments/references/EVALS.md",
@@ -477,11 +393,8 @@
         "skills/agentic-data/verifiable-environments/references/procedures.md",
         "skills/agentic-data/verifiable-environments/references/sandbox-contract.md",
         "skills/agentic-data/verifiable-environments/references/verifier-design.md",
-        "skills/agentic-data/verifiable-environments/scripts/__pycache__/verify_harness.cpython-312.pyc",
         "skills/agentic-data/verifiable-environments/scripts/gen_fixtures.py",
         "skills/agentic-data/verifiable-environments/scripts/verify_harness.py",
-        "skills/agentic-data/verifiable-environments/tests/__pycache__/test_gen_fixtures.cpython-312-pytest-9.1.1.pyc",
-        "skills/agentic-data/verifiable-environments/tests/__pycache__/test_verify_harness.cpython-312-pytest-9.1.1.pyc",
         "skills/agentic-data/verifiable-environments/tests/fixtures/SPEC.json",
         "skills/agentic-data/verifiable-environments/tests/fixtures/SPEC.md",
         "skills/agentic-data/verifiable-environments/tests/fixtures/bypass-empty.jsonl",
@@ -514,18 +427,10 @@
       "license": "MIT-compat",
       "author": "",
       "compatibility": [
-        "framework-agnostic; ISO 20022 camt.053",
-        "SWIFT MT940",
-        "EBICS",
-        "offline"
+        "framework-agnostic; ISO 20022 camt.053, SWIFT MT940, EBICS, offline"
       ],
       "description": "Parse CAMT.053/MT940 bank statements, match postings to open items with multi-key heuristics, detect duplicates and unallocated differences, and produce a reconciled Kontoauszug. Use when an agent must reconcile a bank account, auto-allocate payments to customers/suppliers, or flag unexplained differences. Not for card acquirer statements or non-SEPA currencies.",
       "paths": [
-        "skills/business-de/bank-reconciliation-camt/.pytest_cache/.gitignore",
-        "skills/business-de/bank-reconciliation-camt/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/bank-reconciliation-camt/.pytest_cache/README.md",
-        "skills/business-de/bank-reconciliation-camt/.pytest_cache/v/cache/lastfailed",
-        "skills/business-de/bank-reconciliation-camt/.pytest_cache/v/cache/nodeids",
         "skills/business-de/bank-reconciliation-camt/SKILL.md",
         "skills/business-de/bank-reconciliation-camt/evals_fixtures/bad_reason_code.json",
         "skills/business-de/bank-reconciliation-camt/evals_fixtures/distinct_dates.json",
@@ -539,10 +444,7 @@
         "skills/business-de/bank-reconciliation-camt/references/EVALS.md",
         "skills/business-de/bank-reconciliation-camt/references/SOURCES.md",
         "skills/business-de/bank-reconciliation-camt/references/procedures.md",
-        "skills/business-de/bank-reconciliation-camt/scripts/__pycache__/recon_check.cpython-312.pyc",
         "skills/business-de/bank-reconciliation-camt/scripts/recon_check.py",
-        "skills/business-de/bank-reconciliation-camt/tests/__pycache__/test_recon_check.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/bank-reconciliation-camt/tests/__pycache__/test_recon_nearmiss.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/bank-reconciliation-camt/tests/test_recon_check.py",
         "skills/business-de/bank-reconciliation-camt/tests/test_recon_nearmiss.py",
         "skills/business-de/bank-reconciliation-camt/tests/tmp/nearmiss.json",
@@ -564,22 +466,14 @@
       ],
       "description": "Integrate German carrier APIs (DHL, DPD, GLS, Hermes, UPS) for Ottili flows: create idempotent labels, track via official APIs only and reconcile label costs. Use when an agent must create a shipping label, track a shipment, or reconcile carrier API responses. Not for general shipping logic or unofficial tracking scrapers.",
       "paths": [
-        "skills/business-de/carrier-apis-de/.pytest_cache/.gitignore",
-        "skills/business-de/carrier-apis-de/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/carrier-apis-de/.pytest_cache/README.md",
-        "skills/business-de/carrier-apis-de/.pytest_cache/v/cache/nodeids",
         "skills/business-de/carrier-apis-de/SKILL.md",
         "skills/business-de/carrier-apis-de/references/DESIGN.md",
         "skills/business-de/carrier-apis-de/references/EVALS.md",
         "skills/business-de/carrier-apis-de/references/SOURCES.md",
         "skills/business-de/carrier-apis-de/references/procedures.md",
-        "skills/business-de/carrier-apis-de/scripts/__pycache__/track.cpython-312.pyc",
         "skills/business-de/carrier-apis-de/scripts/label_create.py",
         "skills/business-de/carrier-apis-de/scripts/reconcile.py",
         "skills/business-de/carrier-apis-de/scripts/track.py",
-        "skills/business-de/carrier-apis-de/tests/__pycache__/carrier_test_helpers.cpython-312.pyc",
-        "skills/business-de/carrier-apis-de/tests/__pycache__/test_carrier.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/carrier-apis-de/tests/__pycache__/test_carrier_nearmiss.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/carrier-apis-de/tests/carrier_test_helpers.py",
         "skills/business-de/carrier-apis-de/tests/test_carrier.py",
         "skills/business-de/carrier-apis-de/tests/test_carrier_nearmiss.py"
@@ -600,11 +494,6 @@
       ],
       "description": "Produce and validate DATEV EXTF (Exportdateiformat) booking stacks and data exports for German accounting integrations: EXTF header fields, Buchungsstapel structure, Datenservices, validation errors, and test fixtures. Use when an agent must emit or consume DATEV-compatible machine-readable accounting data, validate a booking stack, or build test fixtures for DATEV integration.",
       "paths": [
-        "skills/business-de/datev-extf/.pytest_cache/.gitignore",
-        "skills/business-de/datev-extf/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/datev-extf/.pytest_cache/README.md",
-        "skills/business-de/datev-extf/.pytest_cache/v/cache/lastfailed",
-        "skills/business-de/datev-extf/.pytest_cache/v/cache/nodeids",
         "skills/business-de/datev-extf/SKILL.md",
         "skills/business-de/datev-extf/config/versions.json",
         "skills/business-de/datev-extf/evals_fixtures/stapel_124.csv",
@@ -616,15 +505,11 @@
         "skills/business-de/datev-extf/references/EVALS.md",
         "skills/business-de/datev-extf/references/SOURCES.md",
         "skills/business-de/datev-extf/references/procedures.md",
-        "skills/business-de/datev-extf/scripts/__pycache__/fixture_generator.cpython-312.pyc",
-        "skills/business-de/datev-extf/scripts/__pycache__/heading_row.cpython-312.pyc",
         "skills/business-de/datev-extf/scripts/build_stapel.py",
         "skills/business-de/datev-extf/scripts/fixture_generator.py",
         "skills/business-de/datev-extf/scripts/heading_row.py",
         "skills/business-de/datev-extf/scripts/validate_extf.py",
         "skills/business-de/datev-extf/stapel.csv",
-        "skills/business-de/datev-extf/tests/__pycache__/test_extf.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/datev-extf/tests/__pycache__/test_extf_datenservices.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/datev-extf/tests/test_extf.py",
         "skills/business-de/datev-extf/tests/test_extf_datenservices.py"
       ]
@@ -640,15 +525,10 @@
       "license": "MIT-compat",
       "author": "",
       "compatibility": [
-        "framework-agnostic; GDPR Art. 30/6",
-        "EU AI Act Art. 50; offline validation"
+        "framework-agnostic; GDPR Art. 30/6, EU AI Act Art. 50; offline validation"
       ],
       "description": "Apply GDPR workflows and EU AI Act Article 50 disclosure decisions for Ottili flows: processing register entries, human-review evidence and AI labeling. Use when an agent must classify a data processing activity under GDPR, decide whether an AI system requires an Article 50 disclosure with human-review evidence, or update the processing register. Not for general privacy policy or non-EU AI systems.",
       "paths": [
-        "skills/business-de/dsgvo-ai-act-labeling/.pytest_cache/.gitignore",
-        "skills/business-de/dsgvo-ai-act-labeling/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/dsgvo-ai-act-labeling/.pytest_cache/README.md",
-        "skills/business-de/dsgvo-ai-act-labeling/.pytest_cache/v/cache/nodeids",
         "skills/business-de/dsgvo-ai-act-labeling/SKILL.md",
         "skills/business-de/dsgvo-ai-act-labeling/evals_fixtures/act_bad.json",
         "skills/business-de/dsgvo-ai-act-labeling/evals_fixtures/act_complete.json",
@@ -666,9 +546,6 @@
         "skills/business-de/dsgvo-ai-act-labeling/scripts/disclosure_label.py",
         "skills/business-de/dsgvo-ai-act-labeling/scripts/label_check.py",
         "skills/business-de/dsgvo-ai-act-labeling/scripts/process_register.py",
-        "skills/business-de/dsgvo-ai-act-labeling/tests/__pycache__/dsgvo_test_helpers.cpython-312.pyc",
-        "skills/business-de/dsgvo-ai-act-labeling/tests/__pycache__/test_dsgvo.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/dsgvo-ai-act-labeling/tests/__pycache__/test_dsgvo_nearmiss.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/dsgvo-ai-act-labeling/tests/dsgvo_test_helpers.py",
         "skills/business-de/dsgvo-ai-act-labeling/tests/test_dsgvo.py",
         "skills/business-de/dsgvo-ai-act-labeling/tests/test_dsgvo_nearmiss.py"
@@ -689,10 +566,6 @@
       ],
       "description": "Implement GoBD-compliant (Grundsätze ordnungsmäßiger Buchführung) data retention and audit export for German accounting data: immutability, retention classes, Verfahrensdokumentation, and audit-ready export. Use when an agent must store accounting documents, set up a retention policy, produce an audit export, or decide whether a document can be deleted. Not for non-accounting files, non-German entities, or retention periods the tax advisor has not confirmed.",
       "paths": [
-        "skills/business-de/gobd-archive/.pytest_cache/.gitignore",
-        "skills/business-de/gobd-archive/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/gobd-archive/.pytest_cache/README.md",
-        "skills/business-de/gobd-archive/.pytest_cache/v/cache/nodeids",
         "skills/business-de/gobd-archive/SKILL.md",
         "skills/business-de/gobd-archive/config/versions.json",
         "skills/business-de/gobd-archive/evals_fixtures/sample_archive/a.txt",
@@ -704,21 +577,12 @@
         "skills/business-de/gobd-archive/references/EVALS.md",
         "skills/business-de/gobd-archive/references/SOURCES.md",
         "skills/business-de/gobd-archive/references/procedures.md",
-        "skills/business-de/gobd-archive/scripts/__pycache__/_classes.cpython-312.pyc",
-        "skills/business-de/gobd-archive/scripts/__pycache__/audit_export.cpython-312.pyc",
         "skills/business-de/gobd-archive/scripts/_classes.py",
         "skills/business-de/gobd-archive/scripts/audit_export.py",
         "skills/business-de/gobd-archive/scripts/immutability_check.py",
         "skills/business-de/gobd-archive/scripts/purge_decision.py",
         "skills/business-de/gobd-archive/scripts/retention_classify.py",
         "skills/business-de/gobd-archive/scripts/verfahrensdokumentation.py",
-        "skills/business-de/gobd-archive/tests/__pycache__/test_audit_export.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/gobd-archive/tests/__pycache__/test_audit_export_edge.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/gobd-archive/tests/__pycache__/test_immutability_check.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/gobd-archive/tests/__pycache__/test_purge_decision.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/gobd-archive/tests/__pycache__/test_purge_edge.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/gobd-archive/tests/__pycache__/test_retention_classify.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/gobd-archive/tests/__pycache__/test_verfahrensdokumentation.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/gobd-archive/tests/test_audit_export.py",
         "skills/business-de/gobd-archive/tests/test_audit_export_edge.py",
         "skills/business-de/gobd-archive/tests/test_immutability_check.py",
@@ -743,10 +607,6 @@
       ],
       "description": "Publish content idempotently to WordPress and Meta for Ottili flows and reconcile unknown results: create/update posts, handle API errors, and reconcile when the result is unknown. Use when an agent must publish to WordPress or Meta; when a publish call returns an unknown result; or when reconciling a failed publish. Not for general CMS logic or non-WordPress/Meta platforms.",
       "paths": [
-        "skills/business-de/publish-reconcile-wp-meta/.pytest_cache/.gitignore",
-        "skills/business-de/publish-reconcile-wp-meta/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/publish-reconcile-wp-meta/.pytest_cache/README.md",
-        "skills/business-de/publish-reconcile-wp-meta/.pytest_cache/v/cache/nodeids",
         "skills/business-de/publish-reconcile-wp-meta/SKILL.md",
         "skills/business-de/publish-reconcile-wp-meta/evals_fixtures/meta_draft.json",
         "skills/business-de/publish-reconcile-wp-meta/evals_fixtures/meta_match.json",
@@ -756,13 +616,10 @@
         "skills/business-de/publish-reconcile-wp-meta/references/EVALS.md",
         "skills/business-de/publish-reconcile-wp-meta/references/SOURCES.md",
         "skills/business-de/publish-reconcile-wp-meta/references/procedures.md",
-        "skills/business-de/publish-reconcile-wp-meta/scripts/__pycache__/reconcile.cpython-312.pyc",
         "skills/business-de/publish-reconcile-wp-meta/scripts/idempotency_store.py",
         "skills/business-de/publish-reconcile-wp-meta/scripts/meta_publish.py",
         "skills/business-de/publish-reconcile-wp-meta/scripts/reconcile.py",
         "skills/business-de/publish-reconcile-wp-meta/scripts/wp_publish.py",
-        "skills/business-de/publish-reconcile-wp-meta/tests/__pycache__/test_publish.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/publish-reconcile-wp-meta/tests/__pycache__/test_publish_nearmiss.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/publish-reconcile-wp-meta/tests/test_publish.py",
         "skills/business-de/publish-reconcile-wp-meta/tests/test_publish_nearmiss.py"
       ]
@@ -778,17 +635,10 @@
       "license": "MIT-compat",
       "author": "",
       "compatibility": [
-        "framework-agnostic; German SKR03/SKR04",
-        "DATEV Buchungsstapel",
-        "offline"
+        "framework-agnostic; German SKR03/SKR04, DATEV Buchungsstapel, offline"
       ],
       "description": "Map German SKR03/SKR04 ledger accounts to journal entries, tax keys (19/7, 16/1, 19/0, 06/0, 09/0, 13/0) and automatic Buchungszeilen; build and validate period-lock and closing-concept rules. Use when an agent must classify an invoice line, decide the correct SKR account + Steuerschluessel, generate an automatic journal, or enforce a period lock before the fiscal close. Not for US GAAP, IFRS consolidation or non-German VAT.",
       "paths": [
-        "skills/business-de/skr-journal-mapping/.pytest_cache/.gitignore",
-        "skills/business-de/skr-journal-mapping/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/skr-journal-mapping/.pytest_cache/README.md",
-        "skills/business-de/skr-journal-mapping/.pytest_cache/v/cache/lastfailed",
-        "skills/business-de/skr-journal-mapping/.pytest_cache/v/cache/nodeids",
         "skills/business-de/skr-journal-mapping/SKILL.md",
         "skills/business-de/skr-journal-mapping/config/period_lock.json",
         "skills/business-de/skr-journal-mapping/evals_fixtures/bad_key.json",
@@ -803,10 +653,6 @@
         "skills/business-de/skr-journal-mapping/scripts/map_skr.py",
         "skills/business-de/skr-journal-mapping/scripts/period_lock.py",
         "skills/business-de/skr-journal-mapping/scripts/period_lock_check.py",
-        "skills/business-de/skr-journal-mapping/tests/__pycache__/test_journal_check.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/skr-journal-mapping/tests/__pycache__/test_journal_nearmiss.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/skr-journal-mapping/tests/__pycache__/test_period_lock_check.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/skr-journal-mapping/tests/__pycache__/test_period_lock_nearmiss.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/skr-journal-mapping/tests/test_journal_check.py",
         "skills/business-de/skr-journal-mapping/tests/test_journal_nearmiss.py",
         "skills/business-de/skr-journal-mapping/tests/test_period_lock_check.py",
@@ -829,17 +675,10 @@
       "license": "MIT-compat",
       "author": "",
       "compatibility": [
-        "framework-agnostic; German UStG",
-        "EU VAT rules",
-        "offline"
+        "framework-agnostic; German UStG, EU VAT rules, offline"
       ],
       "description": "Apply German VAT edge cases correctly: reverse charge (§13b UStG — the buyer is the tax debtor, services only), Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales.",
       "paths": [
-        "skills/business-de/ust-edge-cases/.pytest_cache/.gitignore",
-        "skills/business-de/ust-edge-cases/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/ust-edge-cases/.pytest_cache/README.md",
-        "skills/business-de/ust-edge-cases/.pytest_cache/v/cache/lastfailed",
-        "skills/business-de/ust-edge-cases/.pytest_cache/v/cache/nodeids",
         "skills/business-de/ust-edge-cases/SKILL.md",
         "skills/business-de/ust-edge-cases/evals_fixtures/goods.json",
         "skills/business-de/ust-edge-cases/evals_fixtures/ku_over.json",
@@ -852,8 +691,6 @@
         "skills/business-de/ust-edge-cases/references/SOURCES.md",
         "skills/business-de/ust-edge-cases/references/procedures.md",
         "skills/business-de/ust-edge-cases/scripts/ust_check.py",
-        "skills/business-de/ust-edge-cases/tests/__pycache__/test_ust_check.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/ust-edge-cases/tests/__pycache__/test_ust_nearmiss.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/ust-edge-cases/tests/test_ust_check.py",
         "skills/business-de/ust-edge-cases/tests/test_ust_nearmiss.py",
         "skills/business-de/ust-edge-cases/tests/tmp/inv.json",
@@ -875,10 +712,6 @@
       ],
       "description": "Ingest inbound webhooks safely for Ottili flows: verify HMAC signatures over the raw body, dedupe by event id with a TTL, preserve per-stream order, respect provider replay windows, route persistent failures to a dead-letter queue, and validate outbound delivery targets against an allow-list to prevent SSRF. Use when an agent must receive, verify or process a webhook payload; when a webhook arrives out of order or twice; or when a webhook handler fails. Not for outbound retry engineering.",
       "paths": [
-        "skills/business-de/webhooks-safe/.pytest_cache/.gitignore",
-        "skills/business-de/webhooks-safe/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/webhooks-safe/.pytest_cache/README.md",
-        "skills/business-de/webhooks-safe/.pytest_cache/v/cache/nodeids",
         "skills/business-de/webhooks-safe/SKILL.md",
         "skills/business-de/webhooks-safe/evals_fixtures/body.json",
         "skills/business-de/webhooks-safe/evals_fixtures/stripe_body.json",
@@ -891,8 +724,6 @@
         "skills/business-de/webhooks-safe/scripts/ordering.py",
         "skills/business-de/webhooks-safe/scripts/ssrf_check.py",
         "skills/business-de/webhooks-safe/scripts/verify.py",
-        "skills/business-de/webhooks-safe/tests/__pycache__/test_webhooks.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/webhooks-safe/tests/__pycache__/test_webhooks_nearmiss.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/webhooks-safe/tests/test_webhooks.py",
         "skills/business-de/webhooks-safe/tests/test_webhooks_nearmiss.py"
       ]
@@ -908,16 +739,10 @@
       "license": "MIT-compat",
       "author": "",
       "compatibility": [
-        "framework-agnostic; German e-invoicing standards (EN 16931",
-        "Factur-X",
-        "XRechnung); offline validation"
+        "framework-agnostic; German e-invoicing standards (EN 16931, Factur-X, XRechnung); offline validation"
       ],
       "description": "Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X) compliant with EN 16931 and the UStG e-invoicing obligation (§14 UStG). Use when an agent must create, check, receive, convert or store e-invoices for B2B/B2G flows, decide whether a document is a valid e-invoice, pick the right profile, or set up a GoBD-compliant retention pipeline. Not for PDF-only invoices or non-German jurisdictions.",
       "paths": [
-        "skills/business-de/xrechnung-zugferd/.pytest_cache/.gitignore",
-        "skills/business-de/xrechnung-zugferd/.pytest_cache/CACHEDIR.TAG",
-        "skills/business-de/xrechnung-zugferd/.pytest_cache/README.md",
-        "skills/business-de/xrechnung-zugferd/.pytest_cache/v/cache/nodeids",
         "skills/business-de/xrechnung-zugferd/SKILL.md",
         "skills/business-de/xrechnung-zugferd/config/versions.json",
         "skills/business-de/xrechnung-zugferd/evals_fixtures/inv-missing.xml",
@@ -930,8 +755,6 @@
         "skills/business-de/xrechnung-zugferd/scripts/profile_selector.py",
         "skills/business-de/xrechnung-zugferd/scripts/retention_check.py",
         "skills/business-de/xrechnung-zugferd/scripts/validate_invoice.py",
-        "skills/business-de/xrechnung-zugferd/tests/__pycache__/test_profile_and_retention.cpython-312-pytest-9.1.1.pyc",
-        "skills/business-de/xrechnung-zugferd/tests/__pycache__/test_validate_invoice.cpython-312-pytest-9.1.1.pyc",
         "skills/business-de/xrechnung-zugferd/tests/test_profile_and_retention.py",
         "skills/business-de/xrechnung-zugferd/tests/test_validate_invoice.py"
       ]
@@ -962,7 +785,13 @@
       "category": "dev-tools",
       "license": "MIT",
       "author": "Pushpinder Pal Singh",
-      "compatibility": [],
+      "compatibility": [
+        "Claude Code",
+        "Codex",
+        "Cursor",
+        "OpenClaw",
+        "Ottili AI"
+      ],
       "description": "Use when automating or invoking Cursor CLI (agent/cursor-agent) for non-interactive tasks, CI pipelines, or multi-agent delegation.",
       "paths": [
         "skills/curated/cursor-cli/SKILL.md"
@@ -988,8 +817,6 @@
         "skills/engineering/acceptance-harness/references/EVALS.md",
         "skills/engineering/acceptance-harness/references/SOURCES.md",
         "skills/engineering/acceptance-harness/references/acceptance-harness-procedure.md",
-        "skills/engineering/acceptance-harness/scripts/__pycache__/check_audit_selectors_test.cpython-312-pytest-9.1.1.pyc",
-        "skills/engineering/acceptance-harness/scripts/__pycache__/report_result_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/acceptance-harness/scripts/check_audit_selectors.py",
         "skills/engineering/acceptance-harness/scripts/check_audit_selectors_test.py",
         "skills/engineering/acceptance-harness/scripts/make_harness.sh",
@@ -1017,7 +844,6 @@
         "skills/engineering/foundation-v2-conformance/references/EVALS.md",
         "skills/engineering/foundation-v2-conformance/references/SOURCES.md",
         "skills/engineering/foundation-v2-conformance/references/foundation-v2-conformance-procedure.md",
-        "skills/engineering/foundation-v2-conformance/scripts/__pycache__/check_foundation_tokens_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/foundation-v2-conformance/scripts/check_foundation_tokens.py",
         "skills/engineering/foundation-v2-conformance/scripts/check_foundation_tokens_test.py",
         "skills/engineering/foundation-v2-conformance/scripts/fresh_consumer_test.sh"
@@ -1043,8 +869,6 @@
         "skills/engineering/honest-status/references/EVALS.md",
         "skills/engineering/honest-status/references/SOURCES.md",
         "skills/engineering/honest-status/references/honest-status-procedure.md",
-        "skills/engineering/honest-status/scripts/__pycache__/check_status_evidence.cpython-312.pyc",
-        "skills/engineering/honest-status/scripts/__pycache__/check_status_evidence_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/honest-status/scripts/check_status_evidence.py",
         "skills/engineering/honest-status/scripts/check_status_evidence_test.py"
       ]
@@ -1088,19 +912,12 @@
       ],
       "description": "Designs and enforces module contracts in one working tree: public API surface, versioned schemas, drift tests against reference snapshots, and boundary rules between sibling modules. Use when defining a new module's public API, reviewing a breaking change, or diagnosing cross-module breakage in a shared tree.",
       "paths": [
-        "skills/engineering/module-contract-first/.pytest_cache/.gitignore",
-        "skills/engineering/module-contract-first/.pytest_cache/CACHEDIR.TAG",
-        "skills/engineering/module-contract-first/.pytest_cache/README.md",
-        "skills/engineering/module-contract-first/.pytest_cache/v/cache/lastfailed",
-        "skills/engineering/module-contract-first/.pytest_cache/v/cache/nodeids",
         "skills/engineering/module-contract-first/SKILL.md",
         "skills/engineering/module-contract-first/module-contracts/module-contract-first.json",
         "skills/engineering/module-contract-first/references/DESIGN.md",
         "skills/engineering/module-contract-first/references/EVALS.md",
         "skills/engineering/module-contract-first/references/SOURCES.md",
         "skills/engineering/module-contract-first/references/module-contract-procedure.md",
-        "skills/engineering/module-contract-first/scripts/__pycache__/check_contract_drift.cpython-312.pyc",
-        "skills/engineering/module-contract-first/scripts/__pycache__/check_contract_drift_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/module-contract-first/scripts/check_contract_drift.py",
         "skills/engineering/module-contract-first/scripts/check_contract_drift_test.py"
       ]
@@ -1132,7 +949,6 @@
         "skills/engineering/outbox-idempotency/references/examples/good_outbox.sql",
         "skills/engineering/outbox-idempotency/references/examples/good_poller.py",
         "skills/engineering/outbox-idempotency/references/outbox-procedure.md",
-        "skills/engineering/outbox-idempotency/scripts/__pycache__/check_outbox_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/outbox-idempotency/scripts/check_outbox.py",
         "skills/engineering/outbox-idempotency/scripts/check_outbox_test.py"
       ]
@@ -1159,7 +975,6 @@
         "skills/engineering/pg-rls-multitenant/references/examples/bad_migration.sql",
         "skills/engineering/pg-rls-multitenant/references/examples/good_migration.sql",
         "skills/engineering/pg-rls-multitenant/references/pg-rls-procedure.md",
-        "skills/engineering/pg-rls-multitenant/scripts/__pycache__/check_rls_migration_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py",
         "skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py",
         "skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh"
@@ -1185,8 +1000,6 @@
         "skills/engineering/playwright-a11y-e2e/references/EVALS.md",
         "skills/engineering/playwright-a11y-e2e/references/SOURCES.md",
         "skills/engineering/playwright-a11y-e2e/references/playwright-a11y-e2e-procedure.md",
-        "skills/engineering/playwright-a11y-e2e/scripts/__pycache__/check_axe_evidence_test.cpython-312-pytest-9.1.1.pyc",
-        "skills/engineering/playwright-a11y-e2e/scripts/__pycache__/check_workaround_markers_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/playwright-a11y-e2e/scripts/check_axe_evidence.py",
         "skills/engineering/playwright-a11y-e2e/scripts/check_axe_evidence_test.py",
         "skills/engineering/playwright-a11y-e2e/scripts/check_keyboard.py",
@@ -1248,9 +1061,6 @@
         "skills/engineering/problem-json-contracts/references/examples/good/schemas/validation-failed.example.json",
         "skills/engineering/problem-json-contracts/references/examples/good/schemas/validation-failed.json",
         "skills/engineering/problem-json-contracts/references/problem-procedure.md",
-        "skills/engineering/problem-json-contracts/scripts/__pycache__/check_problem_catalogue.cpython-312.pyc",
-        "skills/engineering/problem-json-contracts/scripts/__pycache__/check_problem_catalogue_test.cpython-312-pytest-9.1.1.pyc",
-        "skills/engineering/problem-json-contracts/scripts/__pycache__/validate_problem_examples_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/problem-json-contracts/scripts/check_problem_catalogue.py",
         "skills/engineering/problem-json-contracts/scripts/check_problem_catalogue_test.py",
         "skills/engineering/problem-json-contracts/scripts/validate_problem_examples.py",
@@ -1277,7 +1087,6 @@
         "skills/engineering/shared-tree-git/references/EVALS.md",
         "skills/engineering/shared-tree-git/references/SOURCES.md",
         "skills/engineering/shared-tree-git/references/shared-tree-git-procedure.md",
-        "skills/engineering/shared-tree-git/scripts/__pycache__/check_shared_tree_test.cpython-312-pytest-9.1.1.pyc",
         "skills/engineering/shared-tree-git/scripts/check_shared_tree.py",
         "skills/engineering/shared-tree-git/scripts/check_shared_tree_test.py"
       ]
