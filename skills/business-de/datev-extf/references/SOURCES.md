@@ -131,3 +131,19 @@ Re-fetched every primary source with `curl -s -o /dev/null -w "%{http_code}"
   `bundesbank.de/...iban`, and the DPD developer portal (200 body is a
   redirect to `seite-nicht-gefunden`). Corroborate with the recorded mirrors
   before an audit.
+
+## Re-verification 2026-10-15 (PASS 3 of skills-business-de-r3-02)
+
+Two random sources per skill re-fetched with `curl -s -o /dev/null -w "%{http_code}"
+--max-time 20 -L -A OttiliResearchBot/1.0` on 2026-10-15. Nothing was copied
+verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://raw.githubusercontent.com/seamless-engineering/datev-extf/main/src/columns.ts | 200 | Column table re-fetched. **BUCHUNGSSTAPEL_COLUMNS has exactly 125 entries**; col 97 = `USt-Schlüssel (Anzahlungen)`, col 103 = `Buchungs GUID`, col 125 = `Abw. Skontokonto`. `BUCHUNGSSTAPEL_COLUMN_COUNT = { 10: 120, 11: 122, 12: 124, 13: 125 }` confirms 125 columns for Formatversion 13. |
+| https://raw.githubusercontent.com/seamless-engineering/datev-extf/main/src/extf.ts | 200 | Header rules re-fetched. `EXTF_AS_OF = "2026-09-25"`. Versionsnummer must be `700` (`header-version` error otherwise, `510` is `header-version-old` warning); Formatversion must be `13` (`header-format-version` error otherwise, 10-12 is `header-format-version-old` warning); WJ end = `wjDate + 1y - 1d`, which is why WJ `20260101` ends `2026-12-31`. |
+| https://www.datev.de/ | 200 | datev.de home resolves; the EXTF spec is gated behind partner registration. |
+
+**Net effect on pinned versions: none.** Versionsnummer `700` / Formatversion `13`
+is unchanged and is still marked **unverified until DATEV confirms** via the
+Prüfprogramm, because DATEV does not publish a public version page.

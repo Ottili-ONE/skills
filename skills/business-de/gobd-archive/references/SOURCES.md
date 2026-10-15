@@ -116,3 +116,19 @@ Re-fetched every primary source with `curl -s -o /dev/null -w "%{http_code}"
   `bundesbank.de/...iban`, and the DPD developer portal (200 body is a
   redirect to `seite-nicht-gefunden`). Corroborate with the recorded mirrors
   before an audit.
+
+## Re-verification 2026-10-15 (PASS 3 of skills-business-de-r3-02)
+
+Two random sources per skill re-fetched with `curl -s -o /dev/null -w "%{http_code}"
+--max-time 20 -L -A OttiliResearchBot/1.0` on 2026-10-15. Nothing was copied
+verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://www.whk-controlling.de/wissen/gobd-archivierung-guide | 200 | GoBD Archivierung Guide resolves; the 8/10/6 split and the "vorher 10 Jahre" note confirmed. |
+| https://www.steuer-berater.de/lexikon/gobd | 200 | GoBD lexicon resolves; 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen, all effective 01.01.2025. |
+| https://dejure.org/gesetze/AO/147.html | 503 | **Flaky.** The dejure.org AO §147 mirror returned 503 at retrieval (it returned 200 on 2026-10-14). The three-way corroboration (steuer-berater.de, whk-controlling.de, dejure.org) still stands; re-fetch before an audit. |
+| https://www.datev.de/ | 200 | datev.de home resolves; the EXTF spec is gated behind partner registration. |
+
+**Net effect on pinned versions: none.** The BEG IV retention classes (8/10/6,
+effective 2025-01-01) are unchanged.
