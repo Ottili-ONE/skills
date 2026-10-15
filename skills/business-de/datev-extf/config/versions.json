@@ -1,0 +1,25 @@
+{
+  "datev-extf": {
+    "extf": {
+      "versionsnummer": "700",
+      "formatversion": "13",
+      "note": "DATEV EXTF 700/13. Verified 2026-10-09 against seamless-engineering/datev-extf (EXTF_AS_OF 2026-09-25) and mrtyldr v13 exporter. DATEV does not publish a public version page; mark unverified until the Prüfprogramm confirms.",
+      "url": "https://www.datev.de/",
+      "reverify": "weekly"
+    },
+    "formatkategorie": "21",
+    "formatname": "Buchungsstapel",
+    "column_count": 125,
+    "datenservices": {
+      "note": "Datenservices (Buchungsdatenservice, Rechnungsdatenservice) are REST/XML online services; the file-based EXTF Buchungsstapel is the offline contract this skill covers.",
+      "url": "https://www.datev.de/web/de/marktplatz/marahplus/"
+    }
+  },
+  "legal": {
+    "retention_vouchers_years": 8,
+    "retention_books_years": 10,
+    "retention_correspondence_years": 6,
+    "retention_effective": "2025-01-01 (BEG IV)"
+  },
+  "reverify_cadence": "weekly; log every re-verification run in references/SOURCES.md"
+}

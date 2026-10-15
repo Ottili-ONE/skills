@@ -1,0 +1,24 @@
+{
+  "gobd-archive": {
+    "ao147": {
+      "version": "AO §147 Abs. 3 n.F.",
+      "effective": "2025-01-01",
+      "note": "BEG IV retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Corroborated by steuer-berater.de, whk-controlling.de and dejure.org mirror; the gesetze-im-internet.de AO index 404'd on 2026-10-08.",
+      "url": "https://www.gesetze-im-internet.de/ao/",
+      "reverify": "quarterly"
+    },
+    "gobd": {
+      "version": "BMF Schreiben 14.11.2014, updated 11.03.2024",
+      "note": "GoBD principles; superseded for retention periods starting 2025 but retained for older periods.",
+      "url": "https://www.bmf.gv.at/",
+      "reverify": "quarterly"
+    }
+  },
+  "legal": {
+    "retention_vouchers_years": 8,
+    "retention_books_years": 10,
+    "retention_correspondence_years": 6,
+    "retention_effective": "2025-01-01 (BEG IV)"
+  },
+  "reverify_cadence": "quarterly; log every re-verification run in references/SOURCES.md"
+}
