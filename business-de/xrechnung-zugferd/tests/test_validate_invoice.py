@@ -115,11 +115,90 @@ def test_bt15_is_delivery_date_not_issue_date(tmp_path):
 
 
 def test_bt15_present_in_basic_wl(tmp_path):
-    """With a real DeliveryDate element, BASIC WL passes BT-15."""
+    """With a real DeliveryDate element, BASIC WL passes BT-15.
+
+    BT-10 (Leitweg-ID) is NOT required in BASIC WL -- it is a B2B rule --
+    so a BASIC WL invoice with only BT-14 / BT-15 / BT-20 must validate.
+    """
     xml = b"""<?xml version="1.0" encoding="UTF-8"?>
 <CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
   <IssueDate>20260602</IssueDate>
   <DeliveryDate>20260602</DeliveryDate>
+  <EndpointID schemeID="0154">DE12345678901234</EndpointID>
+  <PaymentTerms>net 30</PaymentTerms>
+</CrossIndustryInvoice>"""
+    f = tmp_path / "inv.xml"
+    f.write_bytes(xml)
+    code, out = run([str(f), "--profile", "BASIC WL"])
+    assert code == 0, out["errors"]
+    assert out["errors"] == []
+
+
+def test_future_issue_date_rejected(tmp_path):
+    """A date in the future is a content failure, not a pass.
+
+    The content regex alone cannot catch this -- 20991231 "looks like a
+    date" -- so bt_checks compares against today and rejects future dates.
+    """
+    xml = b"""<?xml version="1.0" encoding="UTF-8"?>
+<CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
+  <IssueDate>20991231</IssueDate>
+  <PaymentTerms>net 30</PaymentTerms>
+</CrossIndustryInvoice>"""
+    f = tmp_path / "inv.xml"
+    f.write_bytes(xml)
+    code, out = run([str(f), "--profile", "MINIMUM"])
+    assert code == 1
+    assert any("future" in e for e in out["errors"]), out["errors"]
+
+
+def test_future_date_injected_via_arg(tmp_path):
+    """bt_checks accepts an explicit today=, so the suite is deterministic
+    and does not depend on the wall clock."""
+    import datetime as _dt
+    import sys
+    sys.path.insert(0, str(SCRIPT.parent))
+    import validate_invoice as vi
+    xml = ("<CrossIndustryInvoice>"
+           "<IssueDate>20991231</IssueDate>"
+           "<PaymentTerms>net 30</PaymentTerms>"
+           "</CrossIndustryInvoice>")
+    fails = vi.bt_checks(xml, "MINIMUM", today=_dt.date(2026, 1, 1))
+    assert any("BT-14" in f and "future" in f for f in fails), fails
+
+
+def test_bt15_is_delivery_date_not_issue_date(tmp_path):
+    """BT-15 is cbc:DeliveryDate. An invoice whose only date is the issue
+    date must FAIL BT-15 in BASIC WL (the issue date is not a delivery date).
+
+    Verified 2026-10-15 against the KoSIT validator-configuration-xrechnung
+    guidelines.json: BT-15 = Auslieferdatum / Lieferdatum -> cbc:DeliveryDate.
+    """
+    xml = b"""<?xml version="1.0" encoding="UTF-8"?>
+<CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
+  <IssueDate>20260602</IssueDate>
+  <PaymentTerms>net 30</PaymentTerms>
+</CrossIndustryInvoice>"""
+    f = tmp_path / "inv.xml"
+    f.write_bytes(xml)
+    code, out = run([str(f), "--profile", "BASIC WL"])
+    assert code == 1
+    assert any("BT-15" in e for e in out["errors"]), out["errors"]
+    # And the failure must name DeliveryDate, not IssueDate.
+    assert any("DeliveryDate" in e for e in out["errors"]), out["errors"]
+
+
+def test_bt15_present_in_basic_wl(tmp_path):
+    """With a real DeliveryDate element, BASIC WL passes BT-15.
+
+    BT-10 (Leitweg-ID) is NOT required in BASIC WL -- it is a B2B rule --
+    so a BASIC WL invoice with only BT-14 / BT-15 / BT-20 must validate.
+    """
+    xml = b"""<?xml version="1.0" encoding="UTF-8"?>
+<CrossIndustryInvoice xmlns="urn:un:cefact:standard:CrossIndustryInvoice:1:1">
+  <IssueDate>20260602</IssueDate>
+  <DeliveryDate>20260602</DeliveryDate>
+  <EndpointID schemeID="0154">DE12345678901234</EndpointID>
   <PaymentTerms>net 30</PaymentTerms>
 </CrossIndustryInvoice>"""
     f = tmp_path / "inv.xml"
