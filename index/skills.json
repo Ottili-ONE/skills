@@ -2,12 +2,212 @@
   "generated_by": "scripts/build-index.py",
   "skills": [
     {
+      "id": "browser-agent-playwright",
+      "name": "browser-agent-playwright",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/browser-agent-playwright",
+      "version": "",
+      "description": "Drive a browser with Playwright for agents: grounding in DOM/ARIA, robust locators, network waits, prompt-injection defense for page content, and safe hand-off between browser and code. Use when an agent must scrape, test, or automate a site; never use raw page.evaluate for extraction; not for server-side scraping or non-browser automation. Verified 2026-10-14.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "computer-use-drivers",
+      "name": "computer-use-drivers",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/computer-use-drivers",
+      "version": "",
+      "description": "Drive desktop and remote apps through accessibility trees and background input with safety layers: coordinate scaling, confirm() gates on destructive actions, screen-as-untrusted-data handling, platform quirks (macOS AX, Windows UIA, X11/Wayland). Use when an agent must click, type into or scroll an app it cannot reach through its API; never use raw screen scraping as the primary path. Verified 2026-10-13.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "dedup-decontam",
+      "name": "dedup-decontam",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/dedup-decontam",
+      "version": "",
+      "description": "Deduplicate and decontaminate text corpora for LLM training: MinHash/LSH near-duplicate detection, n-gram and embedding-based decontamination, planted-item tests with pass/fail criteria. Use when preparing a training or evaluation dataset and you must remove duplicates and test-set leakage; not for single-document similarity.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "deep-research-method",
+      "name": "deep-research-method",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/deep-research-method",
+      "version": "",
+      "description": "Run evidence-backed research for Ottili agents: score sources 0-10 (authority/recency/corroboration, keep >=6), cite every claim with URL + retrieval date + pinned version, resolve contradictions by quality weight, and state confidence high/medium/low. Use when an agent must answer a question from the web, write a research brief, audit a source, or decide which of two conflicting facts to trust. Not for reading a single known-good document.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "llm-judge-calibration",
+      "name": "llm-judge-calibration",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/llm-judge-calibration",
+      "version": "",
+      "description": "Calibrate LLM judges: rubrics, calibration sets, inter-annotator agreement, drift detection and judge/teacher separation. Use when an agent must build or audit an LLM-as-judge scoring pipeline; not for building a single rubric from scratch. Verified 2026-10-13.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "mcp-2026-07-28",
+      "name": "mcp-2026-07-28",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/mcp-2026-07-28",
+      "version": "",
+      "description": "Build and consume stateless MCP servers and clients on the 2026-07-28 revision: server/discover, per-request metadata via _meta, tasks extension, OAuth 2.1 with PKCE, backward-compat negotiation down to 2025-11-25 and 2025-06-18. Use when an agent must scaffold an MCP server or client, debug a protocol handshake, map error codes to actions, or verify that a deployment is stateless and version-pinned. Not for general API design or non-MCP integrations.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "polite-crawling-warc",
+      "name": "polite-crawling-warc",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/polite-crawling-warc",
+      "version": "",
+      "description": "Polite web crawling with WARC output: robots.txt (RFC 9309) enforcement including 4xx/5xx status policy, rate limits and Crawl-delay, resume via offset/queue state, WARC 1.1 record hygiene, and defense against hostile inputs. Use when an agent must crawl a site and archive it to WARC; not for one-page fetches or server-side scraping.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "skill-authoring-evals",
+      "name": "skill-authoring-evals",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/skill-authoring-evals",
+      "version": "",
+      "description": "Write, validate and evaluate Agent Skills against the open standard: description design that triggers reliably, progressive disclosure, front-matter validation, and eval-driven iteration with_skill/without_skill baselines. Use when an agent must author a skill, audit an existing one for standard compliance, or measure whether a skill fires on the prompts it should; not for writing ordinary documentation.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "trajectory-ledger",
+      "name": "trajectory-ledger",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/trajectory-ledger",
+      "version": "",
+      "description": "Schema, grounding rules, outcome status and cost ledgers for agent trajectories. Use when an agent must record, replay or audit a multi-step run (task, tools, state transitions, cost, outcome) so that results are reproducible and auditable; not for logging application telemetry. Verified 2026-10-13.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "verifiable-environments",
+      "name": "verifiable-environments",
+      "package": "agentic-data",
+      "path": "skills/agentic-data/verifiable-environments",
+      "version": "",
+      "description": "Design verifiers that resist reward hacking: spec-derived checks, oracle-free tests, pass-rate calibration, sandboxing and failure-mode auditing. Use when building or auditing an eval harness, benchmark or agent-environment pair so that an agent cannot game its own score; not for writing unit tests for ordinary software.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "bank-reconciliation-camt",
+      "name": "bank-reconciliation-camt",
+      "package": "business-de",
+      "path": "skills/business-de/bank-reconciliation-camt",
+      "version": "",
+      "description": "Parse CAMT.053/MT940 bank statements, match postings to open items with multi-key heuristics, detect duplicates and unallocated differences, and produce a reconciled Kontoauszug. Use when an agent must reconcile a bank account, auto-allocate payments to customers/suppliers, or flag unexplained differences. Not for card acquirer statements or non-SEPA currencies.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "carrier-apis-de",
+      "name": "carrier-apis-de",
+      "package": "business-de",
+      "path": "skills/business-de/carrier-apis-de",
+      "version": "",
+      "description": "Integrate German carrier APIs (DHL, DPD, GLS, Hermes, UPS) for Ottili flows: create idempotent labels, track via official APIs only and reconcile label costs. Use when an agent must create a shipping label, track a shipment, or reconcile carrier API responses. Not for general shipping logic or unofficial tracking scrapers.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "datev-extf",
+      "name": "datev-extf",
+      "package": "business-de",
+      "path": "skills/business-de/datev-extf",
+      "version": "",
+      "description": "Produce and validate DATEV EXTF (Exportdateiformat) booking stacks and data exports for German accounting integrations: EXTF header fields, Buchungsstapel structure, Datenservices, validation errors, and test fixtures. Use when an agent must emit or consume DATEV-compatible machine-readable accounting data, validate a booking stack, or build test fixtures for DATEV integration.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "dsgvo-ai-act-labeling",
+      "name": "dsgvo-ai-act-labeling",
+      "package": "business-de",
+      "path": "skills/business-de/dsgvo-ai-act-labeling",
+      "version": "",
+      "description": "Apply GDPR workflows and EU AI Act Article 50 disclosure decisions for Ottili flows: processing register entries, human-review evidence and AI labeling. Use when an agent must classify a data processing activity under GDPR, decide whether an AI system requires an Article 50 disclosure with human-review evidence, or update the processing register. Not for general privacy policy or non-EU AI systems.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "gobd-archive",
+      "name": "gobd-archive",
+      "package": "business-de",
+      "path": "skills/business-de/gobd-archive",
+      "version": "",
+      "description": "Implement GoBD-compliant (Grundsätze ordnungsmäßiger Buchführung) data retention and audit export for German accounting data: immutability, retention classes, Verfahrensdokumentation, and audit-ready export. Use when an agent must store accounting documents, set up a retention policy, produce an audit export, or decide whether a document can be deleted. Not for non-accounting files, non-German entities, or retention periods the tax advisor has not confirmed.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "publish-reconcile-wp-meta",
+      "name": "publish-reconcile-wp-meta",
+      "package": "business-de",
+      "path": "skills/business-de/publish-reconcile-wp-meta",
+      "version": "",
+      "description": "Publish content idempotently to WordPress and Meta for Ottili flows and reconcile unknown results: create/update posts, handle API errors, and reconcile when the result is unknown. Use when an agent must publish to WordPress or Meta; when a publish call returns an unknown result; or when reconciling a failed publish. Not for general CMS logic or non-WordPress/Meta platforms.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "skr-journal-mapping",
+      "name": "skr-journal-mapping",
+      "package": "business-de",
+      "path": "skills/business-de/skr-journal-mapping",
+      "version": "",
+      "description": "Map German SKR03/SKR04 ledger accounts to journal entries, tax keys (19/7, 16/1, 19/0, 06/0, 09/0, 13/0) and automatic Buchungszeilen; build and validate period-lock and closing-concept rules. Use when an agent must classify an invoice line, decide the correct SKR account + Steuerschluessel, generate an automatic journal, or enforce a period lock before the fiscal close. Not for US GAAP, IFRS consolidation or non-German VAT.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "ust-edge-cases",
+      "name": "ust-edge-cases",
+      "package": "business-de",
+      "path": "skills/business-de/ust-edge-cases",
+      "version": "",
+      "description": "Apply German VAT edge cases correctly: reverse charge (§13b UStG — the buyer is the tax debtor, services only), Kleinunternehmer §19, intra-EU B2B (06/0), OSS/IOSS, rounding to cents, and the e-invoice interplay. Use when an agent must decide the tax treatment of a cross-border or small-business invoice, pick the right Steuerschlüssel, or avoid the reverse-charge trap. Not for domestic standard-rate B2C sales.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "webhooks-safe",
+      "name": "webhooks-safe",
+      "package": "business-de",
+      "path": "skills/business-de/webhooks-safe",
+      "version": "",
+      "description": "Ingest inbound webhooks safely for Ottili flows: verify HMAC signatures over the raw body, dedupe by event id with a TTL, preserve per-stream order, respect provider replay windows, route persistent failures to a dead-letter queue, and validate outbound delivery targets against an allow-list to prevent SSRF. Use when an agent must receive, verify or process a webhook payload; when a webhook arrives out of order or twice; or when a webhook handler fails. Not for outbound retry engineering.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "xrechnung-zugferd",
+      "name": "xrechnung-zugferd",
+      "package": "business-de",
+      "path": "skills/business-de/xrechnung-zugferd",
+      "version": "",
+      "description": "Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X) compliant with EN 16931 and the UStG e-invoicing obligation (§14 UStG). Use when an agent must create, check, receive, convert or store e-invoices for B2B/B2G flows, decide whether a document is a valid e-invoice, pick the right profile, or set up a GoBD-compliant retention pipeline. Not for PDF-only invoices or non-German jurisdictions.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
       "id": "work-untill-i-die",
       "name": "work-untill-i-die",
       "package": "core",
       "path": "skills/core/work-untill-i-die",
       "version": "1.4.0",
-      "description": "Long-horizon, checkpointed, self-correcting execution mode for engineering agents.",
+      "description": "Force a long-horizon, checkpointed, self-correcting execution loop that keeps building, testing, fixing, reviewing, and continuing until the task is genuinely complete or a real hard blocker exists.",
       "has_scripts": false,
       "has_references": false
     },
@@ -17,9 +217,109 @@
       "package": "curated",
       "path": "skills/curated/cursor-cli",
       "version": "2.1.0",
-      "description": "Guide for Cursor CLI (Agent) installation, commands, CI mode, and automation.",
+      "description": "Use when automating or invoking Cursor CLI (agent/cursor-agent) for non-interactive tasks, CI pipelines, or multi-agent delegation.",
       "has_scripts": false,
       "has_references": false
+    },
+    {
+      "id": "acceptance-harness",
+      "name": "acceptance-harness",
+      "package": "engineering",
+      "path": "skills/engineering/acceptance-harness",
+      "version": "",
+      "description": "Design acceptance scenarios with PASS/FAIL/BLOCKED semantics, collect per-scenario evidence, and inject faults to prove resilience. Use when defining what 'done' means, writing acceptance criteria, or proving failure recovery.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "foundation-v2-conformance",
+      "name": "foundation-v2-conformance",
+      "package": "engineering",
+      "path": "skills/engineering/foundation-v2-conformance",
+      "version": "",
+      "description": "Enforce correct usage of the Foundation v2 UI packages: token-only styling, named imports, no bypass of abstraction layers, tracked workaround markers, and fresh-consumer tests that fail when a consumer drifts. Use when a UI component is built outside the design system, imports a raw token, bypasses a wrapper, or a fresh-consumer test starts to fail.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "honest-status",
+      "name": "honest-status",
+      "package": "engineering",
+      "path": "skills/engineering/honest-status",
+      "version": "",
+      "description": "Writing a STATUS.md that stays true: separates done/verified/in-progress/blocked, detects false-done claims, records evidence pointers, and writes handoff notes so the next agent does not repeat work. Use when asked to report status, write a handoff, audit a STATUS.md, or decide whether a task is really finished.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "long-test-discipline",
+      "name": "long-test-discipline",
+      "package": "engineering",
+      "path": "skills/engineering/long-test-discipline",
+      "version": "",
+      "description": "Runs long-running tests on a shared host: schedules them in the foreground with timeout wrappers, captures structured logs, enforces resource limits, handles flakes with deterministic reruns, and reports pass/fail with evidence. Use when a test takes minutes, needs a background worker, or fails intermittently.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "module-contract-first",
+      "name": "module-contract-first",
+      "package": "engineering",
+      "path": "skills/engineering/module-contract-first",
+      "version": "",
+      "description": "Designs and enforces module contracts in one working tree: public API surface, versioned schemas, drift tests against reference snapshots, and boundary rules between sibling modules. Use when defining a new module's public API, reviewing a breaking change, or diagnosing cross-module breakage in a shared tree.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "outbox-idempotency",
+      "name": "outbox-idempotency",
+      "package": "engineering",
+      "path": "skills/engineering/outbox-idempotency",
+      "version": "",
+      "description": "Transactional outbox pattern for reliable event delivery: idempotency keys, ordered replay, poison-message handling, and leak tests that catch duplicates or lost events. Use when adding event-driven integrations (webhooks, CDC, message bus), introducing an outbox table or idempotency_key column, or investigating 'event delivered twice' / 'event never arrived' incidents.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "pg-rls-multitenant",
+      "name": "pg-rls-multitenant",
+      "package": "engineering",
+      "path": "skills/engineering/pg-rls-multitenant",
+      "version": "",
+      "description": "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing tenant_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "playwright-a11y-e2e",
+      "name": "playwright-a11y-e2e",
+      "package": "engineering",
+      "path": "skills/engineering/playwright-a11y-e2e",
+      "version": "",
+      "description": "End-to-end browser tests with Playwright and axe-core: axe accessibility scans, keyboard-only navigation checks, responsive breakpoint checks, and stable-selector rules. Use when writing or reviewing E2E tests, when an axe assertion fails, when a keyboard path is unreachable, or when a selector breaks after a refactor.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "problem-json-contracts",
+      "name": "problem-json-contracts",
+      "package": "engineering",
+      "path": "skills/engineering/problem-json-contracts",
+      "version": "",
+      "description": "RFC 9457 problem+json error contracts for Ottili APIs: error catalogue, retry semantics, versioned schemas, and validators that fail on malformed or non-idempotent error responses. Use when designing an HTTP API endpoint that returns errors, adding an error code, or investigating 'client cannot parse the error' / 'retry loop hammered us' incidents.",
+      "has_scripts": true,
+      "has_references": true
+    },
+    {
+      "id": "shared-tree-git",
+      "name": "shared-tree-git",
+      "package": "engineering",
+      "path": "skills/engineering/shared-tree-git",
+      "version": "",
+      "description": "Operates a shared git working tree where many agents commit concurrently: commits by path with the task-id prefix, never switches/resets/stashes, handles index.lock recovery, and diagnoses and repairs divergence without touching other agents' files. Use when committing in a multi-agent tree, hitting index.lock, or verifying commit isolation.",
+      "has_scripts": true,
+      "has_references": true
     }
   ]
 }
