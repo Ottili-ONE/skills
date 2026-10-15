@@ -252,7 +252,10 @@ def validate(path: Path, config: dict) -> dict:
         # seamless-engineering/datev-extf src/extf.ts automaticAccounts.
         bu = cells[8]
         am_set = AUTOMATIC_ACCOUNTS.get(skr, set())
-        if account in am_set and bu and bu != "40":
+        # An AM account's BU-Schlüssel must be "40" (the AM default). An
+        # empty cell is wrong too -- earlier drafts only flagged a non-empty
+        # wrong value, so a missing BU on an AM account sailed through.
+        if account in am_set and bu != "40":
             add(findings, "bu-on-automatic-account", "error", line_no, field=9,
                 value=bu, params={"account": account, "skr": skr})
         # USt-Schlüssel (col 97, 1-based): mandatory for every booking line

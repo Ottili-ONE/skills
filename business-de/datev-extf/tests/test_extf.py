@@ -55,7 +55,7 @@ def test_build_stapel_validates(tmp_path):
     assert code == 0
     data = json.loads(out)
     assert data["ok"] is True
-    assert data["checked_lines"] == 3  # header + heading + 2 bookings
+    assert data["checked_lines"] == 4  # header + heading + 2 bookings
 
 
 def test_dot_decimal_amount_is_error(tmp_path):
@@ -136,3 +136,66 @@ def test_header_dates_out_of_wj(tmp_path):
     assert code == 1
     data = json.loads(out)
     assert any(e["code"] == "header-beyond-wj" for e in data["errors"])
+
+
+def _build_skr04_stapel(tmp_path):
+    """Build a valid SKR 04 stapel via build_stapel, then swap the account
+    for an Automatikkonto of SKR 04 (4120)."""
+    out = tmp_path / "stapel.csv"
+    code, _, _ = run("build_stapel.py", "--config", str(CONFIG),
+                     "--berater", "29098", "--mandant", "55003",
+                     "--wj-start", "20260101", "--from", "20260601",
+                     "--to", "20260630", "--label", "Shop", "--skr", "04",
+                     "--booking", "1200,S,4120,0206,19,Netto+19%",
+                     "--output", str(out))
+    assert code == 0
+    return out
+
+
+def test_skr_aware_automatic_account_check(tmp_path):
+    """The Automatikkonto rule is SKR-aware. Earlier drafts only ever
+    checked SKR 03, so an AM account in SKR 04 sailed through. Verified
+    2026-10-08 against seamless-engineering/datev-extf src/extf.ts
+    automaticAccounts (SKR 04 AM set: 4120, 4125, 4300, 4310, 4315, 4336,
+    4338, 4400, 4449)."""
+    out = _build_skr04_stapel(tmp_path)
+    code, out_json, _ = run("validate_extf.py", str(out), "--config", str(CONFIG))
+    assert code == 1, out_json
+    data = json.loads(out_json)
+    assert any(e["code"] == "bu-on-automatic-account" for e in data["errors"]), data["errors"]
+
+
+def test_taxkey_missing_is_error(tmp_path):
+    """A booking line without a Steuerschlüssel at column 97 fails."""
+    out = tmp_path / "bad.csv"
+    code, _, _ = run("build_stapel.py", "--config", str(CONFIG),
+                     "--berater", "29098", "--mandant", "55003",
+                     "--wj-start", "20260101", "--from", "20260601",
+                     "--to", "20260630", "--label", "Shop", "--skr", "03",
+                     "--booking", "1200,S,4000,0206,,Netto",
+                     "--output", str(out))
+    assert code == 0
+    code, out_json, _ = run("validate_extf.py", str(out), "--config", str(CONFIG))
+    assert code == 1, out_json
+    data = json.loads(out_json)
+    assert any(e["code"] == "taxkey-missing" for e in data["errors"]), data["errors"]
+
+
+def test_build_stapel_zero_pads_taxkey(tmp_path):
+    """build_stapel normalises the Steuerschlüssel to two digits, so "7"
+    and "07" both produce a valid row."""
+    out = tmp_path / "stapel.csv"
+    code, _, _ = run("build_stapel.py", "--config", str(CONFIG),
+                     "--berater", "29098", "--mandant", "55003",
+                     "--wj-start", "20260101", "--from", "20260601",
+                     "--to", "20260630", "--label", "Shop", "--skr", "03",
+                     "--booking", "500,S,4200,0306,7,Netto+7%",
+                     "--output", str(out))
+    assert code == 0
+    code, out, _ = run("validate_extf.py", str(out), "--config", str(CONFIG))
+    assert code == 0, out
+    import sys
+    sys.path.insert(0, str(SCRIPTS))
+    from build_stapel import build_booking
+    row = build_booking("500,S,4200,0306,7,Netto+7%".split(","), "03")
+    assert row[96] == "07", row[96]

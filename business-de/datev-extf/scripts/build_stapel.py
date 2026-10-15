@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
 from common import load_config  # noqa: E402
+from heading_row import HEADING_ROW  # noqa: E402
 
 DELIMITER = ";"
 HEADER_FIELDS = 31
@@ -75,6 +76,11 @@ def build_booking(parts: list, skr: str) -> list:
         raise SystemExit("booking must be amount,side,account,belegdatum,"
                          "taxkey,text[,costcenter]")
     amount, side, account, beleg, taxkey, text = parts[:6]
+    # DATEV's Prüfprogramm expects the Steuerschlüssel as a zero-padded
+    # two-digit value (07, 19, 00). Normalising here means "7" and "07" both
+    # produce a valid row instead of failing at validation time. An empty
+    # key is left empty so the validator can report taxkey-missing.
+    taxkey = taxkey.strip().zfill(2) if taxkey.strip() else ""
     costcenter = parts[6] if len(parts) > 6 else ""
 
     row = [""] * BOOKING_COLUMNS
@@ -108,10 +114,18 @@ def main() -> int:
                     help="amount,side,account,belegdatum(TTMM),taxkey,text[,costcenter]")
     ap.add_argument("--output", required=True)
     ap.add_argument("--config", default="config/versions.json")
+    ap.add_argument("--no-heading", action="store_true",
+                    help="omit the 125-column heading row (line 2)")
     args = ap.parse_args()
 
     pinned = load_config(args.config)["datev-extf"]
     rows = [build_header(args, pinned)]
+    if not args.no_heading:
+        # Line 2 of a Buchungsstapel is the 125-column heading row, copied
+        # verbatim from DATEV's Musterdaten (Formatversion 13). Omitting it
+        # makes the validator treat the first booking row as the heading and
+        # silently skip that booking's checks.
+        rows.append(list(HEADING_ROW))
     for b in args.booking:
         rows.append(build_booking(b.split(","), args.skr))
 
