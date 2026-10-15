@@ -12,7 +12,7 @@ noted at the end.
 |---|---|---|---|---|
 | 1 | GitHub — webhooks docs | https://docs.github.com/webhooks | 200 | Authoritative signature scheme: `X-Hub-Signature-256`, HMAC-SHA256 over the raw body. Retrieved 2026-10-09. |
 | 2 | GitHub — webhook events and payloads | https://docs.github.com/webhooks/webhook-events-and-payloads | 200 | Delivery id and event id contract. Retrieved 2026-10-09. |
-| 3 | Stripe — webhooks docs | https://stripe.com/docs/webhooks | 200 | `Stripe-Signature` header with `t=<ts>,v1=<hex>`; 5-minute replay window. Retrieved 2026-10-09. |
+| 3 | Stripe — webhooks docs | https://docs.stripe.com/webhooks | 200 | `Stripe-Signature` header with `t=<ts>,v1=<hex>`; 5-minute replay window. Retrieved 2026-10-09. `stripe.com/docs/webhooks` 301-redirects to this URL. |
 | 4 | Twilio — webhooks docs | https://www.twilio.com/docs/usage/webhooks | 200 | Webhook delivery contract. Retrieved 2026-10-09. |
 | 5 | Twilio — security (signature header) | https://www.twilio.com/docs/usage/security | 200 | Confirms the `X-Twilio-Signature` header exists. The exact HMAC input (URL + body + params) is **unverified** at this retrieval — the docs page did not expose the algorithm text to a plain-text crawl. Treat Twilio as unverified. Retrieved 2026-10-09. |
 | 6 | PayPal — API webhooks v1 | https://developer.paypal.com/docs/api/webhooks/v1 | 200 | Webhook API entry point. Retrieved 2026-10-09. |

@@ -92,7 +92,7 @@
       "zero": 0,
       "law": "UStG §12 Abs. 1/2, §4 Nr. 1, §6",
       "verified": "2026-10-15",
-      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "Rates valid for 2026. EU ViDA may change them from 2027-01-01 (secondary source, verify). Read from this file; never hardcode in scripts.",
       "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
     },
@@ -109,7 +109,7 @@
       "unit": "EUR",
       "law": "UStG §19 Abs. 1",
       "verified": "2026-10-15",
-      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "Turnover threshold for the previous calendar year. Re-verify before each build; unchanged for years.",
       "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
     },
@@ -123,7 +123,7 @@
     "oss": {
       "law": "UStG §18",
       "verified": "2026-10-15",
-      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "OSS for EU distance sales of goods and services. EU ViDA changes planned from 2027-01-01 (secondary source, verify).",
       "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
     },
@@ -131,7 +131,7 @@
       "law": "UStG §4 Abs. 3",
       "rule": "line-level 0.5-up, then per tax key",
       "verified": "2026-10-15",
-      "source": "https://www.gesetze-im-internet.de/uStg/",
+      "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "Highest-error-rate area in German VAT. Never round the total before the tax split.",
       "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
     }

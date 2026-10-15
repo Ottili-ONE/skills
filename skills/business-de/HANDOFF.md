@@ -14,7 +14,7 @@ What to re-verify, when, and what to build next. Owner: `skills/business-de/**`
 | On webhook provider change | Signature scheme, replay window | `webhooks-safe/SOURCES.md` |
 
 Known flaky URLs (403/404 at 2026-10-09 re-check): `gesetze-im-internet.de/ao/`,
-`gesetze-im-internet.de/uStg/`, `iso20022.org/...message-definitons`,
+`gesetze-im-internet.de/ustg/`, `iso20022.org/...message-definitons`,
 `swift.com/standards`, `akretion.github.io/factur-x/`, `bundesbank.de/...iban`.
 Corroborate those facts with the mirrors already recorded before an audit.
 

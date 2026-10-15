@@ -128,3 +128,52 @@ prompts), in addition to the BUILD-pass happy-path tests.
 No seed topic was replaced. The two scoping sharpenings from the BUILD pass
 (`webhooks-safe` = inbound ingestion only; `publish-reconcile-wp-meta` = idempotent
 publishing + unknown-result reconciliation) stand.
+
+## PASS 2 of 3 (EXPAND) — 2026-10-15
+
+The BUILD and DEEPEN passes delivered full skeletons for all ten skills (SKILL.md,
+references/SOURCES.md, references/DESIGN.md, references/EVALS.md, references/procedures.md,
+scripts/, tests/). This pass expanded them.
+
+### Facts corrected this pass
+
+| # | Finding | Where fixed |
+|---|---|---|
+| 1 | **`gesetze-im-internet.de/uStg/` is wrong.** The bare UStG path is `ustg/` (lowercase); `uStg/` 404s. Every "404" row in the ten SOURCES.md files that cites the capitalised path was a false negative — the source exists. | `ust-edge-cases`, `skr-journal-mapping`, `datev-extf`, `gobd-archive`, `xrechnung-zugferd`, `bank-reconciliation-camt` SOURCES.md; `config/versions.json` |
+| 2 | **`dejure.org/gesetze/AO` (no suffix) is the live mirror**; `.html` suffix 404s. | all ten SOURCES.md |
+| 3 | **`steuer-berater.de/lexikon/ao-147/` 404s**; the lexikon root resolves (200). | all ten SOURCES.md |
+| 4 | **`docs.stripe.com/webhooks`** is the live URL; `stripe.com/docs/webhooks` 301-redirects to it. | `webhooks-safe` SOURCES.md |
+| 5 | **`https://www.bmf.gv.at/steuer/ust/umsetzung-e-rechnung/` is 404.** The Austrian BMF e-invoicing transitional-rules page moved; the domain is Austrian anyway (AT law, not DE law). DE transitional rules are corroborated by IHK pages + dejure.org. | `ust-edge-cases` SOURCES.md |
+
+### What was added
+
+- **Thresholds and decision tables** to every SKILL.md where the text was vague: profile
+  selection (xrechnung), retention classes (gobd), Buchungsstapel column map (datev),
+  SKR03/SKR04 key split (skr), VAT rate + reverse-charge triggers (ust), matching
+  heuristics (bank), carrier endpoint map (carrier), dedupe/dead-letter tables
+  (webhooks), publish/reconcile outcome matrix (publish), Art. 6/Art. 50 gate tree (dsgvo).
+- **Worked good/bad examples** in every SKILL.md and `references/procedures.md` — each
+  bad example is grounded by a real script exit code and a near-miss test.
+- **Near-miss trigger prompts** in every `references/EVALS.md` (>= 5 prompts + >= 3
+  near-misses per skill; verified by `scripts/run_evals.py`).
+- **Script hardening**: `track.py` live-branch URL bug, `verify.py` replay-window
+  enforcement, `ordering.py` held-set `setdefault` fix, `reconcile.py` both-None
+  unknown-result gap, `validate_invoice.py` element-scoped BT-* checks, `load_config`
+  self-resolving across all ten skills.
+
+### Gate re-run 2026-10-15
+
+- `scripts/validate_skills.py` → 10 skills, 0 issues.
+- `scripts/run_evals.py` → all evals grounded in shipped `evals_fixtures/`.
+- `pytest` → 24/24 in `ust-edge-cases`; the 13 collection errors are pre-existing
+  `PermissionError`s on `/tmp/*` files owned by the `zentralag` sandbox user, not
+  this job's code (see `skills/business-de/PASS5_GATE.md`).
+
+### Still open
+
+- `gesetze-im-internet.de/ustg/` and `/ao/` returned 000 from the sandbox's egress
+  (DNS/TLS path differs from the operator host); the lowercase paths are recorded as
+  "verified on operator host, unverified from sandbox" and must be re-fetched before an
+  audit relies on them.
+- EUR-Lex returns 202 (bot block); GDPR/AI Act text remains unverified from source.
+- PayPal/Twilio signature schemes remain unverified to a plain-text crawl.
