@@ -41,6 +41,9 @@ def main() -> int:
     ap.add_argument("--write-state", action="store_true",
                     help="actually rewrite the state file (opt-in; "
                          "the default is read-only)")
+    ap.add_argument("--init-state", action="store_true",
+                    help="seed a brand-new state file when none exists yet "
+                         "(first run only; implies --write-state)")
     args = ap.parse_args()
 
     archive = Path(args.archive)
@@ -52,12 +55,27 @@ def main() -> int:
         return 2
 
     prev = {}
+    first_run = not state_path.exists()
     if state_path.exists():
         try:
             prev = json.loads(state_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as e:
             print(json.dumps({"ok": False, "error": f"corrupt state file: {e}"}))
             return 2
+    elif not args.init_state:
+        # Read-only by default: a missing state file is a *result*, not an
+        # error -- it means no baseline has been recorded yet. Tell the
+        # caller how to create one instead of silently writing one.
+        print(json.dumps({
+            "ok": True,
+            "checked": len(current),
+            "state": "missing",
+            "state_path": str(state_path),
+            "next": "re-run with --init-state to record the baseline",
+            "violations": [],
+            "new_files": sorted(current),
+        }, indent=2))
+        return 0
 
     ok = True
     violations = []
@@ -78,7 +96,7 @@ def main() -> int:
         ok = False
         violations.append(f"new files under --strict: {new_files}")
 
-    if args.write_state:
+    if args.write_state or (args.init_state and first_run):
         state_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
     print(json.dumps({
         "ok": ok,
@@ -86,7 +104,7 @@ def main() -> int:
         "violations": violations,
         "new_files": new_files,
         "state": str(state_path),
-        "state_written": bool(args.write_state),
+        "state_written": bool(args.write_state or (args.init_state and first_run)),
     }, indent=2))
     return 0 if ok else 1
 
