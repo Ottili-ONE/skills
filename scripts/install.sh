@@ -181,7 +181,7 @@ for name in "${SKILLS[@]}"; do
   fi
 
   if [[ $DRY_RUN -eq 1 ]]; then
-    echo "dry-run: $LINK=1 ? link : copy  $src  ->  $dest"
+    if [[ $LINK -eq 1 ]]; then echo "dry-run: link  $src  ->  $dest"; else echo "dry-run: copy  $src  ->  $dest"; fi
     continue
   fi
 
