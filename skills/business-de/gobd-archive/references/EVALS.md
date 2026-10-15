@@ -173,13 +173,13 @@ python3 scripts/verfahrensdokumentation.py --check evals_fixtures/vd_flat.json
 # {"ok": false, "missing_sections": ["system", "medium", "retention",
 #  "export", "access", "backup"], "checked": 0}
 
-# 7e. immutability state, hash mismatch -> exit 1
+# 7e. immutability state, deleted file -> exit 1
 python3 scripts/immutability_check.py --archive evals_fixtures/sample_archive --state evals_fixtures/state_bad.json
-# {"ok": false, "violations": ["files (deleted)", "a.txt"], "new_files": ["a.txt"]}
+# {"ok": false, "violations": ["files (deleted) (deleted)"], "new_files": ["a.txt"]}
 
-# 7f. immutability state, matching hash -> exit 0
+# 7f. immutability state, matching hash -> exit 0 (read-only, state untouched)
 python3 scripts/immutability_check.py --archive evals_fixtures/sample_archive --state evals_fixtures/state_ok.json
-# {"ok": true, "violations": [], "checked": 1}
+# {"ok": true, "violations": [], "new_files": [], "checked": 1, "wrote_state": false}
 ```
 
 The purge record itself is a document: keep it until the retention end of the
