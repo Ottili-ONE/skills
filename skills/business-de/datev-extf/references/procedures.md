@@ -132,6 +132,46 @@ count. Verified 2026-10-09 against seamless-engineering/datev-extf
 | BU-Schlüssel on Automatikkonto | col 9 populated on a ledger account | remove the BU-Schlüssel |
 | Steuerschlüssel at the wrong column | key written at col 125 instead of col 97 | write it at index 96 (column 97) |
 
+**Error-code contract.** `scripts/validate_extf.py` emits these codes; the
+table above is the human-readable version. If a code appears that is not
+listed here, re-run the validator and read the code before inventing a fix —
+the list is the contract, not memory. Verified 2026-10-15 by grepping the
+`add(findings, ...)` calls in `scripts/validate_extf.py`.
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `kennzeichen` | error | header field 1 is not `EXTF` |
+| `versionsnummer` | error | header field 2 does not match the pinned version |
+| `formatkategorie` | error | header field 3 is not `21` |
+| `formatname` | error | header field 4 is not `Buchungsstapel` |
+| `formatversion` | error | header field 5 is not `13` |
+| `erzeugt-am-format` | error | header field 6 is not 17 digits YYYYMMDDHHMMSS000 |
+| `festschreibung` | error | header field 21 is not `1` |
+| `header-berater` | error | Beraternummer is not 4-7 digits or < 1001 |
+| `header-mandant` | error | Mandantennummer is not 1-5 digits or < 1 |
+| `header-currency` | error | WKZ (field 22) is not a 3-letter code |
+| `header-date` | error | Datum vom/bis (fields 15-16) is not YYYYMMDD |
+| `header-dates-order` | error | Datum vom is after Datum bis |
+| `header-dates-year` | error | Datum vom/bis year differs from the WJ year |
+| `header-beyond-wj` | error | Datum bis is after the WJ end |
+| `header-before-wj` | error | Datum vom is before the WJ start |
+| `header-too-short` | error | fewer than 31 header fields |
+| `header-skl-missing` | warning | Sachkontenlaenge (field 14) empty |
+| `header-skl` | error | Sachkontenlaenge not in 4-8 |
+| `header-label` | warning | Bezeichnung (field 17) longer than 30 chars |
+| `header-skr` | warning | Sachkontenrahmen (field 27) not `03`/`04` |
+| `heading-column-count` | warning | line 2 is not 125 columns |
+| `no-headings` | warning | line 2 is blank |
+| `booking-column-count` | error | a booking row is not exactly 125 columns |
+| `amount-dot-decimal` | error | col 1 uses a dot decimal separator |
+| `side-invalid` | error | col 2 is not `S` or `H` |
+| `belegdatum-format` | error | col 10 is not exactly 4 digits TTMM |
+| `belegdatum-impossible` | warning | col 10 is 4 digits that are not a real calendar day |
+| `account-too-long` | warning | col 7 is longer than Sachkontenlaenge |
+| `bu-on-automatic-account` | error | col 9 is not `40` on an Automatikkonto |
+| `taxkey-invalid` | error | col 97 holds a value outside the SKR tax-key set |
+| `taxkey-missing` | error | col 97 is empty on a non-blank booking row |
+
 ## 6. Generate test fixtures
 
 Run `scripts/fixture_generator.py --out-dir ./fixtures`. Produces:

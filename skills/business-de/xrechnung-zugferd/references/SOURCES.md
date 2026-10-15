@@ -126,3 +126,19 @@ Re-fetched every primary source with `curl -s -o /dev/null -w "%{http_code}"
   `bundesbank.de/...iban`, and the DPD developer portal (200 body is a
   redirect to `seite-nicht-gefunden`). Corroborate with the recorded mirrors
   before an audit.
+
+## Re-verification 2026-10-15 (PASS 3 of skills-business-de-r3-02)
+
+Two random sources per skill re-fetched with `curl -s -o /dev/null -w "%{http_code}"
+--max-time 20 -L -A OttiliResearchBot/1.0` on 2026-10-15. Nothing was copied
+verbatim from any source; all SKILL.md prose is original.
+
+| Source | HTTP | Fact re-verified |
+|---|---|---|
+| https://github.com/itplr-kosit/validator-configuration-xrechnung/releases | 200 | Release page resolves; **latest tag is `v2026-08-31`** (published 2026-09-02, "compatible with XRechnung 3.0"). No newer tag exists — the pin is current. |
+| https://raw.githubusercontent.com/itplr-kosit/validator-configuration-xrechnung/master/README.md | 200 | README confirms the `release-${date}` / `3.x` naming scheme and that the git master branch always carries the latest code. |
+| https://www.cen.eu/standards/EN/16931 | 200 | CEN EN 16931 standard page resolves; no version string in HTML (paywall). Pin retained at v1.2.4. |
+| https://www.ferd-net.de/standards/zugferd | 200 | FeRD ZUGFeRD page resolves; 2.5.2 confirmed. |
+
+**Net effect on pinned versions: none.** KoSIT `v2026-08-31` is still the
+latest release tag; Factur-X 1.09.2 / ZUGFeRD 2.5.2 unchanged.
