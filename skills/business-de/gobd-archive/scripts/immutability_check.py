@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Verify a GoBD archive has no in-place modifications (hash-chain check).
 
+Read-only by default. Pass --write-state to persist the current snapshot back
+to the state file (used to *initialise* a chain, never during a check).
+
 Usage:
     python3 immutability_check.py --archive ./archive --state ./state.json
-    python3 immutability_check.py --archive ./archive --state ./state.json --strict
+    python3 immutability_check.py --archive ./archive --state ./state.json --write-state
+    python3 immutability_check.py --archive ./archive --strict
 """
 import argparse
 import hashlib
@@ -25,6 +29,28 @@ def scan(archive: Path) -> dict:
     return out
 
 
+def check(current: dict, prev: dict, strict: bool) -> tuple[bool, list[str], list[str]]:
+    """Compare the current snapshot to the previous one. Returns (ok, violations, new_files)."""
+    ok = True
+    violations = []
+    new_files = []
+    for name, digest in current.items():
+        if name in prev:
+            if prev[name] != digest:
+                ok = False
+                violations.append(name)
+        else:
+            new_files.append(name)
+    for name in prev:
+        if name not in current:
+            ok = False
+            violations.append(f"{name} (deleted)")
+    if strict and new_files:
+        ok = False
+        violations.append(f"new files under --strict: {new_files}")
+    return ok, violations, new_files
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--archive", required=True)
@@ -32,6 +58,9 @@ def main() -> int:
     ap.add_argument("--strict", action="store_true",
                     help="fail if any file is new (append-only is expected, "
                          "not required for a first run)")
+    ap.add_argument("--write-state", action="store_true",
+                    help="persist the current snapshot to --state (initialise "
+                         "a chain only; never during a check)")
     args = ap.parse_args()
 
     archive = Path(args.archive)
@@ -50,32 +79,18 @@ def main() -> int:
             print(json.dumps({"ok": False, "error": f"corrupt state file: {e}"}))
             return 2
 
-    ok = True
-    violations = []
-    new_files = []
-    for name, digest in current.items():
-        if name in prev:
-            if prev[name] != digest:
-                ok = False
-                violations.append(name)
-        else:
-            new_files.append(name)
-    for name in prev:
-        if name not in current:
-            ok = False
-            violations.append(f"{name} (deleted)")
+    ok, violations, new_files = check(current, prev, args.strict)
 
-    if args.strict and new_files:
-        ok = False
-        violations.append(f"new files under --strict: {new_files}")
+    if args.write_state:
+        state_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
 
-    state_path.write_text(json.dumps(current, indent=2), encoding="utf-8")
     print(json.dumps({
         "ok": ok,
         "checked": len(current),
         "violations": violations,
         "new_files": new_files,
         "state": str(state_path),
+        "wrote_state": args.write_state,
     }, indent=2))
     return 0 if ok else 1
 

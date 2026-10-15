@@ -1,9 +1,8 @@
 {
   "datev-extf": {
-    "extf": {
-      "versionsnummer": "700",
-      "formatversion": "13",
-      "note": "DATEV EXTF 700/13. Verified 2026-10-09 against seamless-engineering/datev-extf (EXTF_AS_OF 2026-09-25) and mrtyldr v13 exporter. DATEV does not publish a public version page; mark unverified until the Prüfprogramm confirms.",
+    "extf_schema": {
+      "version": "700/13",
+      "note": "DATEV EXTF Versionsnummer 700, Formatversion 13. Verified 2026-10-09 against seamless-engineering/datev-extf (EXTF_AS_OF 2026-09-25) and mrtyldr v13 exporter. DATEV does not publish a public version page; mark unverified until the Prüfprogramm confirms.",
       "url": "https://www.datev.de/",
       "reverify": "weekly"
     },
