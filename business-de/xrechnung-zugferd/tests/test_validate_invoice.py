@@ -239,3 +239,35 @@ def test_future_date_injected_via_arg(tmp_path):
            "</CrossIndustryInvoice>")
     fails = vi.bt_checks(xml, "MINIMUM", today=_dt.date(2026, 1, 1))
     assert any("BT-14" in f and "future" in f for f in fails), fails
+
+
+def test_profile_selector_fails_closed():
+    """An unrecognised context x data x recipient triple is a hard error,
+    never a silent COMFORT fallback."""
+    import subprocess, sys
+    SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "profile_selector.py"
+    CONFIG = Path(__file__).resolve().parent.parent.parent.parent / "business-de" / "config" / "versions.json"
+    r = subprocess.run([sys.executable, str(SCRIPT), "--context", "b2b",
+                        "--data", "full", "--recipient", "telefax",
+                        "--config", str(CONFIG)], capture_output=True, text=True)
+    assert r.returncode == 2
+    assert "unrecognised context" in r.stderr
+    assert "COMFORT" not in (r.stdout + r.stderr)
+
+
+def test_profile_selector_lists_missing_fields():
+    """A MINIMUM profile lists every BT-* that COMFORT requires but
+    MINIMUM does not. BT-14 and BT-20 are mandatory in every profile, so
+    they must never appear in missing_fields."""
+    import subprocess, sys
+    SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "profile_selector.py"
+    CONFIG = Path(__file__).resolve().parent.parent.parent.parent / "business-de" / "config" / "versions.json"
+    r = subprocess.run([sys.executable, str(SCRIPT), "--context", "b2c",
+                        "--data", "minimal", "--recipient", "any",
+                        "--config", str(CONFIG)], capture_output=True, text=True)
+    assert r.returncode == 0
+    out = json.loads(r.stdout)
+    assert out["recommended_profile"] == "MINIMUM"
+    joined = " ".join(out["missing_fields"])
+    assert "BT-14" not in joined
+    assert "BT-20" not in joined

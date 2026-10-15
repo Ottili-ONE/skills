@@ -27,16 +27,35 @@ def retention_end(invoice_year: int) -> str:
     return f"{invoice_year + 8}-12-31"
 
 
+def _year_from_name(path: Path, fallback: int) -> int:
+    """Best-effort invoice-year extraction from the file name.
+
+    A 4-digit year anywhere in the stem is taken as the invoice year; the
+    first such match wins. Without one, fall back to the pinned spec's
+    effective year so the retention end is still computed.
+    """
+    import re
+    m = re.search(r"(19|20)\d{2}", path.stem)
+    if m:
+        return int(m.group(0))
+    return fallback
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--archive", required=True, help="archive directory")
     ap.add_argument("--config", default="config/versions.json")
-    ap.add_argument("--invoice-year", type=int, default=2026)
+    ap.add_argument("--invoice-year", type=int, default=None,
+                    help="retention year for every file (default: read each "
+                         "file's year from its name, fall back to the "
+                         "pinned spec effective year)")
+    ap.add_argument("--retention-end", action="store_true",
+                    help="also print the computed retention end date")
     args = ap.parse_args()
 
     archive = Path(args.archive)
     pinned = load_config(Path(args.config))["xrechnung-zugferd"]
-    end = retention_end(args.invoice_year)
+    fallback_year = int(pinned["en16931"]["effective"][:4])
 
     files = sorted(p for p in archive.iterdir() if p.is_file())
     report = []
@@ -51,11 +70,12 @@ def main() -> int:
         else:
             parses = False
         ok = ok and parses
+        year = args.invoice_year or _year_from_name(f, fallback_year)
         report.append({"file": str(f), "sha256": digest, "parses": parses,
-                       "retention_end": end})
+                       "invoice_year": year,
+                       "retention_end": retention_end(year)})
     result = {"ok": ok, "pinned_spec": pinned["en16931"]["version"],
-              "retention_end": end, "files": report,
-              "re_verification": "2026-10-08"}
+              "files": report, "re_verification": "2026-10-15"}
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if ok else 1
 

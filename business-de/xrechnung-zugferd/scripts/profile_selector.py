@@ -12,12 +12,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
 from common import load_config  # noqa: E402
 
+# Context x data x recipient capability -> (profile, rationale).
+# Fails closed: an unrecognised triple is a hard error, never a silent
+# COMFORT fallback. Verified 2026-10-09 against the FERD profile model.
 PROFILES = {
     ("b2b", "full", "factur-x"): ("COMFORT", "EN 16931 default for B2B"),
     ("b2b", "basic", "zugferd-basic"): ("BASIC", "B2B with simplified line items"),
+    ("b2b", "full", "extended"): ("EXTENDED", "sector extensions required"),
     ("b2g", "full", "xrechnung"): ("COMFORT", "B2G public tender"),
     ("b2g", "full", "extended"): ("EXTENDED", "B2G with sector extensions"),
-    ("b2b", "full", "extended"): ("EXTENDED", "sector extensions required"),
     ("b2c", "minimal", "any"): ("MINIMUM", "rarely an e-invoice"),
 }
 
@@ -28,14 +31,20 @@ def main() -> int:
                     choices=["b2b","b2g","b2c"], type=str.lower)
     ap.add_argument("--data", required=True,
                     choices=["full","basic","minimal"], type=str.lower)
-    ap.add_argument("--recipient", required=True,
-                    choices=["factur-x","zugferd-basic","xrechnung","extended","any"], type=str.lower)
+    # --recipient is a free string: a recipient capability that is not in the
+    # known set must still be a hard error (fail closed), and argparse's
+    # choices= would turn that into a usage message before the check runs.
+    ap.add_argument("--recipient", required=True, type=str.lower)
     ap.add_argument("--config", default="config/versions.json")
     args = ap.parse_args()
 
     key = (args.context, args.data, args.recipient)
-    profile, rationale = PROFILES.get(
-        key, ("COMFORT", "default fallback"))
+    if key not in PROFILES:
+        print(json.dumps({"ok": False, "error": f"unrecognised context {key!r}; "
+                          f"choose from {sorted(PROFILES)}"}, indent=2,
+                         ensure_ascii=False), file=sys.stderr)
+        return 2
+    profile, rationale = PROFILES[key]
     pinned = load_config(Path(args.config))["xrechnung-zugferd"]
 
     # "missing_fields" = the BT-* that a COMFORT/EXTENDED invoice needs but this
