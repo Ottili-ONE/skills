@@ -51,9 +51,9 @@
 
 | Script | Purpose |
 |---|---|
-| `scripts/profile_selector.py` | Context → profile; fails closed on unrecognised input. |
-| `scripts/validate_invoice.py` | Offline BT-* validation scoped to element text; exits non-zero on failure. |
-| `scripts/retention_check.py` | Verifies an archived invoice: original present, SHA-256 matches, retention end date computed, export test passed. |
+| `scripts/profile_selector.py` | Context → profile; fails closed (exit 2) on an unrecognised triple, never a silent COMFORT fallback. |
+| `scripts/validate_invoice.py` | Offline BT-* validation scoped to element text; exits non-zero on failure. BT-15 is `cbc:DeliveryDate` (not IssueDate); future dates on BT-14/BT-15/BT-17 are rejected. |
+| `scripts/retention_check.py` | Verifies an archived invoice: original present, SHA-256 matches, retention end date computed per file. |
 
 ## Five eval prompts
 

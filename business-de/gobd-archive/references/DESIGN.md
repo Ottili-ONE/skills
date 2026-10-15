@@ -46,9 +46,9 @@
 | Script | Purpose |
 |---|---|
 | `scripts/retention_classify.py` | Classify a document and compute its retention end date. |
-| `scripts/immutability_check.py` | Verify append-only + hash-chaining; fail on in-place update. |
-| `scripts/audit_export.py` | Produce a chronological, checksummed export with a manifest. |
-| `scripts/purge_decision.py` | Decide whether a purge is permitted; exit non-zero when blocked. |
+| `scripts/immutability_check.py` | Verify append-only + hash-chaining; fail on in-place update. **Read-only by default** (`--init-state`/`--write-state` opt-in). |
+| `scripts/audit_export.py` | Produce a chronological, checksummed export with a manifest; `--verify` checks both directions. |
+| `scripts/purge_decision.py` | Decide whether a purge is permitted; exit non-zero when blocked. Accepts `--today` for deterministic decisions. |
 
 ## Five eval prompts
 

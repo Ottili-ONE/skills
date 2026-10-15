@@ -46,8 +46,8 @@
 | Script | Purpose |
 |---|---|
 | `scripts/heading_row.py` | Emit the 31-field header and the 125-column heading row. |
-| `scripts/build_stapel.py` | Build a Buchungsstapel from booking JSON. |
-| `scripts/validate_extf.py` | Validate an EXTF file; exits non-zero on any failure. |
+| `scripts/build_stapel.py` | Build a Buchungsstapel from booking specs; emits the heading row by default (`--no-heading` to omit). |
+| `scripts/validate_extf.py` | Validate an EXTF file; exits non-zero on any failure. SKR-aware Automatikkonto check; Steuerschlüssel validated at column 97. |
 | `scripts/fixture_generator.py` | Generate valid + broken test fixtures. |
 
 ## Five eval prompts
