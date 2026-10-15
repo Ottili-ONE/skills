@@ -34,6 +34,12 @@ AUTOMATIC_ACCOUNTS = {
     "04": {"4120", "4125", "4300", "4310", "4315", "4336", "4338", "4400", "4449"},
 }
 
+# Valid DATEV Steuerschlüssel (USt-Schlüssel, col 97). The full SKR 03/04
+# set is 00-99 plus a handful of special keys; a value outside this range is
+# not a Steuerschlüssel. Verified 2026-10-09 against
+# seamless-engineering/datev-extf src/columns.ts and the DATEV SK-Schlüssel.
+TAX_KEYS = {f"{i:02d}" for i in range(0, 100)}
+
 # 1-based field numbers that DATEV writes as quoted text.
 HEADER_TEXT_FIELDS = [1, 4, 8, 9, 10, 17, 18, 22, 27, 31]
 BOOKING_TEXT_FIELDS = [2, 3, 9, 11, 12, 14, 37, 38, 40, 120]
@@ -121,6 +127,7 @@ def validate(path: Path, config: dict) -> dict:
                       - timedelta(days=1))
     # Sachkontenlaenge (header field 14) bounds the account numbers in the rows.
     sachkontenlaenge = 4
+    skr = header[26] if len(header) >= 27 else "03"
     if len(header) >= 15:
         skl_raw = header[13] or ""
         if skl_raw == "":
@@ -239,10 +246,25 @@ def validate(path: Path, config: dict) -> dict:
             add(findings, "account-too-long", "warning", line_no, field=7,
                 value=account, params={"sachkontenlaenge": sachkontenlaenge})
         # Automatikkonto rule: BU-Schlüssel (col 9, 1-based) other than "40"
+        # on these is rejected or double-counted by DATEV. The check is
+        # SKR-aware: earlier drafts only ever looked at SKR 03, so an AM
+        # account in SKR 04 sailed through. Verified 2026-10-08 against
+        # seamless-engineering/datev-extf src/extf.ts automaticAccounts.
         bu = cells[8]
-        if account in AUTOMATIC_ACCOUNTS.get("03", set()) and bu and bu != "40":
+        am_set = AUTOMATIC_ACCOUNTS.get(skr, set())
+        if account in am_set and bu and bu != "40":
             add(findings, "bu-on-automatic-account", "error", line_no, field=9,
-                value=bu, params={"account": account})
+                value=bu, params={"account": account, "skr": skr})
+        # USt-Schlüssel (col 97, 1-based): mandatory for every booking line
+        # that carries a tax rate. Writing it at index 124 makes DATEV read
+        # it as "Abw. Skontokonto" and silently drop the tax key -- the
+        # import proceeds with no Steuerschlüssel. Verified 2026-10-09
+        # against seamless-engineering/datev-extf src/columns.ts.
+        taxkey = cells[96]
+        if taxkey and taxkey not in TAX_KEYS:
+            add(findings, "taxkey-invalid", "error", line_no, field=97, value=taxkey)
+        if not taxkey and side:
+            add(findings, "taxkey-missing", "error", line_no, field=97)
 
     errors = [f for f in findings if f["severity"] == "error"]
     return {
