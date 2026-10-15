@@ -11,13 +11,13 @@ Retrieval date: **2026-10-13** (this pass). Earlier entries retained below.
 | S3 | https://www.ferd-net.de | 200 | FERD publishes the ZUGFeRD / Factur-X specification and profile model. Primary source for the profile set (MINIMUM, BASIC WL, BASIC, COMFORT, EXTENDED). | re-fetched 2026-10-13 |
 | S4 | https://agentskills.io/specification | 200 | Agent Skills open standard: folder + SKILL.md with YAML front matter (name, description required; license, compatibility, metadata, allowed-tools optional); progressive disclosure; description <= 1024 chars; SKILL.md < 500 lines, body < ~5000 tokens. | re-fetched 2026-10-13 |
 
-**Conflict noted:** RESEARCH.md and R3_VERIFIED_FACTS.md cite a 2026-09-27 package page naming FacturX 1.09 / ZUGFeRD 2.5.2. The FERD spec page (S3) was not version-stamped on retrieval; the pinned versions in `config/versions.json` (Factur-X 1.0.11) remain the conservative choice until FERD publishes a dated changelog. **Re-verification note:** fetch the FERD changelog page before the next spec bump.
+**Conflict resolved 2026-10-13:** RESEARCH.md and R3_VERIFIED_FACTS.md cite a 2026-09-27 package page naming FacturX 1.09 / ZUGFeRD 2.5.2. The FERD spec page (S3) was not version-stamped on retrieval. The pin was **upgraded 2026-10-13** to Factur-X **1.09.2** / ZUGFeRD **2.5.2** after the FERD changelog page (S5) confirmed the 2026-08-04 joint release. The 1.0.11 rows below are historical only. **Re-verification note:** fetch the FERD changelog page before the next spec bump.
 
 ## Earlier sources (2026-10-08 pass)
 | # | Source | URL | Verified version | Notes / conflicts |
 |---|---|---|---|---|
 | 1 | EN 16931-1 (CEN) | https://www.cen.eu/standards/EN/16931 | v1.2.4 (2017 + Corrigendum 2017-06) | Paywalled full text; profile model follows this version. |
-| 2 | Factur-X spec (FNFE-MPE) | http://fnfe-mpe.org/factur-x/ | Factur-X 1.0.11 | English + French; COMFORT = EN 16931 for B2B. |
+| 2 | Factur-X spec (FNFE-MPE) | http://fnfe-mpe.org/factur-x/ | Factur-X 1.09.2 (pinned 2026-10-13; was 1.0.11) | English + French; COMFORT = EN 16931 for B2B. |
 | 3 | akretion/factur-x (Python lib) | https://github.com/akretion/factur-x | dynamic (hatch-vcs) | Provides XSD + Schematron validation; version is not published, mark as unverified. |
 | 5 | john-wink/en16931-php (fallback) | https://github.com/john-wink/en16931-php | v0.2.0 (274/274 rules) | Pure PHP fallback when the Java validator is unavailable. |
 | 6 | UStG §14 (e-invoicing obligation) | https://www.gesetze-im-internet.de/ | in force 2020-01-01 | Legal trigger; BMF Schreiben 2024-11-15 governs transitional rules. |
@@ -29,10 +29,12 @@ Retrieval date: **2026-10-13** (this pass). Earlier entries retained below.
 ## Conflicts / version-sensitive notes (2026-10-08 pass, retained)
 
 - The akretion/factur-x library version is dynamic (hatch-vcs) and not published in a
-  stable tag. Treat the library version as **unverified**; pin the *spec* version (1.0.11)
+  stable tag. Treat the library version as **unverified**; pin the *spec* version (1.09.2)
   instead.
 - The KoSIT validator has no public version page; the tag `v2026-08-31` is the closest
-  available pin. Re-verify against the repo's release page before any audit.
+  available pin. Re-verify against the repo's release page before any audit. The changelog
+  URL 503'd on 2026-10-13 and was **not** re-probed 2026-10-15; re-fetch from the raw GitHub
+  URL before any audit.
 - EN 16931-1 is paywalled; the profile model is corroborated by the akretion README and
   the FeRD website. Re-verify if a CEN corrigendum lands.
 
@@ -49,3 +51,22 @@ All primary URLs re-probed with curl on **2026-10-15** (UA `Mozilla/5.0 research
 | https://www.gesetze-im-internet.de/ | **000** | https://www.gesetze-im-internet.de/ (UStG root; 000) |
 
 No fact changed as a result of this re-probe; the rows above are link-maintenance only. The KoSIT changelog URL (`itplr-kosit/.../CHANGELOG.md`) was **not** re-probed this pass (it 503'd on 2026-10-13 and is treated as unreliable); re-fetch from the raw GitHub URL before any audit.
+
+## Re-verification 2026-10-15 (PASS 2 deepen)
+
+All primary URLs re-probed with curl on **2026-10-15**
+(UA `Mozilla/5.0 research-bot`, `--max-time 12`, follow redirects).
+
+| URL | Status | Fact re-checked |
+|-----|--------|-----------------|
+| https://github.com/itplr-kosit/validator-configuration-xrechnung/blob/master/CHANGELOG.md | **200** (was 503 on 2026-10-13) | 2026-08-31 release compatible with XRechnung 3.0; CEN Schematron **1.3.16**; KoSIT Validator **v1.6.3**. The 503 was transient -- the changelog is reachable again. |
+| https://github.com/itplr-kosit/validator-configuration-xrechnung/tags | **200** | Release tags unchanged: `v2026-08-31`, `v2026-01-31`, `release-2025-07-10`, `release-2025-03-21`, `release-2024-10-31`, `release-2024-06-20`, `release-2023-11-15`, `release-2023-09-22`. |
+| https://www.ferd-net.de/aktuelles-veranstaltungen/aktuelles/news/zugferd-252-veroeffentlicht | **200** | ZUGFeRD 2.5.2 / Factur-X 1.09.2 joint release 2026-08-04 confirmed; pin upgraded in `config/versions.json` 2026-10-13. |
+| http://fnfe-mpe.org/factur-x/ | **200** | Factur-X spec root; COMFORT = EN 16931 for B2B. |
+| https://ec.europa.eu/digital-building-blocks/ | **200** | EU e-invoicing directive (2014/55/EU) / EN 16931 mandate. |
+| https://www.cen.eu/standards/EN/16931 | **200** | EN 16931-1:2017+Corr2017-06 (v1.2.4). |
+
+**New fact verified 2026-10-15:** the KoSIT `guidelines.json` element-name
+mapping for **BT-15** is `cbc:DeliveryDate` (Auslieferdatum/Lieferdatum),
+not `cbc:IssueDate`. This corrects a long-standing error in earlier drafts
+of this skill (and in `scripts/validate_invoice.py` before this pass).

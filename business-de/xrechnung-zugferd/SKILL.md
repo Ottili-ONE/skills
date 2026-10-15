@@ -52,6 +52,12 @@ Generate, validate and archive German e-invoices (XRechnung / ZUGFeRD / Factur-X
   Leitweg-ID satisfies BT-18's IBAN-shaped test. Always scope the check to the
   element's own text content (see `references/procedures.md` §5). Verified
   2026-10-09 against the KoSIT `guidelines.json`.
+- **BT-15 is `cbc:DeliveryDate`, not `cbc:IssueDate`.** Earlier drafts of this
+  skill reused the issue-date element name for BT-15, which would have let an
+  invoice pass BT-15 with only its issue date present. Corrected 2026-10-15
+  against the KoSIT `guidelines.json` (BT-15 = Auslieferdatum/Lieferdatum ->
+  `cbc:DeliveryDate`); `scripts/validate_invoice.py` now checks the delivery
+  date element and rejects future dates on BT-14/BT-15/BT-17.
 - BT-19 (tax amount per rate) is required in COMFORT/EXTENDED; a BG-19 tax split
   whose per-rate amounts do not sum to the invoice total is a hard error.
 - A `print-to-PDF` of an e-invoice **drops the structured XML attachment**,
@@ -68,11 +74,15 @@ text — never run a content regex over the whole document.
 |---|---|---|---|
 | BT-10 | `cbc:EndpointID` / `LeitwegID` | buyer/seller identifier (Leitweg-ID) | B2B |
 | BT-14 | `cbc:IssueDate` | invoice issue date | **every profile** |
-| BT-15 | `cbc:DeliveryDate` | delivery date | BASIC WL+ |
-| BT-17 | `cbc:PaymentDueDate` | payment due date | BASIC+ |
-| BT-18 | `cbc:PaymentAllowedAccountID` | payment account (IBAN) | BASIC+ |
-| BT-19 | `cbc:TaxAmount` | tax amount per rate | COMFORT/EXTENDED |
+| BT-15 | `cbc:DeliveryDate` | delivery date | BASIC WL |
+| BT-17 | `cbc:PaymentDueDate` | payment due date | COMFORT+ |
+| BT-18 | `cbc:PaymentAllowedAccountID` | payment account (IBAN) | COMFORT+ |
+| BT-19 | `cbc:TaxAmount` / `TaxAmountLine` | tax amount per rate | COMFORT/EXTENDED |
 | BT-20 | `cbc:PaymentTerms` | payment terms (free text) | **every profile** |
+
+Scope legend (used by `scripts/validate_invoice.py`): **always** = every
+profile; **B2B** = BASIC, BASIC WL, COMFORT, EXTENDED; **BASIC WL** = BASIC WL
+only; **COMFORT+** = COMFORT or EXTENDED.
 
 **The trap:** BT-18 (`PaymentAllowedAccountID`, an IBAN) and BT-20
 (`PaymentTerms`, free text) share the local name `PaymentTerms` in some UBL

@@ -107,3 +107,40 @@ and record its SHA-256.
 **Trap:** BEG IV / AO §147 gives vouchers **8 years from year-end** (a 2026
 invoice -> 2034-12-31), effective 2025-01-01. The old "10 years for
 everything" applies only to vouchers whose retention started before 2025.
+
+## Near-miss triggers
+
+Prompts that look fine at first glance but hide a trap. The agent must catch
+the trap and still produce a passing artefact.
+
+### N1. "The invoice has a Leitweg-ID, so BT-18 is fine"
+**Trap:** BT-18 is the **payment account (IBAN)**, not the Leitweg-ID. A
+whole-document IBAN regex passes because BT-10's `DE...` value matches it.
+Scope every check to the element's own text (see `references/procedures.md`
+§4b). Verified 2026-10-09 against the KoSIT `guidelines.json`.
+
+### N2. "BT-20 is the payment account"
+**Trap:** BT-20 is `PaymentTerms` (free text), BT-18 is
+`PaymentAllowedAccountID` (the IBAN). Some UBL exports give both the same
+local name `PaymentTerms`. An IBAN written into BT-20 does **not** satisfy
+BT-18. Verified 2026-10-09 against the KoSIT `guidelines.json`.
+
+### N3. "BT-15 is the issue date"
+**Trap:** BT-15 is `cbc:DeliveryDate` (the delivery date), NOT
+`cbc:IssueDate`. Earlier drafts of this skill reused the issue-date element
+name for BT-15, which would have let an invoice pass BT-15 with only its
+issue date present. Verified 2026-10-15 against the KoSIT
+`validator-configuration-xrechnung guidelines.json`
+(rule BT-15 = Auslieferdatum/Lieferdatum -> `cbc:DeliveryDate`).
+
+### N4. "A 2026 invoice is archived until 2033"
+**Trap:** 8 years from year-end, not 7. A 2026 invoice is retained until
+**2034-12-31**. The clock starts at the end of the calendar year of creation,
+not on the document's own date. Verified 2026-10-08 against AO §147 Abs. 3
+n.F. (BEG IV, effective 2025-01-01).
+
+### N5. "The validator says BT-14 is fine, so we can archive the print-to-PDF"
+**Trap:** a print-to-PDF **drops the structured XML attachment**, so it is
+not a valid archive artefact even if the validator ran on the original XML.
+Keep the original file (XML, or PDF/A-3 with embedded XML) and record its
+SHA-256.
