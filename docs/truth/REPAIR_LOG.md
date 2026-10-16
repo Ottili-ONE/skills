@@ -347,10 +347,11 @@ state) and is recorded here so the next pass does not mistake it for a regressio
     (see G5) — not a regression
   - RLS checker: good_migration PASS, hostile_1/2/3 FAIL, self-test ok
 - **No truncation:** `git diff --numstat origin/main` for the changed files shows
-  `scripts/install.sh` +36/−? (36 insertions, no deletions vs trunk in the tracked
-  columns), `scripts/validate.py` 0 (unchanged vs trunk), `catalog.json` +27/−?
-  (was 70 lines on trunk, 1098 now — growth, not shrinkage), `tests/conftest.py`
-  0 on trunk → 27 now (new). No file was shrunk or truncated.
+  `scripts/install.sh` +76/−36 (157 lines on trunk → 197 now), `scripts/validate.py`
+  absent from the diff (unchanged, 139 = 139), `catalog.json` +1055/−27 (70 lines on
+  trunk → 1098 now), `tests/conftest.py` +27/−0 (0 on trunk → 27 now, new file).
+  No file was shrunk or truncated — every changed file is strictly larger than its
+  trunk counterpart.
 - **Nothing outside owned paths changed:** `git status --porcelain` shows only the
   three pre-existing entries (G5) after filtering; nothing else.
 - **No test was weakened:** every test added in TASK-0006 still fails on its broken
