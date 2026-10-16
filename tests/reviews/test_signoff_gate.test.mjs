@@ -4,7 +4,7 @@
 // filled-signoff certifier and the fail-closed cases.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -111,13 +111,13 @@ test('a certified skill whose review file is missing is a problem (audit exits n
   const reviewBackup = readFileSync(review, 'utf8');
   const stash = review + '.missing-stash';
   writeFileSync(md, mdBackup.replace(/^reviewed_by: UNVERIFIED$/m, 'reviewed_by: Dr. Anna Meier'), 'utf8');
-  require('node:fs').renameSync(review, stash);
+  renameSync(review, stash);
   try {
     let threw = false;
     try { audit(['--json']); } catch (e) { threw = true; }
     assert.ok(threw, 'audit should fail when a certified skill has no sign-off file');
   } finally {
-    require('node:fs').renameSync(stash, review);
+    renameSync(stash, review);
     writeFileSync(md, mdBackup, 'utf8');
   }
 });
