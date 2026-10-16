@@ -54,3 +54,28 @@ Conclusion: nothing references the deleted top-level `business-de/`. The canonic
 
 These are owned by `skills-business-de-r3` (`skills/business-de/**`) and are part of that job's
 EVALS fixtures/state. They are **not** root state files and are not in scope for deletion.
+
+## G4 (verification record for TASK-0006, 2026-10-16)
+
+Repository invariants turned into executable tests under `tests/hygiene/`:
+
+| Invariant | Test | Real repo | Broken fixture |
+|---|---|---|---|
+| no tracked symlink with an absolute target | `no-bad-symlinks.test.mjs` | PASS | PASS (fails) |
+| no tracked symlink that is a self-loop | `no-bad-symlinks.test.mjs` | PASS | PASS (fails) |
+| no tracked symlink with a dangling target | `no-bad-symlinks.test.mjs` | PASS | PASS (fails) |
+| no tracked database/journal files | `no-database-files.test.mjs` | PASS | PASS (fails) |
+| root entries restricted to `rootAllowlist` | `root-allowlist.test.mjs` | PASS | PASS (fails) |
+| no tracked file above 5 MiB without a reason | `no-large-files.test.mjs` | PASS | PASS (fails) |
+| every workspace project name is unique | `unique-projects.test.mjs` | PASS | PASS (fails) |
+| every internal dependency uses the workspace protocol | `workspace-protocol.test.mjs` | PASS | PASS (fails) |
+| `.npmrc` maps `@ottili` to the private registry, no public fallback | `npmrc-scope.test.mjs` | PASS | PASS (fails) |
+
+- **Shared helper:** `tests/hygiene/_fixture.mjs` (creates throwaway git repositories for the broken
+  fixtures; never writes into the real worktree).
+- **`scripts/truth/heavy.sh` is absent** from this repo (see G1), so the tests were run directly with
+  `node tests/hygiene/<name>.test.mjs`. They are plain Node 22 `node:test` modules with no
+  dependencies beyond Node and git.
+- **Pre-existing, not mine:** `skills/agentic-data/skill-authoring-evals/report_test.json` shows as
+  modified; it was already modified before this pass and belongs to the `skills-agentic-data-r3-02`
+  job. Left untouched.
