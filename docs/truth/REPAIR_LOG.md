@@ -190,3 +190,60 @@ and `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.
   `procure-to-stock/20261010000000`); 3 hostile fixtures FAIL; the skill's own
   `good_migration.sql` was rewritten to the product standard (company_id +
   `app.company_id`) and now passes.
+
+---
+
+## D-007 — committed `catalog.json` was stale (missing the pg-rls hostile fixtures)
+
+- **Defect:** `node scripts/gen-catalog.mjs --check` exited 1 with
+  `catalog would change; run without --check to regenerate`. The committed
+  `catalog.json` did not list the three hostile RLS fixture files that
+  TASK-0005 added under
+  `skills/engineering/pg-rls-multitenant/references/examples/`:
+  `hostile_1_no_force.sql`, `hostile_2_no_company_id.sql`,
+  `hostile_3_grant_all.sql`.
+- **Reproduction:** `node scripts/gen-catalog.mjs --check` (exit 1) and
+  `git diff catalog.json` (3 insertions, the three paths above).
+- **Root cause:** the generator walks the `skills/` tree and lists every file,
+  but the catalogue was last regenerated in an earlier pass (TASK-0004), before
+  the fixtures existed. The committed artefact and the tree had drifted.
+- **Fix:** regenerated `catalog.json` with `node scripts/gen-catalog.mjs`
+  (writes 32 skills / 5 packages). No code change — the generator was correct;
+  the artefact was stale.
+- **Proof:** `node scripts/gen-catalog.mjs --check` now exits 0
+  ("catalog unchanged"); every one of the catalogue's 518 paths exists on disk;
+  `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.
+
+## Follow-ups for later trunk repair jobs
+
+Everything below is outside this job's owned paths (or is a pre-existing dirty-tree
+state) and is recorded here so the next pass does not mistake it for a regression.
+
+1. **`scripts/truth/**` is absent from this repo (blocks the gate / preflight /
+   safe-commit / commit-and-land commands).** Symptom:
+   `node scripts/truth/preflight.mjs --job SKL-W0-01 --status` exits 1 with
+   `Cannot find module '.../scripts/truth/preflight.mjs'`. Same for `gate.mjs`,
+   `safe-commit.mjs`, `db.mjs`, `port.mjs`, `heavy.sh`. `scripts/truth/**` is on
+   this job's EXCLUDE list, so it is another job's prerequisite — do not create it
+   here. Path: `scripts/truth/`.
+2. **`tests/hygiene/clean-tree.test.mjs` is red on a pre-existing dirty tree.**
+   Symptom: `node tests/hygiene/clean-tree.test.mjs` exits 1 and prints
+   `M skills/agentic-data/skill-authoring-evals/report_test.json` (modified by
+   the `skills-agentic-data-r3-02` job), `?? docs/truth/REPO_PROBE.txt` (empty,
+   untracked) and `?? scripts/verify-status.mjs` (untracked STATUS.md checker).
+   All three predate this pass; the test itself is clean. Path: worktree root.
+3. **Two cross-job test failures in `skills/engineering/` (owned by
+   `skills-engineering-r3`).** Symptom 1:
+   `skills/engineering/acceptance-harness/scripts/report_result_test.py` —
+   `TypeError: cannot unpack non-iterable CompletedProcess object` (tests unpack
+   `rc, _ = run(...)` but `run()` returns a `CompletedProcess`). Symptom 2:
+   `skills/engineering/tests/test_research_design_acceptance.py::test_related_graph_is_acyclic_with_unique_sink`
+   — `NameError: name 'ENGINEERING_DIR' is not defined`. Path:
+   `skills/engineering/`.
+4. **`skills/business-de/**` tests fail to collect in a clean clone.** Symptom:
+   `pytest -q` inside a fresh `git clone . <dir>` reports 13 collection errors,
+   all `import file mismatch: imported module 'X' has this __file__ attribute:
+   <clone>/business-de/...` — a stale `__pycache__` from the deleted top-level
+   `business-de/` duplicate shadows the canonical copy under `skills/business-de/`.
+   The canonical copy is owned by `skills-business-de-r3`. Path:
+   `skills/business-de/**` (and the stale `__pycache__` it leaves behind).
