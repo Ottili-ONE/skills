@@ -94,3 +94,28 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - Action: none required from SKL-W0-01. The two untracked files are scratch from another job's pass;
   deleting tracked/untracked files I do not own is outside my remit. Recorded so the next pass does not
   mistake this for a TASK-0006 regression.
+
+## G6 (UNVERIFIED, TASK-0008): Docker leak test (`pg-rls-leak-test.sh`)
+
+- `docker` is installed (`/usr/bin/docker`, rc=0) but no live Postgres container was
+  spun up in this pass, so the end-to-end tenant-isolation leak test was **not** run.
+- The checker-level proof stands: `check_rls_migration.py` passes
+  `references/examples/good_migration.sql` (rc=0) and fails all three hostile fixtures
+  (rc=1), and its self-test passes (rc=0). That is static analysis, not a live
+  cross-tenant read assertion.
+- **To verify:** `cd skills/engineering/pg-rls-multitenant/scripts && ./pg-rls-leak-test.sh
+  <migration.sql>` against a real hq migration. Requires Docker + network pull of
+  `postgres:18-alpine`. Not attempted here — recorded as an open item, not a gap in
+  the shipped artefacts.
+
+## G7 (UNVERIFIED, TASK-0008): the GUC name decision is hardcoded
+
+- `check_rls_migration.py` has `TENANT_GUC = "app.company_id"` as a module constant
+  (line 28); there is **no** `config.json` or env var in the skill that lets an
+  operator switch it. The D-006 evidence table (995 / 4 / 733 / 347 hits for
+  `app.company_id` across hq-v2, ld3-v2, alran-core-v2, console-v2) is the basis for
+  the choice and is recorded in `docs/truth/REPAIR_LOG.md`, but the decision cannot be
+  re-tuned from outside the code without an edit.
+- **To verify:** an operator must confirm `app.company_id` is still the product
+  standard at the next product-lane pass, or request a `config.json` /
+  `--guc` flag on the checker so the choice is data-driven rather than hardcoded.
