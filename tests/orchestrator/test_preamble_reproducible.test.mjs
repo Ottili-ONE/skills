@@ -48,7 +48,7 @@ test('generator refuses when a canonical gate command drifts from its skill', ()
   const skill = join(REPO, 'skills', 'engineering', 'honest-status', 'SKILL.md');
   const backup = readFileSync(skill, 'utf8');
   try {
-    writeFileSync(skill, backup.replace('check_status_evidence.py', 'check_status_evidence DRIFTED.py'), 'utf8');
+    writeFileSync(skill, backup.replace('check_status_evidence.py', 'check_status_evidenceXYZ.py'), 'utf8');
     assert.throws(() => runGen());
   } finally {
     writeFileSync(skill, backup, 'utf8');

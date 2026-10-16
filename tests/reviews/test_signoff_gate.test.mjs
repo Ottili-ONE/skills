@@ -60,11 +60,14 @@ test('a filled sign-off block certifies the skill (audit exits 0, entry ok)', ()
   const file = join(REVIEWS, 'ref-ust-edge-cases.md');
   const backup = readFileSync(file, 'utf8');
   const filled = backup
-    .replace('Reviewed by: **UNVERIFIED — pending signature**', 'Reviewed by: Dr. Anna Meier')
+    .replace('| Reviewed by | **UNVERIFIED — pending signature** |', '| Reviewed by | Dr. Anna Meier |')
     .replace('| Date | **pending** |', '| Date | 2026-10-16 |')
     .replace('Date: _______________', 'Date: 2026-10-16')
     .replace('Signature: ___________________________________', 'Signature: Dr. Anna Meier')
     .replace('Findings: ___________________________________', 'Findings: §13b scope and igL citation confirmed correct');
+  const md = join(REPO, 'skills', 'ref-ust-edge-cases', 'ref-ust-edge-cases', 'SKILL.md');
+  const mdBackup = readFileSync(md, 'utf8');
+  writeFileSync(md, mdBackup.replace('reviewed_by: UNVERIFIED', 'reviewed_by: Dr. Anna Meier'), 'utf8');
   writeFileSync(file, filled, 'utf8');
   try {
     assert.doesNotThrow(() => audit(['--json']));
@@ -74,27 +77,28 @@ test('a filled sign-off block certifies the skill (audit exits 0, entry ok)', ()
     assert.equal(cert.ok, true);
   } finally {
     writeFileSync(file, backup, 'utf8');
+    writeFileSync(md, mdBackup, 'utf8');
   }
 });
 
-test('a certified skill with an empty sign-off block is a problem (audit exits 1)', () => {
+test('a certified skill with an empty sign-off block is a problem (audit exits non-zero)', () => {
   const file = join(REVIEWS, 'ref-ust-edge-cases.md');
   const backup = readFileSync(file, 'utf8');
   const empty = backup
-    .replace('Reviewed by: **UNVERIFIED — pending signature**', 'Reviewed by: Dr. Anna Meier')
+    .replace('| Reviewed by | **UNVERIFIED — pending signature** |', '| Reviewed by | Dr. Anna Meier |')
     .replace('Date: _______________', 'Date: _______________')
     .replace('Signature: ___________________________________', 'Signature: ___________________________________');
+  const md = join(REPO, 'skills', 'ref-ust-edge-cases', 'ref-ust-edge-cases', 'SKILL.md');
+  const mdBackup = readFileSync(md, 'utf8');
+  writeFileSync(md, mdBackup.replace('reviewed_by: UNVERIFIED', 'reviewed_by: Dr. Anna Meier'), 'utf8');
   writeFileSync(file, empty, 'utf8');
   try {
     let threw = false;
     try { audit(['--json']); } catch (e) { threw = true; }
-    assert.ok(!threw, 'audit should exit 0 with a filled sign-off block');
-    const report = JSON.parse(audit(['--json']));
-    const cert = report.certified.find((e) => e.skill === 'ref-ust-edge-cases');
-    assert.ok(cert, 'ref-ust-edge-cases not certified');
-    assert.equal(cert.ok, true);
+    assert.ok(threw, 'audit should fail when a certified skill has an empty sign-off block');
   } finally {
     writeFileSync(file, backup, 'utf8');
+    writeFileSync(md, mdBackup, 'utf8');
   }
 });
 
