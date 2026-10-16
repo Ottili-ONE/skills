@@ -1,4 +1,4 @@
-# Sign-off placeholder — ust-edge-cases (UNVERIFIED)
+# Sign-off placeholder — ref-ust-edge-cases (UNVERIFIED)
 
 **Status: UNVERIFIED.** A Steuerberater / DPO must complete this file before the
 `ref-ust-edge-cases` skill may be quoted as certified tax advice.

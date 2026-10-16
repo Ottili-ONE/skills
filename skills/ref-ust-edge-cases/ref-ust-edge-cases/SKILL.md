@@ -1,6 +1,6 @@
 ---
 name: ref-ust-edge-cases
-description: "UNVERIFIED reference wrapper for the German VAT edge-case skill (business-de/ust-edge-cases). Summarises the corrected reverse-charge scope (UStG §13b covers goods AND services, not services only) and the corrected intra-community-delivery citation (igL = UStG §4 Nr. 1b / §6a). reviewed_by: UNVERIFIED pending Steuerberater/DPO sign-off in docs/reviews/ust-edge-cases.md. Not legal advice."
+description: "UNVERIFIED reference wrapper for the German VAT edge-case skill (business-de/ust-edge-cases). Summarises the corrected reverse-charge scope (UStG §13b covers goods AND services, not services only) and the corrected intra-community-delivery citation (igL = UStG §4 Nr. 1b / §6a). reviewed_by: UNVERIFIED pending Steuerberater/DPO sign-off in docs/reviews/ref-ust-edge-cases.md. Not legal advice."
 license: MIT-compat
 compatibility: "framework-agnostic; German UStG; offline"
 reviewed_by: UNVERIFIED
@@ -12,7 +12,7 @@ allowed-tools: []
 
 > **Status: UNVERIFIED.** This reference is a sign-off placeholder. It must NOT be
 > quoted as certified tax advice until a Steuerberater/DPO signs
-> `docs/reviews/ust-edge-cases.md` (signature + date). The canonical, runnable
+> `docs/reviews/ref-ust-edge-cases.md` (signature + date). The canonical, runnable
 > implementation lives in `skills/business-de/ust-edge-cases/` (owned by
 > skills-business-de-r3); this wrapper only records the two corrections that the
 > canonical skill still carries wrong.
@@ -58,11 +58,11 @@ The canonical skill cites the intra-community delivery as §4a UStG. **That is w
 ## Sign-off gate
 
 This skill's validator refuses to load it as certified until
-`docs/reviews/ust-edge-cases.md` exists with a signature and a date. Until then every
+`docs/reviews/ref-ust-edge-cases.md` exists with a signature and a date. Until then every
 consumer must treat this skill as UNVERIFIED.
 
 ## Related
 
 - Canonical implementation: `skills/business-de/ust-edge-cases/` (skills-business-de-r3 owns it)
 - Journal mapping: `skills/business-de/skr-journal-mapping/`
-- Sign-off placeholder: `docs/reviews/ust-edge-cases.md`
+- Sign-off placeholder: `docs/reviews/ref-ust-edge-cases.md`

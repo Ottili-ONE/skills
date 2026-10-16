@@ -1,4 +1,4 @@
-# Sign-off placeholder — datev-extf (UNVERIFIED)
+# Sign-off placeholder — ref-datev-extf (UNVERIFIED)
 
 **Status: UNVERIFIED.** A Steuerberater / DPO must complete this file before the
 `ref-datev-extf` skill may be quoted as certified tax/accounting advice.

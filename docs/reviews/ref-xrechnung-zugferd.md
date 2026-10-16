@@ -1,12 +1,12 @@
-# Sign-off placeholder — bank-reconciliation-camt (UNVERIFIED)
+# Sign-off placeholder — ref-xrechnung-zugferd (UNVERIFIED)
 
 **Status: UNVERIFIED.** A Steuerberater / DPO must complete this file before the
-`ref-bank-reconciliation-camt` skill may be quoted as certified tax/accounting advice.
+`ref-xrechnung-zugferd` skill may be quoted as certified tax/accounting advice.
 
 | Field | Value |
 |-------|-------|
-| Skill | `ref-bank-reconciliation-camt` (wrapper) |
-| Canonical implementation | `skills/business-de/bank-reconciliation-camt/` |
+| Skill | `ref-xrechnung-zugferd` (wrapper) |
+| Canonical implementation | `skills/business-de/xrechnung-zugferd/` |
 | Reviewed by | **UNVERIFIED — pending signature** |
 | Date | **pending** |
 | Scope | the reference content carried over from the canonical skill, unverified |
@@ -21,5 +21,5 @@ Signature: ___________________________________
 Findings: ___________________________________
 ```
 
-Until this block is filled in, `ref-bank-reconciliation-camt` is UNVERIFIED and must not be cited as
+Until this block is filled in, `ref-xrechnung-zugferd` is UNVERIFIED and must not be cited as
 certified advice.
