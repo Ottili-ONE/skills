@@ -3,7 +3,8 @@
 //
 // Reproducible: the same canonical skill set on disk always produces the same file.
 // The generator takes no input beyond the four canonical engineering skills; it reads
-// each skill's "Run the offline gate" rule line and emits one imperative rule each.
+// each skill's "Run the offline gate" rule line and emits one imperative rule each,
+// followed by a fixed CONTRACTS section that documents the interface contract.
 //
 // Usage:
 //   node scripts/gen-preamble.mjs                # write preamble.md
@@ -93,8 +94,38 @@ function render() {
   return lines.join('\n') + '\n';
 }
 
+// ---------------------------------------------------------------------------
+// CONTRACTS section (fixed text; documents the interface contract).
+// ---------------------------------------------------------------------------
+
+const CONTRACTS = `## Contracts
+
+The preamble is an interface, not prose. Its contract is versioned and machine-checked:
+
+- **Generator contract** — \`node scripts/gen-preamble.mjs\` writes the body and exits 0;
+  \`node scripts/gen-preamble.mjs --check\` exits 0 iff the committed body matches a
+  fresh generation. The generator is deterministic: the same canonical skills on disk
+  always produce the same bytes.
+- **Body contract** — the body is a single Markdown document, <= 60 lines, whose first
+  line is \`# Orchestrator Preamble\`. It lists the four canonical rules in order, each
+  naming its gate command verbatim from the canonical skill's SKILL.md.
+- **Canonical-source contract** — the four rules are derived from
+  \`skills/engineering/{pg-rls-multitenant,outbox-idempotency,problem-json-contracts,honest-status}/SKILL.md\`.
+  If a canonical skill's gate command changes, the generator fails to run (the command
+  must be present in the skill) and the committed body becomes stale; \`--check\` then
+  exits 1.
+- **Consumers** — any GERMO job that owns a product repo loads this file as the first
+  part of its base prompt. The canonical copy lives at
+  \`skills/orchestrator-preamble/orchestrator-preamble/references/preamble.md\`; the
+  skill's own \`SKILL.md\` is the human-readable contract.
+`;
+
+function renderContracts() {
+  return CONTRACTS;
+}
+
 const check = process.argv.includes('--check');
-const body = render();
+const body = render() + '\n' + renderContracts();
 
 if (check) {
   if (!existsSync(OUT)) {

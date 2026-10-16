@@ -47,6 +47,15 @@ is deterministic and takes no input beyond the skills on disk). Verify:
 `node scripts/gen-preamble.mjs --check` — exit 0 means the committed preamble matches a
 fresh generation.
 
+## Contracts
+
+The body ends with a fixed `## Contracts` section that documents the interface contract
+(generator, body, canonical-source and consumer). It is generated text, not prose: it is
+part of the byte-identical output and is covered by the same `--check` gate. The section
+names the four contracts, states the exit codes (0 = pass, 1 = stale/missing) and points
+consumers at this `SKILL.md` as the human-readable contract. Edit the contract by editing
+the generator's `CONTRACTS` constant, never the emitted file.
+
 ## Related
 
 - Canonical skills: `skills/engineering/pg-rls-multitenant/`,
