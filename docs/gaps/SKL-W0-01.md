@@ -79,3 +79,18 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **Pre-existing, not mine:** `skills/agentic-data/skill-authoring-evals/report_test.json` shows as
   modified; it was already modified before this pass and belongs to the `skills-agentic-data-r3-02`
   job. Left untouched.
+
+## G5 (observation, TASK-0006): `tests/hygiene/clean-tree.test.mjs` is red on a pre-existing dirty tree
+
+- `node tests/hygiene/clean-tree.test.mjs` exits 1. The three culprits were present **before** this pass
+  (timestamps 01:12 and 01:43, i.e. the TASK-0005 pass), not created by any test in this task:
+  - `M skills/agentic-data/skill-authoring-evals/report_test.json` — modified by the
+    `skills-agentic-data-r3-02` job; not mine to touch.
+  - `?? docs/truth/REPO_PROBE.txt` — empty (0 bytes) probe file, untracked, uncommitted.
+  - `?? scripts/verify-status.mjs` — untracked `STATUS.md` honest-status checker, uncommitted.
+- Every test written in TASK-0006 creates its broken fixture in a throwaway `mkdtemp` git repository
+  under `/tmp` and cleans it up in a `finally` block, so none of them dirties the worktree. Verified:
+  running the full suite leaves only the three pre-existing entries above.
+- Action: none required from SKL-W0-01. The two untracked files are scratch from another job's pass;
+  deleting tracked/untracked files I do not own is outside my remit. Recorded so the next pass does not
+  mistake this for a TASK-0006 regression.
