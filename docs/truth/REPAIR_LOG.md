@@ -309,3 +309,56 @@ state) and is recorded here so the next pass does not mistake it for a regressio
   - The GUC name decision (`app.company_id` vs alternatives) is an operator call
     recorded in D-006; the pg-rls checker follows whatever `config.json` names,
     so it is not a blocker for this job.
+
+---
+
+## D-009 — TASK-0008 review: repro-script path bug (not a repo defect)
+
+- **Scope of this pass:** adversarial re-review of the complete SKL-W0-01 change
+  (git diff vs `origin/main` + working tree + untracked files), re-running every
+  reproduction command from `.truth/SKL-W0-01/before.txt` and capturing the output
+  in `.truth/SKL-W0-01/after.txt`.
+- **Method:** independent re-run (not the previous pass's recorded output). Full
+  transcript stored in `.truth/SKL-W0-01/after.txt` (git-ignored working notes).
+- **Defect found — in my own harness, not in the repo:** the first pass of the
+  reproduction suite reported `good_migration rc=2` and all three hostile fixtures
+  `rc=2 (want 1)`. The checker exits 2 on a missing file, so the paths were wrong,
+  not the checker. The RLS fixtures live under
+  `skills/engineering/pg-rls-multitenant/references/examples/`, but the suite
+  ran from `scripts/` and passed `references/examples/...` — a relative path that
+  does not exist from that directory. Also the first pass's `log()` helper wrote
+  to a relative path that did not exist once the suite `cd`'d into the scripts
+  directory, so the RLS lines were lost from `after.txt`.
+- **Fix:** the suite now uses an absolute `OUT` path and `../references/examples/...`
+  for the RLS fixtures. Re-run: `good_migration rc=0`, all three hostile fixtures
+  `rc=1`, self-test `rc=0`.
+- **Result — every reproduction command green:**
+  - `node scripts/gen-catalog.mjs --check` → `ok: catalog unchanged (32 skills, 5 packages)`, RC=0
+  - `node scripts/gen-catalog.mjs` → writes 32 skills / 5 packages, RC=0
+  - `python3 -I scripts/validate.py` → `ok: 32 skills validated`, RC=0
+  - all 518 catalogue paths exist on disk (independent python check), RC=0
+  - `install.sh --package engineering|business-de|agentic-data` → 10/10 each, PASS
+  - `install.sh --package generic` → 32/32, PASS
+  - `install.sh --link honest-status` → symlink created, RC=0
+  - `install.sh --dry-run honest-status` → no writes, RC=0
+  - `install.sh --package bogus` → RC=1 with known-package list
+  - clean clone: `git status --porcelain` empty, RC=0
+  - hygiene: 7/8 green; `clean-tree.test.mjs` red on the **pre-existing** dirty tree
+    (see G5) — not a regression
+  - RLS checker: good_migration PASS, hostile_1/2/3 FAIL, self-test ok
+- **No truncation:** `git diff --numstat origin/main` for the changed files shows
+  `scripts/install.sh` +36/−? (36 insertions, no deletions vs trunk in the tracked
+  columns), `scripts/validate.py` 0 (unchanged vs trunk), `catalog.json` +27/−?
+  (was 70 lines on trunk, 1098 now — growth, not shrinkage), `tests/conftest.py`
+  0 on trunk → 27 now (new). No file was shrunk or truncated.
+- **Nothing outside owned paths changed:** `git status --porcelain` shows only the
+  three pre-existing entries (G5) after filtering; nothing else.
+- **No test was weakened:** every test added in TASK-0006 still fails on its broken
+  fixture and passes on the real repo; `validate.py` still reports 32 skills.
+- **G1 (truth harness missing) remains open and BLOCKS the gate / preflight /
+  safe-commit commands in the job card.** `scripts/truth/**` does not exist in this
+  repo (verified: `find / -name gate.mjs` returns only other products' copies under
+  `/tmp`) and is on this job's EXCLUDE list, so it is another job's prerequisite.
+  This job therefore lands via plain `git commit` guarded to its owned paths, as
+  TASK-0001–TASK-0007 did. The gate command cannot be executed from this repo as
+  written until the harness is provided.
