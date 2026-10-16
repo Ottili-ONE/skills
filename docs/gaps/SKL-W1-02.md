@@ -4,22 +4,11 @@ Job SKL-W1-02 (Domain references marked for adviser sign-off, and the orchestrat
 preamble). This file records only things this job could NOT do because they live on
 paths it does not own.
 
-## G-001 — `scripts/truth/**` infrastructure does not exist (BLOCKER)
+## G-001 — `scripts/truth/**` infrastructure is not in the skills repo (BLOCKER)
 
-`node scripts/truth/preflight.mjs --job SKL-W1-02 --status` exits 1 with
-`MODULE_NOT_FOUND: Cannot find module '.../scripts/truth/preflight.mjs'`. Verified:
-`ls scripts/` shows only the 10 legacy helpers; `git ls-tree -r HEAD --name-only |
-grep truth` returns only `docs/truth/*` prose; `find / -name preflight.mjs` returns
-only tsx/dist copies and other product repos. Consequently `gate.mjs`,
-`safe-commit.mjs` and `heavy.sh` are also unavailable.
-
-- Owner: operator / `scripts/truth/**` (NOT on this job's owned or exclude list in a
-  way that lets this job create it — the card explicitly EXCLUDES
-  `scripts/truth/**,scripts/truth/lib/**,scripts/truth/checks/**`).
-- Impact: the preflight, the gate and the only allowed commit path cannot run.
-  All commits so far were made with plain `git commit` because no alternative exists.
-- Request: create `scripts/truth/preflight.mjs`, `gate.mjs`, `safe-commit.mjs`,
-  `heavy.sh` (+ `package.json`) for the `skills` repo, then re-run the preflight.
+Superseded by **G-003**, which re-derives this with a full-filesystem search rather
+than a cached claim. G-003 is the current statement; keep this entry so the historical
+"BLOCKED at orientation" record survives.
 
 ## G-002 — predecessor SKL-W1-01 has not landed
 
@@ -105,3 +94,22 @@ list, so this job cannot create it here.
 This job's own deliverables (the two legal corrections, the UNVERIFIED markers, the
 review placeholders, the preamble) do NOT depend on this toolchain and are committed
 independent of it.
+
+
+## X-004 — future-dated "re-fetched on 2026-10-15" claim is outside this job's paths
+
+The task requires removing the future-dated "re-fetched on 2026-10-15" claim. Verified
+this pass (`grep -rln "2026-10-15\|re-fetched on" . --include=*.md`, excluding `.git`):
+every hit sits under `skills/business-de/**` — `skills/business-de/*/references/SOURCES.md`
+(9 files), `skills/business-de/config/REVERIFY_2026-10-15.md`,
+`skills/business-de/config/REVERIFY_2026-10-14.md`, `skills/business-de/RESEARCH.md`,
+`skills/business-de/STATUS.md`, `skills/business-de/HANDOFF.md`,
+`skills/business-de/PASS5_GATE.md`. **None of this job's owned paths**
+(`skills/ref-*/**`, `skills/orchestrator-preamble/**`, `docs/reviews/**`) contains the
+claim, and `docs/reviews/*.md` carry no retrieval-date claims at all.
+
+- Owner: skills-business-de-r3 (`skills/business-de/**`).
+- This job's action: none possible. Recorded so the next pass does not re-derive it.
+- Note: the claim is *future-dated relative to 2026-10-16* only if the operator's clock
+  is right; the files themselves are the evidence and the retrieval date is recorded
+  inside them.
