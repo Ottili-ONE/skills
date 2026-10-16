@@ -44,11 +44,19 @@ test('preamble contains all four canonical gate commands', () => {
   }
 });
 
-test('generator refuses when a canonical gate command drifts from its skill', () => {
+test('generator refuses when a canonical gate command is removed from its skill', () => {
   const skill = join(REPO, 'skills', 'engineering', 'honest-status', 'SKILL.md');
   const backup = readFileSync(skill, 'utf8');
   try {
-    writeFileSync(skill, backup.replace('check_status_evidence.py', 'check_status_evidenceXYZ.py'), 'utf8');
+    // Replace the whole gate command with something unrelated — a substring swap
+    // (e.g. check_status_evidence.py -> check_status_evidenceXYZ.py) is NOT a
+    // drift, because the original command is still present as a substring and the
+    // generator correctly keeps working.
+    writeFileSync(
+      skill,
+      backup.replace('python3 scripts/check_status_evidence.py STATUS.md --root .', 'REMOVED.md'),
+      'utf8'
+    );
     assert.throws(() => runGen());
   } finally {
     writeFileSync(skill, backup, 'utf8');

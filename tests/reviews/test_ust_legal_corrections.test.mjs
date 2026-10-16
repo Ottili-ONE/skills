@@ -37,9 +37,13 @@ test('§13b is stated as the full goods+services scope, not "services only"', ()
 
 test('§13b is NOT narrowed to services; goods may fall inside the reverse-charge list', () => {
   const text = readFileSync(SKILL, 'utf8');
-  assert.match(text, /a goods supply.*may fall inside the §13b reverse-charge list/);
-  assert.match(text, /is NOT "services only"/);
-  assert.match(text, /the full §13b Abs\. 1 list must be consulted per transaction/);
+  // Substring checks (the wrapper prose is multi-line, so anchored regexes are brittle).
+  assert.ok(text.includes('a goods supply'), 'wrapper must discuss a goods supply');
+  assert.ok(text.includes('may fall inside the §13b reverse-charge list'),
+    'wrapper must state goods may fall inside the reverse-charge list');
+  assert.ok(text.includes('is NOT "services only"'), 'wrapper must say the rule is NOT services only');
+  assert.ok(text.includes('the full §13b Abs. 1 list must be consulted per transaction'),
+    'wrapper must require consulting the full Abs. 1 list per transaction');
 });
 
 test('igL is cited as §4 Nr. 1b / §6a, never §4a', () => {
