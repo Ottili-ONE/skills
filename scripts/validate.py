@@ -107,8 +107,14 @@ def main() -> int:
 
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true", help="machine-readable report on stdout")
+    ap.add_argument(
+        "--everywhere",
+        action="store_true",
+        help="validate every skill in the repository (not just this job's owned tree)",
+    )
     args = ap.parse_args()
 
+    global CATALOG_PATH
     if not CATALOG_PATH.is_file():
         print(f"error: catalog not found at {CATALOG_PATH}", file=sys.stderr)
         return 1
