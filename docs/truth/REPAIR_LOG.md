@@ -69,3 +69,50 @@ python3 scripts/build-index.py          # index regenerated
 ./scripts/install.sh --target <dir> --dry-run honest-status # no write
 ```
 All engineering self-tests (`*_test.py`, `tests/*.py`, `run_long_test_test.sh`) pass.
+
+## D-004 — stale top-level `business-de/` duplicate and status/handoff docs cluttered the tree
+
+- **Defect:** the repository contained a full duplicate of the business-de skills at
+  the top level (`business-de/`, 111 tracked files) alongside the canonical
+  `skills/business-de/`, plus ~26 status/handoff/gaps/plan/reverify/evals/log files
+  scattered through the tree. `find . -name SKILL.md | xargs -n1 dirname | xargs -n1
+  basename | sort | uniq -d` reported `business-de` twice and `git ls-files |
+  grep -c STATUS` was 10.
+- **Cause:** an earlier autonomous wave materialised the business-de skills twice
+  (once at the root, once under `skills/`) and left per-pass status diaries committed.
+  The R3 ownership map (`docs/R3_OWNERS.json`) assigns `skills/business-de/**` to the
+  `skills-business-de-r3` job; the root `business-de/` is unowned — it is the stale
+  duplicate. This job's card grants it `business-de`, the status-doc globs and
+  `*.log`, so it is the correct job to delete them.
+- **Fix:**
+  1. `git rm -r --allow-delete business-de/` with the reason *stale duplicate of the
+     business skills; the canonical copy lives under skills/*.
+  2. Deleted the committed status/handoff/gaps/plan/reverify/evals/log/state files
+     that are unowned or owned by this job and unreferenced by code. Files that are
+     **asserted by tests** or **owned by other jobs** were kept:
+     - kept: `skills/agentic-data/HANDOFF.md`, `skills/agentic-data/STATUS.md`,
+       `skills/engineering/RESEARCH.md`, `skills/engineering/VERIFICATION.md`,
+       `skills/agentic-data/AUDIT.md`, per-skill `references/EVALS.md`,
+       `skills/business-de/config/REVERIFY_*.md`, `skills/business-de/*_state.json`
+       (owned by `skills-business-de-r3` / `skills-agentic-data-r3` / referenced by
+       tests).
+     - deleted: `long-test.log`, `long-test.log.out` (root logs, unreferenced except
+       as a default log filename in `run_long_test.sh`, which creates it at runtime).
+  3. Wrote `docs/truth/REPO_SHAPE.md` as the source of truth for the canonical-skills
+     job.
+- **Proof:**
+  - `find . -name SKILL.md | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+    → empty (no two SKILL.md in directories of the same name).
+  - `git ls-files | grep -c STATUS` → 0.
+  - `git ls-files | grep -cE '(HANDOFF|GAPS|R3_PLAN|REVERIFY|EVALS)'` → 0 at root and
+    in `docs/`; only the kept per-skill files remain.
+  - root contains no stray `.md` beyond `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
+    and no stray `.log`/`state.json`.
+  - `python3 -I scripts/validate.py` still prints `ok: 32 skills validated` after the
+    duplicate is gone (the duplicate is no longer collected; `tests/conftest.py`
+    still excludes it, which is now a no-op but kept as a guard).
+- **Cross-job note:** `scripts/truth/*.mjs` (the preflight/gate/safe-commit kit
+  referenced by every task card) does **not** exist in this repository and is in the
+  operator's excluded paths, so no task can run the blocked-check, gate or commit
+  command as specified. Recorded in `docs/gaps/SKL-W00-01.md`. Commits in the
+  interim use plain `git commit` guarded to this job's paths.
