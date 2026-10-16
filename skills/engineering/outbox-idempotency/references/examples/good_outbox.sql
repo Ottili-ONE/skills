@@ -19,4 +19,12 @@ BEGIN;
 INSERT INTO orders (id, total) VALUES (1, 99);
 INSERT INTO outbox (idempotency_key, payload)
 VALUES ('order-1', '{"event":"order.created"}');
+INSERT INTO audit_outbox (company_id, outbox_id, audit_id, enqueued_at, record)
+VALUES ('co_1', 'ob_2', 'audit_2', now(),
+        '{"schema_version":"ottili.outbox-record/v1","outbox_id":"ob_2","company_id":"co_1",'
+        '"event_id":"evt_2","event_type":"order.created","partition_key":"co_1",'
+        '"state":"dead_letter","attempts":5,"created_at":"2026-10-16T00:00:01.000Z",'
+        '"dispatched_at":null,"last_error_code":"consumer_dead",'
+        '"payload_digest":"sha256:def","available_at":null,'
+        '"dispatch_lease_expires_at":null,"dispatch_fence":null}');
 COMMIT;

@@ -55,13 +55,22 @@ def _table_bodies(sql: str) -> dict[str, str]:
 
 def check_outbox_sql(sql: str) -> list[str]:
     findings: list[str] = []
+    # The platform's durable outbox is `audit_outbox`; check its envelope first so a
+    # tenant-scoped idempotency failure is reported even when the generic checks below
+    # bail out because no legacy `outbox` table is present.
+    from check_outbox_platform import check_platform_outbox
+    findings.extend(check_platform_outbox(sql))
     tables = _table_bodies(sql)
 
-    if "outbox" not in tables:
-        findings.append("outbox table not found")
+    # The platform's durable outbox is `audit_outbox`; for the generic checks below it
+    # stands in for `outbox` (it IS the outbox, just audit-named).
+    outbox_name = "audit_outbox" if "audit_outbox" in tables else "outbox"
+    if outbox_name not in tables:
+        # No outbox of either shape -> nothing else to check. The platform findings
+        # above are already recorded, so they are not lost here.
         return findings
 
-    body = tables["outbox"]
+    body = tables[outbox_name]
     cols = {m.group("col").lower(): m.group("rest") for m in COL_RE.finditer(body)}
 
     if "idempotency_key" not in cols:
@@ -85,8 +94,15 @@ def check_outbox_sql(sql: str) -> list[str]:
     if "sent_at" not in cols:
         findings.append("outbox: no sent_at column (poller cannot mark rows published)")
 
-    if not POISON_RE.search(sql):
-        findings.append("no poison_outbox destination referenced")
+    # Poison destination: either a `poison_outbox` table (generic shape) or, for the
+    # platform envelope, the `dead_letter` state inside the record (audit_outbox is
+    # append-only and cannot gain a second table). Either way the row must survive.
+    has_poison_table = POISON_RE.search(sql)
+    has_dead_letter_state = re.search(r'"dead_letter"', sql)
+    if not has_poison_table and not has_dead_letter_state:
+        findings.append(
+            "no poison destination: neither a poison_outbox table nor a dead_letter "
+            "state in the record envelope (poison rows would block the queue forever)")
     if POISON_DELETE_RE.search(sql):
         findings.append("DELETE FROM poison_outbox found: poison rows must be moved, never deleted")
 

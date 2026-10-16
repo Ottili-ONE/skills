@@ -8,11 +8,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECK = ROOT / "scripts" / "check_outbox.py"
+PCHECK = ROOT / "scripts" / "check_outbox_platform.py"
 EX = ROOT / "references" / "examples"
 
 
 def run(*args: str) -> tuple[int, str]:
     p = subprocess.run([sys.executable, str(CHECK), *args],
+                       capture_output=True, text=True)
+    return p.returncode, p.stdout + p.stderr
+
+
+def run_platform(path: str) -> tuple[int, str]:
+    """Run the platform envelope checker directly (it has its own CLI)."""
+    p = subprocess.run([sys.executable, str(PCHECK), path],
                        capture_output=True, text=True)
     return p.returncode, p.stdout + p.stderr
 
@@ -55,6 +63,34 @@ def main() -> int:
     return 0
 
 
+
+
+HOSTILE_PLATFORM = [
+    "hostile_no_company_id.sql",
+    "hostile_tenant_leak.sql",
+    "hostile_missing_dead_letter.sql",
+]
+
+
+def test_platform_hostile() -> int:
+    """The platform envelope checker must fail every hostile fixture and pass the good one."""
+    failures = 0
+    rc, out = run_platform(str(EX / "good_outbox.sql"))
+    if rc != 0:
+        print("FAIL: good platform envelope must exit 0")
+        print(out)
+        failures += 1
+    else:
+        print("ok: good platform envelope passes")
+    for h in HOSTILE_PLATFORM:
+        rc, out = run_platform(str(EX / h))
+        if rc != 1 or "FAIL" not in out:
+            print(f"FAIL: {h} must exit 1 and print FAIL")
+            print(out)
+            failures += 1
+        else:
+            print(f"ok: {h} flagged by the platform envelope checker")
+    return failures
 
 
 EDGE = [
@@ -126,6 +162,9 @@ def _run_edge() -> int:
 
 if __name__ == "__main__":
     rc = main()
+    if rc != 0:
+        raise SystemExit(rc)
+    rc = test_platform_hostile()
     if rc != 0:
         raise SystemExit(rc)
     rc = _run_edge()
