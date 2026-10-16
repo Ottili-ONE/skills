@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
-const OUT = resolve(REPO, 'skills', 'orchestrator-preamble', 'references', 'preamble.md');
+const OUT = resolve(REPO, 'skills', 'orchestrator-preamble', 'orchestrator-preamble', 'references', 'preamble.md');
 
 // Canonical skills, in rule order. Each entry: the skill dir + the exact gate command
 // as it appears in that skill's SKILL.md "Run the offline gate" line.
