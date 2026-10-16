@@ -247,3 +247,65 @@ state) and is recorded here so the next pass does not mistake it for a regressio
    `business-de/` duplicate shadows the canonical copy under `skills/business-de/`.
    The canonical copy is owned by `skills-business-de-r3`. Path:
    `skills/business-de/**` (and the stale `__pycache__` it leaves behind).
+
+---
+
+## D-008 — TASK-0008 review: no new defects found in owned paths; all baseline defects re-proven fixed
+
+- **Scope of this pass:** adversarial review of the complete SKL-W0-01 change
+  (git diff vs `origin/main` + working tree + untracked files), line by line, against
+  the contract, plus re-running every reproduction command from
+  `.truth/SKL-W0-01/before.txt`.
+- **Method:** independent re-run (not the previous pass's recorded output). Full
+  transcript stored in `.truth/SKL-W0-01/after.txt` (git-ignored working notes).
+- **Code review findings:**
+  - `scripts/install.sh` (197 lines): source resolution is a pure `skills/` tree
+    search; no catalogue, no `python3 -c` newline bug, no doubled path. Package
+    derivation is folder-based. `--force`/`--dry-run`/`--link` honoured. No
+    TODO/FIXME, no hardcoded UI strings, no secrets.
+  - `scripts/validate.py` (139 lines): catalog↔disk↔frontmatter consistency,
+    duplicate id/name detection, path-under-package check. Deterministic.
+  - `scripts/gen-catalog.mjs` (182 lines): deterministic walk, `.gitkeep`/cache
+    exclusion, sorted `paths`, `--check` idempotency verified (regenerate then
+    `--check` → exit 0).
+  - `catalog.json`: regenerated, 32 skills / 5 packages, 518 paths, all exist on disk.
+  - `tests/hygiene/*.test.mjs`: every broken fixture is built in a throwaway
+    `mkdtemp` git repo under `/tmp` and removed in a `finally` block; the real
+    worktree is never written by the tests.
+  - No edits outside the owned paths. No file was truncated (line counts match
+    trunk for every changed file; `git diff --stat` reviewed).
+  - No test was weakened: the broken-fixture half of every hygiene test still
+    fails (verified by running each suite; the `--dirty`/broken variants fail as
+    required).
+- **Reproduction results (all green):**
+  - `node scripts/gen-catalog.mjs --check` → exit 0
+  - `node scripts/gen-catalog.mjs` → 32 skills, 5 packages
+  - `python3 -I scripts/validate.py` → `ok: 32 skills validated`
+  - catalogue path existence check → 0 missing
+  - clean clone `git status --porcelain` → empty (exit 0)
+  - clean clone `pytest -q` → 349 passed, 9 skipped; the only 3 failures are the
+    **pre-existing cross-job** defects in `skills/engineering/` (owned by
+    `skills-engineering-r3`), unchanged from TASK-0006. The 13 `import file
+    mismatch` collection errors from `before.txt` are gone.
+  - hygiene suites → 7/8 green (see below)
+  - `install.sh --package engineering|business-de|agentic-data` → 10/10 each
+- **Not fixed this pass (all pre-existing, all outside owned paths):**
+  1. `tests/hygiene/clean-tree.test.mjs` is red on a pre-existing dirty tree:
+     `M skills/agentic-data/skill-authoring-evals/report_test.json` (owned by
+     `skills-agentic-data-r3-02`), `?? docs/truth/REPO_PROBE.txt` (0-byte probe),
+     `?? scripts/verify-status.mjs` (untracked STATUS.md checker). None of the
+     three is mine to delete; the test itself is clean and its `--dirty` variant
+     still fails as required.
+  2. `scripts/truth/**` (preflight/gate/safe-commit/db/port) is absent from this
+     repo — the blocked-check, gate and commit-and-land commands in the job card
+     cannot be executed from here (G1, cross-job).
+  3. The 3 cross-job `skills/engineering/` test failures.
+  4. `skills/business-de/**` collection errors in a clean clone are resolved
+     (the top-level `business-de/` duplicate and its stale `__pycache__` are
+     gone); the canonical copy collects cleanly.
+- **UNVERIFIED (carried forward, operator decision required):**
+  - Docker leak test — no Docker daemon is reachable from this host; the
+    install/link path cannot be exercised in a container here.
+  - The GUC name decision (`app.company_id` vs alternatives) is an operator call
+    recorded in D-006; the pg-rls checker follows whatever `config.json` names,
+    so it is not a blocker for this job.
