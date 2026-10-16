@@ -8,6 +8,7 @@ the four gate commands verbatim, and be byte-identical to a second generation.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -25,9 +26,12 @@ GATES = [
 ]
 
 
+NODE = shutil.which("node") or sys.executable
+
+
 def run(args, check=True):
     return subprocess.run(
-        [sys.executable, str(GEN), *args],
+        [NODE, str(GEN), *args],
         cwd=REPO, capture_output=True, text=True, check=check,
     )
 
