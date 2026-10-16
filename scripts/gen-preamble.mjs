@@ -124,6 +124,30 @@ function renderContracts() {
   return CONTRACTS;
 }
 
+const HELP = `Usage: node scripts/gen-preamble.mjs [--check] [--help]
+
+  node scripts/gen-preamble.mjs
+      Regenerate skills/orchestrator-preamble/orchestrator-preamble/references/preamble.md
+      from the four canonical engineering skills. Exits 0 on success.
+
+  node scripts/gen-preamble.mjs --check
+      Exit 0 if the committed preamble.md matches a fresh generation, 1 if it is
+      missing or stale. Use this in CI before committing.
+
+  node scripts/gen-preamble.mjs --help
+      Print this help text and exit 0.
+
+Exit codes:
+  0  success (write complete, or --check passes)
+  1  preamble missing or stale (--check), or a canonical skill's gate command is
+     absent from its SKILL.md (the generator refuses to run)
+`;
+
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  process.stdout.write(HELP);
+  process.exit(0);
+}
+
 const check = process.argv.includes('--check');
 const body = render() + '\n' + renderContracts();
 

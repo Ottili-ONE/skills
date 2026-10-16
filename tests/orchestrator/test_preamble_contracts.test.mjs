@@ -6,12 +6,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..', '..');
 const PREAMBLE = join(REPO, 'skills', 'orchestrator-preamble', 'orchestrator-preamble', 'references', 'preamble.md');
+const GEN = join(REPO, 'scripts', 'gen-preamble.mjs');
 
 test('body ends with a Contracts section naming all four contracts', () => {
   const body = readFileSync(PREAMBLE, 'utf8');
@@ -38,6 +40,13 @@ test('the human-readable contract is the skill SKILL.md', () => {
     join(REPO, 'skills', 'orchestrator-preamble', 'orchestrator-preamble', 'SKILL.md'), 'utf8'
   );
   assert.ok(skill.includes('## Contracts'), 'SKILL.md has no Contracts section');
+});
+
+test('--help prints usage and exits 0', () => {
+  const out = execFileSync('node', [GEN, '--help'], { cwd: REPO, encoding: 'utf8' });
+  assert.ok(out.includes('Usage:'), out);
+  assert.ok(out.includes('--check'), out);
+  assert.ok(out.includes('--help'), out);
 });
 
 test('README documents the generated preamble interface', () => {
