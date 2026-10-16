@@ -1,0 +1,5 @@
+# .gitkeep -- SKL-W0-01 TASK-0003
+# This directory is empty of content files but is part of the repository's
+# contract (test fixtures / example scaffolding). Git does not track empty
+# directories, so this placeholder keeps the directory alive in a fresh clone.
+# It is ignored by pytest collection and by the catalogue generator.
