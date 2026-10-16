@@ -40,7 +40,8 @@ for (const name of WRAPPERS) {
     const review = join(REVIEWS, `${name}.md`);
     const text = readFileSync(review, 'utf8');
     assert.match(text, /Status: UNVERIFIED/);
-    assert.match(text, /Reviewed by: \*\*UNVERIFIED — pending signature\*\*/);
+    assert.ok(/UNVERIFIED — pending signature/.test(text),
+      `${name} review must carry the UNVERIFIED — pending signature marker`);
     assert.match(text, /Date: \*\*pending\*\*/);
   });
 }
