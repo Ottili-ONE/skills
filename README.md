@@ -169,6 +169,22 @@ done
 CI runs `validate.py`, `validate_skill.py --all`, and every `*_test.py` on every push and
 PR (`.github/workflows/validate.yml`).
 
+## Orchestrator preamble (generated)
+
+The preamble is the ≤60-line rules block that every GERMO job's base prompt loads. It is
+generated, never hand-edited:
+
+```sh
+node scripts/gen-preamble.mjs                # regenerate skills/orchestrator-preamble/orchestrator-preamble/references/preamble.md
+node scripts/gen-preamble.mjs --check        # exit 0 if the committed file matches a fresh generation
+```
+
+The body is produced from the four canonical engineering skills
+(`skills/engineering/{pg-rls-multitenant,outbox-idempotency,problem-json-contracts,honest-status}/SKILL.md`);
+if a canonical skill's gate command changes, `--check` exits 1. The body ends with a fixed
+`## Contracts` section documenting the generator, body, canonical-source and consumer
+contracts; the human-readable contract is the skill's own `SKILL.md`.
+
 ## Contributing
 
 See `CONTRIBUTING.md` and `AGENTS.md`. New skills start from `templates/skill/SKILL.md`.
