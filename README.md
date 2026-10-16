@@ -1,6 +1,9 @@
 # Ottili ONE Skills
 
-Agent Skills for Claude Code, Codex, Cursor, OpenClaw, Ottili AI and Ottili Coder.
+> ⚠️ **Important Note:** These capabilities and skills were developed within a fully automated, blind, and zero-Human-In-The-Loop (no-HITL) multi-agent system. Consequently, they may contain bugs, edge cases, or features that do not function as intended in all environments.
+
+
+Agent Skills for Claude Code, Codex, Cursor, OpenClaw, Hermes Agent, alran Code and many more.
 
 Skills are folders of instructions, scripts, and resources that AI agents discover and apply to
 specific tasks. This repository is the single source of truth for those skills: it hosts the
