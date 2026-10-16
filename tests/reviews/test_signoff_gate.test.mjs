@@ -63,11 +63,12 @@ test('a filled sign-off block certifies the skill (audit exits 0, entry ok)', ()
     .replace('| Reviewed by | **UNVERIFIED — pending signature** |', '| Reviewed by | Dr. Anna Meier |')
     .replace('| Date | **pending** |', '| Date | 2026-10-16 |')
     .replace('Date: _______________', 'Date: 2026-10-16')
+    .replace('Reviewed by: ___________________________________', 'Reviewed by: Dr. Anna Meier')
     .replace('Signature: ___________________________________', 'Signature: Dr. Anna Meier')
     .replace('Findings: ___________________________________', 'Findings: §13b scope and igL citation confirmed correct');
   const md = join(REPO, 'skills', 'ref-ust-edge-cases', 'ref-ust-edge-cases', 'SKILL.md');
   const mdBackup = readFileSync(md, 'utf8');
-  writeFileSync(md, mdBackup.replace('reviewed_by: UNVERIFIED', 'reviewed_by: Dr. Anna Meier'), 'utf8');
+  writeFileSync(md, mdBackup.replace(/^reviewed_by: UNVERIFIED$/m, 'reviewed_by: Dr. Anna Meier'), 'utf8');
   writeFileSync(file, filled, 'utf8');
   try {
     assert.doesNotThrow(() => audit(['--json']));
@@ -86,11 +87,12 @@ test('a certified skill with an empty sign-off block is a problem (audit exits n
   const backup = readFileSync(file, 'utf8');
   const empty = backup
     .replace('| Reviewed by | **UNVERIFIED — pending signature** |', '| Reviewed by | Dr. Anna Meier |')
+    .replace('Reviewed by: ___________________________________', 'Reviewed by: ___________________________________')
     .replace('Date: _______________', 'Date: _______________')
     .replace('Signature: ___________________________________', 'Signature: ___________________________________');
   const md = join(REPO, 'skills', 'ref-ust-edge-cases', 'ref-ust-edge-cases', 'SKILL.md');
   const mdBackup = readFileSync(md, 'utf8');
-  writeFileSync(md, mdBackup.replace('reviewed_by: UNVERIFIED', 'reviewed_by: Dr. Anna Meier'), 'utf8');
+  writeFileSync(md, mdBackup.replace(/^reviewed_by: UNVERIFIED$/m, 'reviewed_by: Dr. Anna Meier'), 'utf8');
   writeFileSync(file, empty, 'utf8');
   try {
     let threw = false;
