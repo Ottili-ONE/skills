@@ -42,7 +42,8 @@ for (const name of WRAPPERS) {
     assert.match(text, /Status: UNVERIFIED/);
     assert.ok(/UNVERIFIED — pending signature/.test(text),
       `${name} review must carry the UNVERIFIED — pending signature marker`);
-    assert.match(text, /Date: \*\*pending\*\*/);
+    assert.ok(/\|\s*Date\s*\|\s*\*\*pending\*\*\s*\|/.test(text),
+      `${name} review must carry the pending date marker`);
   });
 }
 
