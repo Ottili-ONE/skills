@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
-"""Self-test for check_rls_migration.py: good example is clean, bad example fails,
-missing file exits 2, --json is machine-readable, no args exits 2."""
+"""Self-test for check_rls_migration.py.
+
+The checker is per-table and keyed on the single product GUC `app.company_id`
+(see docs/truth/REPAIR_LOG.md, D-003). It must:
+  * PASS the three real hq migrations,
+  * FAIL the three hostile fixtures (no FORCE / no company_id / GRANT ALL),
+  * PASS the skill's own good example (now written to the product standard),
+  * FAIL the skill's own bad example,
+  * exit 2 on a missing file and on no args,
+  * emit machine-readable --json.
+"""
 import json
 import subprocess
 import sys
@@ -11,6 +20,22 @@ ROOT = Path(__file__).resolve().parents[1]
 CHECK = ROOT / "scripts" / "check_rls_migration.py"
 EX = ROOT / "references" / "examples"
 
+# Three real hq migrations, verified 2026-10-16 to use company_id + app.company_id.
+HQ = [
+    "/srv/ottili/repo/hq-v2/modules/reports-intelligence/migrations/"
+    "20261002091600_reports_intelligence_saved_report.sql",
+    "/srv/ottili/repo/hq-v2/modules/reports-intelligence/migrations/"
+    "20261002091630_reports_intelligence_signal_threshold.sql",
+    "/srv/ottili/repo/hq-v2/modules/procure-to-stock/migrations/"
+    "20261010000000_hq_procure_to_stock_r3_04_audit.sql",
+]
+
+HOSTILE = [
+    "hostile_1_no_force.sql",
+    "hostile_2_no_company_id.sql",
+    "hostile_3_grant_all.sql",
+]
+
 
 def run(*paths: str) -> tuple[int, str]:
     p = subprocess.run([sys.executable, str(CHECK), *paths],
@@ -20,15 +45,33 @@ def run(*paths: str) -> tuple[int, str]:
 
 def main() -> int:
     failures = []
+
     good, out = run(str(EX / "good_migration.sql"))
     if good != 0:
         failures.append(f"good migration must exit 0, got {good}\n{out}")
+
+    for h in HOSTILE:
+        rc, out = run(str(EX / h))
+        if rc != 1:
+            failures.append(f"{h} must exit 1, got {rc}\n{out}")
+        elif "FAIL" not in out:
+            failures.append(f"{h} output must say FAIL\n{out}")
+
+    for m in HQ:
+        rc, out = run(m)
+        if rc != 0:
+            failures.append(f"real hq migration {m} must exit 0, got {rc}\n{out}")
+
+    # All three hostile at once still fails (exit 1, not 0).
+    rc, out = run(*[str(EX / h) for h in HOSTILE])
+    if rc != 1:
+        failures.append(f"all hostile together must exit 1, got {rc}\n{out}")
 
     bad, out = run(str(EX / "bad_migration.sql"))
     if bad != 1:
         failures.append(f"bad migration must exit 1, got {bad}\n{out}")
     else:
-        for needle in ("FORCE ROW LEVEL SECURITY", "GRANT ALL", "ROLLBACK"):
+        for needle in ("FORCE ROW LEVEL SECURITY", "GRANT ALL"):
             if needle not in out:
                 failures.append(f"bad migration output must mention {needle!r}\n{out}")
 
@@ -40,7 +83,7 @@ def main() -> int:
         for f in failures:
             print(f"FAIL: {f}", file=sys.stderr)
         return 1
-    print("ok: pg-rls migration checker self-test (good, bad, missing)")
+    print("ok: pg-rls migration checker self-test (3 real hq PASS, 3 hostile FAIL)")
     return 0
 
 

@@ -152,3 +152,41 @@ Recorded in `docs/gaps/SKL-W0-01.md`. The deletion itself is verified clean:
 is empty, `git ls-files | grep -c STATUS` is 9 (all under `skills/agentic-data/`
 and `skills/business-de/`, owned by other jobs), the root has no stray docs/logs,
 and `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.
+
+## D-003 — RLS checker accepted three unsafe migrations; rewrote it per-table around the real product GUC
+
+- **Defect:** the previous `check_rls_migration.py` was a whole-file scanner: it ran
+  `TENANT_RE.search(text)` once over the *entire* migration, so one `tenant_id`
+  anywhere satisfied the discriminator test for every table in the file. It also
+  accepted any of five discriminator names and never checked that the RLS policy
+  was keyed on the GUC the product repos actually use. Result: three unsafe
+  migrations (no FORCE, policy keyed on a non-product GUC, GRANT ALL) passed, and
+  real hq migrations were reported against a standard that does not exist in the
+  codebase.
+- **Cause:** the checker was written from the skill's own procedure doc, which
+  lists acceptable discriminator names, instead of from the migrations it is
+  supposed to gate. It never looked at what the product repos ship.
+- **GUC decision (reality has 3 candidates; one wins):**
+  | GUC | hq-v2 | ld3-v2 | alran-core-v2 | console-v2 | verdict |
+  |-----|-------|--------|---------------|------------|---------|
+  | `app.company_id` | **995** | 4 | **733** | **347** | **PRODUCT STANDARD** |
+  | `app.current_company` | 51 | 0 | 0 | 0 | legacy hq module only |
+  | `app.current_company_id` | 29 | **582** | 0 | 0 | legacy ld3 module only |
+  `app.company_id` is the single GUC used by the three repos that ship RLS
+  migrations (hq, alran-core, console) and is present in ld3 too. The other two
+  are confined to older modules and are not the standard. Verified 2026-10-16 by
+  `grep -rho "current_setting('[a-zA-Z_.]*'" <repo> --include=*.sql`.
+- **Fix:** the checker is now **per-table**. For every `CREATE TABLE` it requires,
+  in the table's own column list and its own policy bodies:
+  (a) `ENABLE ROW LEVEL SECURITY` **and** `FORCE ROW LEVEL SECURITY` on that table,
+  (b) a `CREATE POLICY` on that table whose USING/WITH CHECK references
+      `current_setting('app.company_id', true)`,
+  (c) a `company_id` column in that table's definition.
+  `GRANT ALL` anywhere in the file is still a finding. The `-- ROLLBACK` block and
+  `security_invoker` view checks were dropped: they are not part of the per-table
+  tenant contract and the real hq migrations do not carry them.
+- **Proof:** 3 real hq migrations PASS
+  (`reports-intelligence/20261002091600`, `reports-intelligence/20261002091630`,
+  `procure-to-stock/20261010000000`); 3 hostile fixtures FAIL; the skill's own
+  `good_migration.sql` was rewritten to the product standard (company_id +
+  `app.company_id`) and now passes.

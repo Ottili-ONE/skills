@@ -1,28 +1,26 @@
--- Migration 20261007_001: add tenant_isolated_notes table with RLS.
--- Expand/contract: add column -> backfill -> add policy -> verify leak test -> contract old data later.
+-- GOOD example: the product standard (verified 2026-10-16 against hq-v2).
+-- The tenant discriminator column is `company_id` and the RLS policy is keyed on
+-- the single GUC the product repos use: `current_setting('app.company_id', true)`.
+-- See docs/truth/REPAIR_LOG.md for the GUC decision and the evidence counts.
 
 CREATE TABLE IF NOT EXISTS tenant_isolated_notes (
     id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id    uuid        NOT NULL,
+    company_id   text        NOT NULL,
     body         text        NOT NULL,
     created_at   timestamptz NOT NULL DEFAULT now()
 );
-
--- Backfill any pre-existing rows (none expected here; pattern shown for expand).
--- UPDATE tenant_isolated_notes SET tenant_id = '00000000-0000-0000-0000-000000000000'
--- WHERE tenant_id IS NULL;
 
 CREATE POLICY tenant_isolation ON tenant_isolated_notes
     AS PERMISSIVE
     FOR SELECT
     TO web_app
-    USING (tenant_id = current_setting('app.current_tenant')::uuid);
+    USING (company_id = current_setting('app.company_id', true));
 
 CREATE POLICY tenant_write ON tenant_isolated_notes
     AS PERMISSIVE
     FOR INSERT
     TO web_app
-    WITH CHECK (tenant_id = current_setting('app.current_tenant')::uuid);
+    WITH CHECK (company_id = current_setting('app.company_id', true));
 
 ALTER TABLE tenant_isolated_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_isolated_notes FORCE ROW LEVEL SECURITY;
