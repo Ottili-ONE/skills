@@ -122,6 +122,28 @@ def main() -> int:
     catalog = load_catalog()
     errors = validate_catalog(catalog)
 
+    if args.everywhere:
+        # --everywhere scans the WHOLE repository tree, not just the catalog.
+        # It cross-checks the generated catalog against the skills/ folders on
+        # disk so a skill that exists on disk but is missing from the catalog
+        # (or vice versa) is reported here rather than silently ignored.
+        on_disk: dict[str, list[str]] = {}
+        for skill_dir in sorted((ROOT / "skills").rglob("*")):
+            if not skill_dir.is_dir():
+                continue
+            sm = skill_dir / "SKILL.md"
+            if not sm.is_file():
+                continue
+            rel = skill_dir.relative_to(ROOT).as_posix()
+            pkg = rel.split("/")[1] if len(rel.split("/")) > 1 else ""
+            on_disk[skill_dir.name] = [rel, pkg]
+        catalog_names = {e["name"] for e in catalog.get("skills", [])}
+        for name, (rel, pkg) in sorted(on_disk.items()):
+            if name not in catalog_names:
+                errors.append(f"on-disk skill '{name}' ({rel}) is missing from the catalog")
+        for name in sorted(catalog_names - set(on_disk)):
+            errors.append(f"catalog entry '{name}' has no SKILL.md on disk")
+
     if args.json:
         report = {
             "skills": len(catalog.get("skills", [])),
