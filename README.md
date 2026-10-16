@@ -16,7 +16,7 @@ skills/
 ├── curated/              # Vetted third-party skills
 ├── community/            # Community-contributed skills (review before production use)
 ├── ottili-ai/            # Skills for Ottili AI runtime and Ottili Velo agents
-├── business-de/          # German business-domain skills (DATEV, XRechnung/ZUGFeRD, GoBD)
+├── business-de/          # German business-domain skills (DATEV, XRechnung/ZUGFeRD, GoBD) — canonical copy under skills/business-de/
 ├── agentic-data/         # Data-plane agent skills
 └── engineering/          # Engineering playbooks (this job's output)
 scripts/                  # validate.py, validate_skill.py, install.sh, build-index.py, helpers

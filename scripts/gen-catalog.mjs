@@ -20,9 +20,11 @@ const REPO = resolve(HERE, '..');
 const SKILLS_DIR = resolve(REPO, 'skills');
 const DEFAULT_OUT = resolve(REPO, 'catalog.json');
 
-// Cache/build artefacts that must never appear in a generated catalogue.
+// Cache/build artefacts and empty placeholder files that must never appear in
+// a generated catalogue. `.gitkeep` exists only to keep empty directories in
+// git; it carries no skill content and pollutes the `paths` list.
 const IGNORE_DIRS = new Set(['.pytest_cache', '__pycache__', 'node_modules', '.git']);
-const IGNORE_FILES = new Set(['.DS_Store']);
+const IGNORE_FILES = new Set(['.DS_Store', '.gitkeep']);
 
 const args = process.argv.slice(2);
 let check = false;
