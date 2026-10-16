@@ -113,3 +113,28 @@ claim, and `docs/reviews/*.md` carry no retrieval-date claims at all.
 - Note: the claim is *future-dated relative to 2026-10-16* only if the operator's clock
   is right; the files themselves are the evidence and the retrieval date is recorded
   inside them.
+
+## G-005 — `clean-tree.test.mjs` fails because another job has uncommitted work (2026-10-16)
+
+`tests/hygiene/clean-tree.test.mjs` (SKL-W0-01, not this job) asserts
+`git status --porcelain` is empty. It currently FAILS, and every failure is
+outside this job's owned paths:
+
+```
+M skills/engineering/outbox-idempotency/references/examples/good_outbox.sql
+M skills/engineering/outbox-idempotency/scripts/check_outbox.py
+?? skills/engineering/outbox-idempotency/references/examples/hostile_missing_dead_letter.sql
+?? skills/engineering/outbox-idempotency/references/examples/hostile_no_company_id.sql
+?? skills/engineering/outbox-idempotency/references/examples/hostile_tenant_leak.sql
+?? skills/engineering/outbox-idempotency/scripts/check_outbox_platform.py
+```
+
+`skills/engineering/**` is owned by `skills-engineering-r3`
+(`docs/R3_OWNERS.json`), so this job may not commit, revert or otherwise touch
+those files. The failure is a shared-working-tree condition, not a defect this
+job introduced: `git status --porcelain -- skills/orchestrator-preamble/
+scripts/gen-preamble.mjs README.md docs/reviews/ tests/orchestrator/ .github/`
+is empty, and all seven other hygiene tests pass.
+
+- Owner: skills-engineering-r3 (commit or clean its outbox work).
+- This job's action: none possible. Recorded so the next pass does not re-derive it.
