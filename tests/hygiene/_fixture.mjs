@@ -9,11 +9,11 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync,
          existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const here = fileURLToPath(import.meta.url);
-export const REPO = resolve(here, '..', '..');
+export const REPO = resolve(dirname(here), '..', '..');
 
 // -- git helpers (read-only on the real repo; fixtures live under tmpdir()) ----
 
