@@ -36,15 +36,18 @@ Helpers: scripts/
 Good (named import from the public package, token-derived values, tracked workaround):
 ```tsx
 import { Button, Card } from '@ottili/foundation-ui';
-import { tokens } from '@ottili/foundation-ui/tokens';
+import { duration, density } from '@ottili/foundation-ui/tokens';
 export function OrderCard() {
   return (
-    <Card padding={tokens.spacing.md}>
-      <Button variant="primary">Save</Button>
+    <Card padded tone="elevated">
+      <Button variant="primary" style={{ transitionDuration: duration('fast') }}>
+        Save
+      </Button>
     </Card>
   );
 }
 ```
+Verified 2026-10-16 against `packages/foundation-ui/src/primitives/display.ts:30` (`CardProps` carries `padded?: boolean`, not `padding`) and `packages/foundation-ui/src/primitives/tokens.ts` (exports `duration(token)`, `density(token)`, `MOTION_REDUCE_VAR` — there is no `tokens` object and no `tokens.spacing` namespace).
 Bad (deep import into internals — breaks when the package restructures):
 ```tsx
 import { Button } from '@ottili/foundation-ui/dist/components/Button';

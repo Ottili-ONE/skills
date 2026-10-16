@@ -60,6 +60,15 @@ def parse_status(text: str) -> dict[str, list[dict]]:
                  "text": m.group("text").strip(),
                  "evidence": ev.group("evidence").strip() if ev else ""}
             )
+            continue
+        # A bare list item ("- prose") is still a claim: under DONE or VERIFIED it is
+        # prose with no evidence and is FALSE_DONE. Without this the parser silently
+        # drops every uncheckboxed line, so a lying STATUS.md reads as clean.
+        if re.match(r"^\s*-\s+\S", line):
+            buckets[current].append(
+                {"checked": False, "text": line.strip().lstrip("- ").strip(),
+                 "evidence": ""}
+            )
     return buckets
 
 
@@ -103,6 +112,14 @@ def main() -> int:
             elif p.is_dir() and not any(p.iterdir()):
                 findings.append({"bucket": bucket, "claim": claim["text"][:60],
                                  "reason": f"evidence dir is empty: {ev}"})
+    # A bare list item (no checkbox) under DONE or VERIFIED is prose, not a claim with
+    # evidence: the skill's whole point is that "it's basically done" is FALSE_DONE.
+    # Checkbox-less lines under other buckets are legitimate prose, so they are left alone.
+    for bucket in ("DONE", "VERIFIED"):
+        for claim in buckets[bucket]:
+            if not claim["checked"] and not claim["evidence"]:
+                findings.append({"bucket": bucket, "claim": claim["text"][:60],
+                                 "reason": "prose claim with no evidence pointer"})
     # IN_PROGRESS must name a blocker, BLOCKED must name an owner and a question.
     # Without them the claim is stranded: nobody knows what is stuck or who to ask.
     for claim in buckets["IN_PROGRESS"]:

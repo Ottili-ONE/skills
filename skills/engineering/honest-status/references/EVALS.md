@@ -35,7 +35,7 @@ the next agent may merge it and re-run; conflating the two is how work is report
 **Failure sign**: agent marks it DONE because "the code is finished".
 **What the skill changes vs no skill**: without the skill an agent marks a migration whose leak test fails as DONE because "the code is finished". The skill keeps it IN_PROGRESS with a diff pointer and a named blocker, so the next agent picks up the failure rather than the code.
 **Worked example good**:
-`- [ ] tenant_id backfill — evidence: git diff HEAD~1 -- migrations/ — blocker: staging DB
+`- [ ] company_id backfill — evidence: git diff HEAD~1 -- migrations/ — blocker: staging DB
   connection refused — owner: alice — date: 2026-10-13`
 **Near-miss trigger**: "The code is done, so it's DONE." Answer: no — done means verified, not
 coded.

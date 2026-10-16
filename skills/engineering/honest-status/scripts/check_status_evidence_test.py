@@ -40,7 +40,7 @@ UNVERIFIED_VERIFIED = """\
 # claims: nobody knows what is stuck or who to ask.
 STRANDED = """\
 ## IN_PROGRESS
-- [ ] tenant_id backfill
+- [ ] company_id backfill
 
 ## BLOCKED
 - [ ] dark mode contrast
@@ -267,7 +267,37 @@ def test_stranded_in_progress_and_blocked() -> None:
         return 0
 
 
+PROSE_DONE = """\
+## DONE
+- Outbox checker is working and handles everything.
+- Migration shipped.
+"""
+
+
+def test_prose_done_is_false_done() -> None:
+    """A `## DONE` section whose items carry no checkbox and no evidence is prose, and
+    every prose item under DONE is FALSE_DONE: the skill exists to catch "it's basically
+    done" before it is copied into a handoff."""
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        f = t / "STATUS.md"
+        f.write_text(PROSE_DONE, encoding="utf-8")
+        r = run(str(f), "--root", str(t))
+        if r.returncode != 1:
+            print("FAIL: prose-only DONE should be flagged")
+            print(r.stdout, r.stderr)
+            return 1
+        out = r.stdout + r.stderr
+        if "no evidence pointer" not in out:
+            print("FAIL: prose DONE should say 'no evidence pointer'")
+            print(out)
+            return 1
+        print("ok: prose-only DONE is downgraded to FALSE_DONE")
+        return 0
+
+
 EDGE_TESTS = [
+    ("prose done is false done", test_prose_done_is_false_done),
     ("unverified verified is false done", test_unverified_verified_is_false_done),
     ("stranded in-progress and blocked", test_stranded_in_progress_and_blocked),
     ("next-line evidence", test_next_line_evidence),
