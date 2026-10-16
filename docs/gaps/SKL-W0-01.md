@@ -1,48 +1,56 @@
-# Gaps — SKL-W0-01 (installer, clean clone, catalogue generated from folders)
+# Gaps — SKL-W0-01 (TASK-0004)
 
-## cross-job requests
+## G1 (blocking tooling): `scripts/truth/preflight.mjs` and the truth harness do not exist in this repo
 
-1. **`generic` / `meta` / `ref-*` package names have no definition anywhere.**
-   Searched: `catalog.json` (only `core`, `curated`, `community`, `ottili-ai`), all
-   `*.md`/`*.json`/`*.yml` in the repo, `git log -p -- catalog.json` (single commit
-   `6b81aff Restructure skills repo with catalog, packages, and tooling` — no such
-   names ever existed). The task prompt names them as real packages but no other job
-   defines them. Resolution adopted inside this job's paths (documented in
-   `scripts/install.sh` and `README.md`):
-   - `generic` — every skill in the catalogue (all packages).
-   - `meta` — reserved name for Ottili's own meta-skills; currently resolves to the
-     empty set (no skills have `package: meta`), so `--package meta` installs nothing
-     and exits 0 with an explicit message. This is a *virtual* package, not derived
-     from a folder, and is intentionally not listed by `gen-catalog.mjs`.
-   - `ref-*` — on-demand reference packages. `--package ref-<name>` is accepted and
-     resolves to the empty set today; a future job may populate `skills/ref-*`
-     folders, at which point `gen-catalog.mjs` will pick them up automatically.
-   If another job owns the intended semantics for these names, please define them in
-   `catalog.json.packages` and this job will consume them.
+- **Claim in task:** "Start by running: `node scripts/truth/preflight.mjs --job SKL-W0-01 --status` (exit 20 means BLOCKED, and so does a missing or crashing script)."
+- **Observed (2026-10-16):** `node scripts/truth/preflight.mjs --job SKL-W0-01 --status` exits 1 with
+  `Cannot find module '/srv/ottili/repo/skills/scripts/truth/preflight.mjs'`. The whole `scripts/truth/`
+  directory is absent from the working tree and from `git ls-files scripts/`. The same holds for
+  `gate.mjs`, `safe-commit.mjs`, `db.mjs`, `port.mjs`.
+- **Search:** `find / -name "preflight.mjs" 2>/dev/null` returns only unrelated copies under other repos'
+  `node_modules/tsx/dist/`, other jobs' `tests/support/`, and other products' `src/`. No copy belongs to
+  the `skills` repo or to the truth kit.
+- **Ownership:** `scripts/truth/**` is on this job's own EXCLUDE list, so it is another job's prerequisite,
+  not mine to create.
+- **Impact:** the blocked-check, gate, and commit-and-land commands in the job card cannot be executed
+  from this repo as written. Every later task of SKL-W0-01 that calls them stops at once.
+- **Request (cross-job):** provide `scripts/truth/{preflight,gate,safe-commit,db,port}.mjs` (plus the
+  manifest/README they expect) for the `skills` repo, or point SKL-W0-01 at an existing kit location.
+  Recorded in `docs/truth/REPAIR_LOG.md`.
+- **Workaround used in this pass:** the DONE WHEN criteria were verified directly with `git ls-files`,
+  `find`, `git grep`, and `node scripts/gen-catalog.mjs --check` instead of the gate harness.
 
-2. **`scripts/truth/` (preflight.mjs, gate.mjs, safe-commit.mjs, db.mjs, port.mjs,
-   heavy.sh) does not exist in this repository.** The job card and AGENTS.md reference
-   it, and the task prompt says to start with
-   `node scripts/truth/preflight.mjs --job SKL-W0-01 --status`. A filesystem-wide
-   search (`find / -name preflight.mjs`, `find / -type d -name truth -path '*scripts*'`)
-   finds no such directory under `/srv/ottili/repo/skills` or anywhere under
-   `/srv/ottili/repo`. The `scripts/` directory that exists contains only
-   `build-index.py`, `check_related_graph.py`, `install-skill.py`, `install.sh`,
-   `list-skills.py`, `validate.py`, `validate_skill.py`, `validate_skills.py`.
-   All commits in this pass therefore use plain `git add <paths> && git commit`,
-   which is the only mechanism available. This does not block the functional work:
-   `install.sh`, `catalog.json`, `validate.py` and `gen-catalog.mjs` are all in this
-   job's owned paths and are committed directly.
+## G2 (informational): `README.md` and `catalog.json` mention `business-de`
 
-3. **Three tests fail on a clean checkout; unrelated to this job's deletion.**
-   Verified during TASK-0004 (`python3 -m pytest -q`: 3 failed, 349 passed, 9
-   skipped). The failing files are owned by `skills-engineering-r3` /
-   `skills-agentic-data-r3` and were not touched by this job:
-   - `skills/engineering/acceptance-harness/scripts/report_result_test.py` — two
-     tests do `rc, _ = run(...)` but `run()` returns a `CompletedProcess` object
-     (`TypeError: cannot unpack non-iterable CompletedProcess object`).
-   - `skills/engineering/tests/test_research_design_acceptance.py::test_related_graph_is_acyclic_with_unique_sink`
-     — `NameError: name 'ENGINEERING_DIR' is not defined` (module-level constant
-     missing in the test file).
-   Both are genuine code defects in other jobs' files, not test-environment
-   artefacts. Recorded in `docs/truth/REPAIR_LOG.md` (Pre-existing failures).
+- These reference the **package** `skills/business-de` (the canonical copy), which exists. They are not
+  stale references to the deleted top-level `business-de/` duplicate.
+- Verified: `skills/business-de/` exists and holds the business skills;
+  `catalog.json` `packages["business-de"].path` = `skills/business-de`.
+- No tracked file references a top-level `business-de/` path. README.md:19 explicitly notes
+  "canonical copy under skills/business-de/".
+- Action: none required; recorded for completeness.
+
+## G3 (verification record for TASK-0004, 2026-10-16)
+
+Grep for `business-de` across this job's paths, as the task requires before any delete:
+
+| Path | Result |
+|---|---|
+| `scripts/` | no match (install.sh derives packages from `skills/` folders; no hardcoded `business-de`) |
+| `tests/` | no match |
+| `docs/` | `docs/truth/REPAIR_LOG.md` and `docs/truth/REPO_SHAPE.md` mention it **historically** (D-004, "stale top-level duplicate"); `docs/R3_OWNERS.json` lists `skills/business-de/**` as owned by `skills-business-de-r3` |
+| `catalog.json` | matches only the **package** `skills/business-de` (`packages["business-de"].path` = `skills/business-de`, 26 skill paths under it) |
+| `README.md` | one match at line 19 — the `business-de/` entry in the layout tree. **Stale:** it carried the leftover comment "canonical copy under skills/business-de/", which referred to the deleted duplicate. Fixed in this pass (see commit). |
+
+Conclusion: nothing references the deleted top-level `business-de/`. The canonical copy is
+`skills/business-de/` (10 SKILL.md), owned by `skills-business-de-r3`, and stays.
+
+## G4 (state.json files are inside another job's skills, not at the root)
+
+`git ls-files | grep state.json` returns three files, all under `skills/business-de/`:
+- `skills/business-de/immutability-state.json`
+- `skills/business-de/period_lock_state.json`
+- `skills/business-de/skr-journal-mapping/period_lock_state.json`
+
+These are owned by `skills-business-de-r3` (`skills/business-de/**`) and are part of that job's
+EVALS fixtures/state. They are **not** root state files and are not in scope for deletion.

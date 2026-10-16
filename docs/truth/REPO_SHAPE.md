@@ -66,6 +66,8 @@ No second installer, validator or catalogue generator exists anywhere in the tre
 ## Root contents (authoritative)
 
 ```
+.github/         # CI workflows (this job owns this file)
+.gitignore       # this job owns this file
 AGENTS.md        # live directives + ownership (this job owns this file)
 CONTRIBUTING.md
 LICENSE
