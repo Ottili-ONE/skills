@@ -120,6 +120,10 @@ def main() -> int:
 
     report = audit(args.strict)
     if args.json:
+        # Fail-closed: a certified skill with an unresolved problem (missing or
+        # incomplete sign-off block) must make the audit exit non-zero, even in
+        # machine-readable mode. Returning 0 here would let a broken certification
+        # slip through any caller that only inspects the exit code.
         print(json.dumps(report, indent=2))
         return 0 if report["ok"] else 1
 

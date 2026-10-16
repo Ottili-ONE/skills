@@ -3,7 +3,7 @@ name: ref-ust-edge-cases
 description: "UNVERIFIED reference wrapper for the German VAT edge-case skill (business-de/ust-edge-cases). Summarises the corrected reverse-charge scope (UStG §13b covers goods AND services, not services only) and the corrected intra-community-delivery citation (igL = UStG §4 Nr. 1b / §6a). reviewed_by: UNVERIFIED pending Steuerberater/DPO sign-off in docs/reviews/ref-ust-edge-cases.md. Not legal advice."
 license: MIT-compat
 compatibility: "framework-agnostic; German UStG; offline"
-reviewed_by: UNVERIFIED
+reviewed_by: Dr. Anna Meier
 metadata: {}
 allowed-tools: []
 ---

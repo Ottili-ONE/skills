@@ -38,7 +38,7 @@ test('§13b is stated as the full goods+services scope, not "services only"', ()
 test('§13b is NOT narrowed to services; goods may fall inside the reverse-charge list', () => {
   const text = readFileSync(SKILL, 'utf8');
   // Substring checks (the wrapper prose is multi-line, so anchored regexes are brittle).
-  assert.ok(text.includes('a goods supply'), 'wrapper must discuss a goods supply');
+  assert.ok(text.includes('A goods supply'), 'wrapper must discuss a goods supply');
   assert.ok(text.includes('may fall inside the §13b reverse-charge list'),
     'wrapper must state goods may fall inside the reverse-charge list');
   assert.ok(text.includes('is NOT "services only"'), 'wrapper must say the rule is NOT services only');

@@ -106,13 +106,18 @@ test('a certified skill with an empty sign-off block is a problem (audit exits n
 
 test('a certified skill whose review file is missing is a problem (audit exits non-zero)', () => {
   const md = join(REPO, 'skills', 'ref-ust-edge-cases', 'ref-ust-edge-cases', 'SKILL.md');
-  const backup = readFileSync(md, 'utf8');
-  writeFileSync(md, backup.replace('reviewed_by: UNVERIFIED', 'reviewed_by: Dr. Anna Meier'), 'utf8');
+  const review = join(REVIEWS, 'ref-ust-edge-cases.md');
+  const mdBackup = readFileSync(md, 'utf8');
+  const reviewBackup = readFileSync(review, 'utf8');
+  const stash = review + '.missing-stash';
+  writeFileSync(md, mdBackup.replace(/^reviewed_by: UNVERIFIED$/m, 'reviewed_by: Dr. Anna Meier'), 'utf8');
+  require('node:fs').renameSync(review, stash);
   try {
     let threw = false;
     try { audit(['--json']); } catch (e) { threw = true; }
     assert.ok(threw, 'audit should fail when a certified skill has no sign-off file');
   } finally {
-    writeFileSync(md, backup, 'utf8');
+    require('node:fs').renameSync(stash, review);
+    writeFileSync(md, mdBackup, 'utf8');
   }
 });
