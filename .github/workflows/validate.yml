@@ -33,6 +33,17 @@ jobs:
       - name: Install problem-json checker dependency
         run: pip install jsonschema
 
+      - name: Orchestrator preamble is up to date
+        run: node scripts/gen-preamble.mjs --check
+
+      - name: Run orchestrator contract tests
+        run: |
+          set -euo pipefail
+          for t in tests/orchestrator/*.test.mjs; do
+            echo "=== $t ==="
+            node "$t"
+          done
+
       - name: Run engineering skill self-tests
         shell: bash
         run: |
