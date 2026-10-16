@@ -119,3 +119,27 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **To verify:** an operator must confirm `app.company_id` is still the product
   standard at the next product-lane pass, or request a `config.json` /
   `--guc` flag on the checker so the choice is data-driven rather than hardcoded.
+
+## G8 (INTEGRATION STATUS, TASK-0008): commits landed on local `main`, not yet on `origin/main`
+
+- **State:** local `main` is a clean fast-forward of `origin/main` (merge-base
+  `53e1499`; `git log origin/main..main` lists only this job's 28 commits; `git log
+  main..origin/main` is empty). There is **no divergence and no rebase conflict** —
+  the integration step is a plain push, not a merge.
+- **Blocked:** `git push origin main` exits 126 with
+  `git-guard: blocked 'git push origin main' (shared working tree, R3 rules)`.
+  The GIT GUARD also blocks checkout/switch/restore/stash/clean/rebase/merge/pull/
+  `add -A`/`add .`/`commit -a`/`reset --hard`, so there is no in-job way to move the
+  commits onto `origin/main`.
+- **Also blocked:** the card's `node scripts/truth/safe-commit.mjs --integrate`
+  cannot run — `scripts/truth/**` does not exist in this repo (G1, cross-job
+  prerequisite on this job's EXCLUDE list). This job therefore lands via plain
+  `git commit` guarded to its owned paths, exactly as TASK-0001–TASK-0007 did.
+- **To finish integration:** an operator (or the guard owner) runs
+  `git push origin main` from this tree. After that, `origin/main` will carry
+  `efcbc48` and the W1 jobs (canonical-skills, domain-references-and-preamble) will
+  see the integrated state.
+- **Verified on the integrated local state:** `python3 -I scripts/validate.py` →
+  `ok: 32 skills validated`; `node scripts/gen-catalog.mjs --check` →
+  `ok: catalog unchanged (32 skills, 5 packages)`; `git status --porcelain` shows
+  only the three pre-existing entries from G5.
