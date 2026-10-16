@@ -1,5 +1,5 @@
 {
-  "type": "https://api.ottili.dev/problems/validation-failed",
+  "type": "https://problems.ottili.one/validation-failed",
   "title": "Validation failed",
   "status": 400,
   "detail": "No resource matching the request.",

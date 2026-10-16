@@ -46,7 +46,7 @@ The following URLs from earlier passes no longer resolve and must not be linked:
 7. PostgreSQL 18 docs, GRANT — https://www.postgresql.org/docs/current/sql-grant.html — 200. `GRANT ALL ON ALL TABLES IN SCHEMA` and per-table grant forms; confirms that a bare `GRANT ALL` on a protected table silently overrides the scoped SELECT grant and defeats the policy.
 8. PostgreSQL 18 docs, CREATE VIEW — https://www.postgresql.org/docs/current/sql-createview.html — 200. `security_invoker = true` makes the view run with the invoking user's privileges (RLS applies); the default is `security_definer` (view owner, RLS bypassed). This is the exact primitive behind the view rule in the skill.
 9. PostgreSQL 18 docs, REVOKE — https://www.postgresql.org/docs/current/sql-revoke.html — 200. Revoke-only contract for the "contract old data later" step of expand/contract migrations.
-10. PostgreSQL 18 docs, runtime config — https://www.postgresql.org/docs/current/runtime-config-connection.html — 200. `row_security` GUC (default on) and `current_setting('app.current_tenant')` semantics for the JWT-claim tenant-key strategy.
+10. PostgreSQL 18 docs, runtime config — https://www.postgresql.org/docs/current/runtime-config-connection.html — 200. `row_security` GUC (default on) and `current_setting('app.company_id', true)` semantics for the JWT-claim tenant-key strategy.
 
 ## Version-sensitive facts (re-verified 2026-10-13)
 - Postgres 18 is the current stable line; `FORCE ROW LEVEL SECURITY` unchanged since 9.5.

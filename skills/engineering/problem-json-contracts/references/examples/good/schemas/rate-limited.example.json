@@ -1,5 +1,5 @@
 {
-  "type": "https://api.ottili.dev/problems/rate-limited",
+  "type": "https://problems.ottili.one/rate-limited",
   "title": "Rate limit exceeded",
   "status": 429,
   "detail": "No resource matching the request.",

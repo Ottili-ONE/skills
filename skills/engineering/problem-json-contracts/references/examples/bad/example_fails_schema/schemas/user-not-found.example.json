@@ -1,5 +1,5 @@
 {
-  "type": "https://api.ottili.dev/problems/user-not-found",
+  "type": "https://problems.ottili.one/user-not-found",
   "title": "User not found",
   "status": 404,
   "detail": "This detail string is deliberately padded to exceed the five-hundred-character maximum length that the JSON Schema declares for the `detail` field of a problem+json document, so that the validator reports a maxLength violation and the example is rejected as non-conformant. Padding padding padding padding. This detail string is deliberately padded to exceed the five-hundred-character maximum length that the JSON Schema declares for the `detail` field of a problem+json document, so that the validator reports a maxLength violation and the example is rejected as non-conformant. Padding padding padding padding. This detail string is deliberately padded to exceed the five-hundred-character maximum length that the JSON Schema declares for the `detail` field of a problem+json document, so that the validator reports a maxLength violation and the example is rejected as non-conformant. Padding padding padding padding. ",

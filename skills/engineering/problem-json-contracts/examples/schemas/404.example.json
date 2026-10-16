@@ -1,5 +1,5 @@
 {
-  "type": "https://api.ottili.dev/problems/tenant-not-found",
+  "type": "https://problems.ottili.one/tenant-not-found",
   "title": "Tenant not found",
   "status": 404,
   "detail": "No tenant matching the supplied identifier.",

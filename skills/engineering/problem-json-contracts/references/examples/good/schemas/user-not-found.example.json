@@ -1,5 +1,5 @@
 {
-  "type": "https://api.ottili.dev/problems/user-not-found",
+  "type": "https://problems.ottili.one/user-not-found",
   "title": "User not found",
   "status": 404,
   "detail": "No resource matching the request.",

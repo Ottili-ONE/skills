@@ -3,8 +3,8 @@
 Each prompt is a realistic request an agent would receive. Expected behaviour shows what the skill should produce; failure signs show what would indicate the skill did not fire or misfired.
 
 ## 1. "Add a `notes` table to the Ottili workspace schema. Each workspace is a tenant."
-- Expected: SKILL.md fires. Agent writes a migration with `tenant_id uuid NOT NULL`, a permissive SELECT policy keyed on `current_setting('app.current_tenant')`, `ENABLE` + `FORCE ROW LEVEL SECURITY`, `GRANT SELECT` (never ALL), and a `-- ROLLBACK` block. It links `references/pg-rls-procedure.md` for the full recipe.
-- Failure signs: no `tenant_id` column; `FORCE ROW LEVEL SECURITY` absent; `GRANT ALL`; no rollback block; agent invents a shared-table policy instead of marking the table bypassrls.
+- Expected: SKILL.md fires. Agent writes a migration with `company_id uuid NOT NULL`, a permissive SELECT policy keyed on `current_setting('app.company_id', true)`, `ENABLE` + `FORCE ROW LEVEL SECURITY`, `GRANT SELECT` (never ALL), and a `-- ROLLBACK` block. It links `references/pg-rls-procedure.md` for the full recipe.
+- Failure signs: no `company_id` column; `FORCE ROW LEVEL SECURITY` absent; `GRANT ALL`; no rollback block; agent invents a shared-table policy instead of marking the table bypassrls.
 **What the skill changes vs no skill**: without the skill an agent creates a `notes` table with no tenant discriminator and no policy, and the migration role — which bypasses RLS — silently sees every workspace. The skill makes tenant-key-first design, FORCE RLS and a rollback block the default, so a missing policy is a FAIL, not a footnote.
 
 ## 2. "A migration adds an `organization_id` column to `projects`. Is this safe?"
@@ -33,20 +33,20 @@ Each prompt is a realistic request an agent would receive. Expected behaviour sh
 ```sql
 CREATE TABLE tenant_isolated_notes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id uuid NOT NULL REFERENCES workspaces(id),
+  company_id uuid NOT NULL REFERENCES workspaces(id),
   body text NOT NULL
 );
 ALTER TABLE tenant_isolated_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_isolated_notes FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON tenant_isolated_notes
-  FOR ALL USING (tenant_id = current_setting('app.current_tenant')::uuid);
+  FOR ALL USING (company_id = current_setting('app.company_id', true));
 GRANT SELECT, INSERT, UPDATE ON tenant_isolated_notes TO app_role;
 -- ROLLBACK: DROP TABLE tenant_isolated_notes;
 ```
 **Bad migration** (owner sees every tenant; the checker flags it):
 ```sql
 CREATE TABLE tenant_isolated_notes (id uuid PRIMARY KEY, body text);
--- no tenant_id, no policy, no FORCE RLS, no GRANT, no rollback
+-- no company_id, no policy, no FORCE RLS, no GRANT, no rollback
 ```
 **Good leak-test evidence** (two parallel sessions, one row per tenant):
 ```json
@@ -57,10 +57,10 @@ CREATE TABLE tenant_isolated_notes (id uuid PRIMARY KEY, body text);
 
 ## Near-miss prompts (act before the incident)
 - **N1 — "The app connects as the owner and it works."** Answer: no. Owner bypasses RLS silently; always connect as a normal role and re-run the leak test.
-- **N2 — "The policy uses `USING (tenant_id = current_setting('app.current_tenant'))` without FORCE."** Answer: no. `ENABLE` alone is not enough; `FORCE ROW LEVEL SECURITY` is mandatory or the owner can still see every row.
+- **N2 — "The policy uses `USING (company_id = current_setting('app.company_id'))` without FORCE."** Answer: no. `ENABLE` alone is not enough; `FORCE ROW LEVEL SECURITY` is mandatory or the owner can still see every row.
 - **N3 — "GRANT ALL ON TABLE notes TO app_role."** Answer: no. Grant only the operations the app needs (SELECT/INSERT/UPDATE); `GRANT ALL` also grants TRUNCATE and ownership-style privileges.
 - **N4 — "The migration has no rollback block."** Answer: no. Record the inverse DDL in the same file so a failed migration can be reverted without dropping data.
 - **N5 — "service_role in the client is fine, it's just a key."** Answer: no. `service_role` bypasses RLS entirely and must never leave the server; use a server-side RPC or the Supabase secret-key model.
-- **N6 — "The policy uses `current_setting('app.current_tenant')` and that's good enough."** Answer: no — the setting must be cast to the column type (`::uuid`) and be NOT NULL, or a missing setting yields NULL and the policy matches nothing (silent data loss, not a leak).
+- **N6 — "The policy uses `current_setting('app.company_id')` and that's good enough."** Answer: no — the setting must be cast to the column type (`::uuid`) and be NOT NULL, or a missing setting yields NULL and the policy matches nothing (silent data loss, not a leak).
 - **N7 — "A security_invoker view is slower, so let's skip it."** Answer: no — a security-definer (invoker=false) view runs as the view owner and bypasses the underlying table's policies; use `security_invoker=true` or a plain table.
 - **N8 — "The leak test passed on my laptop, that's enough."** Answer: no — run it against Docker Postgres on Biest with two parallel sessions and record the JSON; a laptop run proves nothing about the shared host.

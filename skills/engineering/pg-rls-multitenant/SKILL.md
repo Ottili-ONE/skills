@@ -1,6 +1,6 @@
 ---
 name: pg-rls-multitenant
-description: "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing tenant_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents."
+description: "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing company_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents."
 license: MIT-compat
 compatibility: "PostgreSQL 15+ (verified 18); framework-agnostic"
 metadata: {}
@@ -13,13 +13,13 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 ## When to use this skill (trigger)
 Any of these fires it:
 - Adding a new tenant-isolated table or view to an Ottili schema.
-- A code review mentions `tenant_id`, `organization_id`, or `namespace` columns without RLS.
+- A code review mentions `company_id`, `organization_id`, or `namespace` columns without RLS.
 - A migration adds a column that becomes the tenant discriminator.
 - An incident report says "user X saw user Y's data".
 - Reviewing Supabase, Hasura, Prisma, or direct SQL for missing RLS.
 
 ## Disambiguation
-- Fires: new tenant-isolated table/view, tenant_id/organization_id/namespace columns without RLS, a column becoming the tenant discriminator, 'user X saw user Y data', reviewing Supabase/Hasura/Prisma for missing RLS.
+- Fires: new tenant-isolated table/view, company_id/organization_id/namespace columns without RLS, a column becoming the tenant discriminator, 'user X saw user Y data', reviewing Supabase/Hasura/Prisma for missing RLS.
 - Does NOT fire for: a single-user app with no tenants, or event delivery idempotency (use outbox-idempotency).
 
 ## When NOT to use this skill
@@ -33,10 +33,10 @@ Any of these fires it:
 ## Decision table — expand/contract migration
 | Step | Action | Threshold / pitfall |
 |------|--------|---------------------|
-| 1. Add column | `ALTER TABLE t ADD COLUMN tenant_id uuid` | Start `NULL` if the table is non-empty; adding NOT NULL on a non-empty table without a default blocks |
-| 2. Backfill | `UPDATE t SET tenant_id = <owner> WHERE tenant_id IS NULL` | Must run in batches on large tables; record the batch size |
-| 3. Constrain | `ALTER TABLE t ALTER COLUMN tenant_id SET NOT NULL` + `CHECK` | CHECK must match the app tenant format (UUID v4) |
-| 4. Policy | `CREATE POLICY ... USING (tenant_id = current_setting(...))` | Policy must exist before the app depends on isolation |
+| 1. Add column | `ALTER TABLE t ADD COLUMN company_id uuid` | Start `NULL` if the table is non-empty; adding NOT NULL on a non-empty table without a default blocks |
+| 2. Backfill | `UPDATE t SET company_id = <owner> WHERE company_id IS NULL` | Must run in batches on large tables; record the batch size |
+| 3. Constrain | `ALTER TABLE t ALTER COLUMN company_id SET NOT NULL` + `CHECK` | CHECK must match the app tenant format (UUID v4) |
+| 4. Policy | `CREATE POLICY ... USING (company_id = current_setting(...))` | Policy must exist before the app depends on isolation |
 | 5. Leak test | Run `scripts/check_rls_migration.py` + Docker harness | All 7 cases must PASS; any FAIL blocks merge |
 | 6. Contract | Separate `V<n>__<desc>__contract_*.sql` migration dropping the old column | N = 4 weeks minimum after expand lands in production; record the date in the migration comment; rollback SQL in a `-- ROLLBACK` block |
 
@@ -46,7 +46,7 @@ Any of these fires it:
 | Same-tenant read | tenant A sees only its rows | Policy expression is wrong — fix the `USING` clause |
 | Cross-tenant read | tenant A sees ZERO of tenant B's rows | RLS not enabled, or view bypasses it — add FORCE / `security_invoker = true` |
 | INSERT wrong tenant | rejected by `WITH CHECK` | `WITH CHECK` missing or wrong — add it |
-| UPDATE tenant_id | rejected when a RESTRICTIVE policy is present | RESTRICTIVE policy missing — add it |
+| UPDATE company_id | rejected when a RESTRICTIVE policy is present | RESTRICTIVE policy missing — add it |
 | View bypass | `security_invoker=false` view exposes cross-tenant rows → FAIL | Set `security_invoker = true` on the view, or exclude it from RLS scope |
 | Owner bypass | table without FORCE exposes all rows → FAIL | Add `FORCE ROW LEVEL SECURITY` |
 | service_role bypass | `service_role` sees everything by design | Never use `service_role` client-side; restrict it in the auth layer |
@@ -59,12 +59,12 @@ ALTER TABLE orders FORCE ROW LEVEL SECURITY;
 CREATE POLICY orders_tenant_select ON orders
   FOR SELECT
   TO web_app
-  USING (tenant_id = current_setting('app.current_tenant')::uuid);
+  USING (company_id = current_setting('app.company_id', true));
 GRANT SELECT ON orders TO web_app;
 ```
 Bad (owner bypass — table created by migration role, no FORCE):
 ```sql
-CREATE TABLE notes (id uuid, tenant_id uuid, body text);
+CREATE TABLE notes (id uuid, company_id uuid, body text);
 -- migration role can read every tenant's notes until FORCE is added
 ```
 Bad (view bypass):
@@ -74,7 +74,7 @@ CREATE VIEW active_orders AS SELECT * FROM orders;
 ```
 Bad (expand without backfill — old rows silently excluded):
 ```sql
-ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
+ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
 -- fails: cannot add NOT NULL without a default; and if it succeeds, old rows are NULL
 -- and match no policy — a silent data-loss trap, not a leak
 ```
@@ -93,7 +93,7 @@ ALTER TABLE orders ADD COLUMN tenant_id uuid NOT NULL;
 - `GRANT ALL` appears on a protected table → silently overrides the policy grant.
 - `service_role` is used in client-side code → bypasses every RLS policy by design.
 - A policy uses a sub-select on the same table → the check-then-insert race leaks rows under concurrent load.
-- A migration adds the tenant column AFTER data exists, with no backfill → old rows have NULL tenant_id and match no policy (silent exclusion, not a leak, but a data-loss trap).
+- A migration adds the tenant column AFTER data exists, with no backfill → old rows have NULL company_id and match no policy (silent exclusion, not a leak, but a data-loss trap).
 - "The leak test passed once, so the policy is fine" — re-run it after every policy change; RLS is not monotonic.
 
 ## Verification checklist (all must pass before merge)

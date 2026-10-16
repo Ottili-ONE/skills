@@ -15,7 +15,7 @@ Retrieval date: 2026-10-14 (re-verification pass). All URLs fetched with `curl -
 9. Cloudflare Workers docs — https://developers.cloudflare.com/workers/runtime-apis/ — 200 (index; the `/http/` subsection 404s as of 2026-10-13). Confirms 429/503 retry-after behaviour expected by clients; the concrete `Retry-After` contract comes from RFC 7231 §7.1.2.
 
 ## Conflicts and resolutions
-- **type URI form**: RFC 9457 §3.2 says `type` MAY be a relative URI; Stripe uses absolute `https://stripe.com/docs/api/errors`. Resolution: public APIs use absolute URIs (`https://api.ottili.dev/problems/<code>`); internal services use `about:<product>:<domain>:<code>`. Never relative.
+- **type URI form**: RFC 9457 §3.2 says `type` MAY be a relative URI; Stripe uses absolute `https://stripe.com/docs/api/errors`. Resolution: public APIs use absolute URIs (`https://problems.ottili.one/<code>`); internal services use `about:<product>:<domain>:<code>`. Never relative.
 - **`status` vs HTTP code**: RFC 9457 says `status` MUST equal the HTTP response status. Some libraries send a 200 envelope with a nested `status`. Resolution: reject envelopes; `status` MUST equal the HTTP status code. Envelopes are the #1 client-parse failure.
 - **Retry-After units**: RFC 7231 says seconds or HTTP-date. Stripe sends seconds. Resolution: always seconds on 429/503; never HTTP-date.
 

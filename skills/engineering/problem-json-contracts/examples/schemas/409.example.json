@@ -1,5 +1,5 @@
 {
-  "type": "https://api.ottili.dev/problems/version-conflict",
+  "type": "https://problems.ottili.one/version-conflict",
   "title": "Version conflict",
   "status": 409,
   "detail": "Concurrent modification detected.",

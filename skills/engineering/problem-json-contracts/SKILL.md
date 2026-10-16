@@ -53,7 +53,7 @@ Any of these fires it:
 ## Worked examples
 Good (RFC 9457 shape, retriable, no internals):
 ```json
-{ "type": "https://api.ottili.dev/problems/rate-limit-exceeded",
+{ "type": "https://problems.ottili.one/rate-limit-exceeded",
   "title": "Rate limit exceeded",
   "status": 429,
   "detail": "60 requests per minute allowed; 120 received.",

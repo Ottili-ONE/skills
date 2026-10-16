@@ -1,5 +1,5 @@
 {
-  "type": "https://api.ottili.dev/problems/service-unavailable",
+  "type": "https://problems.ottili.one/service-unavailable",
   "title": "Service unavailable",
   "status": 503,
   "detail": "No resource matching the request.",

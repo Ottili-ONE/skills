@@ -60,10 +60,10 @@ cat > "$TMPD/probe.sql" <<'PROBE'
 -- Seed two tenants as the superuser (bypasses RLS by design, so seeding is safe).
 -- Run BEFORE SET ROLE so the rows exist when the app role queries them.
 \set ON_ERROR_STOP off
-INSERT INTO __TABLE__ (id, tenant_id, body)
+INSERT INTO __TABLE__ (id, company_id, body)
 VALUES ('00000000-0000-4000-8000-000000000001',
         '11111111-1111-4111-8111-111111111111', 'A row') ON CONFLICT DO NOTHING;
-INSERT INTO __TABLE__ (id, tenant_id, body)
+INSERT INTO __TABLE__ (id, company_id, body)
 VALUES ('00000000-0000-4000-8000-000000000002',
         '22222222-2222-4222-8222-222222222222', 'B row') ON CONFLICT DO NOTHING;
 \set ON_ERROR_STOP on
@@ -76,11 +76,11 @@ VALUES ('00000000-0000-4000-8000-000000000002',
 -- (and the cast to uuid would fail) unless the whole probe is one TX.
 BEGIN;
 SET ROLE web_app;
-SELECT set_config('app.current_tenant',
+SELECT set_config('app.company_id',
   '11111111-1111-4111-8111-111111111111', true);
 SELECT count(*) AS a_sees_own FROM __TABLE__;
 SELECT count(*) AS a_sees_b FROM __TABLE__
-WHERE tenant_id = '22222222-2222-4222-8222-222222222222;
+WHERE company_id = '22222222-2222-4222-8222-222222222222';
 COMMIT;
 PROBE
 sed -i "s/__TABLE__/$TABLE/g" "$TMPD/probe.sql"

@@ -19,11 +19,11 @@ no — the contract is the field; clients key on it.
 
 ## E2 — type URI absoluteness
 **Prompt**: "Can I use `type: "user-not-found"`?"
-**Expected**: no — must be an absolute URI (`https://api.ottili.dev/problems/user-not-found`)
+**Expected**: no — must be an absolute URI (`https://problems.ottili.one/user-not-found`)
 or `about:ottili:users:not-found`.
 **Failure sign**: agent approves a bare string.
-**What the skill changes vs no skill**: without the skill an agent writes `type: "user-not-found"` and calls it a day. The skill forces an absolute URI (`https://api.ottili.dev/problems/...` or `about:ottili:...`), so a bare string that cannot be resolved or versioned is rejected.
-**Worked example good**: `type: https://api.ottili.dev/problems/user-not-found`
+**What the skill changes vs no skill**: without the skill an agent writes `type: "user-not-found"` and calls it a day. The skill forces an absolute URI (`https://problems.ottili.one/...` or `about:ottili:...`), so a bare string that cannot be resolved or versioned is rejected.
+**Worked example good**: `type: https://problems.ottili.one/user-not-found`
 **Worked example bad**: `type: user-not-found` (relative, not a URI).
 
 ## E3 — 5xx leakage

@@ -9,7 +9,7 @@ Retrieval date: 2026-10-13. All URLs re-fetched 2026-10-13 (see `references/SOUR
 
 ## 0. Tenant-key-first design decision
 Every row table MUST have exactly one tenant discriminator column. Acceptable names:
-`tenant_id`, `organization_id`, `org_id`, `namespace`, `account_id`.
+`company_id`, `organization_id`, `org_id`, `namespace`, `account_id`.
 
 - The column is `NOT NULL` with a `CHECK` constraint matching the application tenant format
   (UUID v4 for Ottili).
@@ -33,9 +33,9 @@ CREATE POLICY name ON table
 **Decision table — policy form**
 | Situation | Form | Example |
 |-----------|------|---------|
-| Tenant sees only its own rows | `PERMISSIVE FOR SELECT` | `USING (tenant_id = current_setting('app.current_tenant')::uuid)` |
+| Tenant sees only its own rows | `PERMISSIVE FOR SELECT` | `USING (company_id = current_setting('app.company_id', true))` |
 | Deny override (e.g. soft-deleted rows) | `RESTRICTIVE FOR SELECT` | `USING (deleted_at IS NULL)` |
-| Write must stay in tenant scope | `PERMISSIVE FOR INSERT WITH CHECK` | `WITH CHECK (tenant_id = current_setting('app.current_tenant')::uuid)` |
+| Write must stay in tenant scope | `PERMISSIVE FOR INSERT WITH CHECK` | `WITH CHECK (company_id = current_setting('app.company_id', true))` |
 
 ## 2. FORCE ROW LEVEL SECURITY
 - `ENABLE ROW LEVEL SECURITY` enables RLS; `FORCE ROW LEVEL SECURITY` forces evaluation even
@@ -77,7 +77,7 @@ cross-tenant reads return zero rows.
 | Same-tenant read | tenant A sees its own rows |
 | Cross-tenant read | tenant A sees ZERO rows belonging to tenant B |
 | INSERT wrong tenant | rejected by `WITH CHECK` |
-| UPDATE tenant_id | rejected when a RESTRICTIVE policy is present |
+| UPDATE company_id | rejected when a RESTRICTIVE policy is present |
 | View bypass | `security_invoker=false` view exposes cross-tenant rows → FAIL |
 | Owner bypass | table without FORCE exposes all rows → FAIL |
 | service_role bypass | `service_role` sees everything by design; never use client-side |
@@ -91,12 +91,12 @@ ALTER TABLE orders FORCE ROW LEVEL SECURITY;
 CREATE POLICY orders_tenant_select ON orders
   FOR SELECT
   TO web_app
-  USING (tenant_id = current_setting('app.current_tenant')::uuid);
+  USING (company_id = current_setting('app.company_id', true));
 GRANT SELECT ON orders TO web_app;
 ```
 Bad (owner bypass — table created by migration role, no FORCE):
 ```sql
-CREATE TABLE notes (id uuid, tenant_id uuid, body text);
+CREATE TABLE notes (id uuid, company_id uuid, body text);
 -- migration role can read every tenant's notes until FORCE is added
 ```
 Bad (view bypass):

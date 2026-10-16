@@ -4,7 +4,7 @@ Retrieval date: 2026-10-12. Primary: RFC 9457 (2023), obsoletes RFC 7807 (2016).
 ## 1. Type URI policy
 | Scope | Form | Example |
 |-------|------|---------|
-| Public API | `https://api.ottili.dev/problems/<code>` | `https://api.ottili.dev/problems/user-not-found` |
+| Public API | `https://problems.ottili.one/<code>` | `https://problems.ottili.one/user-not-found` |
 | Internal service | `about:<product>:<domain>:<code>` | `about:ottili:users:not-found` |
 | Unknown | `about:unknown` | only when the type genuinely cannot be enumerated |
 
@@ -48,7 +48,7 @@ Each schema carries `$id` with a version path, e.g. `https://api.ottili.dev/sche
 ## Worked examples
 Good:
 ```json
-{ "type": "https://api.ottili.dev/problems/user-not-found",
+{ "type": "https://problems.ottili.one/user-not-found",
   "title": "User not found",
   "status": 404,
   "detail": "No user with id 42.",
