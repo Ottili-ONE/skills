@@ -116,3 +116,39 @@ All engineering self-tests (`*_test.py`, `tests/*.py`, `run_long_test_test.sh`) 
   operator's excluded paths, so no task can run the blocked-check, gate or commit
   command as specified. Recorded in `docs/gaps/SKL-W00-01.md`. Commits in the
   interim use plain `git commit` guarded to this job's paths.
+
+## D-005 — generated catalogue listed `.gitkeep` placeholder files as skill paths
+
+- **Defect:** after the duplicate was deleted, `node scripts/gen-catalog.mjs --check`
+  failed ("catalog would change"). The drift was not about the deletion — two
+  `.gitkeep` files (left by TASK-0003 to keep empty dirs in git) were being listed
+  in each affected skill's `paths` array:
+  `skills/agentic-data/verifiable-environments/tests/fixtures/broken/.gitkeep` and
+  `skills/business-de/xrechnung-zugferd/tests/tmp/.gitkeep`.
+- **Cause:** `scripts/gen-catalog.mjs` excluded cache/build artefacts
+  (`.pytest_cache`, `__pycache__`, `node_modules`, `.git`, `.DS_Store`) but not
+  empty-directory placeholder files, which carry no skill content.
+- **Fix:** added `.gitkeep` to `IGNORE_FILES` in `scripts/gen-catalog.mjs`. The
+  generator now ignores cache/build artefacts **and** placeholder files, so the
+  committed `catalog.json` matches a fresh run.
+- **Proof:** `node scripts/gen-catalog.mjs` writes 32 skills / 5 packages;
+  `node scripts/gen-catalog.mjs --check` exits 0 ("catalog unchanged"); `git diff
+  --stat catalog.json` is clean.
+
+## Pre-existing failures found during TASK-0004 verification (NOT fixed — cross-job)
+
+These three tests fail on a clean checkout and are unrelated to the deletion; the
+files are owned by `skills-engineering-r3` / `skills-agentic-data-r3`:
+
+1. `skills/engineering/acceptance-harness/scripts/report_result_test.py` — two
+   tests unpack `rc, _ = run(...)` but `run()` returns a `CompletedProcess` object
+   (`TypeError: cannot unpack non-iterable CompletedProcess object`).
+2. `skills/engineering/tests/test_research_design_acceptance.py::test_related_graph_is_acyclic_with_unique_sink`
+   — `NameError: name 'ENGINEERING_DIR' is not defined` (module-level constant
+   missing in the test file).
+
+Recorded in `docs/gaps/SKL-W0-01.md`. The deletion itself is verified clean:
+`find . -name SKILL.md | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+is empty, `git ls-files | grep -c STATUS` is 9 (all under `skills/agentic-data/`
+and `skills/business-de/`, owned by other jobs), the root has no stray docs/logs,
+and `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.

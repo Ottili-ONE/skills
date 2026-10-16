@@ -33,3 +33,16 @@
    which is the only mechanism available. This does not block the functional work:
    `install.sh`, `catalog.json`, `validate.py` and `gen-catalog.mjs` are all in this
    job's owned paths and are committed directly.
+
+3. **Three tests fail on a clean checkout; unrelated to this job's deletion.**
+   Verified during TASK-0004 (`python3 -m pytest -q`: 3 failed, 349 passed, 9
+   skipped). The failing files are owned by `skills-engineering-r3` /
+   `skills-agentic-data-r3` and were not touched by this job:
+   - `skills/engineering/acceptance-harness/scripts/report_result_test.py` — two
+     tests do `rc, _ = run(...)` but `run()` returns a `CompletedProcess` object
+     (`TypeError: cannot unpack non-iterable CompletedProcess object`).
+   - `skills/engineering/tests/test_research_design_acceptance.py::test_related_graph_is_acyclic_with_unique_sink`
+     — `NameError: name 'ENGINEERING_DIR' is not defined` (module-level constant
+     missing in the test file).
+   Both are genuine code defects in other jobs' files, not test-environment
+   artefacts. Recorded in `docs/truth/REPAIR_LOG.md` (Pre-existing failures).
