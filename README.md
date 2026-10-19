@@ -3,193 +3,294 @@
 > ⚠️ **Important Note:** These capabilities and skills were developed within a fully automated, blind, and zero-Human-In-The-Loop (no-HITL) multi-agent system. Consequently, they may contain bugs, edge cases, or features that do not function as intended in all environments.
 
 
-Agent Skills for Claude Code, Codex, Cursor, OpenClaw, Hermes Agent, alran Code and many more.
+A repository of **Agent Skills** — folders of instructions, scripts and references that an
+AI agent discovers and applies to a specific task — together with the tooling that
+validates, indexes, catalogues and installs them.
 
-Skills are folders of instructions, scripts, and resources that AI agents discover and apply to
-specific tasks. This repository is the single source of truth for those skills: it hosts the
-skill folders, the catalog that describes them, the tooling that validates and installs them,
-and the engineering playbooks (`skills/engineering/**`) that Ottili agents use to build reliable
-software.
+A skill is a folder that contains a `SKILL.md` with YAML frontmatter:
+
+```yaml
+---
+name: honest-status
+description: Use when writing a status report that claims something works.
+---
+```
+
+The frontmatter must be followed by the skill body; optional `references/`, `scripts/`,
+`tests/` and `config/` subfolders carry supporting material. The format follows the open
+Agent Skill standard at [agentskills.io](https://agentskills.io/specification).
+
+This repository holds **39 skills** in 12 packages, the generated `catalog.json` that
+describes them, the tools that work with them, and the ten engineering playbooks
+(`skills/engineering/**`) that Ottili agents use to build reliable software.
 
 ## Repository layout
 
 ```
 skills/
-├── core/                 # Official Ottili ONE skills
-├── curated/              # Vetted third-party skills
-├── community/            # Community-contributed skills (review before production use)
-├── ottili-ai/            # Skills for Ottili AI runtime and Ottili Velo agents
-├── business-de/          # German business-domain skills (DATEV, XRechnung/ZUGFeRD, GoBD)
-├── agentic-data/         # Data-plane agent skills
-└── engineering/          # Engineering playbooks (this job's output)
-scripts/                  # validate.py, validate_skill.py, install.sh, build-index.py, helpers
-schema/                   # catalog.schema.json
-templates/skill/          # SKILL.md template for new skills
-catalog.json              # Machine-readable catalog of every skill
-index/                    # Generated index/INDEX.md and index/skills.json
-docs/                     # Ownership, requests, status
+├── agentic-data/          # 10 data-plane agent skills (browsing, research, MCP, LLM judges, …)
+├── business-de/           # 10 German business-domain skills (DATEV, XRechnung/ZUGFeRD, GoBD, …)
+├── core/                  # team-maintained official skills
+├── curated/               # vetted third-party skills
+├── community/             # placeholder for community contributions (no skills yet)
+├── ottili-ai/             # placeholder for Ottili AI runtime skills (no skills yet)
+├── engineering/           # 10 engineering playbooks + checkers, self-tests and docs
+├── orchestrator-preamble/ # the generated orchestrator preamble (1 skill)
+└── ref-<subject>/         # 6 reference skills, one per business-de subject
+scripts/                   # install, validate, generate, index
+schema/catalog.schema.json # JSON Schema for catalog.json
+templates/skill/SKILL.md   # starting point for a new skill
+catalog.json               # GENERATED catalogue of every skill (39 entries)
+index/                     # GENERATED index/INDEX.md and index/skills.json
+docs/                      # interfaces/, truth/, gaps/, reviews/, R3_OWNERS.json
+tests/                     # repository-level test suites (hygiene, orchestrator, reviews)
+.github/workflows/         # CI: validate.yml
 ```
 
-## Installing skills into an agent
+Packages are **derived from the folders** under `skills/` at generation time — there is no
+hand-maintained package or skill list anywhere in the tooling.
 
-Each agent looks for skills in its own directory. The convention for every tool below is: a skill
-is a folder whose name is the skill's `name`, containing a `SKILL.md` with YAML frontmatter.
-Copying (or symlinking) the folder into the agent's skills directory is enough; restart the
-agent to load it.
+## Requirements
 
-Verified skill-directory conventions (retrieved 2026-10-07):
+- `bash`, `git`
+- `python3` (CI runs 3.12)
+- `node` (the generators and the Node test suites)
+- optional: `pip install pyyaml` (required by the problem+json catalogue checker),
+  `pip install pytest` for the pytest-style suites
 
-- **Claude Code** — `~/.claude/skills/<name>/SKILL.md`. Skills are auto-discovered from the
-  skills directory; `--settings` and `CLAUDE.md` can scope which skills load.
-  Source: <https://docs.anthropic.com/en/docs/claude-code/skills> (HTTP 301 -> 200).
-- **Codex (OpenAI)** — `$CODEX_HOME/skills/<name>/SKILL.md`, typically `~/.codex/skills/`.
-  Skills are loaded from this directory and invoked by name.
-  Source: <https://github.com/openai/skills> (HTTP 200).
-- **Cursor** — `~/.cursor/skills/<name>/SKILL.md` (project-scoped `.cursor/skills/` also works).
-  Source: <https://docs.cursor.com/agent/skills> (HTTP 308 redirect).
-- **OpenClaw / generic** — `~/.agents/skills/<name>/SKILL.md` or any directory the runtime
-  announces; the layout is the same folder + SKILL.md convention.
-- **Anthropic skills collection** — <https://github.com/anthropics/skills> (HTTP 200) ships
-  reusable skill folders in exactly this layout; use it as a reference for what a well-formed
-  skill looks like.
+## Install the repository
 
-### `scripts/gen-catalog.mjs`
-
-`catalog.json` is **generated**, never hand-edited. `scripts/gen-catalog.mjs` walks
-every `skills/<package>/<name>/SKILL.md`, reads the YAML frontmatter and writes one
-entry per skill. Packages are **derived from the skills/ folders** at generation time —
-a package is any top-level folder under `skills/` that contains skill subfolders — so
-there is no hand-maintained package or skill list.
+There is no build step and no package manifest — the repository is Markdown, Python and
+Node scripts.
 
 ```sh
-node scripts/gen-catalog.mjs            # regenerate catalog.json
-node scripts/gen-catalog.mjs --check    # fail if catalog.json is out of date
+git clone https://github.com/Ottili-ONE/skills.git
+cd skills
 ```
 
-CI runs `node scripts/gen-catalog.mjs --check` on every push and PR
-(`.github/workflows/validate.yml`), so a hand-edited `catalog.json` cannot land.
+## Install skills into an agent
 
-### `scripts/install.sh`
+Each agent reads skills from its own directory. The convention is the same everywhere: a
+skill is a folder named after the skill's `name` containing a `SKILL.md` with YAML
+frontmatter. Copy (or symlink) the folder into the agent's skills directory and restart
+the agent.
+
+`scripts/install.sh` does this for you.
 
 ```sh
-# Dry-run first: never overwrites without a flag.
+# Dry-run first: prints every action, writes nothing, exits 0.
 ./scripts/install.sh --target codex --dry-run pg-rls-multitenant
+
 # Install (copies the skill folder into ~/.codex/skills/).
 ./scripts/install.sh --target codex pg-rls-multitenant
-# Force-replace an existing skill.
+
+# Replace an existing installation.
 ./scripts/install.sh --target claude --force honest-status
-# Install every skill in a package.
+
+# Symlink instead of copy.
+./scripts/install.sh --target cursor --link shared-tree-git
+
+# Install every skill of a package.
 ./scripts/install.sh --target cursor --package engineering
 ```
 
-`--target` accepts `codex`, `claude`, `cursor`, `agents`, or an explicit directory path.
-Without `--force`, an existing target folder is left untouched and the script exits non-zero.
-`--dry-run` prints the source and destination paths it would touch and exits without writing.
+| Option | Effect |
+| --- | --- |
+| `--target <name\|path>` | Required. Named agent, or a literal directory path. |
+| `--package <name>` | Install every skill in a package. |
+| `--dry-run` | Print the actions, write nothing, exit 0. |
+| `--force` | Remove and re-copy an existing destination folder. |
+| `--link` | Create a symlink instead of copying. |
+| `-h`, `--help` | Print help, exit 0. |
 
-Packages are **derived from the `skills/` folders at install time** — never a
-hand-maintained list and never read from `catalog.json`. A package is any top-level
-folder under `skills/` that contains at least one subfolder with a `SKILL.md`, so a
-new package or skill appears automatically. `--package <name>` installs every skill in
-that package:
+| `--target` | Destination |
+| --- | --- |
+| `codex` | `$HOME/.codex/skills` |
+| `claude` | `$HOME/.claude/skills` |
+| `cursor` | `$HOME/.cursor/skills` |
+| `agents` | `$HOME/.agents/skills` |
+| any other value | treated as a literal directory path |
+
+Behaviour:
+
+- **Idempotent** — without `--force` an existing destination folder is left untouched and
+  the script prints `skip: … already exists (use --force to overwrite)` and exits 0.
+- **Source resolution** — a skill is located by its folder name alone, searched in the
+  `skills/` tree next to the script; no catalogue lookup is involved.
+- **Packages** — derived at install time from the folders. `generic` installs every skill
+  in the repository (39); `meta` and any package name starting with `ref-` are reserved
+  on-demand names that resolve to no skills, so the six `ref-*` skills have to be
+  installed by name.
+- **Exit codes** — `0` all requested skills installed or skipped, `1` a skill or package
+  could not be resolved, `2` usage error (missing `--target`, missing skill/package,
+  unknown option).
+
+The full contract lives in [`docs/interfaces/install.md`](docs/interfaces/install.md).
+
+### Where agents look for skills
+
+Directory conventions verified against the vendor documentation (retrieved 2026-10-07):
+
+- **Claude Code** — `~/.claude/skills/<name>/SKILL.md`; skills are auto-discovered from
+  the skills directory. <https://docs.anthropic.com/en/docs/claude-code/skills>
+- **Codex (OpenAI)** — `$CODEX_HOME/skills/<name>/SKILL.md`, typically `~/.codex/skills/`.
+  <https://github.com/openai/skills>
+- **Cursor** — `~/.cursor/skills/<name>/SKILL.md` (a project-scoped `.cursor/skills/`
+  also works). <https://docs.cursor.com/agent/skills>
+- **Generic agent runtimes** — `~/.agents/skills/<name>/SKILL.md`, or any directory the
+  runtime announces; the folder + `SKILL.md` layout is identical.
+
+`https://github.com/anthropics/skills` ships reusable skill folders in exactly this
+layout and is a useful reference for what a well-formed skill looks like.
+
+## Browse and install from the catalogue
+
+`catalog.json` is **generated**, never hand-edited: `scripts/gen-catalog.mjs` walks every
+`skills/<package>/<name>/SKILL.md`, reads the frontmatter and writes one entry per skill.
+Packages are derived from the `skills/` folders at generation time.
 
 ```sh
-./scripts/install.sh --target cursor --package engineering   # 10 engineering skills
-./scripts/install.sh --target cursor --package business-de   # 11 German business skills
-./scripts/install.sh --target cursor --package agentic-data  # 10 data-plane skills
-./scripts/install.sh --target cursor --package generic       # every skill in the repo
+node scripts/gen-catalog.mjs            # regenerate catalog.json
+node scripts/gen-catalog.mjs --check    # exit 1 if the committed catalog would change
 ```
 
-Virtual packages: `generic` installs every skill; `meta` and `ref-*` are reserved
-on-demand names that currently resolve to the empty set. The source path for each
-skill is resolved by searching the `skills/` tree rooted at the script's own
-directory, so the folder name alone is enough — no catalog lookup.
-
-### `scripts/validate.py`
-
-Validates every skill against the open standard: name rules, description length, front matter
-fields, file size limits, link resolution, and catalog consistency.
+Two catalogue-driven helpers sit next to it:
 
 ```sh
-python3 scripts/validate.py            # exit 0 on success
-python3 scripts/validate.py --json      # machine-readable report
+python3 scripts/list-skills.py                       # grouped by package
+python3 scripts/list-skills.py --package business-de --format json
+python3 scripts/list-skills.py --target codex        # marks already-installed skills
+python3 scripts/install-skill.py --list              # list installable skills
+python3 scripts/install-skill.py honest-status --target claude
 ```
 
-### `scripts/validate_skill.py`
+`install-skill.py` resolves a skill by name or id in `catalog.json` and copies it into
+the target directory (`--dest` overrides the target path, `--force` overwrites an
+existing folder). `scripts/install.sh` is the primary installer; both use the same
+`codex` / `claude` / `cursor` / `agents` target names.
 
-Validates Agent Skill folders against the open standard at
-[agentskills.io](https://agentskills.io/specification) (specification text fetched
-2026-10-13 from `raw.githubusercontent.com/agentskills/agentskills/main/docs/specification.mdx`).
-Rules: `SKILL.md` with YAML frontmatter; `name` (≤64 chars, lowercase-hyphenated, must equal the
-folder name); `description` (1–1024 chars, must state what the skill does *and* when to use it);
-`compatibility` ≤500 chars; SKILL.md ≤500 lines; every relative link in the body resolves to a
-file with a valid anchor. Defaults to `skills/engineering/**` (this job's owned tree);
-`--everywhere` scans the whole repository.
-
-```sh
-python3 scripts/validate_skill.py --all            # engineering skills only (default)
-python3 scripts/validate_skill.py --everywhere      # every skill in the repo
-python3 scripts/validate_skill.py <skill-dir>...   # explicit paths
-```
-
-### `scripts/build-index.py`
-
-Generates `index/INDEX.md` (human-readable) and `index/skills.json` (machine-readable) from the
-skill folders and `catalog.json`.
+`index/INDEX.md` (human-readable) and `index/skills.json` (machine-readable) are
+generated from the same tree:
 
 ```sh
 python3 scripts/build-index.py
 ```
 
-## Engineering scripts (this job: `skills-engineering-r3`)
+## Validate
 
-Each engineering skill ships an offline, deterministic checker plus a self-test that
-exercises it on good/bad fixtures. Run them all before committing:
+| Tool | What it checks |
+| --- | --- |
+| `scripts/validate.py` | Aggregate validator: `catalog.json` against the `skills/` tree — unknown packages, missing directories, frontmatter/catalog mismatches, duplicate ids or names. |
+| `scripts/validate_skill.py` | One skill folder against the agentskills.io standard. |
+| `scripts/validate_skills.py` | All ten engineering skills at once: portable frontmatter fields, `references/EVALS.md` with ≥5 prompts, `references/SOURCES.md`, offline-runnable helper scripts. |
+| `scripts/validate_reviewed_by.py` | Sign-off gate: a skill with `reviewed_by:` may only be certified when `docs/reviews/<skill>.md` carries a filled reviewer/date/signature block. |
+| `scripts/check_related_graph.py` | The `Related` graph of the engineering playbooks is acyclic and every link resolves. |
+| `scripts/verify-status.mjs` | A `STATUS.md` claim table: every row needs a claim, a command and an existing log path. |
 
 ```sh
-python3 scripts/validate.py                       # catalog + skill consistency
-python3 scripts/validate_skill.py --all            # agentskills.io standard, all 10
-for t in skills/engineering/*/scripts/*_test.py skills/engineering/tests/*.py; do
-  python3 "$t" || exit 1
-done
+python3 scripts/validate.py                       # catalogue vs. tree (exit 0 = clean)
+python3 scripts/validate.py --json                # machine-readable report
+python3 scripts/validate.py --everywhere          # also scan the whole skills/ tree
+python3 scripts/validate_skill.py --all           # the ten engineering skills
+python3 scripts/validate_skill.py --everywhere     # every skill in the repository
+python3 scripts/validate_skill.py <skill-dir>...   # explicit paths
 ```
+
+`validate_skill.py` needs one of `--all` (the engineering tree), `--everywhere` (the
+whole repository) or explicit paths; called with no arguments it prints its usage and
+exits 2. Its rules are: `name` present, ≤64 characters, lowercase-hyphenated and equal
+to the folder name; `description` present, ≤1024 characters and stating when to use the
+skill; `compatibility` ≤500 characters; `SKILL.md` ≤500 lines; and every relative link in
+the body resolving to an existing file (anchors included).
+
+The validator contracts are documented in
+[`docs/interfaces/validate.md`](docs/interfaces/validate.md) and
+[`docs/interfaces/install.md`](docs/interfaces/install.md).
+
+## Run the tests
+
+CI (`.github/workflows/validate.yml`) runs on every push and pull request to `main` and
+executes, in order:
+
+1. `python3 scripts/validate.py`
+2. `node scripts/gen-catalog.mjs --check`
+3. `python3 scripts/list-skills.py --format json` (smoke test)
+4. `python3 scripts/validate_skill.py --all`
+5. `pip install jsonschema`
+6. `node scripts/gen-preamble.mjs --check`
+7. the orchestrator contract tests, `tests/orchestrator/*.test.mjs`
+8. the engineering skill self-tests (see the table below)
+
+The same checks run locally:
+
+```sh
+# Node suites (node:test — no test runner to install).
+for t in tests/orchestrator/*.test.mjs; do node "$t" || exit 1; done
+for t in tests/hygiene/*.test.mjs tests/reviews/*.test.mjs; do node "$t" || exit 1; done
+
+# Python suites.
+python3 -m pytest tests skills/engineering/tests
+
+# Engineering skill self-tests.
+for t in skills/engineering/*/scripts/*_test.py; do python3 "$t" || exit 1; done
+bash skills/engineering/long-test-discipline/scripts/run_long_test_test.sh
+bash skills/engineering/foundation-v2-conformance/scripts/fresh_consumer_test.sh
+```
+
+`tests/hygiene/` guards repository hygiene (no large files, no database files, no bad
+symlinks, scoped npm registry, clean tree), `tests/orchestrator/` covers the preamble
+generator (golden file, reproducibility, property and contract tests) and
+`tests/reviews/` covers the sign-off gate.
+
+## Engineering playbooks
+
+`skills/engineering/` holds ten playbooks for coding and operations agents, each with an
+offline, deterministic checker and a self-test:
 
 | Skill | Checker | Self-test |
 |-------|---------|-----------|
-| pg-rls-multitenant | `scripts/check_rls_migration.py` | `check_rls_migration_test.py` |
-| outbox-idempotency | `scripts/check_outbox.py` | `check_outbox_test.py` |
-| problem-json-contracts | `scripts/check_problem_catalogue.py` | (examples in `examples/`) |
-| module-contract-first | `scripts/check_contract_drift.py` | `check_contract_drift_test.py` |
-| shared-tree-git | `scripts/check_shared_tree.py` | `check_shared_tree_test.py` |
-| long-test-discipline | `scripts/run_long_test.sh` | (procedural) |
-| playwright-a11y-e2e | `check_axe_evidence.py`, `check_keyboard.py`, `check_workaround_markers.py` | `check_axe_evidence_test.py`, `check_workaround_markers_test.py` |
-| foundation-v2-conformance | `scripts/check_foundation_tokens.py`, `scripts/fresh_consumer_test.sh` | `check_foundation_tokens_test.py` |
-| acceptance-harness | `scripts/check_audit_selectors.py` | `check_audit_selectors_test.py` |
-| honest-status | `scripts/check_status_evidence.py` | `check_status_evidence_test.py` |
+| `acceptance-harness` | `check_audit_selectors.py`, `report_result.py` | `check_audit_selectors_test.py`, `report_result_test.py` |
+| `foundation-v2-conformance` | `check_foundation_tokens.py` | `check_foundation_tokens_test.py`, `fresh_consumer_test.sh` |
+| `honest-status` | `check_status_evidence.py` | `check_status_evidence_test.py` |
+| `long-test-discipline` | `run_long_test.sh` | `run_long_test_test.sh` |
+| `module-contract-first` | `check_contract_drift.py` | `check_contract_drift_test.py` |
+| `outbox-idempotency` | `check_outbox.py` | `check_outbox_test.py` |
+| `pg-rls-multitenant` | `check_rls_migration.py` | `check_rls_migration_test.py` |
+| `playwright-a11y-e2e` | `check_axe_evidence.py`, `check_keyboard.py`, `check_workaround_markers.py` | `check_axe_evidence_test.py`, `check_workaround_markers_test.py` |
+| `problem-json-contracts` | `check_problem_catalogue.py`, `validate_problem_examples.py` | `check_problem_catalogue_test.py`, `validate_problem_examples_test.py` |
+| `shared-tree-git` | `check_shared_tree.py` | `check_shared_tree_test.py` |
 
-CI runs `validate.py`, `validate_skill.py --all`, and every `*_test.py` on every push and
-PR (`.github/workflows/validate.yml`).
+Repository-level tests for the engineering tree live in `skills/engineering/tests/`
+(`test_collection_acceptance.py`, `test_evals_completeness.py`,
+`test_research_design_acceptance.py`, `test_sources_freshness.py`). The playbooks
+themselves are documented in [`skills/engineering/README.md`](skills/engineering/README.md).
 
-## Orchestrator preamble (generated)
+## Orchestrator preamble
 
-The preamble is the ≤60-line rules block that every GERMO job's base prompt loads. It is
-generated, never hand-edited:
+`skills/orchestrator-preamble/orchestrator-preamble/` is the ≤60-line rules block that
+every GERMO job loads as the first part of its base prompt. It is **generated** from the
+four canonical engineering skills (`pg-rls-multitenant`, `outbox-idempotency`,
+`problem-json-contracts`, `honest-status`) and must never be hand-edited:
 
 ```sh
-node scripts/gen-preamble.mjs                # regenerate skills/orchestrator-preamble/orchestrator-preamble/references/preamble.md
-node scripts/gen-preamble.mjs --check        # exit 0 if the committed file matches a fresh generation
+node scripts/gen-preamble.mjs          # regenerate the body
+node scripts/gen-preamble.mjs --check  # exit 1 if the committed body is stale
 ```
 
-The body is produced from the four canonical engineering skills
-(`skills/engineering/{pg-rls-multitenant,outbox-idempotency,problem-json-contracts,honest-status}/SKILL.md`);
-if a canonical skill's gate command changes, `--check` exits 1. The body ends with a fixed
-`## Contracts` section documenting the generator, body, canonical-source and consumer
-contracts; the human-readable contract is the skill's own `SKILL.md`.
+The generator is deterministic: the same skills on disk always produce the same bytes.
+The skill's own `SKILL.md` is the human-readable contract.
 
 ## Contributing
 
-See `CONTRIBUTING.md` and `AGENTS.md`. New skills start from `templates/skill/SKILL.md`.
-Run `python3 scripts/validate.py` and `python3 scripts/validate_skill.py --all` before committing.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the skill conventions and the review
+criteria, and [`AGENTS.md`](AGENTS.md) for the live working directives and the path
+ownership map (`docs/R3_OWNERS.json`).
+
+New skills start from `templates/skill/SKILL.md`. The catalogue is generated, so adding
+or renaming a skill means running `node scripts/gen-catalog.mjs` (and
+`python3 scripts/build-index.py`) instead of editing `catalog.json` by hand. Before
+committing, run `python3 scripts/validate.py` and `python3 scripts/validate_skill.py --all`.
 
 ## License
 
-MIT, see `LICENSE`.
+MIT, see [`LICENSE`](LICENSE).
