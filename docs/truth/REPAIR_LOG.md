@@ -724,6 +724,58 @@ modified in the checkout.
   `git status --porcelain` shows only the pending change; the guard fails on a
   seeded fixture (see `test_guard_fails_on_a_seeded_dirty_fixture`).
 
+## D-026 — the suite leaked 28 files into the shared temporary directory
+
+- **Defect:** D-021 removed the *fixed* `/tmp` paths from three business-de
+  test modules, but the suite still wrote into the shared temp directory, and
+  it left 28 files behind: 14 `tmp*.json` payloads, 13 `tmp*` directories and
+  one `tmp*.warc.gz`. `git status --porcelain` cannot see them, so the card's
+  own proof (`git status` after the run) stayed green while the leak grew.
+  The sources were `tempfile.mktemp()` (deprecated: it only picks a name, the
+  file is never removed), `tempfile.mkdtemp()` without a matching
+  `shutil.rmtree`, and `NamedTemporaryFile(delete=False)` whose manual
+  `os.unlink` is skipped when an assertion fails first.
+- **Fix:** every test file now writes only into the directory pytest hands it
+  (`tmp_path`) or into a directory it removes itself. Ten test modules were
+  changed: `mcp-2026-07-28`, `dedup-decontam`, `polite-crawling-warc` (two
+  files), `webhooks-safe` (two files), `carrier-apis-de`,
+  `publish-reconcile-wp-meta` and `dsgvo-ai-act-labeling` (helper plus its
+  three callers). The helper `dsgvo_test_helpers.write_label()` took a
+  directory now instead of inventing a name in `/tmp`.
+- **Kept on purpose:** `skills/engineering/shared-tree-git/scripts/check_shared_tree_test.py`
+  keeps `tempfile.mkdtemp()`. It is a self-test that the CI also runs with
+  `python3 <file>` (no pytest fixtures available), and it removes the
+  directory in a `finally` block.
+- **Proof:** the suite is run with `TMPDIR` pointing at an empty directory; the
+  directory must be empty afterwards. Before: 28 leftovers. After: 0.
+  `tests/hygiene/test_temp_files.py` is the regression test: it lints the test
+  sources for `mktemp`, `delete=False` and `mkdtemp` without `rmtree`, and it
+  fails on a planted offender (proven by planting one in a scratch copy).
+
+## D-027 — the clean-tree guard only looked at the end of the session
+
+- **Defect:** the card asks for a check "after every test module runs"; the
+  implementation compared the tree at the end of the session with the tree at
+  the start. A module that dirtied the checkout and a later module that cleaned
+  it up again left no trace, and the guard could not name the module that did
+  it. The guard was also proven only against a throwaway repository, not
+  against the checkout it protects.
+- **Fix:** `tests/conftest.py` gained `pytest_runtest_teardown`, which compares
+  the tree at the end of **every** test module with the state at the start of
+  the session and fails the module that added dirt. The end-of-session guard
+  stays as the last line of defence. `tests/hygiene/test_clean_tree.py` gained
+  an end-to-end test: a second pytest session runs with a plugin that writes
+  a stray file into the repository, and the test asserts that this session
+  fails, that the failure names the stray file, and that the repository is
+  free of it again afterwards.
+- **Proof:** the end-to-end test fails when the module check is removed (the
+  failure message changes) and when the checker is made blind (`dirty_paths`
+  returns an empty list). Both mutations were run in scratch copies of the
+  repository; the unmutated copy passes.
+- **Side effect:** the docstring of `tests/hygiene/clean_tree.py` still
+  advertised `tests/hygiene/clean-tree.test.mjs`, a file that D-025 deleted.
+  It now names the three real entry points.
+
 ## Verification commands run for TASK-0003
 
 ```
@@ -737,3 +789,18 @@ python3 tests/hygiene/clean_tree.py                   # exit 0 on a clean checko
 grep -rn 'Path("/tmp' --include=test_*.py --include=*_test.py skills/ tests/   # no hits
 git status --porcelain                                # empty after a full run
 ```
+
+### Commands run for the TASK-0003 VERIFY pass (2026-10-20)
+
+```
+python3 -m pytest -q                                  # 627 passed, 9 skipped, 0 failed
+git status --porcelain                                # empty after the run
+TMPDIR=<empty dir> python3 -m pytest -q               # the dir is empty afterwards: 0 leftovers
+python3 -m pytest -q tests/hygiene/test_clean_tree.py # 4 passed (the end-to-end negative case)
+python3 -m pytest -q tests/hygiene/test_temp_files.py # 2 passed (the temp-file lint)
+node scripts/gen-catalog.mjs --check                  # ok: catalog unchanged (39 skills, 12 packages)
+python3 scripts/truth/gate.mjs job --job SKL-W0-01 ...   # see .truth/SKL-W0-01/gate.log
+```
+
+The clean copy and the real clone are rebuilt from the committed state after
+every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.

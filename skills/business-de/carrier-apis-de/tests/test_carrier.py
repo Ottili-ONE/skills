@@ -74,14 +74,11 @@ def test_reconcile_mismatch(tmp_path):
     assert any(d["field"] == "cost" for d in deltas)
 
 
-def test_track_cache_hit_is_offline():
-    import tempfile, os
-    cache = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-    cache.write(json.dumps({"dhl:1": {"ts": 9_999_999_999, "body": "cached"}}))
-    cache.close()
+def test_track_cache_hit_is_offline(tmp_path):
+    cache = tmp_path / "cache.json"
+    cache.write_text(json.dumps({"dhl:1": {"ts": 9_999_999_999, "body": "cached"}}))
     r = run(TRACK, "--carrier", "dhl", "--number", "1",
-            "--cache-file", cache.name)
-    os.unlink(cache.name)
+            "--cache-file", str(cache))
     assert r.returncode == 0, r.stderr
     data = json.loads(r.stdout)
     assert data["cache_hit"] is True

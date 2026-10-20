@@ -70,11 +70,9 @@ def test_warc_validate_with_file_flag_missing_file():
     assert "FAIL: WARC file not found" in p.stderr
 
 
-def test_warc_validate_empty_file_fails():
-    import tempfile
-    with tempfile.NamedTemporaryFile(suffix=".warc.gz", delete=False) as fh:
-        fh.write(b"")
-        path = fh.name
+def test_warc_validate_empty_file_fails(tmp_path):
+    path = tmp_path / "empty.warc.gz"
+    path.write_bytes(b"")
     p = run([str(WRITER), "--validate", path])
     assert p.returncode == 1, p.stderr
     assert "no records" in p.stderr

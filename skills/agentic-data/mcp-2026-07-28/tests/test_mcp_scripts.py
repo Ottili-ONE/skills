@@ -1,7 +1,7 @@
 import json
 import subprocess
+import itertools
 import sys
-import tempfile
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
@@ -50,31 +50,34 @@ def test_protocol_check_missing_fields():
     assert "FAIL" in r.stderr
 
 
-def _write(payload):
-    f = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-    f.write(payload)
-    f.close()
-    return f.name
+_SEQ = itertools.count()
 
 
-def test_stateless_probe_passes():
+def _write(payload, tmp_path):
+    """Write *payload* into the test directory; nothing lands outside it."""
+    p = tmp_path / "payload-{}.json".format(next(_SEQ))
+    p.write_text(payload)
+    return str(p)
+
+
+def test_stateless_probe_passes(tmp_path):
     pair = json.dumps({
         "_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
         "result": {"x": 1},
     })
-    p1, p2 = _write(pair), _write(pair)
+    p1, p2 = _write(pair, tmp_path), _write(pair, tmp_path)
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 0, r.stderr
     assert "1 0 0" in r.stdout
 
 
-def test_stateless_probe_flags_session():
+def test_stateless_probe_flags_session(tmp_path):
     bad = json.dumps({
         "_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28",
                   "session": "abc"},
         "result": {},
     })
-    p1, p2 = _write(bad), _write(bad)
+    p1, p2 = _write(bad, tmp_path), _write(bad, tmp_path)
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 1
     assert "session" in r.stderr.lower()
@@ -125,38 +128,37 @@ def test_protocol_check_missing_file_returns_2():
     assert r.returncode == 2
 
 
-def test_protocol_check_directory_returns_2():
-    import tempfile
-    d = tempfile.mkdtemp()
+def test_protocol_check_directory_returns_2(tmp_path):
+    d = tmp_path
     r = run("protocol_check.py", d)
     assert r.returncode == 2
 
 
-def test_stateless_probe_flags_differring_meta():
+def test_stateless_probe_flags_differring_meta(tmp_path):
     a = json.dumps({"_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
                     "result": {"x": 1}})
     b = json.dumps({"_meta": {"io.modelcontextprotocol/protocolVersion": "2025-11-25"},
                     "result": {"x": 1}})
-    p1, p2 = _write(a), _write(b)
+    p1, p2 = _write(a, tmp_path), _write(b, tmp_path)
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 1
     assert "_meta" in r.stderr.lower()
 
 
-def test_stateless_probe_flags_missing_protocol_version():
+def test_stateless_probe_flags_missing_protocol_version(tmp_path):
     a = json.dumps({"_meta": {}, "result": {"x": 1}})
-    p1, p2 = _write(a), _write(a)
+    p1, p2 = _write(a, tmp_path), _write(a, tmp_path)
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 1
     assert "protocolVersion" in r.stderr
 
 
-def test_stateless_probe_flags_different_results():
+def test_stateless_probe_flags_different_results(tmp_path):
     a = json.dumps({"_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
                     "result": {"x": 1}})
     b = json.dumps({"_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
                     "result": {"x": 2}})
-    p1, p2 = _write(a), _write(b)
+    p1, p2 = _write(a, tmp_path), _write(b, tmp_path)
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 1
     assert "results differ" in r.stderr.lower()
@@ -224,24 +226,24 @@ def test_version_negotiate_picks_highest_common_from_unsorted():
     assert "agreed 2025-06-18" in r.stderr  # highest common, not 2025-11-25
 
 
-def test_stateless_probe_flags_session_envelope():
+def test_stateless_probe_flags_session_envelope(tmp_path):
     pair = json.dumps({
         "_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28",
                   "session": "abc"},
         "result": {"x": 1},
     })
-    p1, p2 = _write(pair), _write(pair)
+    p1, p2 = _write(pair, tmp_path), _write(pair, tmp_path)
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 1
     assert "session" in r.stderr.lower()
 
 
-def test_stateless_probe_flags_differing_results():
+def test_stateless_probe_flags_differing_results(tmp_path):
     a = json.dumps({"_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
                     "result": {"x": 1}})
     b = json.dumps({"_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"},
                     "result": {"x": 2}})
-    p1, p2 = _write(a), _write(b)
+    p1, p2 = _write(a, tmp_path), _write(b, tmp_path)
     r = run("stateless_probe.py", p1, p2)
     assert r.returncode == 1
     assert "differ" in r.stderr.lower() or "result" in r.stderr.lower()

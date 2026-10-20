@@ -109,10 +109,9 @@ def test_plant_test_passes(tmp_path):
     assert rc == 0
 
 
-def test_normalize_identical_after_canonicalization():
-    import tempfile
+def test_normalize_identical_after_canonicalization(tmp_path):
     from pathlib import Path
-    d = Path(tempfile.mkdtemp())
+    d = tmp_path
     (d / "a.txt").write_text("The Quick   Brown Fox\n")
     (d / "b.txt").write_text("the quick brown fox\r\n")
     p = run([sys.executable, str(NORM), "--check", str(d / "a.txt"), str(d / "b.txt")])
@@ -120,10 +119,9 @@ def test_normalize_identical_after_canonicalization():
     assert "identical=true" in p.stdout
 
 
-def test_normalize_differs_when_distinct():
-    import tempfile
+def test_normalize_differs_when_distinct(tmp_path):
     from pathlib import Path
-    d = Path(tempfile.mkdtemp())
+    d = tmp_path
     (d / "a.txt").write_text("hello world\n")
     (d / "b.txt").write_text("goodbye world\n")
     p = run([sys.executable, str(NORM), "--check", str(d / "a.txt"), str(d / "b.txt")])
@@ -131,20 +129,18 @@ def test_normalize_differs_when_distinct():
     assert "identical=false" in p.stdout
 
 
-def test_normalize_strips_zero_width_and_bom():
-    import tempfile
+def test_normalize_strips_zero_width_and_bom(tmp_path):
     from pathlib import Path
-    d = Path(tempfile.mkdtemp())
+    d = tmp_path
     (d / "a.txt").write_text("\ufeffhello\u200b\u200c world\n")
     (d / "b.txt").write_text("hello world\n")
     p = run([sys.executable, str(NORM), "--check", str(d / "a.txt"), str(d / "b.txt")])
     assert p.returncode == 0, p.stderr
 
 
-def test_embed_decontam_flags_identical():
+def test_embed_decontam_flags_identical(tmp_path):
     import json
-    import tempfile
-    d = Path(tempfile.mkdtemp())
+    d = tmp_path
     (d / "docs.json").write_text(json.dumps([[1.0, 0.0], [0.0, 1.0]]))
     (d / "prompts.json").write_text(json.dumps([[1.0, 0.0]]))
     (d / "doc_ids.json").write_text(json.dumps(["a", "b"]))
@@ -157,10 +153,9 @@ def test_embed_decontam_flags_identical():
     assert "EMBEDFLAG a p1 cosine=1.0000" in p.stdout
 
 
-def test_embed_decontam_clean_when_orthogonal():
+def test_embed_decontam_clean_when_orthogonal(tmp_path):
     import json
-    import tempfile
-    d = Path(tempfile.mkdtemp())
+    d = tmp_path
     (d / "docs.json").write_text(json.dumps([[1.0, 0.0], [0.0, 1.0]]))
     (d / "prompts.json").write_text(json.dumps([[0.7071, 0.7071]]))
     (d / "doc_ids.json").write_text(json.dumps(["a", "b"]))
@@ -173,10 +168,9 @@ def test_embed_decontam_clean_when_orthogonal():
     assert "flagged=0" in p.stdout
 
 
-def test_embed_decontam_rejects_bad_threshold():
+def test_embed_decontam_rejects_bad_threshold(tmp_path):
     import json
-    import tempfile
-    d = Path(tempfile.mkdtemp())
+    d = tmp_path
     (d / "docs.json").write_text(json.dumps([[1.0, 0.0]]))
     (d / "prompts.json").write_text(json.dumps([[1.0, 0.0]]))
     (d / "doc_ids.json").write_text(json.dumps(["a"]))

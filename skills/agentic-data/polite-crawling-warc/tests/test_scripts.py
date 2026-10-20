@@ -182,26 +182,21 @@ def test_warc_writer_revisit_requires_digest():
         assert "payload-digest" in p.stderr
 
 
-def test_robots_oversize_truncates_not_denies():
+def test_robots_oversize_truncates_not_denies(tmp_path):
     """RFC 9309 §2.5/§2.3.1.5: an oversized robots.txt is truncated to the
     500 KiB cap and the parseable rules inside the window are used. It must
     NOT be rejected wholesale (which would default-deny a site whose rules
     live in the first 500 KiB)."""
-    import tempfile, os
-    with tempfile.NamedTemporaryFile("wb", suffix=".txt", delete=False) as fh:
-        fh.write(b"User-agent: *\nDisallow: /secret/\n")
-        fh.write(b"# " + b"x" * (2 * 1024 * 1024))
-        path = fh.name
-    try:
-        p1 = run(ROBOTS, ["--file", path, "--path", "/secret/x"], stdin=None)
-        assert p1.returncode == 1, p1.stderr
-        assert "allowed=false" in p1.stdout
-        assert "cap" in p1.stderr.lower()
-        p2 = run(ROBOTS, ["--file", path, "--path", "/public/x"], stdin=None)
-        assert p2.returncode == 0, p2.stderr
-        assert "allowed=true" in p2.stdout
-    finally:
-        os.unlink(path)
+    path = tmp_path / "robots.txt"
+    path.write_bytes(b"User-agent: *\nDisallow: /secret/\n"
+                     + b"# " + b"x" * (2 * 1024 * 1024))
+    p1 = run(ROBOTS, ["--file", str(path), "--path", "/secret/x"], stdin=None)
+    assert p1.returncode == 1, p1.stderr
+    assert "allowed=false" in p1.stdout
+    assert "cap" in p1.stderr.lower()
+    p2 = run(ROBOTS, ["--file", str(path), "--path", "/public/x"], stdin=None)
+    assert p2.returncode == 0, p2.stderr
+    assert "allowed=true" in p2.stdout
 
 
 def test_warc_count_records_across_members():

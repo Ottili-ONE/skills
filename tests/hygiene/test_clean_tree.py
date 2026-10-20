@@ -11,7 +11,9 @@ local patch) the session must at least not add anything to it.
 """
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -27,6 +29,35 @@ from hygiene.clean_tree import (
 
 
 pytestmark = pytest.mark.runs_last
+
+GUARD_TEST_ID = (
+    "tests/hygiene/test_clean_tree.py::test_worktree_is_clean_after_every_test_module"
+)
+
+_SEED_PLUGIN = r'''
+"""pytest plugin that dirties the checkout during the session (the negative case)."""
+import os
+from pathlib import Path
+
+
+def pytest_sessionstart(session):
+    Path(os.environ["SKL_HYGIENE_SEED_FILE"]).write_text("seeded\n", encoding="utf-8")
+
+
+def _remove():
+    try:
+        os.unlink(os.environ["SKL_HYGIENE_SEED_FILE"])
+    except OSError:
+        pass
+
+
+def pytest_sessionfinish(session, exitstatus):
+    _remove()
+
+
+def pytest_unconfigure(config):
+    _remove()
+'''
 
 
 def make_fixture_repo(root: Path) -> Path:
@@ -85,3 +116,57 @@ def test_worktree_is_clean_after_every_test_module(
         assert not current, (
             "the test suite dirtied the working tree:\n" + "\n".join(current)
         )
+
+
+def test_the_guard_fails_when_a_test_dirties_the_worktree(tmp_path: Path) -> None:
+    """End to end: a test that dirties the checkout must turn the suite red.
+
+    The dirt is written by a plugin that runs inside a second pytest session, so
+    the real guard runs against a really dirty tree. The second session must
+    fail, the failure must name the stray file, and the repository must be free
+    of it again afterwards.
+    """
+    root = repo_root()
+    baseline = dirty_paths(root)
+    seed = root / "pytest-seeded-dirt-{}.txt".format(os.getpid())
+    (tmp_path / "seed_dirt_plugin.py").write_text(_SEED_PLUGIN, encoding="utf-8")
+
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(tmp_path), env.get("PYTHONPATH", "")]
+    ).rstrip(os.pathsep)
+    env["SKL_HYGIENE_SEED_FILE"] = str(seed)
+
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                "-p",
+                "no:cacheprovider",
+                "-p",
+                "seed_dirt_plugin",
+                "--confcutdir={}".format(root),
+                "--rootdir={}".format(root),
+                GUARD_TEST_ID,
+                "-q",
+            ],
+            cwd=str(root),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    finally:
+        seed.unlink(missing_ok=True)
+
+    output = result.stdout + result.stderr
+    assert result.returncode != 0, (
+        "the guard did not notice the dirtied tree:\n" + output
+    )
+    assert "dirtied the working tree" in output, output
+    assert "the test module" in output, output
+    assert seed.name in output, output
+    added = dirt_added_since(baseline, dirty_paths(root))
+    assert not added, "the seeded file was left behind:\n" + "\n".join(added)

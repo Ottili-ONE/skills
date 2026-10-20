@@ -8,7 +8,7 @@ silently dirtying the tree.
 One implementation, three entry points:
 
   * ``tests/hygiene/test_clean_tree.py``  -- the pytest guard, runs last
-  * ``tests/hygiene/clean-tree.test.mjs`` -- the node entry point, delegates here
+  * ``tests/conftest.py``                  -- the check after every test module
   * ``python3 tests/hygiene/clean_tree.py`` -- the command line
 """
 from __future__ import annotations

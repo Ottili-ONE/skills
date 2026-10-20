@@ -187,7 +187,7 @@ def test_label_check_missing_fields_blocks(tmp_path):
     from dsgvo_test_helpers import write_label
     bad = {"system": "x", "risk_class": "high", "reviewed_at": "2026-01-01T00:00:00Z",
            "reviewer": "a", "checksum": "deadbeef"}
-    p = write_label(bad)
+    p = write_label(bad, tmp_path)
     r = run(LABEL_CHECK, "--label", str(p))
     assert r.returncode == 1, r.stderr
     out = json.loads(r.stdout)
@@ -201,7 +201,7 @@ def test_label_check_high_risk_requires_approval(tmp_path):
            "art50_status": "required", "human_review_status": "pending",
            "reviewed_at": "2026-01-01T00:00:00Z", "reviewer": "a",
            "checksum": "deadbeef"}
-    p = write_label(lab)
+    p = write_label(lab, tmp_path)
     r = run(LABEL_CHECK, "--label", str(p))
     assert r.returncode == 1
     out = json.loads(r.stdout)
@@ -215,7 +215,7 @@ def test_label_check_checksum_tamper_detected(tmp_path):
     body = {"system": "x", "risk_class": "low", "art6_status": "n/a",
             "art50_status": "not-required", "human_review_status": "approved",
             "reviewed_at": "2026-01-01T00:00:00Z", "reviewer": "a"}
-    p = write_label(body)
+    p = write_label(body, tmp_path)
     chk = hashlib.sha256(p.read_bytes()).hexdigest()
     lab = json.loads(p.read_text()); lab["checksum"] = chk; p.write_text(json.dumps(lab))
     # tamper the content after computing checksum

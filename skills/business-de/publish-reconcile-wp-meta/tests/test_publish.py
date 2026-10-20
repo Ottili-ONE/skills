@@ -89,41 +89,35 @@ def test_reconcile_mismatch(tmp_path):
     assert any(d["platform"] == "meta" for d in deltas)
 
 
-def test_idempotency_store_records_and_looks_up():
-    import tempfile, os
-    store = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
-    store.close()
+def test_idempotency_store_records_and_looks_up(tmp_path):
+    store = tmp_path / "ids.jsonl"
+    store.touch()
     r = run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress",
-            "--post-id", "42", "--store", store.name)
+            "--post-id", "42", "--store", str(store))
     assert r.returncode == 0, r.stderr
     r2 = run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress",
-             "--lookup", "--store", store.name)
-    os.unlink(store.name)
+             "--lookup", "--store", str(store))
     assert r2.returncode == 0, r2.stderr
     data = json.loads(r2.stdout)
     assert data["found"] is True
     assert data["post_id"] == "42"
 
 
-def test_idempotency_store_lookup_miss():
-    import tempfile, os
-    store = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
-    store.close()
+def test_idempotency_store_lookup_miss(tmp_path):
+    store = tmp_path / "ids.jsonl"
+    store.touch()
     r = run(IDSTORE, "--key", "MISSING", "--platform", "wordpress",
-            "--lookup", "--store", store.name)
-    os.unlink(store.name)
+            "--lookup", "--store", str(store))
     assert r.returncode == 1, r.stderr
     assert json.loads(r.stdout)["found"] is False
 
 
-def test_idempotency_store_append_only():
-    import tempfile, os
-    store = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
-    store.close()
+def test_idempotency_store_append_only(tmp_path):
+    store = tmp_path / "ids.jsonl"
+    store.touch()
     run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress", "--post-id", "42",
-        "--store", store.name)
+        "--store", str(store))
     run(IDSTORE, "--key", "ORD-1", "--platform", "wordpress", "--post-id", "43",
-        "--store", store.name)
-    lines = Path(store.name).read_text().splitlines()
-    os.unlink(store.name)
+        "--store", str(store))
+    lines = Path(str(store)).read_text().splitlines()
     assert len(lines) == 2  # never mutated in place

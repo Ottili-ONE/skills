@@ -1,15 +1,17 @@
 """Repository-level pytest configuration (SKL-W0-01 TASK-0003).
 
-Three jobs:
+Four jobs:
 
 1. Run the clean-tree hygiene guard *after* every other test module, so a test
    that writes into the working tree fails the suite instead of silently
    dirtying it.
-2. Record the tree state at the start of the session. The guard compares the
+2. Check the tree at the end of *every* test module, not only at the end of the
+   session, so dirt is reported by the module that caused it.
+3. Record the tree state at the start of the session. The guard compares the
    state at the end of the session with it: on a clean checkout the tree must
    still be clean, and on a checkout with pending work (a gate run, a local
    patch) the tests must not add anything to it.
-3. Keep collection deterministic. The stale top-level ``business-de/`` duplicate
+4. Keep collection deterministic. The stale top-level ``business-de/`` duplicate
    was deleted in commit 0d5f964. The collection guard that excluded it also
    excluded the canonical ``skills/business-de/`` tests (218 of them) from every
    full run, so a third of the suite was never executed. That guard is gone;
@@ -22,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from hygiene.clean_tree import dirty_paths, repo_root
+from hygiene.clean_tree import dirt_added_since, dirty_paths, repo_root
 
 _TREE_BASELINE: frozenset[str] = frozenset()
 
@@ -43,6 +45,32 @@ def pytest_collection_modifyitems(config, items) -> None:
     every other test keeps the order pytest collected it in.
     """
     items.sort(key=lambda item: item.get_closest_marker("runs_last") is not None)
+
+
+def _module_of(item) -> str:
+    """The file a test item belongs to; the granularity of the module check."""
+    return item.nodeid.split("::", 1)[0]
+
+
+def pytest_runtest_teardown(item, nextitem) -> None:
+    """Check the tree after every test module has run.
+
+    The check compares the tree with the state at the start of the session, so a
+    checkout that already carries pending work is judged on what the tests
+    added, not on what was there before. A module that leaves dirt behind is
+    reported by the module it belongs to instead of by the end-of-session
+    guard, which only sees the end state.
+    """
+    if nextitem is not None and _module_of(nextitem) == _module_of(item):
+        return
+    added = dirt_added_since(_TREE_BASELINE, dirty_paths(repo_root()))
+    if added:
+        pytest.fail(
+            "the test module {} dirtied the working tree:\n{}".format(
+                _module_of(item), "\n".join(added)
+            ),
+            pytrace=False,
+        )
 
 
 @pytest.fixture(scope="session")

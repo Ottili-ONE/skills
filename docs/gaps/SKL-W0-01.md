@@ -291,3 +291,32 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   ```
 - **Effect while open:** the GitHub workflow stays red on the "Run engineering skill self-tests"
   step. The pytest suite and the truth-kit gate are unaffected - both are green.
+
+## G15 (cross-job request, TASK-0003 VERIFY, 2026-10-20): `.gitignore` does not ignore `.pytest_cache/`
+
+- **Observed:** a full `pytest` run creates `.pytest_cache/` in the repository
+  root. The directory stays invisible to `git status --porcelain` only because
+  pytest writes a `.gitignore` with `*` into it. `.gitignore` itself does not
+  list `.pytest_cache/`.
+- **Ownership:** `.gitignore` belongs to `skills-engineering-r3` per
+  `docs/R3_OWNERS.json` and is not on this job's owned list, so this job did
+  not edit it.
+- **Request (cross-job):** add `.pytest_cache/` to the repository `.gitignore`.
+  The current behaviour is an accident of pytest's implementation, not a
+  decision of the repository, and a pytest version that stops writing that
+  inner `.gitignore` would make every test run dirty the checkout.
+- **Effect while open:** none today. The clean-tree guard
+  (`tests/hygiene/test_clean_tree.py`) would report the new untracked
+  directory and turn the suite red, so the risk is loud, not silent.
+
+## G16 (informational, TASK-0003 VERIFY, 2026-10-20): the card's `docs/requests/` pointers cannot be created from this job
+
+- **Observed:** `AGENTS.md` asks for a 3-line pointer in
+  `docs/requests/<job>-<n>.md` for every change outside the owned paths, while
+  the job card asks for the same information in `docs/gaps/SKL-W0-01.md`.
+- **Conflict:** the truth gate's `ownership` step fails when a changed file
+  lies outside the owned globs, and `docs/requests/**` is not in this job's
+  owned list (only `docs/gaps` is). A pointer file would therefore turn the
+  gate red and block the commit.
+- **Decision:** the cross-job requests live in this file (G11, G14, G15). The
+  pointer files were not created; the requester reads the gaps file.
