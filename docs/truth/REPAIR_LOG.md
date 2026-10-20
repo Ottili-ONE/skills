@@ -1502,6 +1502,21 @@ reason next to it. No other file of this repository was exempted.
   and are outside the owned paths of this job card; the exact patch is in
   `docs/gaps/SKL-W0-01.md` (G32).
 
+## D-054 — the shape document drifted again when this repair-log entry was committed
+
+- **Symptom:** after the repair-log entry of TASK-0007 was committed,
+  `pytest tests/hygiene/test_repo_shape_numbers.py -q` failed with
+  `REPO_SHAPE.md drifted from the tree: Tracked files: document says 664, command
+  says 665` and `Tracked files under 'tests/': document says 42, command says 43`.
+- **Reproduction:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Root cause:** `docs/truth/REPO_SHAPE.md` states the number of tracked files,
+  and the guard test of this job (`tests/hygiene/test_repair_log.py`) is one more
+  tracked file — the count changed with the commit that added it. The D-037 guard
+  did its job: it refused to let the document drift.
+- **Fix:** `docs/truth/REPO_SHAPE.md` — the two numbers were corrected
+  (664 → 665, 42 → 43) and the guard that found them is the repair.
+- **Proof:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` → 1 passed.
+
 ---
 
 # SKL-W0-01 — TASK-0007 (2026-10-20) — repair log entry
@@ -1999,6 +2014,15 @@ repair jobs".
 - **Proof:** `GATE` — the job gate, `install` and `tests` steps
 - **Date:** 2026-10-20
 
+#### D-054 — the shape document drifted again when this repair-log entry was committed
+
+- **Symptom:** after the repair-log entry of TASK-0007 was committed, the shape guard failed: `Tracked files: document says 664, command says 665` and `Tracked files under 'tests/': document says 42, command says 43`.
+- **Reproduction:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Root cause:** `docs/truth/REPO_SHAPE.md` states the number of tracked files, and the new guard test `tests/hygiene/test_repair_log.py` is one more tracked file — the count changed with the commit that added it. The D-037 guard worked as designed and refused the drift.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` — the two numbers corrected (664 → 665, 42 → 43); the guard that found them is the repair.
+- **Proof:** `P25` — `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Date:** 2026-10-20
+
 ## Proof commands executed on 2026-10-20
 
 Every proof command of the index was re-run on the trunk of this pass. The
@@ -2070,7 +2094,7 @@ exit=0
 
 ```
 $ python3 -m pytest tests/ -q
-169 passed in 21.82s
+193 passed in 22.56s
 exit=0
 ```
 
@@ -2258,7 +2282,7 @@ exit=0
 
 ```
 $ python3 -m pytest tests/hygiene/ -q
-110 passed in 19.92s
+134 passed in 21.80s
 exit=0
 ```
 
@@ -2274,15 +2298,15 @@ exit=0
 ```
 $ node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "scripts/install.sh,scripts/validate.py,catalog.json,skills/**,tests/**,docs/truth,docs/gaps,business-de,scratch,undefined,*.db,*.db-shm,*.db-wal,STATUS.md,HANDOFF*.md,GAPS*.md,R3_PLAN.md,REVERIFY*.md,EVALS.md,docs/STATUS*,docs/HANDOFF*,docs/GAPS*,docs/R3_PLAN*,scripts/gen-catalog.mjs,scripts/verify-status.mjs,scripts/truth/config.json" --exclude "scripts/truth/*.mjs,scripts/truth/*.sh,scripts/truth/lib/**,scripts/truth/checks/**,scripts/truth/MANIFEST.sha256,scripts/truth/KIT_VERSION,scripts/truth/README.md,scripts/truth/package.json,scripts/truth/package-lock.json,scripts/truth/node_modules/**" --skip registry,e2e
 PASS  ownership        0ms  3 file(s) changed, all inside the owned paths
-PASS  shrink          58ms  no deletions or large reductions
-PASS  syntax          48ms  3 changed file(s) parse
+PASS  shrink          87ms  no deletions or large reductions
+PASS  syntax          40ms  3 changed file(s) parse
 skip  sql              0ms  no SQL files changed
-PASS  language        17ms  3 file(s) scanned
+PASS  language         8ms  3 file(s) scanned
 PASS  stubs            2ms  3 file(s) scanned
-PASS  secrets          3ms  3 file(s) scanned
+PASS  secrets          2ms  3 file(s) scanned
 PASS  size            0ms  3 file(s) scanned
-skip  i18n             0ms  no UI and no catalogues in this job
-PASS  lint           133ms  python3 -I scripts/validate.py --everywhere
+skip  i18n             1ms  no UI and no catalogues in this job
+PASS  lint           143ms  python3 -I scripts/validate.py --everywhere
 skip  typecheck        0ms  no commands.typecheck in scripts/truth/config.json
 skip  migrate          0ms  job has no migrations and --db was not given
 PASS  tests           3.5s  1 test path(s) passed

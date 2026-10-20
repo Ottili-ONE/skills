@@ -117,6 +117,18 @@ def test_the_proof_block_documents_every_label_it_uses() -> None:
         assert command in text, f"the command of {label} is not in the proof block"
 
 
+def test_every_proof_label_is_used_by_a_defect() -> None:
+    """A proof command that no defect cites is dead weight or a missing entry."""
+    text = read_log()
+    used: set[str] = set()
+    for entry in index_entries(text).values():
+        found = re.search(r"^- \*\*Proof:\*\* `([^`]+)`", entry, re.MULTILINE)
+        if found:
+            used.add(found.group(1))
+    orphan = sorted(set(proof_commands(text)) - used)
+    assert not orphan, f"proof commands that no defect cites: {orphan}"
+
+
 def test_the_follow_up_list_exists_and_names_path_and_symptom() -> None:
     text = read_log()
     heading = "## Follow-ups for later trunk repair jobs"
