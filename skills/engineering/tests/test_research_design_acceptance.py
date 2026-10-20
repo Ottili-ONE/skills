@@ -106,7 +106,7 @@ def _related_graph(root: Path) -> dict[str, list[str]]:
 
 
 def test_related_graph_is_acyclic_with_unique_sink() -> None:
-    root = ENGINEERING_DIR
+    root = ENGINEERING
     edges = _related_graph(root)
     assert edges, "no skills found under engineering dir"
 

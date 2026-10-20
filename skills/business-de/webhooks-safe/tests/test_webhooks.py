@@ -19,40 +19,40 @@ def run(script, *args):
                           capture_output=True, text=True)
 
 
-def _body_file(content):
-    p = Path("/tmp/_wh_body.json")
+def _body_file(content, directory):
+    p = Path(directory) / "_wh_body.json"
     p.write_bytes(content)
     return p
 
 
-def test_verify_github_valid():
+def test_verify_github_valid(tmp_path):
     body = b'{"action":"opened"}'
     sig = "sha256=" + hmac.new(b"secret", body, hashlib.sha256).hexdigest()
     r = run(VERIFY, "--provider", "github", "--secret", "secret",
-            "--body", str(_body_file(body)), "--sig", sig)
+            "--body", str(_body_file(body, tmp_path)), "--sig", sig)
     assert r.returncode == 0, r.stderr
     assert json.loads(r.stdout)["valid"] is True
 
 
-def test_verify_github_rejects_bad_sig():
+def test_verify_github_rejects_bad_sig(tmp_path):
     body = b'{"action":"opened"}'
     r = run(VERIFY, "--provider", "github", "--secret", "secret",
-            "--body", str(_body_file(body)), "--sig", "sha256=deadbeef")
+            "--body", str(_body_file(body, tmp_path)), "--sig", "sha256=deadbeef")
     assert r.returncode != 0
     assert json.loads(r.stdout)["valid"] is False
 
 
-def test_verify_stripe_replay_rejected():
+def test_verify_stripe_replay_rejected(tmp_path):
     body = b'{"id":"evt_1"}'
     old_ts = 1
     sig = f"t={old_ts},v1=" + hmac.new(b"secret", f"{old_ts}.".encode() + body, hashlib.sha256).hexdigest()
     r = run(VERIFY, "--provider", "stripe", "--secret", "secret",
-            "--body", str(_body_file(body)), "--sig", sig, "--now", "1000000")
+            "--body", str(_body_file(body, tmp_path)), "--sig", sig, "--now", "1000000")
     assert r.returncode != 0  # outside the 5-minute replay window
 
 
-def test_dedupe_first_and_second():
-    store = Path("/tmp/_dedupe_test.jsonl")
+def test_dedupe_first_and_second(tmp_path):
+    store = tmp_path / "_dedupe_test.jsonl"
     store.unlink(missing_ok=True)
     r1 = run(DEDUPE, "--event-id", "evt-1", "--ttl", "3600", "--store", str(store))
     assert r1.returncode == 0
@@ -62,10 +62,10 @@ def test_dedupe_first_and_second():
     assert json.loads(r2.stdout)["duplicate"] is True
 
 
-def test_deadletter_writes_record():
-    payload = Path("/tmp/_dl_payload.json")
+def test_deadletter_writes_record(tmp_path):
+    payload = tmp_path / "_dl_payload.json"
     payload.write_text('{"id": "x"}')
-    q = Path("/tmp/_dl_queue.jsonl")
+    q = tmp_path / "_dl_queue.jsonl"
     q.unlink(missing_ok=True)
     r = run(DEADLETTER, "--event-id", "evt-9", "--reason", "timeout",
             "--payload", str(payload), "--queue", str(q))
@@ -75,34 +75,34 @@ def test_deadletter_writes_record():
     assert rec["payload"] == '{"id": "x"}'
 
 
-def test_ordering_in_order():
+def test_ordering_in_order(tmp_path):
     import tempfile, os
     store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
     store.write("{}"); store.close()
     r = run(ORDER, "--stream", "github:ottili", "--seq", "1",
-            "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+            "--payload", str(_body_file(b"{\"x\":1}", tmp_path)), "--store", store.name)
     os.unlink(store.name)
     assert r.returncode == 0, r.stderr
     assert json.loads(r.stdout)["action"] == "process"
 
 
-def test_ordering_out_of_order_is_held():
+def test_ordering_out_of_order_is_held(tmp_path):
     import tempfile, os
     store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
     store.write('{"last_seq": 0, "held": {}}'); store.close()
     r = run(ORDER, "--stream", "github:ottili", "--seq", "3",
-            "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+            "--payload", str(_body_file(b"{\"x\":1}", tmp_path)), "--store", store.name)
     os.unlink(store.name)
     assert r.returncode == 1, r.stderr
     assert json.loads(r.stdout)["action"] == "hold"
 
 
-def test_ordering_old_seq_skipped():
+def test_ordering_old_seq_skipped(tmp_path):
     import tempfile, os
     store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
     store.write('{"last_seq": 5, "held": {}}'); store.close()
     r = run(ORDER, "--stream", "github:ottili", "--seq", "3",
-            "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+            "--payload", str(_body_file(b"{\"x\":1}", tmp_path)), "--store", store.name)
     os.unlink(store.name)
     assert r.returncode == 0, r.stderr
     assert json.loads(r.stdout)["action"] == "duplicate_or_old"
@@ -110,14 +110,14 @@ def test_ordering_old_seq_skipped():
 
 
 
-def test_ordering_persists_state_on_hold():
+def test_ordering_persists_state_on_hold(tmp_path):
     """A held event must be saved, otherwise a restart loses the gap."""
     import tempfile, os
     store = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
     store.write('{"last_seq": 0, "held": {}}'); store.close()
     try:
         r = run(ORDER, "--stream", "github:ottili", "--seq", "3",
-                "--payload", str(_body_file(b"{\"x\":1}")), "--store", store.name)
+                "--payload", str(_body_file(b"{\"x\":1}", tmp_path)), "--store", store.name)
         assert r.returncode == 1, r.stderr
         assert json.loads(r.stdout)["action"] == "hold"
         # state must have been written despite the hold

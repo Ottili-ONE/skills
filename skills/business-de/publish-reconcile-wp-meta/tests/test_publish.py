@@ -44,33 +44,33 @@ def test_meta_publish_requires_page_id():
     assert r.returncode != 0
 
 
-def test_reconcile_match():
+def test_reconcile_match(tmp_path):
     # Both platforms carry the same post id and status for the key.
     wp = {"idempotency_key": "ORD-1", "id": 42, "status": "publish"}
     meta = {"idempotency_key": "ORD-1", "id": 42, "status": "publish"}
-    wp_path = Path("/tmp/_pub_wp.json"); wp_path.write_text(json.dumps(wp))
-    meta_path = Path("/tmp/_pub_meta.json"); meta_path.write_text(json.dumps(meta))
+    wp_path = tmp_path / "_pub_wp.json"; wp_path.write_text(json.dumps(wp))
+    meta_path = tmp_path / "_pub_meta.json"; meta_path.write_text(json.dumps(meta))
     r = run(RECON, "--key", "ORD-1", "--wp", str(wp_path), "--meta", str(meta_path))
     assert r.returncode == 0, r.stderr
     assert json.loads(r.stdout)["ok"] is True
 
 
-def test_reconcile_detects_platform_mismatch():
+def test_reconcile_detects_platform_mismatch(tmp_path):
     wp = {"idempotency_key": "ORD-1", "id": 42, "status": "publish"}
     meta = {"idempotency_key": "ORD-1", "id": 43, "status": "publish"}
-    wp_path = Path("/tmp/_pub_wp2.json"); wp_path.write_text(json.dumps(wp))
-    meta_path = Path("/tmp/_pub_meta2.json"); meta_path.write_text(json.dumps(meta))
+    wp_path = tmp_path / "_pub_wp2.json"; wp_path.write_text(json.dumps(wp))
+    meta_path = tmp_path / "_pub_meta2.json"; meta_path.write_text(json.dumps(meta))
     r = run(RECON, "--key", "ORD-1", "--wp", str(wp_path), "--meta", str(meta_path))
     assert r.returncode == 1, r.stderr
     deltas = json.loads(r.stdout)["deltas"]
     assert any(d["field"] == "id" for d in deltas)
 
 
-def test_reconcile_strict_missing_field():
+def test_reconcile_strict_missing_field(tmp_path):
     wp = {"idempotency_key": "ORD-1", "id": 42, "status": "publish"}
     meta = {"idempotency_key": "ORD-1", "id": 42}  # no status
-    wp_path = Path("/tmp/_pub_wp3.json"); wp_path.write_text(json.dumps(wp))
-    meta_path = Path("/tmp/_pub_meta3.json"); meta_path.write_text(json.dumps(meta))
+    wp_path = tmp_path / "_pub_wp3.json"; wp_path.write_text(json.dumps(wp))
+    meta_path = tmp_path / "_pub_meta3.json"; meta_path.write_text(json.dumps(meta))
     r = run(RECON, "--key", "ORD-1", "--wp", str(wp_path), "--meta", str(meta_path),
             "--strict")
     assert r.returncode == 1, r.stderr
@@ -78,11 +78,11 @@ def test_reconcile_strict_missing_field():
     assert any(d.get("reason") == "missing field" for d in deltas)
 
 
-def test_reconcile_mismatch():
+def test_reconcile_mismatch(tmp_path):
     wp = {"idempotency_key": "ORD-1", "id": 42}
     meta = {"idempotency_key": "ORD-9", "id": "99"}
-    wp_path = Path("/tmp/_pub_wp2.json"); wp_path.write_text(json.dumps(wp))
-    meta_path = Path("/tmp/_pub_meta2.json"); meta_path.write_text(json.dumps(meta))
+    wp_path = tmp_path / "_pub_wp2.json"; wp_path.write_text(json.dumps(wp))
+    meta_path = tmp_path / "_pub_meta2.json"; meta_path.write_text(json.dumps(meta))
     r = run(RECON, "--key", "ORD-1", "--wp", str(wp_path), "--meta", str(meta_path))
     assert r.returncode == 1, r.stderr
     deltas = json.loads(r.stdout)["deltas"]

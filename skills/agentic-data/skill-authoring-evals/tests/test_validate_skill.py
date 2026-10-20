@@ -29,9 +29,10 @@ def test_missing_dir_fails_with_exit_2() -> None:
     assert "not found" in r.stderr
 
 
-def test_json_report_written() -> None:
-    out = ROOT / "report_test.json"
-    out.unlink(missing_ok=True)
+def test_json_report_written(tmp_path: Path) -> None:
+    # The report goes into the test's temporary directory: a test must never
+    # write into the skill folder, because that dirties the working tree.
+    out = tmp_path / "report.json"
     r = run(str(ROOT.parent / "mcp-2026-07-28"), "--json", str(out))
     assert r.returncode == 0
     data = json.loads(out.read_text())

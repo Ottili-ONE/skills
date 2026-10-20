@@ -3,6 +3,9 @@
 set -uo pipefail
 SCRIPT="$(cd "$(dirname "$0")" && pwd)/run_long_test.sh"
 TMP="$(mktemp -d)"
+# The log and its stdout capture must end up in the temporary directory, never in
+# the repository root: a self-test may not leave artefacts in the checkout.
+export OTTLI_TEST_LOG="$TMP/long-test.log"
 FAIL=0
 
 check() { # <expected> <label> <script-args...>

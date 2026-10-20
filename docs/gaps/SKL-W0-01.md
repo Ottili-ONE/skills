@@ -210,7 +210,7 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   stays red. The truth-kit gate is unaffected — its test command is `pytest -q {paths}`,
   and the whole pytest suite is green (44 passed).
 
-## G12 (cross-job request, TASK-0002 VERIFY, 2026-10-20): engineering self-tests hard-code `/srv/ottili` paths and write into the repository root
+## G12 (CLOSED in TASK-0003, 2026-10-20): engineering self-tests hard-coded `/srv/ottili` paths and wrote into the repository root
 
 - **Observed (CI step "Run engineering skill self-tests"):** 2 of 14 self-tests fail on this
   host, both because they point at paths that only exist on a developer machine:
@@ -235,6 +235,22 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
      honours `OTTLI_TEST_LOG="${OTTLI_TEST_LOG:-long-test.log}"`, so no change to the
      script itself is needed.
 
+- **Closed in TASK-0003 (2026-10-20):** all three points are fixed inside this job's
+  owned paths (see `docs/truth/REPAIR_LOG.md`, D-017, D-023, D-024):
+  1. `check_contract_drift_test.py` derives the skill directory from `__file__` and
+     writes its fixture into the pytest `tmp_path`; it no longer names `/srv/ottili`.
+  2. `check_rls_migration_test.py` reads the hq-v2 corpus root from `OTTLI_HQ_REPO`
+     (default `/srv/ottili/repo/hq-v2`) and, where the corpus is absent, proves the
+     documented missing-file contract (exit 2) instead of failing on a foreign path.
+  3. `run_long_test_test.sh` exports `OTTLI_TEST_LOG` into its temporary directory, so
+     `long-test.log` and `long-test.log.out` no longer end up in the repository root.
+- **Ownership note:** `docs/R3_OWNERS.json` lists `skills/engineering/**` under
+  `skills-engineering-r3`, but the job card of SKL-W0-01 grants this job `skills/**`
+  and names the two engineering self-tests as the defects of TASK-0003 ("two
+  engineering self-tests ... fail"). The repairs above stay inside `skills/**` and are
+  limited to the two self-tests and the log path of the third, so the change is
+  reviewable in one place.
+
 ## G13 (open, TASK-0002 VERIFY, 2026-10-20): `scripts/verify-status.mjs` is fixed but still unproven against a real product `STATUS.md`
 
 - **Fixed in this pass (both were in this job's owned paths):**
@@ -252,3 +268,26 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **To close:** create the root `STATUS.md` (TASK-0008 owns it) with claim rows that point
   at log files that exist in the tree, then run
   `node scripts/verify-status.mjs STATUS.md --root .` and expect exit 0.
+
+## G14 (cross-job request, TASK-0003, 2026-10-20): CI runs a shell script with `python3`
+
+- **Observed (CI step "Run engineering skill self-tests" in `.github/workflows/validate.yml`):**
+  the loop runs every entry with `python3 "$t"`, but one of the entries is a bash script:
+  `skills/engineering/long-test-discipline/scripts/run_long_test_test.sh`. `python3` on that
+  file exits 1 with
+  `SyntaxError: invalid syntax ... set -uo pipefail`, and the step runs under
+  `set -euo pipefail`, so the whole CI job is red even though the script itself passes
+  (`bash .../run_long_test_test.sh` -> exit 0).
+- **Ownership:** `.github/**` belongs to `skills-engineering-r3` per `docs/R3_OWNERS.json`
+  and is not on this job's owned list, so this job did not edit the workflow.
+- **Request (cross-job):** in `.github/workflows/validate.yml`, run the shell script with
+  bash instead of python. The smallest change that keeps the loop readable is to split the
+  list into two loops:
+  ```bash
+  for t in <the .py self-tests>; do echo "=== $t ==="; python3 "$t"; done
+  for t in skills/engineering/long-test-discipline/scripts/run_long_test_test.sh; do
+    echo "=== $t ==="; bash "$t"
+  done
+  ```
+- **Effect while open:** the GitHub workflow stays red on the "Run engineering skill self-tests"
+  step. The pytest suite and the truth-kit gate are unaffected - both are green.

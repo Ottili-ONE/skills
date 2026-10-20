@@ -220,7 +220,7 @@ Everything below is outside this job's owned paths (or is a pre-existing dirty-t
 state) and is recorded here so the next pass does not mistake it for a regression.
 
 1. **`scripts/truth/**` is absent from this repo (blocks the gate / preflight /
-   safe-commit / commit-and-land commands).** Symptom:
+   safe-commit / commit-and-integrate commands).** Symptom:
    `node scripts/truth/preflight.mjs --job SKL-W0-01 --status` exits 1 with
    `Cannot find module '.../scripts/truth/preflight.mjs'`. Same for `gate.mjs`,
    `safe-commit.mjs`, `db.mjs`, `port.mjs`, `heavy.sh`. `scripts/truth/**` is on
@@ -297,7 +297,7 @@ state) and is recorded here so the next pass does not mistake it for a regressio
      three is mine to delete; the test itself is clean and its `--dirty` variant
      still fails as required.
   2. `scripts/truth/**` (preflight/gate/safe-commit/db/port) is absent from this
-     repo — the blocked-check, gate and commit-and-land commands in the job card
+     repo — the blocked-check, gate and commit-and-integrate commands in the job card
      cannot be executed from here (G1, cross-job).
   3. The 3 cross-job `skills/engineering/` test failures.
   4. `skills/business-de/**` collection errors in a clean clone are resolved
@@ -573,3 +573,167 @@ sequence, and a clean clone) instead of trusting the claim. The TASK-0002 delive
   list items, and the test asserts that there are **exactly** four of them, numbered `1..4`
   in order — strictly more than the old assertion, which could never hold.
 - **Proof:** `python3 -m pytest tests/ -q` → 44 passed, 0 failed (was 36 passed, 1 failed).
+
+## TASK-0003 (clean clone green: empty-dir, /tmp and tree-dirtying tests)
+
+Baseline measured on a fresh clone of `ec2c086` (evidence: `.truth/SKL-W0-01/before.txt`):
+`pytest -q` aborted the whole collection with 1 error, 3 tests failed, 395 passed,
+9 skipped, and the run left `skills/agentic-data/skill-authoring-evals/report_test.json`
+modified in the checkout.
+
+## D-017 — the contract-drift self-test pointed at a foreign machine and aborted the collection
+
+- **Defect:** `skills/engineering/module-contract-first/scripts/check_contract_drift_test.py`
+  ran every checker call with `cwd="/srv/ottili/repo/skills/skills/engineering/module-contract-first"`.
+  On any other checkout the path does not exist, so the module raised
+  `FileNotFoundError` **at import time**. pytest therefore aborted the entire
+  collection (`Interrupted: 1 error during collection`) and no test in the
+  repository ran at all. The same file also wrote its fixture to the fixed path
+  `/tmp/test_contract`.
+- **Cause:** the self-test was written on a machine where the Ottili checkout
+  lived at `/srv/ottili/repo/skills` and hard-coded that layout instead of
+  deriving the path from its own location.
+- **Fix:** the skill directory is now derived from `__file__`
+  (`Path(__file__).resolve().parents[1]`), the checker is started with
+  `cwd=<skill dir>`, and every test gets its own throwaway module through
+  pytest's `tmp_path` fixture. The file is still runnable as a standalone script
+  (`python3 skills/engineering/module-contract-first/scripts/check_contract_drift_test.py`),
+  which is how CI runs it.
+- **Proof:** `python3 -m pytest -q` collects the whole repository again
+  (633 tests, 0 collection errors); the standalone script exits 0.
+
+## D-018 — the acceptance-harness self-test unpacked a `CompletedProcess` and could never fail
+
+- **Defect:** `skills/engineering/acceptance-harness/scripts/report_result_test.py`
+  did `rc, _ = run(...)` while `run()` returns a `subprocess.CompletedProcess`
+  (`TypeError: cannot unpack non-iterable CompletedProcess object`). The two
+  edge-case tests therefore always raised. The standalone runner had a second
+  bug: `failures += fn()` added `None` (the functions returned nothing on
+  success), which raised `TypeError` inside the `except` handler and made
+  `python3 report_result_test.py` exit 1 even when every check passed.
+- **Cause:** the edge-case tests were added later and were never run in either
+  shape (pytest collects them, CI runs the file as a script).
+- **Fix:** the tests use `r.returncode` and real `assert` statements (so pytest
+  can actually fail them), each gets its own `tmp_path`, and the standalone
+  runner catches `AssertionError` and counts it.
+- **Proof:** `python3 -m pytest -q skills/engineering/acceptance-harness/scripts/report_result_test.py`
+  -> 2 passed; `python3 skills/engineering/acceptance-harness/scripts/report_result_test.py`
+  -> exit 0 (before: exit 1 with `TypeError`).
+
+## D-019 — the research/design acceptance test referenced an undefined constant
+
+- **Defect:** `skills/engineering/tests/test_research_design_acceptance.py`
+  used `ENGINEERING_DIR`, but the module defines `ENGINEERING`. The cross-link
+  graph test failed with `NameError: name 'ENGINEERING_DIR' is not defined`.
+- **Fix:** the test uses `ENGINEERING`.
+- **Proof:** `python3 -m pytest -q skills/engineering/tests/test_research_design_acceptance.py`
+  -> 1 passed.
+
+## D-020 — a skill test wrote its JSON report into the skill folder
+
+- **Defect:** `skills/agentic-data/skill-authoring-evals/tests/test_validate_skill.py`
+  wrote `--json` output to `skills/agentic-data/skill-authoring-evals/report_test.json`
+  and deleted the file before the run. The tracked file was overwritten on every
+  test run, so `git status --porcelain` was never empty after the suite.
+- **Fix:** the report goes into the test's `tmp_path`. The committed
+  `report_test.json` stays as it is; nothing writes it any more.
+- **Proof:** `git status --porcelain` after a full `pytest -q` run lists only the
+  files of the pending change, no `M skills/agentic-data/.../report_test.json`.
+
+## D-021 — three business-de test modules wrote to fixed paths under `/tmp`
+
+- **Defect:** `skills/business-de/publish-reconcile-wp-meta/tests/test_publish.py`,
+  `skills/business-de/webhooks-safe/tests/test_webhooks.py` and
+  `skills/business-de/carrier-apis-de/tests/test_carrier.py` wrote their fixtures
+  to fixed names (`/tmp/_pub_wp.json`, `/tmp/_wh_body.json`, `/tmp/_lab.json`, ...)
+  outside the worktree. Fixed names collide between parallel runs, survive the
+  run as litter on the shared host, and are invisible to the tree check.
+- **Fix:** every fixture goes into the test's `tmp_path` (pytest's per-test
+  temporary directory). No test in the repository writes to a hard-coded `/tmp`
+  path any more (`grep -rn 'Path("/tmp' --include=test_*.py --include=*_test.py`
+  finds nothing).
+- **Proof:** `python3 -m pytest -q skills/business-de/` -> 218 passed, no file
+  outside the pytest temporary directory is created.
+
+## D-022 — a collection guard for a deleted directory hid 218 real tests
+
+- **Defect:** `tests/conftest.py` added `norecursedirs = business-de` to keep
+  pytest away from a stale top-level `business-de/` duplicate. That duplicate
+  was deleted in commit `0d5f964`, but the guard stayed. Because pytest matches
+  `norecursedirs` against the **basename**, the guard also excluded the
+  canonical `skills/business-de/` tree: 218 passing tests were never executed by
+  any full run (the suite reported 407 tests instead of 633). The docstring
+  described a directory that no longer exists.
+- **Fix:** the guard is gone. The invariant it tried to protect ("no duplicate
+  skill directory anywhere") is now enforced by a test that fails loudly:
+  `tests/hygiene/test_skill_tree.py`. The collected test count went from 407 to
+  633 and the suite is green.
+- **Proof:** `python3 -m pytest -q` -> 624 passed, 9 skipped, 0 failed
+  (before: 395 passed, 3 failed, 1 error, 218 tests never collected).
+
+## D-023 — the pg-rls self-test required a foreign repository
+
+- **Defect:** `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py`
+  asserted that three migrations of the **hq-v2** repository pass the checker.
+  Those files live in another checkout (`/srv/ottili/repo/hq-v2/...`), so the
+  self-test failed with `file not found` on every host that does not have that
+  repository - including CI and a fresh clone of this repository.
+- **Fix:** the corpus root is read from `OTTLI_HQ_REPO` (default
+  `/srv/ottili/repo/hq-v2`). Where the corpus is present it is checked exactly as
+  before; where it is not, the self-test proves the documented contract for a
+  missing file (exit 2 plus "not found") and says out loud that the corpus was
+  not available. The two pytest edge tests in the same file returned an `int`
+  instead of failing, so pytest could never fail them; they now assert.
+- **Proof:** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py`
+  -> exit 0 with the note about the missing corpus (before: exit 1).
+
+## D-024 — the long-test self-test left two log files in the repository root
+
+- **Defect:** `skills/engineering/long-test-discipline/scripts/run_long_test_test.sh`
+  calls `run_long_test.sh` without `--log`, so the script wrote `long-test.log`
+  and `long-test.log.out` into the **current working directory** - the
+  repository root when CI runs it from the checkout. The tree was dirty after
+  the self-test.
+- **Fix:** the self-test exports `OTTLI_TEST_LOG="$TMP/long-test.log"`, so both
+  files end up in the temporary directory it already creates. `run_long_test.sh`
+  itself is unchanged: it still honours `OTTLI_TEST_LOG` and `--log`.
+- **Proof:** `bash skills/engineering/long-test-discipline/scripts/run_long_test_test.sh`
+  -> exit 0 and `git status --porcelain` stays empty (before: two untracked
+  files in the repository root).
+
+## D-025 — nothing stopped a test from dirtying the checkout
+
+- **Defect:** there was no guard that the test suite leaves the working tree
+  untouched. `skills/agentic-data/skill-authoring-evals/report_test.json` proved
+  the gap: the suite overwrote a tracked file on every run and no test noticed.
+- **Fix:** one canonical implementation, `tests/hygiene/clean_tree.py`, with the
+  functions `dirty_paths`, `is_clean`, `dirt_added_since` and `seed_dirty`. It is
+  used by the pytest guard `tests/hygiene/test_clean_tree.py`, which runs **after
+  every other test module** (the `runs_last` marker plus the ordering hook in
+  `tests/conftest.py`). The guard compares the tree state at the end of the
+  session with the state at the start: on a clean checkout the tree must still be
+  clean, and on a checkout with pending work the tests must not add anything to
+  it. The guard is proven against a deliberately dirty fixture in a throwaway
+  repository, so it cannot rot into a rubber stamp.
+- **Merge:** the previous node-only implementation `tests/hygiene/clean-tree.test.mjs`
+  was a second implementation of the same check and could not be run by the
+  configured runner (pytest rejects a `.test.mjs` path with exit 4). It was
+  replaced by the canonical module and the pytest guard; the command line lives
+  on as `python3 tests/hygiene/clean_tree.py [--dirty] [--root <dir>]`.
+- **Proof:** `python3 -m pytest -q` -> 624 passed, 9 skipped, 0 failed and
+  `git status --porcelain` shows only the pending change; the guard fails on a
+  seeded fixture (see `test_guard_fails_on_a_seeded_dirty_fixture`).
+
+## Verification commands run for TASK-0003
+
+```
+python3 -m pytest -q                                  # 624 passed, 9 skipped, 0 failed
+python3 -m pytest -q <the 9 changed test files>       # 65 passed (the gate's command)
+python3 skills/engineering/module-contract-first/scripts/check_contract_drift_test.py   # exit 0
+python3 skills/engineering/acceptance-harness/scripts/report_result_test.py             # exit 0
+python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py       # exit 0
+bash skills/engineering/long-test-discipline/scripts/run_long_test_test.sh               # exit 0
+python3 tests/hygiene/clean_tree.py                   # exit 0 on a clean checkout
+grep -rn 'Path("/tmp' --include=test_*.py --include=*_test.py skills/ tests/   # no hits
+git status --porcelain                                # empty after a full run
+```

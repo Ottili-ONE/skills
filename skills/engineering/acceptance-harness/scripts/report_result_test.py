@@ -74,30 +74,26 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
-def test_pass_without_criterion_exits_2() -> None:
+def test_pass_without_criterion_exits_2(tmp_path: Path) -> None:
     """A PASS without --criterion is a feeling, not a result."""
-    with tempfile.TemporaryDirectory() as tmp:
-        t = Path(tmp)
-        out = t / "results.json"
-        rc, _ = run("--scenario", "s1", "--outcome", "PASS", "--evidence", "x.log",
-                    "--output", str(out))
-        if rc != 2:
-            print("FAIL: PASS without --criterion should exit 2, got", rc)
-            return 1
-        print("ok: PASS without criterion exits 2")
+    out = tmp_path / "results.json"
+    r = run("--scenario", "s1", "--outcome", "PASS", "--evidence", "x.log",
+            "--output", str(out))
+    assert r.returncode == 2, (
+        f"PASS without --criterion should exit 2, got {r.returncode}: "
+        f"{r.stdout}{r.stderr}"
+    )
 
 
-def test_verified_without_criterion_is_allowed() -> None:
+def test_verified_without_criterion_is_allowed(tmp_path: Path) -> None:
     """VERIFIED is a status, not a PASS: it does not need a criterion."""
-    with tempfile.TemporaryDirectory() as tmp:
-        t = Path(tmp)
-        out = t / "results.json"
-        rc, _ = run("--scenario", "s2", "--outcome", "VERIFIED", "--evidence", "x.log",
-                    "--output", str(out))
-        if rc != 0:
-            print("FAIL: VERIFIED without --criterion should exit 0, got", rc)
-            return 1
-        print("ok: VERIFIED without criterion is accepted")
+    out = tmp_path / "results.json"
+    r = run("--scenario", "s2", "--outcome", "VERIFIED", "--evidence", "x.log",
+            "--output", str(out))
+    assert r.returncode == 0, (
+        f"VERIFIED without --criterion should exit 0, got {r.returncode}: "
+        f"{r.stdout}{r.stderr}"
+    )
 
 
 EDGE_TESTS = [
@@ -107,13 +103,19 @@ EDGE_TESTS = [
 
 
 def run_edge() -> int:
+    """Standalone runner for the edge cases; each case gets its own directory."""
     failures = 0
-    for _name, fn in EDGE_TESTS:
-        try:
-            failures += fn()
-        except Exception as exc:  # noqa: BLE001
-            print(f"FAIL: {_name} raised {exc!r}")
-            failures += 1
+    with tempfile.TemporaryDirectory() as tmp:
+        for index, (_name, fn) in enumerate(EDGE_TESTS):
+            case_dir = Path(tmp) / f"case-{index}"
+            case_dir.mkdir()
+            try:
+                fn(case_dir)
+            except AssertionError as exc:
+                print(f"FAIL: {_name}: {exc}")
+                failures += 1
+            else:
+                print(f"ok: {_name}")
     return failures
 
 

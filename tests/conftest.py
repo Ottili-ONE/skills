@@ -1,27 +1,51 @@
-"""Root-level pytest configuration for the skills repository (SKL-W0-01 TASK-0003).
+"""Repository-level pytest configuration (SKL-W0-01 TASK-0003).
 
-The repository keeps a stale duplicate of the business-de skills at the top level
-(``business-de/``) alongside the canonical ``skills/business-de/``. Both trees
-contain ``tests/test_*.py`` files with identical basenames, which makes pytest's
-default import-mode collection abort with "import file mismatch" on a fresh clone
-(git cannot store empty directories, so the problem surfaces on clone rather than
-in the working tree).
+Three jobs:
 
-This conftest does NOT delete the duplicate (it does not own those paths). It makes
-the collection deterministic by excluding the stale tree from recursion, so the
-canonical ``skills/business-de/`` tests are the ones that run. The duplicate's
-removal is a cross-job request recorded in docs/gaps/SKL-W0-01.md.
+1. Run the clean-tree hygiene guard *after* every other test module, so a test
+   that writes into the working tree fails the suite instead of silently
+   dirtying it.
+2. Record the tree state at the start of the session. The guard compares the
+   state at the end of the session with it: on a clean checkout the tree must
+   still be clean, and on a checkout with pending work (a gate run, a local
+   patch) the tests must not add anything to it.
+3. Keep collection deterministic. The stale top-level ``business-de/`` duplicate
+   was deleted in commit 0d5f964. The collection guard that excluded it also
+   excluded the canonical ``skills/business-de/`` tests (218 of them) from every
+   full run, so a third of the suite was never executed. That guard is gone;
+   the invariant it tried to protect is enforced by a test now:
+   ``tests/hygiene/test_skill_tree.py``.
 """
 from __future__ import annotations
 
-import os
+from pathlib import Path
 
-# The stale duplicate lives at the repository root, one level above this file.
-_STALE_DUPLICATE = os.path.basename(
-    os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "business-de"))
-)
+import pytest
+
+from hygiene.clean_tree import dirty_paths, repo_root
+
+_TREE_BASELINE: frozenset[str] = frozenset()
 
 
-def pytest_configure(config):
-    """Exclude the stale duplicate tree from collection at configure time."""
-    config.addinivalue_line("norecursedirs", _STALE_DUPLICATE)
+def pytest_configure(config) -> None:
+    """Register the hygiene marker and record the tree state of this session."""
+    config.addinivalue_line(
+        "markers", "runs_last: run this test after every other test module"
+    )
+    global _TREE_BASELINE
+    _TREE_BASELINE = frozenset(dirty_paths(repo_root()))
+
+
+def pytest_collection_modifyitems(config, items) -> None:
+    """Move the ``runs_last`` tests to the end of the session.
+
+    ``list.sort`` is stable, so the marked tests keep their relative order and
+    every other test keeps the order pytest collected it in.
+    """
+    items.sort(key=lambda item: item.get_closest_marker("runs_last") is not None)
+
+
+@pytest.fixture(scope="session")
+def tree_baseline() -> frozenset[str]:
+    """The dirty paths the session started with; empty on a clean checkout."""
+    return _TREE_BASELINE

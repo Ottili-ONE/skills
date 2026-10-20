@@ -11,6 +11,7 @@ The checker is per-table and keyed on the single product GUC `app.company_id`
   * emit machine-readable --json.
 """
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -20,13 +21,19 @@ ROOT = Path(__file__).resolve().parents[1]
 CHECK = ROOT / "scripts" / "check_rls_migration.py"
 EX = ROOT / "references" / "examples"
 
+# The hq-v2 checkout lives in another repository, so it is only present on
+# hosts that also have that repository. Point OTTLI_HQ_REPO at it to check the
+# real corpus; everywhere else the self-test proves the documented behaviour
+# for a missing file (exit 2) instead of failing on a foreign path.
+HQ_ROOT = Path(os.environ.get("OTTLI_HQ_REPO", "/srv/ottili/repo/hq-v2"))
+
 # Three real hq migrations, verified 2026-10-16 to use company_id + app.company_id.
 HQ = [
-    "/srv/ottili/repo/hq-v2/modules/reports-intelligence/migrations/"
+    "modules/reports-intelligence/migrations/"
     "20261002091600_reports_intelligence_saved_report.sql",
-    "/srv/ottili/repo/hq-v2/modules/reports-intelligence/migrations/"
+    "modules/reports-intelligence/migrations/"
     "20261002091630_reports_intelligence_signal_threshold.sql",
-    "/srv/ottili/repo/hq-v2/modules/procure-to-stock/migrations/"
+    "modules/procure-to-stock/migrations/"
     "20261010000000_hq_procure_to_stock_r3_04_audit.sql",
 ]
 
@@ -57,10 +64,25 @@ def main() -> int:
         elif "FAIL" not in out:
             failures.append(f"{h} output must say FAIL\n{out}")
 
-    for m in HQ:
-        rc, out = run(m)
-        if rc != 0:
-            failures.append(f"real hq migration {m} must exit 0, got {rc}\n{out}")
+    hq_paths = [HQ_ROOT / m for m in HQ]
+    corpus_present = all(p.is_file() for p in hq_paths)
+    if corpus_present:
+        for m in hq_paths:
+            rc, out = run(str(m))
+            if rc != 0:
+                failures.append(f"real hq migration {m} must exit 0, got {rc}\n{out}")
+    else:
+        absent = str(hq_paths[0])
+        rc, out = run(absent)
+        if rc != 2:
+            failures.append(f"missing migration {absent} must exit 2, got {rc}\n{out}")
+        elif "not found" not in out:
+            failures.append(f"missing migration {absent} must report 'not found'\n{out}")
+        print(
+            f"note: the hq-v2 corpus ({HQ_ROOT}) is not on this host; "
+            "checked the missing-file contract instead",
+            file=sys.stderr,
+        )
 
     # All three hostile at once still fails (exit 1, not 0).
     rc, out = run(*[str(EX / h) for h in HOSTILE])
@@ -83,7 +105,8 @@ def main() -> int:
         for f in failures:
             print(f"FAIL: {f}", file=sys.stderr)
         return 1
-    print("ok: pg-rls migration checker self-test (3 real hq PASS, 3 hostile FAIL)")
+    corpus = "3 real hq PASS" if corpus_present else "missing-file contract"
+    print(f"ok: pg-rls migration checker self-test ({corpus}, 3 hostile FAIL)")
     return 0
 
 
@@ -94,30 +117,21 @@ def test_json_output() -> None:
         good = t / "good.sql"
         good.write_text(EX.joinpath("good_migration.sql").read_text(), encoding="utf-8")
         rc, out = run(str(good), "--json")
-        if rc != 0:
-            print("FAIL: --json on a clean migration should exit 0")
-            print(out)
-            return 1
+        assert rc == 0, f"--json on a clean migration should exit 0, got {rc}: {out}"
         try:
             data = json.loads(out)
-        except json.JSONDecodeError:
-            print("FAIL: --json output is not valid JSON:", out)
-            return 1
-        if data.get("status") != "ok" or data.get("files_checked") != 1:
-            print("FAIL: --json status/files_checked wrong:", data)
-            return 1
+        except json.JSONDecodeError as exc:
+            raise AssertionError(f"--json output is not valid JSON: {out}") from exc
+        assert data.get("status") == "ok", f"--json status wrong: {data}"
+        assert data.get("files_checked") == 1, f"--json files_checked wrong: {data}"
         print("ok: --json output is valid and correct")
-        return 0
 
 
-def test_usage_error() -> int:
+def test_usage_error() -> None:
     """No arguments exits 2."""
     rc, out = run()
-    if rc != 2:
-        print("FAIL: no args should exit 2, got", rc)
-        return 1
+    assert rc == 2, f"no args should exit 2, got {rc}: {out}"
     print("ok: usage error exits 2")
-    return 0
 
 
 EDGE_TESTS = [
@@ -127,13 +141,16 @@ EDGE_TESTS = [
 
 
 def run_edge() -> int:
+    """Standalone runner for the edge cases."""
     failures = 0
     for _name, fn in EDGE_TESTS:
         try:
-            failures += fn()
-        except Exception as exc:  # noqa: BLE001
-            print(f"FAIL: {_name} raised {exc!r}")
+            fn()
+        except AssertionError as exc:
+            print(f"FAIL: {_name}: {exc}")
             failures += 1
+        else:
+            print(f"ok: {_name}")
     return failures
 
 

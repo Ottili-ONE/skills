@@ -53,21 +53,21 @@ def test_track_dry_run_offline():
     assert data["cache_ttl_seconds"] == 300
 
 
-def test_reconcile_match():
+def test_reconcile_match(tmp_path):
     label = {"cost": {"amount": 12.50}, "status": "created", "trackingNumber": "T1"}
     record = {"cost": {"amount": 12.50}, "status": "created", "trackingNumber": "T1"}
-    lp = Path("/tmp/_lab.json"); lp.write_text(json.dumps(label))
-    rp = Path("/tmp/_rec.json"); rp.write_text(json.dumps(record))
+    lp = tmp_path / "_lab.json"; lp.write_text(json.dumps(label))
+    rp = tmp_path / "_rec.json"; rp.write_text(json.dumps(record))
     r = run(RECON, "--label", str(lp), "--record", str(rp))
     assert r.returncode == 0, r.stderr
     assert json.loads(r.stdout)["ok"] is True
 
 
-def test_reconcile_mismatch():
+def test_reconcile_mismatch(tmp_path):
     label = {"cost": {"amount": 12.50}, "status": "created", "trackingNumber": "T1"}
     record = {"cost": {"amount": 13.00}, "status": "created", "trackingNumber": "T1"}
-    lp = Path("/tmp/_lab2.json"); lp.write_text(json.dumps(label))
-    rp = Path("/tmp/_rec2.json"); rp.write_text(json.dumps(record))
+    lp = tmp_path / "_lab2.json"; lp.write_text(json.dumps(label))
+    rp = tmp_path / "_rec2.json"; rp.write_text(json.dumps(record))
     r = run(RECON, "--label", str(lp), "--record", str(rp))
     assert r.returncode == 1, r.stderr
     deltas = json.loads(r.stdout)["deltas"]
@@ -93,11 +93,11 @@ def test_track_rejects_non_numeric():
     assert r.returncode != 0
 
 
-def test_reconcile_unknown_result():
+def test_reconcile_unknown_result(tmp_path):
     label = {"cost": {"amount": 12.50}, "status": "created", "trackingNumber": None}
     record = {"cost": {"amount": 12.50}, "status": "created", "trackingNumber": None}
-    lp = Path("/tmp/_lab3.json"); lp.write_text(json.dumps(label))
-    rp = Path("/tmp/_rec3.json"); rp.write_text(json.dumps(record))
+    lp = tmp_path / "_lab3.json"; lp.write_text(json.dumps(label))
+    rp = tmp_path / "_rec3.json"; rp.write_text(json.dumps(record))
     r = run(RECON, "--label", str(lp), "--record", str(rp))
     assert r.returncode == 1, r.stderr
     assert json.loads(r.stdout)["ok"] is False
@@ -107,27 +107,27 @@ def test_reconcile_missing_file():
     r = run(RECON, "--label", "/nonexistent/x.json", "--record", "/nonexistent/y.json")
     assert r.returncode == 2
 
-def test_reconcile_normalises_shipment_number():
+def test_reconcile_normalises_shipment_number(tmp_path):
     """DHL labels use `shipmentNumber`; Ottili records use `trackingNumber`.
     Reconcile must compare them as the same field."""
     label = {"cost": {"amount": 12.50}, "status": "created",
              "shipmentNumber": "12345678901234567890"}
     record = {"cost": {"amount": 12.50}, "status": "created",
               "trackingNumber": "12345678901234567890"}
-    lp = Path("/tmp/_lab_ship.json"); lp.write_text(json.dumps(label))
-    rp = Path("/tmp/_rec_ship.json"); rp.write_text(json.dumps(record))
+    lp = tmp_path / "_lab_ship.json"; lp.write_text(json.dumps(label))
+    rp = tmp_path / "_rec_ship.json"; rp.write_text(json.dumps(record))
     r = run(RECON, "--label", str(lp), "--record", str(rp))
     assert r.returncode == 0, r.stderr
     assert json.loads(r.stdout)["ok"] is True
 
 
-def test_reconcile_shipment_number_mismatch():
+def test_reconcile_shipment_number_mismatch(tmp_path):
     label = {"cost": {"amount": 12.50}, "status": "created",
              "shipmentNumber": "AAA"}
     record = {"cost": {"amount": 12.50}, "status": "created",
               "trackingNumber": "BBB"}
-    lp = Path("/tmp/_lab_ship2.json"); lp.write_text(json.dumps(label))
-    rp = Path("/tmp/_rec_ship2.json"); rp.write_text(json.dumps(record))
+    lp = tmp_path / "_lab_ship2.json"; lp.write_text(json.dumps(label))
+    rp = tmp_path / "_rec_ship2.json"; rp.write_text(json.dumps(record))
     r = run(RECON, "--label", str(lp), "--record", str(rp))
     assert r.returncode == 1, r.stderr
     deltas = json.loads(r.stdout)["deltas"]
