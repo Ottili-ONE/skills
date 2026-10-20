@@ -27,15 +27,20 @@
 - **Workaround used in this pass:** the DONE WHEN criteria were verified directly with `git ls-files`,
   `find`, `git grep`, and `node scripts/gen-catalog.mjs --check` instead of the gate harness.
 
-## G2 (informational): `README.md` and `catalog.json` mention `business-de`
+## G2 (informational, corrected in the TASK-0004 VERIFY pass): `README.md` and `catalog.json` mention `business-de`
 
-- These reference the **package** `skills/business-de` (the canonical copy), which exists. They are not
-  stale references to the deleted top-level `business-de/` duplicate.
+- These reference the **package** `skills/business-de` (the canonical copy), which exists.
 - Verified: `skills/business-de/` exists and holds the business skills;
   `catalog.json` `packages["business-de"].path` = `skills/business-de`.
-- No tracked file references a top-level `business-de/` path. README.md:19 explicitly notes
-  "canonical copy under skills/business-de/".
-- Action: none required; recorded for completeness.
+- `README.md` line 32 lists `business-de/` inside its `skills/` layout block — that is the
+  canonical package, not the deleted top-level duplicate.
+  (The earlier entry of this gap quoted a README comment "canonical copy under
+  skills/business-de/" at line 19. That comment does not exist in the current README: the
+  later rewrite `dbf86e2` ("README-1") removed it. The claim was stale; it is corrected here.)
+- The one exception is **G22**: six `ref-*` skills carry the path fragment `business-de/<skill>`
+  in their frontmatter description. From the repository root that fragment resolves to nothing —
+  it is a leftover of the deleted duplicate.
+- Action: G22 carries the request; nothing else to do.
 
 ## G3 (verification record for TASK-0004, 2026-10-16)
 
@@ -47,10 +52,15 @@ Grep for `business-de` across this job's paths, as the task requires before any 
 | `tests/` | no match |
 | `docs/` | `docs/truth/REPAIR_LOG.md` and `docs/truth/REPO_SHAPE.md` mention it **historically** (D-004, "stale top-level duplicate"); `docs/R3_OWNERS.json` lists `skills/business-de/**` as owned by `skills-business-de-r3` |
 | `catalog.json` | matches only the **package** `skills/business-de` (`packages["business-de"].path` = `skills/business-de`, 26 skill paths under it) |
-| `README.md` | one match at line 19 — the `business-de/` entry in the layout tree. **Stale:** it carried the leftover comment "canonical copy under skills/business-de/", which referred to the deleted duplicate. Fixed in this pass (see commit). |
+| `README.md` | one match at line 32 — the `business-de/` entry in the `skills/` layout tree. **Not stale:** it names the canonical package inside the `skills/` block. The comment this table quoted for line 19 ("canonical copy under skills/business-de/") is not in the current README — the rewrite `dbf86e2` removed it. |
+| `catalog.json` | six matches, one per `ref-*` skill, of the form `(business-de/<skill>)` in the copied frontmatter description. **Stale as a path:** from the repository root the fragment resolves to nothing. Carried to G22. |
 
-Conclusion: nothing references the deleted top-level `business-de/`. The canonical copy is
-`skills/business-de/` (10 SKILL.md), owned by `skills-business-de-r3`, and stays.
+Conclusion (re-verified in the TASK-0004 VERIFY pass, 2026-10-20): the deleted top-level
+`business-de/` directory is gone and no tool, test or document depends on it. The canonical copy
+is `skills/business-de/` (10 SKILL.md), owned by `skills-business-de-r3`, and stays. The only
+remainder is prose: six `ref-*` descriptions still spell the old path `business-de/<skill>`
+(G22). The grep above was re-run on the tree of commit `d9c14aa` and reproduced exactly the
+same six entries.
 
 ## G4 (state.json files are inside another job's skills, not at the root)
 
@@ -206,6 +216,11 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   `## Orchestrator preamble` to `## Orchestrator preamble (generated)` so it names the
   generated artefact the same way the golden body names it
   (`# Orchestrator Preamble (generated)`).
+- **Root cause (found in the TASK-0004 VERIFY pass, 2026-10-20):** the heading was not always
+  wrong. `c84cc90` (SKL-W1-02) added the section as `## Orchestrator preamble (generated)`;
+  the later README rewrite `dbf86e2` ("README-1: docs: rewrite README to match the code")
+  shortened it to `## Orchestrator preamble` and thereby broke the contract test. The section
+  body is still complete — only the heading lost the word `(generated)`.
 - **Effect while open:** the GitHub workflow step "Run orchestrator contract tests"
   stays red. The truth-kit gate is unaffected — its test command is `pytest -q {paths}`,
   and the whole pytest suite is green (44 passed).
@@ -363,3 +378,68 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **Follow-up:** the canonical-skills job decides per file whether it is product
   documentation (keep it and link it) or a stale diary (delete it).
   `docs/truth/REPO_SHAPE.md` lists them as the only remaining package-level documents.
+
+## G20 (cross-job request, TASK-0004 VERIFY, 2026-10-20): `index/skills.json` drifts from the tree it is generated from
+
+- **Observed:** `python3 scripts/build-index.py` rewrites `index/skills.json` with five changed
+  lines — the `pg-rls-multitenant` description (`tenant_id/...` → `company_id/...`) and
+  `has_references` for the four reference skills that have no `references/` folder
+  (`ref-bank-reconciliation-camt`, `ref-gobd-archive`, `ref-ust-edge-cases`,
+  `ref-xrechnung-zugferd`), which flips from `true` to `false`. `index/INDEX.md` does not drift.
+- **Cause:** the sources changed without a rebuild — `8279956` (SKL-W1-01, pg-rls tenant
+  convention) and `58e4e0a` / `8732c48` (SKL-W1-02, re-nesting the `ref-*` skills) touched the
+  `SKILL.md` files, but the last index rebuild is `ae4e85b` (SKL-W1-02). Not caused by this job.
+- **Impact:** `index/skills.json` is a generated artefact that no longer matches its inputs.
+  `scripts/build-index.py` has no `--check` mode and CI never calls it, so the drift is silent.
+  `catalog.json` itself is in sync (`node scripts/gen-catalog.mjs --check` → exit 0).
+- **Ownership:** `index/**` belongs to `skills-engineering-r3` per `docs/R3_OWNERS.json`;
+  neither `index/**` nor `scripts/build-index.py` is on this job's owned list.
+- **Request (cross-job):** give `scripts/build-index.py` a `--check` mode that renders into a
+  temporary directory, compares the result with `index/INDEX.md` and `index/skills.json` and
+  exits 1 on a difference; call it from `.github/workflows/validate.yml` next to
+  `node scripts/gen-catalog.mjs --check`; rebuild `index/` once and commit the result.
+- **Effect while open:** `index/` is stale. No test and no gate step fails — the drift is
+  invisible until somebody rebuilds the index by hand.
+
+## G21 (cross-job request, TASK-0004 VERIFY, 2026-10-20): two installers do the same job
+
+- **Observed:** `scripts/install.sh` (copy or link selected skills into an agent skills
+  directory; `--check`, `--dry-run`, `--package`, `--link`, `--force`) and
+  `scripts/install-skill.py` (resolve a skill by name or id in `catalog.json` and copy it into
+  an agent directory) both install skills. `README.md` documents both (lines 158-167).
+- **Assessment:** the task's own requirement — "one `scripts/install.sh` and one
+  `scripts/validate.py`, exactly one each" — is met. The overlap between the two installers is
+  the extra fact: they differ in flags and in behaviour, so a user cannot tell which one is
+  authoritative.
+- **Ownership:** `scripts/**` belongs to `skills-engineering-r3` per `docs/R3_OWNERS.json`;
+  `scripts/install-skill.py` is not on this job's owned list.
+- **Request (cross-job):** either retire `scripts/install-skill.py` in favour of
+  `scripts/install.sh` (which already supports `--package`, `--check` and `--dry-run`) and
+  point the README at the survivor, or state in `docs/interfaces/install.md` which one is
+  authoritative and what the other is for.
+- **Effect while open:** two installers, no user-visible failure.
+
+## G22 (cross-job request, TASK-0004 VERIFY, 2026-10-20): six catalogue descriptions still carry the deleted `business-de/` path fragment
+
+- **Observed:** the frontmatter description of the six `ref-*` skills contains the path
+  fragment `business-de/<skill>`, for example
+  `skills/ref-bank-reconciliation-camt/ref-bank-reconciliation-camt/SKILL.md`:
+  `... skill (business-de/bank-reconciliation-camt) ...`. From the repository root that path
+  does not exist; the canonical path is `skills/business-de/bank-reconciliation-camt`. The
+  fragment reaches `catalog.json` (6 entries), `index/skills.json` (6 entries) and
+  `index/INDEX.md` (6 rows), because the catalogue copies the frontmatter description verbatim.
+- **Cause:** the descriptions were written when `business-de/` was a top-level directory. When
+  the package moved under `skills/`, the prose was not updated.
+- **Impact:** a reader who follows the parenthesised path lands on nothing. This is the only
+  place left in the tree where the deleted duplicate is still named as a path. The directory
+  itself is gone and nothing reads it.
+- **Ownership:** `skills/ref-*/**` is not assigned in `docs/R3_OWNERS.json`. `catalog.json` is
+  owned by this job but is generated from the `SKILL.md` files, and `index/**` is owned by
+  `skills-engineering-r3` and is not on this job's owned list — so the complete fix (text +
+  regenerated catalogue + regenerated index) cannot be landed inside this job's paths.
+- **Request (cross-job):** in the six files
+  `skills/ref-{bank-reconciliation-camt,datev-extf,gobd-archive,ust-edge-cases,webhooks-safe,xrechnung-zugferd}/<same-name>/SKILL.md`
+  replace `business-de/` with `skills/business-de/` in the `description:` frontmatter, then run
+  `node scripts/gen-catalog.mjs` and `python3 scripts/build-index.py` and commit all three.
+- **Effect while open:** six stale path fragments in prose. No test fails; the deletion of the
+  top-level `business-de/` itself is complete and unblocked.
