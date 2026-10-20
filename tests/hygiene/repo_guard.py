@@ -126,7 +126,7 @@ def symlink_target(repo: Path, path: str) -> str | None:
 
 
 def symlink_violations(repo: Path) -> list[str]:
-    """Tracked symlinks that are absolute, a self-loop or dangling."""
+    """Tracked symlinks that are absolute, a self-loop, escaping or dangling."""
     violations: list[str] = []
     for entry in tracked_files(repo):
         if not entry.is_symlink:
@@ -141,6 +141,9 @@ def symlink_violations(repo: Path) -> list[str]:
         resolved = os.path.normpath(os.path.join(os.path.dirname(entry.path), target))
         if resolved == entry.path:
             violations.append(f"{entry.path}: symlink points at itself ({target!r})")
+            continue
+        if resolved == ".." or resolved.startswith(f"..{os.sep}"):
+            violations.append(f"{entry.path}: symlink leaves the repository ({target!r})")
             continue
         if not os.path.exists(repo / resolved):
             violations.append(f"{entry.path}: dangling symlink target {target!r}")

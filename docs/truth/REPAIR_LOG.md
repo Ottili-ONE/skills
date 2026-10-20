@@ -1344,7 +1344,8 @@ reason next to it. No other file of this repository was exempted.
 ## D-047 — the repository invariants were node:test files that no runner executed
 
 - **Defect:** the hygiene decisions of this job (no tracked symlink with an
-  absolute target, a self-loop or a dangling target; no tracked database or
+  absolute target, a self-loop, a target outside the checkout or a dangling
+  target; no tracked database or
   journal file; no scratch directory or debug script at the repository root;
   no tracked file above 5 MiB without an allow-listed reason; unique
   workspace project names; the workspace protocol for internal dependencies;
@@ -1372,6 +1373,7 @@ reason next to it. No other file of this repository was exempted.
   - `python3 -m pytest -q tests` → **121 passed** (83 before this pass, 38 new);
   - the broken fixtures are built inside the tests and each one asserts that
     the checker reports it: an absolute link, a self-loop, a dangling link, a
+    link that leaves the checkout, a
     `*.db`, a `*.db-wal`, a `*.db-shm`, a `*.sqlite`, a `*.journal`, a scratch
     directory, a debug script, a 6 MiB blob, a duplicated workspace name, a
     registry-pinned internal dependency, an `@ottili` scope that points at
@@ -1379,6 +1381,10 @@ reason next to it. No other file of this repository was exempted.
     also carries a healthy fixture that must be accepted, so the checkers are
     not merely noisy.
   - the node runner still agrees: `for t in tests/orchestrator/*.test.mjs; do node "$t"; done` → all pass.
+  - the new modules are lint clean and type clean:
+    `ruff check tests/hygiene/repo_guard.py tests/hygiene/test_*.py` →
+    **All checks passed!**; `mypy --strict` on the same seven files →
+    **Success: no issues found in 7 source files**.
 
 ## D-048 — the truth kit config still carried the template's migration command and had no large-file allow-list
 

@@ -1,10 +1,11 @@
-"""Invariant: no tracked symlink with an absolute target, a self-loop or a
-dangling target (SKL-W0-01, TASK-0006).
+"""Invariant: no tracked symlink with an absolute target, a self-loop, a
+target outside the checkout or a dangling target (SKL-W0-01, TASK-0006).
 
 A symlink in version control pins the machine of whoever created it. An
 absolute target escapes the checkout, a self-loop can never be resolved and a
 dangling target breaks every clone that does not have the same layout as the
-author. None of the three may be tracked.
+author. A relative target that leaves the checkout is the same escape as an
+absolute one, only less visible. None of the four may be tracked.
 
 Every test is proven twice: against the real repository the invariant must
 hold, and against a deliberately broken fixture it must be reported.
@@ -46,6 +47,16 @@ def test_no_tracked_symlink_is_dangling() -> None:
     assert dangling == [], f"dangling symlinks are tracked: {dangling}"
 
 
+def test_no_tracked_symlink_leaves_the_repository() -> None:
+    """The real repository tracks no symlink that points outside the checkout."""
+    escaping = [
+        violation
+        for violation in symlink_violations(REPO_ROOT)
+ if "leaves the repository" in violation
+    ]
+    assert escaping == [], f"symlinks leave the repository: {escaping}"
+
+
 def test_detects_an_absolute_symlink_in_a_fixture(tmp_path: Path) -> None:
     """The checker reports a fixture that tracks an absolute symlink."""
     repo = make_repo(
@@ -82,6 +93,18 @@ def test_detects_a_dangling_symlink_in_a_fixture(tmp_path: Path) -> None:
     violations = symlink_violations(repo)
     assert any("dead-link" in violation and "dangling" in violation for violation in violations), (
         f"the dangling symlink was not reported: {violations}"
+    )
+
+
+def test_detects_a_symlink_that_leaves_the_repository_in_a_fixture(tmp_path: Path) -> None:
+    """A relative symlink that points outside the checkout is reported."""
+    repo = make_repo(
+        tmp_path,
+ [FixtureFile(path="escape-link", link="../../outside/target.txt")],
+    )
+    violations = symlink_violations(repo)
+    assert any("escape-link" in violation and "leaves" in violation for violation in violations), (
+        f"the escaping symlink was not reported: {violations}"
     )
 
 
