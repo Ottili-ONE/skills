@@ -1814,6 +1814,26 @@ reason next to it. No other file of this repository was exempted.
 - **Index proof:** `P39`
 - **Date:** 2026-10-20
 
+## D-065 — the shape document drifted again, and its "authoritative" root block was missing an entry
+
+- **Defect:** after the fixes of this pass were landed, the whole suite of the job went
+  red: `Tracked files: document says 665, command says 667` and
+  `Tracked files under 'tests/': document says 43, command says 44`. The two files this
+  pass added (`tests/hygiene/test_skill_docs.py` and `docs/truth/TRUNK_STATUS.json`) moved
+  the counts of `docs/truth/REPO_SHAPE.md`. The same document lists the root contents in
+  a block that calls itself *authoritative* — and that block listed 14 entries while the
+  tree has 15: `.npmrc` was missing. The block is not a table, so the table-driven guard
+  of the document could not see it.
+- **Cause:** the counts are live numbers and every commit that adds a file moves them;
+  the root block was a claim without a command and therefore without a guard.
+- **Fix:** `docs/truth/REPO_SHAPE.md` — the two counts and the missing root entry are
+  corrected; `tests/hygiene/test_repo_shape_numbers.py` — a new guard compares the root
+  block with the tracked root entries, so the block cannot drift again.
+- **Proof:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` — the new
+  guard fails when `.npmrc` is removed from the block again (measured).
+- **Index proof:** `P40`
+- **Date:** 2026-10-20
+
 
 # SKL-W0-01 — TASK-0007 (2026-10-20) — repair log entry
 
@@ -2428,6 +2448,15 @@ one of them exited 0; the transcript is in `.truth/SKL-W0-01/after.txt`.
 - **Proof:** `P39` — `python3 -m pytest tests/hygiene/test_skill_docs.py -q -k "documented_script_exists"`
 - **Date:** 2026-10-20
 
+#### D-065 — the shape document drifted again, and its root block was missing an entry
+
+- **Symptom:** the suite of the job failed with "document says 665, command says 667" and "document says 43, command says 44"; the root block of the same document listed 14 root entries while the tree has 15 (`.npmrc` was missing).
+- **Reproduction:** `python3 -m pytest tests/ -q` — `FAILED tests/hygiene/test_repo_shape_numbers.py::test_repo_shape_numbers_are_reproducible`.
+- **Root cause:** the counts of `docs/truth/REPO_SHAPE.md` are live numbers that every commit which adds a file moves, and the root block was a claim without a command and therefore without a guard.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` — the two counts and the missing root entry are corrected; `tests/hygiene/test_repo_shape_numbers.py` — a new guard compares the root block with the tracked root entries.
+- **Proof:** `P40` — `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Date:** 2026-10-20
+
 
 ## Proof commands executed on 2026-10-20
 
@@ -2759,6 +2788,14 @@ $ python3 -m pytest tests/hygiene/test_skill_docs.py -q -k "documented_script_ex
 1 passed, 1 deselected in 0.06s
 exit=0
 ```
+### P40 — the shape document and its root block agree with the tree
+
+```
+$ python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q   # auto
+..                                                                       [100%]
+2 passed in 1.80s
+exit=0
+```
 
 ### GATE — the job gate (install, build, lint, language, tests, hygiene, ownership)
 
@@ -2781,6 +2818,28 @@ PASS  tests           3.5s  1 test path(s) passed
 GATE PASSED  SKL-W0-01
 exit=0
 ```
+
+## The steps the trunk gate skipped, and why
+
+`node scripts/truth/gate.mjs trunk` (kit 1.1.0, 2026-10-20) reported these steps:
+
+| step | status | reason |
+| --- | --- | --- |
+| install | pass | `bash scripts/install.sh --check` — 39 skills of 12 packages verified, nothing written |
+| build | pass | `python3 -I scripts/validate.py --everywhere` — 39 skills validated |
+| typecheck | skip | no `commands.typecheck` in `scripts/truth/config.json`: the repository has no type checker, it is plain JavaScript, Python and bash |
+| lint | pass | `python3 -I scripts/validate.py --everywhere` (see `docs/gaps/SKL-W0-01.md` G36: the lint step of the config runs the build command) |
+| registry | skip | no `commands.registryCheck` in `scripts/truth/config.json`: the repository publishes no npm package, the `@ottili` scope in `.npmrc` only names the internal registry |
+| migrate | skip | no `commands.migrate` in `scripts/truth/config.json` and the job owns no `.sql` file: this repository has no database and no migration |
+| boot | skip | no `boot.command` in `scripts/truth/config.json`: this repository has no server to boot |
+| smoke | skip | no `commands.smokeTests` in `scripts/truth/config.json`: without a server there is nothing to smoke |
+| hygiene | pass | 15 root entries, all of them in `rootAllowlist` |
+| scan-full | warn | informational: 266 language findings (the German business-domain catalogues and sources), 0 stubs, 1 oversized file (see the follow-up list) |
+
+The overall result is `pass` and `docs/truth/TRUNK_STATUS.json` carries it. The gate
+writes that file for the commit it measured; the W1 jobs read it with
+`node scripts/truth/preflight.mjs --job <id> --requires-trunk`, which asks for
+`overall == "pass"` and for the recorded commit to be an ancestor of the worktree HEAD.
 
 ## Follow-ups for later trunk repair jobs
 
@@ -2872,6 +2931,13 @@ exact symptom; the owner is the job that holds the path in
     command was NOT changed here on purpose: a trunk gate that depends on a binary
     the CI image may not carry would turn the W1 jobs red. Owner: operator (the
     config) and `skills-engineering-r3` (the linter findings of `scripts/**`).
+
+19. **`skills/agentic-data/verifiable-environments/scripts/verify_harness.py`** — the file
+    is 519 lines and the size limit of the truth kit is 500 lines, so the `scan-full` step
+    of the trunk gate reports one oversized file. The file belongs to the agentic-data
+    lane and is rewritten by the canonical-skills job, which has to split it there; this
+    pass did not refactor a script of another lane inside a review commit. Owner:
+    `skills-agentic-data-r3` (`skills/**`).
 13. **`docs/requests/` and `docs/lane-requests/`** — the directories do not
     exist, so the instruction of `AGENTS.md` ("write
     `docs/requests/<job>-<n>.md`") cannot be followed from this job; the

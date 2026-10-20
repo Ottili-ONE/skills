@@ -106,3 +106,46 @@ def test_repo_shape_numbers_are_reproducible() -> None:
         if observed != claimed:
             wrong.append(f"{label}: document says {claimed}, command says {observed} ({command})")
     assert not wrong, "REPO_SHAPE.md drifted from the tree:\n  " + "\n  ".join(wrong)
+
+
+def root_entries_claimed() -> list[str]:
+    """The root entries the "Root contents (authoritative)" block lists."""
+    text = REPO_SHAPE.read_text(encoding="utf-8")
+    section = text.split("## Root contents", 1)[1]
+    block = section.split("```", 2)[1]
+    entries = []
+    for line in block.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        entries.append(stripped.split("#", 1)[0].strip().rstrip("/"))
+    return entries
+
+
+def tracked_root_entries() -> list[str]:
+    """Every top-level entry the git index knows."""
+    completed = subprocess.run(
+        "git ls-files | cut -d/ -f1 | sort -u",
+        cwd=ROOT,
+        shell=True,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return [line for line in completed.stdout.split() if line]
+
+
+def test_the_root_block_of_the_document_matches_the_tree() -> None:
+    """The block that calls itself authoritative must list every root entry.
+
+    The block was a claim without a command: it listed 14 entries while the
+    tree had 15 (``.npmrc`` was missing), and the table of the document could
+    not see it because the block is not a table.
+    """
+    claimed = sorted(root_entries_claimed())
+    tracked = sorted(tracked_root_entries())
+    assert claimed == tracked, (
+        "the root block of REPO_SHAPE.md drifted from the tree:\n"
+        f"  missing from the document: {sorted(set(tracked) - set(claimed))}\n"
+        f"  not in the tree any more: {sorted(set(claimed) - set(tracked))}"
+    )
