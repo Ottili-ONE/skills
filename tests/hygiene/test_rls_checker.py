@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "skills" / "engineering" / "pg-rls-multitenant" / "scripts" / "check_rls_migration.py"
 GUC_FILE = ROOT / "skills" / "engineering" / "pg-rls-multitenant" / "guc-names.json"
 FIXTURES = ROOT / "tests" / "fixtures" / "hq-migrations"
+SHAPES = ROOT / "tests" / "fixtures" / "rls-shapes"
 
 TEMPLATE = """\
 CREATE TABLE {table} (
@@ -145,3 +146,95 @@ def test_a_migration_without_a_table_is_not_a_finding(tmp_path: Path) -> None:
     path = write(tmp_path, "add_column.sql", sql)
     result = run(str(path))
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+# ---------------------------------------------------------------------------
+# The two shapes the product repositories write and the checker used to
+# misread. Both fixtures are verbatim copies of real migrations (provenance in
+# tests/fixtures/PROVENANCE.md).
+# ---------------------------------------------------------------------------
+
+
+def test_a_do_block_migration_passes() -> None:
+    """A real hq-v2 migration that sets RLS inside a ``DO $$ ... $$`` block.
+
+    The checker read the body of a dollar-quoted block with a back-reference
+    to a group that did not take part in the match. Such a back-reference
+    never succeeds, so the untagged spelling - the one every ``DO`` block of
+    the product repositories uses - was invisible: the checker reported
+    "missing ENABLE ROW LEVEL SECURITY", "missing FORCE ROW LEVEL SECURITY"
+    and "no CREATE POLICY" on a migration that does all three.
+    """
+    path = SHAPES / "hq-accounting-gl-do-block.sql"
+    result = run(str(path))
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_a_policy_created_with_execute_passes() -> None:
+    """A real ottili-apps migration that creates its policy with ``EXECUTE``.
+
+    The policy is a string literal, so the setting name is written with
+    doubled quotes (``current_setting(''ottili.company_id'', true)``). The
+    checker has to read that spelling, otherwise it rejects a policy that
+    keys on an accepted tenant setting.
+    """
+    path = SHAPES / "ottili-apps-github-issue-link.sql"
+    result = run(str(path))
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_a_do_block_without_force_is_rejected(tmp_path: Path) -> None:
+    """Reading a ``DO`` block must not make the checker blind inside it."""
+    sql = """\
+CREATE TABLE do_block_notes (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id text NOT NULL,
+    body       text NOT NULL
+);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'do_block_notes') THEN
+    ALTER TABLE do_block_notes ENABLE ROW LEVEL SECURITY;
+  END IF;
+END
+$$;
+
+CREATE POLICY do_block_notes_tenant ON do_block_notes
+    FOR SELECT TO web_app
+    USING (company_id = current_setting('app.company_id', true));
+"""
+    path = write(tmp_path, "do_block_no_force.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "missing FORCE ROW LEVEL SECURITY" in result.stderr, result.stderr
+
+
+def test_a_policy_created_with_execute_on_an_unknown_setting_is_rejected(
+    tmp_path: Path,
+) -> None:
+    """The escaped spelling must be read as strictly as the plain one."""
+    sql = """\
+CREATE TABLE execute_notes (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id text NOT NULL,
+    body       text NOT NULL
+);
+
+ALTER TABLE execute_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE execute_notes FORCE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'execute_notes') THEN
+    EXECUTE
+      'CREATE POLICY execute_notes_tenant ON execute_notes AS PERMISSIVE FOR ALL
+         USING (company_id = NULLIF(current_setting(''app.not_a_real_setting'', true), ''''))';
+  END IF;
+END
+$$;
+"""
+    path = write(tmp_path, "execute_unknown_guc.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "not keyed on an accepted tenant GUC" in result.stderr, result.stderr

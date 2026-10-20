@@ -1253,3 +1253,90 @@ The German success vocabulary that the checker needs to recognise those files
 lives in `skills/engineering/honest-status/scripts/status_tables.py`, which
 carries the scanner's own file-level marker `truth:allow-german-file` and the
 reason next to it. No other file of this repository was exempted.
+
+## D-046 — the RLS checker could not read a `DO $$ … $$` block and misread an escaped policy
+
+- **Defect:** the checker of D-040 rejected **178 of 1389** real product
+  migrations (hq-v2, console-v2, ottili-apps). Almost all of those rejections
+  were the checker being wrong, not the migrations:
+  - 209 findings of the kind "no CREATE POLICY for tenant isolation" and 164
+    findings of the kind "tenant policy is not keyed on an accepted tenant
+    GUC" were reported on migrations that carry the policy — inside a
+    `DO $$ … $$` block, or spelled `current_setting(''ottili.company_id'', true)`
+    because the policy is created with `EXECUTE`;
+  - D-040 claimed that the checker "scans a `DO` block for the policy it
+    creates". It did not: the untagged dollar quote was invisible.
+- **Cause — two defects, both in the scanner:**
+  1. **The untagged dollar quote was invisible.** The body of a dollar-quoted
+     string was read with
+     `r"\$(?P<tag>[A-Za-z_]\w*)?\$(?P<body>.*?)\$(?P=tag)\$"`. A
+     back-reference to a group that did not take part in the match never
+     succeeds, and in `$$ body $$` the tag group does not take part — so the
+     regex matched **nothing**. The tagged spelling `$tag$ body $tag$` was the
+     only one that worked, and no migration of the product repositories uses
+     it: 270 of the 1389 migrations protect their tables in an untagged
+     `DO $$ … $$` block.
+  2. **A statement of a `DO` body does not start the fragment.** The product
+     migrations guard the DDL with a condition:
+     `IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE …) THEN ALTER TABLE t ENABLE ROW LEVEL SECURITY;`
+     The `ALTER TABLE` and the `CREATE POLICY` therefore follow the `THEN`
+     and were invisible to a scanner that only looks at the start of a
+     statement.
+  3. **The escaped spelling of the setting name was not read.** The regex for
+     the setting name required `current_setting('name'` with one quote. A
+     policy created with `EXECUTE` writes the name with doubled quotes
+     (`current_setting(''ottili.company_id'', true)`), because the policy is a
+     string literal — 164 real migrations of `ottili-apps` write it that way.
+- **Fix:**
+  - the dollar body is read with the opening and the closing tag compared
+    explicitly, so both spellings work and a body whose closing tag differs is
+    not read;
+  - inside a dollar-quoted body the `ALTER TABLE` and the `CREATE POLICY` are
+    looked for anywhere in the fragment, not only at its start. The strict,
+    anchored reading is kept for the statements of the file itself;
+  - the setting name is accepted with one or two quotes on each side.
+- **Proof:**
+  - census over the real corpus, reproducible with the command below:
+    **178 failures before → 8 failures after**;
+  - the two real migrations that carry the two shapes are committed as
+    fixtures (`tests/fixtures/rls-shapes/`, provenance in
+    `tests/fixtures/PROVENANCE.md`) and the checker passes them. The
+    pre-fix checker fails both of them — that is the regression the guard
+    protects:
+    ```
+    git show HEAD:skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py > /tmp/old_checker.py
+    python3 /tmp/old_checker.py --guc-names skills/engineering/pg-rls-multitenant/guc-names.json tests/fixtures/rls-shapes/*.sql
+    ```
+  - the three hostile files still fail (exit 1 each), the three real hq
+    migrations still pass (exit 0 each);
+  - the two seeded bad inputs inside the test fail with the fix in place, so
+    reading a `DO` block did not make the checker blind inside it:
+    a `DO` block without `FORCE` is still "missing FORCE ROW LEVEL SECURITY",
+    and a policy created with `EXECUTE` on a setting nobody sets is still
+    "not keyed on an accepted tenant GUC";
+  - `python3 -m pytest tests/hygiene/test_rls_checker.py -q` → 13 passed.
+  - **the two fixtures were applied to a real PostgreSQL 18.6 and the database
+    agrees with the checker**: `psql -v ON_ERROR_STOP=1 -f` of the five
+    migration fixtures of `tests/fixtures/` leaves every table with
+    `relrowsecurity = true`, `relforcerowsecurity = true` and one policy —
+    including `accounting_gl.tax_codes` (protected inside a `DO $$ … $$`
+    block) and `public.github_issue_link` (policy created with `EXECUTE`).
+    The truth gate does the same on a fresh database and applies the
+    migrations **twice** (`PASS migrate  migrations applied twice on a fresh
+    database truth_skl_skl_w0_01; 2 owned table(s) verified with forced
+    RLS`).
+- **The census, with the command that reproduces it** (D-040 wrote "120
+  migrations" without the command, so the number could not be reproduced —
+  this is the version with the command):
+  ```
+  R=/mnt/ottili-nvme/ottili/v2/repo
+  find $R/hq-v2 $R/console-v2 $R/ottili-apps -type f -name '*.sql' \
+    -not -path '*/.truth/*' -not -path '*/dist/*' -not -path '*/node_modules/*' \
+    -not -path '*/test/*' -not -path '*/tests/*' -not -path '*/fixtures/*' | sort \
+    > /tmp/census.txt            # 1389 files
+  python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py \
+    --json $(cat /tmp/census.txt | tr '\n' ' ') | python3 -c 'import json,sys; print(json.load(sys.stdin)["failures"])'
+  ```
+  The eight files that remain are one deliberate global table in `console-v2`
+  (see G30) and **seven real holes in `hq-v2` and `ottili-apps`** that the
+  blind scanner had never reported (see G28).

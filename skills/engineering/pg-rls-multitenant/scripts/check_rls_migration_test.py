@@ -161,10 +161,67 @@ def test_every_configured_guc_name_passes() -> None:
     print("ok: every configured GUC name is accepted, an unknown one is not")
 
 
+def test_a_do_block_and_an_executed_policy() -> None:
+    """The two shapes the product repositories write must be read.
+
+    A table protected inside a ``DO $$ … $$`` block and a policy created with
+    ``EXECUTE`` (which writes the setting name with doubled quotes) are both
+    correct migrations. The checker has to see them; the regression that
+    proves it is ``tests/hygiene/test_rls_checker.py`` in the repository, this
+    is the same contract for a standalone installation of the skill.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        do_block = t / "do_block.sql"
+        do_block.write_text(
+            "CREATE TABLE tenant_notes (\n"
+            "    id uuid PRIMARY KEY,\n"
+            "    company_id text NOT NULL\n"
+            ");\n"
+            "DO $$\n"
+            "BEGIN\n"
+            "  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tenant_notes') THEN\n"
+            "    ALTER TABLE tenant_notes ENABLE ROW LEVEL SECURITY;\n"
+            "    ALTER TABLE tenant_notes FORCE ROW LEVEL SECURITY;\n"
+            "    CREATE POLICY tenant_notes_tenant ON tenant_notes\n"
+            "      USING (company_id = current_setting('app.company_id', true));\n"
+            "  END IF;\n"
+            "END\n"
+            "$$;\n",
+            encoding="utf-8",
+        )
+        rc, out = run(str(do_block))
+        assert rc == 0, f"a DO block must be read, got {rc}: {out}"
+
+        executed = t / "executed.sql"
+        executed.write_text(
+            "CREATE TABLE tenant_rows (\n"
+            "    id uuid PRIMARY KEY,\n"
+            "    company_id text NOT NULL\n"
+            ");\n"
+            "ALTER TABLE tenant_rows ENABLE ROW LEVEL SECURITY;\n"
+            "ALTER TABLE tenant_rows FORCE ROW LEVEL SECURITY;\n"
+            "DO $$\n"
+            "BEGIN\n"
+            "  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tenant_rows') THEN\n"
+            "    EXECUTE\n"
+            "      'CREATE POLICY tenant_rows_tenant ON tenant_rows AS PERMISSIVE FOR ALL\n"
+            "         USING (company_id = current_setting(''app.company_id'', true))';\n"
+            "  END IF;\n"
+            "END\n"
+            "$$;\n",
+            encoding="utf-8",
+        )
+        rc, out = run(str(executed))
+        assert rc == 0, f"an executed policy must be read, got {rc}: {out}"
+    print("ok: a DO block and an EXECUTE-created policy are read")
+
+
 EDGE_TESTS = [
     ("json output", test_json_output),
     ("usage error", test_usage_error),
     ("configured GUC names", test_every_configured_guc_name_passes),
+    ("do block and executed policy", test_a_do_block_and_an_executed_policy),
 ]
 
 

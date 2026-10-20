@@ -110,6 +110,9 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
   The accepted tenant setting names are **configuration**, not a constant of the
   checker: `guc-names.json` (next to the script) lists the names the product
   repositories use. A migration that keys on a name nobody sets isolates nobody.
+  The checker reads the shapes the product repositories write: a table protected
+  inside a `DO $$ … $$` block, and a policy created with `EXECUTE` (which writes
+  the setting name with doubled quotes).
 - Run the Docker harness: `scripts/pg-rls-leak-test.sh <migration.sql> [table]` — must print PASS.
   The harness applies the migration to a throwaway PostgreSQL, seeds two tenants as
   the superuser and probes the table **as the application role**: PASS means tenant A

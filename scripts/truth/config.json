@@ -2,7 +2,7 @@
   "install": "bash scripts/install.sh --check --target \"${TMPDIR:-/tmp}/skl-w0-01-install-check\" --package generic",
   "commands": {
     "build": "node scripts/gen-catalog.mjs --check && python3 -I scripts/validate.py --everywhere",
-    "migrate": "psql \"$TRUTH_DATABASE_URL\" -tAc \"SELECT format('DROP TABLE IF EXISTS %I CASCADE;', tablename) FROM pg_tables WHERE schemaname = 'public'\" | psql \"$TRUTH_DATABASE_URL\" -q -v ON_ERROR_STOP=1 -f - && for f in tests/fixtures/hq-migrations/*.sql; do psql \"$TRUTH_DATABASE_URL\" -v ON_ERROR_STOP=1 -q -f \"$f\" || exit 1; done",
+    "migrate": "psql \"$TRUTH_DATABASE_URL\" -tAc \"SELECT format('DROP TABLE IF EXISTS %I CASCADE;', tablename) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')\" | psql \"$TRUTH_DATABASE_URL\" -q -v ON_ERROR_STOP=1 -f - && for f in tests/fixtures/hq-migrations/*.sql tests/fixtures/rls-shapes/*.sql; do psql \"$TRUTH_DATABASE_URL\" -v ON_ERROR_STOP=1 -q -f \"$f\" || exit 1; done",
     "lint": "python3 -I scripts/validate.py --everywhere",
     "test": "P=$(printf '%s\\n' {paths} | grep -E '(^|/)test_[^/]*\\.py$' | tr '\\n' ' '); if [ -n \"$P\" ]; then pytest -q $P; else pytest -q tests; fi"
   },

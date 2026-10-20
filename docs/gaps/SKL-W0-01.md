@@ -582,3 +582,99 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   drives the two daemon-free modes of the same script — `--print-probe-sql`
   (the probe SQL) and `--parse FILE` (the verdict) — and writes its own bad
   inputs, so the suite stays green in a clean clone.
+
+## G28 (cross-job request, hq-v2 and ottili-apps lanes, TASK-0005 VERIFY, 2026-10-20): seven tenant tables are created without complete row-level security
+
+- **What was found:** the RLS checker of the `pg-rls-multitenant` skill could
+  not read a `DO $$ … $$` block (see `docs/truth/REPAIR_LOG.md`, D-046). The
+  blind scanner therefore never reported the tables that the product
+  migrations protect inside such a block. With the scanner repaired, the
+  checker reports **seven real holes** in the product repositories. This job
+  does not write into `hq-v2` or `ottili-apps`; the fix belongs to the lane
+  that owns them.
+- **The exact findings** (checker:
+  `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py <file>`;
+  every path is relative to the repository root of the product repository):
+
+  | Repository | Migration | Table | Finding |
+  |---|---|---|---|
+  | `hq-v2` | `modules/accounting-gl/migrations/20261010120000_hq_accounting_gl_r3_14_approval.sql` | `approval_rule` | missing FORCE ROW LEVEL SECURITY |
+  | `hq-v2` | `modules/accounting-gl/migrations/20261010120000_hq_accounting_gl_r3_14_approval.sql` | `audit_receipt` | missing FORCE ROW LEVEL SECURITY |
+  | `hq-v2` | `modules/accounting-gl/migrations/20261011000000_hq_accounting_gl_r3_20_account.sql` | `account` | no CREATE POLICY for tenant isolation |
+  | `hq-v2` | `modules/collections/migrations/20261014190310_hq_collections_r3_10.sql` | `collections_dispute` | missing FORCE ROW LEVEL SECURITY |
+  | `hq-v2` | `modules/my-work-home/migrations/20261014150000_hq_my_work_home_r3_11_quickcreate.sql` | `my_work_home_quick_create`, `my_work_home_recent` | missing ENABLE **and** FORCE ROW LEVEL SECURITY (already reported as G25) |
+  | `hq-v2` | `modules/reports-intelligence/migrations/20261008000001_reports_intelligence_catalogue_run.sql` | `reports_intelligence_catalogue_run_entry` | missing ENABLE ROW LEVEL SECURITY |
+  | `hq-v2` | `modules/shipping-core/migrations/20261014120000_hq_shipping_core_r3_10.sql` | `tracking_notification` | missing ENABLE and FORCE, no CREATE POLICY |
+  | `ottili-apps` | `apps/hq/mail-calendar/migrations/20261014180000_mail-calendar_024_freebusy.sql` | `calendar_freebusy_window`, `calendar_recurrence_instance` | missing FORCE ROW LEVEL SECURITY |
+
+- **Why "missing FORCE" is a hole:** `ENABLE ROW LEVEL SECURITY` alone leaves
+  the table **owner** (the migration role) unbound by the policy — the owner
+  bypasses RLS by default. `FORCE ROW LEVEL SECURITY` removes that bypass.
+  A table with no policy at all is the other half of the same hole: with
+  `FORCE` and no policy, the application role sees no row either.
+- **How to reproduce the whole list:**
+  ```
+  R=/mnt/ottili-nvme/ottili/v2/repo
+  find $R/hq-v2 $R/console-v2 $R/ottili-apps -type f -name '*.sql' \
+    -not -path '*/.truth/*' -not -path '*/dist/*' -not -path '*/node_modules/*' \
+    -not -path '*/test/*' -not -path '*/tests/*' -not -path '*/fixtures/*' | sort > /tmp/census.txt
+  python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py \
+    --json $(cat /tmp/census.txt | tr '\n' ' ') \
+    | python3 -c 'import json,sys; [print(r["file"], r["findings"]) for r in json.load(sys.stdin)["reports"] if r["findings"]]'
+  ```
+  1389 migrations, 8 files with findings: the seven above and G30.
+
+## G29 (cross-job request, hq-v2 lane, TASK-0005 VERIFY, 2026-10-20): a committed migration ends in a statement PostgreSQL cannot parse
+
+- **What was found:** `hq-v2/modules/accounting-gl/migrations/20261007130000_hq_accounting_gl_r3_01.sql`
+  ends with
+  ```sql
+  CREATE TABLE `evil` (id uuid);
+  ```
+  Backticks are not valid PostgreSQL. The statement is a syntax error, so the
+  migration aborts (and with `ON_ERROR_STOP` every later file of the plan
+  aborts with it).
+- **Proof** (real PostgreSQL 18.6, not a parser):
+  ```
+  psql "postgres://postgres@127.0.0.1:15433/postgres" -c "CREATE TABLE \`evil\` (id uuid);"
+  ERROR:  syntax error at or near "`"
+  LINE 1: CREATE TABLE `evil` (id uuid);
+                       ^
+  ```
+  The line is committed upstream (`git log` of the file:
+  `4b4f624ac wip: autosave 2026-10-16T19:57:12Z`), not a local edit.
+- **Why it is in this log:** the RLS checker of this repository ignores the
+  statement (a backticked name is not a SQL identifier, so the table is not
+  read as a tenant table) and the file therefore passes the RLS check. The
+  RLS check is not a SQL parser, and a file that cannot run must be found by
+  the migration runner of the repository that owns it.
+- **What is asked:** the `hq-v2` lane removes the line (or replaces it with
+  the table the migration actually needs) and re-runs the migration plan.
+
+## G30 (owner decision, TASK-0005 VERIFY, 2026-10-20): the tenant rule does not model a deliberately global table
+
+- **What was found:** the checker requires every table a migration creates to
+  carry `company_id`, `ENABLE` + `FORCE ROW LEVEL SECURITY` and a tenant
+  policy. `console-v2/modules/integrations-credentials/migrations/20261012000002_console-integrations-credentials-r3_002.sql`
+  creates `integrations_credentials_provider_catalog`, and the file says why
+  the table has no tenant column:
+  > "`integrations_credentials_provider_catalog` — the catalogue. Global, no
+  > `company_id` … It has no `company_id` column by design: every company
+  > sees the same … The catalogue is global, so its policy reads `true`, not
+  > `app.company_id`."
+
+  The checker therefore reports two findings on a table that is deliberately
+  not tenant-scoped.
+- **Why this job does not "fix" it:** the two ways out are an owner decision.
+  Either
+  1. the tenant rule stays strict and a repository declares its global tables
+     in the configuration of the checker (an empty `global_tables` list by
+     default — no exemption is declared by this job), or
+  2. the rule learns "a table without a tenant discriminator is global" —
+     which weakens the rule for a table that holds tenant data under a
+     different column name (`tenant_id`, `tenant_key`, `workspace_id`).
+  This job does not take that decision; it ships the strict rule and records
+  the case.
+- **What is proven now:** the finding is on exactly one file of the 1389
+  migrations of the census (G28) and it is the **only** remaining finding
+  that is not a real hole.
