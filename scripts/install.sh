@@ -8,6 +8,7 @@
 #   ./scripts/install.sh --target cursor --package engineering
 #   ./scripts/install.sh --target /tmp/agents/skills --link shared-tree-git
 #   ./scripts/install.sh --check --target /tmp/agents/skills --package generic
+#   ./scripts/install.sh --check
 #
 # Safety: never overwrites without --force. --dry-run prints what would happen and
 # exits 0. --check verifies every source and the target without writing anything.
@@ -16,10 +17,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS_DIR="$ROOT/skills"
 TARGET=""
+TARGET_GIVEN=0
 DRY_RUN=0
 FORCE=0
 LINK=0
 CHECK=0
+CHECK_ALL=0
 PACKAGE=""
 SKILLS=()
 
@@ -28,10 +31,14 @@ usage() {
 Usage: $0 --target <codex|claude|cursor|agents|/path> [options] <skill...>
 
 Options:
-  --target <name|path>   Agent skills directory (required).
+  --target <name|path>   Agent skills directory (required, except in --check
+                         mode where a scratch directory is used).
   --package <name>       Install every skill in a package.
   --check                Verify without writing: every skill must resolve to a
                          folder with a SKILL.md and the target must be writable.
+                         Without --target and without a skill selection the whole
+                         repository is verified against a scratch directory that
+                         is never created.
   --dry-run              Print actions, write nothing, exit 0.
   --force                Overwrite an existing destination folder.
   --link                 Create a symlink instead of copying.
@@ -46,8 +53,8 @@ USAGE
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --target) TARGET="$2"; shift 2 ;;
-    --target=*) TARGET="${1#*=}"; shift ;;
+    --target) TARGET="$2"; TARGET_GIVEN=1; shift 2 ;;
+    --target=*) TARGET="${1#*=}"; TARGET_GIVEN=1; shift ;;
     --package) PACKAGE="$2"; shift 2 ;;
     --package=*) PACKAGE="${1#*=}"; shift ;;
     --check) CHECK=1; shift ;;
@@ -61,12 +68,25 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# `--check` without a --target verifies the whole repository. The gate runs
+# exactly `bash scripts/install.sh --check`, so the check has to be meaningful
+# on its own: it resolves every skill of every package and checks the scratch
+# target it would use, and it writes nothing at all.
+if [[ $CHECK -eq 1 && $TARGET_GIVEN -eq 0 ]]; then
+  scratch_root="${TMPDIR:-/tmp}"
+  [[ -d "$scratch_root" ]] || scratch_root="/tmp"
+  TARGET="$scratch_root/ottili-install-check"
+  if [[ ${#SKILLS[@]} -eq 0 && -z "$PACKAGE" ]]; then
+    CHECK_ALL=1
+  fi
+fi
+
 if [[ -z "$TARGET" ]]; then
   echo "error: --target is required" >&2
   usage
   exit 2
 fi
-if [[ ${#SKILLS[@]} -eq 0 && -z "$PACKAGE" ]]; then
+if [[ ${#SKILLS[@]} -eq 0 && -z "$PACKAGE" && $CHECK_ALL -eq 0 ]]; then
   echo "error: at least one skill name or --package is required" >&2
   usage
   exit 2
@@ -118,6 +138,37 @@ packages_holding() {
   done
 }
 
+# Auxiliary folders inside a package are not skills: they carry the references,
+# scripts, tests and configuration of the skills next to them. Every other
+# folder of a package is a skill folder and therefore has to hold a SKILL.md.
+AUX_FOLDERS=" references scripts tests config "
+
+# Print every package folder of the tree, derived ones or not.
+all_packages() {
+  local pkg
+  for pkg in "$SKILLS_DIR"/*/; do
+    [[ -d "$pkg" ]] || continue
+    case "$(basename "$pkg")" in
+      .git|node_modules|.pytest_cache|__pycache__) continue ;;
+    esac
+    basename "$pkg"
+  done
+}
+
+# Print every skill folder of one package, even one without a SKILL.md: such a
+# folder is exactly what --check has to report.
+skill_folders_in_package() {
+  local pkg="$1" sub name
+  for sub in "$SKILLS_DIR/$pkg"/*/; do
+    [[ -d "$sub" ]] || continue
+    name="$(basename "$sub")"
+    case "$AUX_FOLDERS" in
+      *" $name "*) continue ;;
+    esac
+    echo "$name"
+  done
+}
+
 # Expand --package into individual skill names.
 if [[ -n "$PACKAGE" ]]; then
   # -F: the package name is matched literally. Without it a name that happens
@@ -143,6 +194,15 @@ if [[ -n "$PACKAGE" ]]; then
     echo "known packages: $(derive_packages | tr '\n' ' ') generic meta" >&2
     exit 1
   fi
+fi
+
+# --check without a skill selection verifies every skill folder of every package.
+if [[ $CHECK_ALL -eq 1 ]]; then
+  while IFS= read -r pkg; do
+    while IFS= read -r name; do
+      SKILLS+=("$name")
+    done < <(skill_folders_in_package "$pkg")
+  done < <(all_packages)
 fi
 
 # Deduplicate while preserving order.

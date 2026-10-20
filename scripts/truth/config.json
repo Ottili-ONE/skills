@@ -1,5 +1,5 @@
 {
-  "install": "bash scripts/install.sh --check --target \"${TMPDIR:-/tmp}/skl-w0-01-install-check\" --package generic",
+  "install": "bash scripts/install.sh --check",
   "commands": {
     "build": "node scripts/gen-catalog.mjs --check && python3 -I scripts/validate.py --everywhere",
     "lint": "python3 -I scripts/validate.py --everywhere",

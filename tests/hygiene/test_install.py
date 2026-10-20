@@ -15,6 +15,8 @@ hold:
 from __future__ import annotations
 
 import subprocess
+import os
+import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -183,3 +185,64 @@ def test_missing_target_argument_is_refused(tmp_path: Path) -> None:
     result = run_install("honest-status")
     assert result.returncode == 2
     assert "--target is required" in result.stderr
+
+
+def test_check_without_a_target_verifies_the_whole_repository() -> None:
+    """``install.sh --check`` alone verifies every skill of the repository."""
+    result = run_install("--check")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "nothing written" in result.stdout
+    for package, skills in skill_folders().items():
+        for skill in skills:
+            assert f"ok: {skill} ->" in result.stdout, f"{package}/{skill} was not verified"
+
+
+def test_check_without_a_target_writes_nothing(tmp_path: Path) -> None:
+    """The scratch directory of the default check stays empty."""
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    result = subprocess.run(
+        ["bash", str(INSTALL), "--check"],
+        cwd=ROOT,
+        env=dict(os.environ, TMPDIR=str(scratch)),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert list(scratch.iterdir()) == [], "--check must not create the scratch target"
+
+
+def test_check_fails_on_a_skill_folder_without_a_skill_md(tmp_path: Path) -> None:
+    """A broken fixture: a skill folder without SKILL.md is reported.
+
+    The fixture is a throwaway repository with its own copy of the installer,
+    so the check is proven to fail without depending on the real tree.
+    """
+    fixture = tmp_path / "fixture"
+    (fixture / "scripts").mkdir(parents=True)
+    shutil.copy(INSTALL, fixture / "scripts" / "install.sh")
+    skill = fixture / "skills" / "pkg" / "broken"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: broken\n---\n", encoding="utf-8")
+
+    healthy = subprocess.run(
+        ["bash", str(fixture / "scripts" / "install.sh"), "--check"],
+        cwd=fixture,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert healthy.returncode == 0, healthy.stdout + healthy.stderr
+    assert "ok: broken ->" in healthy.stdout
+
+    (skill / "SKILL.md").unlink()
+    broken = subprocess.run(
+        ["bash", str(fixture / "scripts" / "install.sh"), "--check"],
+        cwd=fixture,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert broken.returncode == 1, broken.stdout + broken.stderr
+    assert "has no SKILL.md" in broken.stderr
