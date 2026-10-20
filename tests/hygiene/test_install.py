@@ -1,0 +1,134 @@
+"""Installer contract tests (SKL-W0-01, TASK-0002).
+
+``scripts/install.sh`` is the only way skills reach an agent. Two things have to
+hold:
+
+* the source resolution finds every skill folder (the historic defect: the path
+  was built from a catalogue lookup that returned an empty string, so every
+  skill failed with "source skill directory missing"), and
+* the package list is DERIVED from the ``skills/`` folders, so a package that
+  exists on disk can always be installed and a package that does not exist is
+  refused with a readable message.
+
+``--check`` verifies all of that without writing anything.
+"""
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+INSTALL = ROOT / "scripts" / "install.sh"
+SKILLS_DIR = ROOT / "skills"
+
+
+def run_install(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["bash", str(INSTALL), *args],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def skill_folders() -> dict[str, list[str]]:
+    """Map package name -> skill names for every skills/<package>/<skill>/ folder."""
+    packages: dict[str, list[str]] = {}
+    for skill_md in sorted(SKILLS_DIR.glob("*/*/SKILL.md")):
+        rel = skill_md.parent.relative_to(ROOT)
+        packages.setdefault(rel.parts[1], []).append(rel.parts[2])
+    return packages
+
+
+def test_every_skill_folder_resolves(tmp_path: Path) -> None:
+    """Every skill folder in the tree is installable by name."""
+    for package, skills in skill_folders().items():
+        for skill in skills:
+            result = run_install("--check", "--target", str(tmp_path / "t"), skill)
+            assert result.returncode == 0, (
+                f"{package}/{skill} does not resolve: {result.stdout}{result.stderr}"
+            )
+
+
+def test_check_mode_writes_nothing(tmp_path: Path) -> None:
+    """--check verifies without creating the target directory."""
+    target = tmp_path / "not-created"
+    result = run_install("--check", "--target", str(target), "--package", "generic")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not target.exists(), "--check must not write anything"
+    assert "nothing written" in result.stdout
+
+
+def test_check_mode_fails_on_an_unknown_skill(tmp_path: Path) -> None:
+    """--check reports a skill that does not exist instead of pretending success."""
+    result = run_install("--check", "--target", str(tmp_path / "t"), "no-such-skill-xyz")
+    assert result.returncode == 1
+    assert "source skill directory missing" in result.stderr
+
+
+def test_every_package_installs_all_of_its_skills(tmp_path: Path) -> None:
+    """Each real package installs every skill it contains, each with a SKILL.md."""
+    for package, skills in skill_folders().items():
+        target = tmp_path / package
+        result = run_install("--target", str(target), "--package", package)
+        assert result.returncode == 0, f"{package}: {result.stdout}{result.stderr}"
+        for skill in skills:
+            assert (target / skill / "SKILL.md").is_file(), (
+                f"{package}: {skill} was not installed with its SKILL.md"
+            )
+        installed = {p.name for p in target.iterdir() if p.is_dir()}
+        assert installed == set(skills), (
+            f"{package}: installed {sorted(installed)}, expected {sorted(skills)}"
+        )
+
+
+def test_generic_package_installs_every_skill(tmp_path: Path) -> None:
+    """'generic' installs every skill of every package."""
+    target = tmp_path / "generic"
+    result = run_install("--target", str(target), "--package", "generic")
+    assert result.returncode == 0, result.stdout + result.stderr
+    every = {skill for skills in skill_folders().values() for skill in skills}
+    installed = {p.name for p in target.iterdir() if p.is_dir()}
+    assert installed == every
+    for skill in every:
+        assert (target / skill / "SKILL.md").is_file()
+
+
+def test_on_demand_reference_packages_install_their_skill(tmp_path: Path) -> None:
+    """The on-demand ref-* packages are real packages and install their skill."""
+    refs = {p: s for p, s in skill_folders().items() if p.startswith("ref-")}
+    assert refs, "the tree has no on-demand ref-* packages any more"
+    for package, skills in refs.items():
+        target = tmp_path / package
+        result = run_install("--target", str(target), "--package", package)
+        assert result.returncode == 0, f"{package}: {result.stdout}{result.stderr}"
+        for skill in skills:
+            assert (target / skill / "SKILL.md").is_file()
+
+
+def test_meta_package_is_accepted(tmp_path: Path) -> None:
+    """'meta' is a reserved virtual package: accepted, ships nothing."""
+    result = run_install("--target", str(tmp_path / "meta"), "--package", "meta")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "meta" in result.stdout
+
+
+def test_unknown_package_is_rejected(tmp_path: Path) -> None:
+    """A package that does not exist is refused and the known ones are listed."""
+    result = run_install("--target", str(tmp_path / "t"), "--package", "no-such-package")
+    assert result.returncode == 1
+    assert "unknown package" in result.stderr
+    assert "engineering" in result.stderr
+
+
+def test_existing_destination_is_not_overwritten_without_force(tmp_path: Path) -> None:
+    """Safety: an existing skill folder is never replaced silently."""
+    target = tmp_path / "t"
+    target.mkdir()
+    (target / "honest-status").mkdir()
+    (target / "honest-status" / "MARKER").write_text("keep me", encoding="utf-8")
+    result = run_install("--target", str(target), "honest-status")
+    assert result.returncode == 0
+    assert "skip" in result.stdout
+    assert (target / "honest-status" / "MARKER").is_file()
