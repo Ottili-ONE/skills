@@ -1,6 +1,13 @@
 # Gaps — SKL-W0-01 (TASK-0004)
 
-## G1 (blocking tooling): `scripts/truth/preflight.mjs` and the truth harness do not exist in this repo
+## G1 (RESOLVED 2026-10-20 — keep the history, do not act on it): `scripts/truth/preflight.mjs` and the truth harness do not exist in this repo
+
+> **RESOLVED (2026-10-20):** the truth kit 1.1.0 is installed in this repository since commit
+> `40ce066` (`chore(truth): install Ottili truth kit 1.1.0`). `preflight.mjs`, `gate.mjs`,
+> `safe-commit.mjs`, `db.mjs` and `port.mjs` are present and working: the preflight prints
+> `ok`, the gate runs all steps and `safe-commit.mjs` is the only sanctioned way to commit.
+> The text below is the observation of 2026-10-16 and is kept as history — it is no longer
+> a live gap.
 
 - **Claim in task:** "Start by running: `node scripts/truth/preflight.mjs --job SKL-W0-01 --status` (exit 20 means BLOCKED, and so does a missing or crashing script)."
 - **Observed (2026-10-16):** `node scripts/truth/preflight.mjs --job SKL-W0-01 --status` exits 1 with
@@ -12,7 +19,7 @@
   the `skills` repo or to the truth kit.
 - **Ownership:** `scripts/truth/**` is on this job's own EXCLUDE list, so it is another job's prerequisite,
   not mine to create.
-- **Impact:** the blocked-check, gate, and commit-and-land commands in the job card cannot be executed
+- **Impact:** the blocked-check, gate, and commit-and-merge commands in the job card cannot be executed
   from this repo as written. Every later task of SKL-W0-01 that calls them stops at once.
 - **Request (cross-job):** provide `scripts/truth/{preflight,gate,safe-commit,db,port}.mjs` (plus the
   manifest/README they expect) for the `skills` repo, or point SKL-W0-01 at an existing kit location.
@@ -143,3 +150,24 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   `ok: 32 skills validated`; `node scripts/gen-catalog.mjs --check` →
   `ok: catalog unchanged (32 skills, 5 packages)`; `git status --porcelain` shows
   only the three pre-existing entries from G5.
+
+## G9 (cross-job request, TASK-0002, 2026-10-20): `.gitignore` does not ignore `.germo/`
+
+- **Observed:** the GERMO orchestrator writes its own state into `.germo/` at the repository
+  root (`notes/SKL-W0-01.md`, `notes/task_history.log`, `state.journal`, `state.json`). The
+  truth kit enumerates untracked files with `git ls-files --others --exclude-standard`, so
+  these four files appeared in the job's diff and the gate's `ownership` step failed with
+  `4 changed file(s) outside the owned paths (other jobs own them)`.
+- **Ownership:** `.gitignore` is owned by `skills-engineering-r3` (per `docs/R3_OWNERS.json`),
+  not by this job, so this job did not edit it.
+- **Request (cross-job):** add one line to `.gitignore`:
+  ```
+  .germo/
+  ```
+  `.truth/` is already ignored there; `.germo/` is the orchestrator's equivalent.
+- **Workaround used in this pass:** `.germo/` was added to the worktree-local
+  `.git/info/exclude` (not a tracked file, nothing committed). The gate's `ownership` step
+  passes with it. The repository-level fix is still wanted: every job in every worktree hits
+  the same failure otherwise.
+- **Also relevant:** `tests/hygiene/clean-tree.test.mjs` is red for the same reason (an
+  untracked directory at the root). It goes green as soon as `.germo/` is ignored.

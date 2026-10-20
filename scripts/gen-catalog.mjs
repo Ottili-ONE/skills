@@ -7,9 +7,19 @@
 // skills/ (a folder that contains skill subfolders is a package); there is no
 // hand-maintained package or skill list anywhere in this file.
 //
+// SOURCE OF TRUTH for the `package` field of an entry: the name of the folder
+// that CONTAINS the skill folder — i.e. for skills/<package>/<skill-name>/SKILL.md
+// the package is `<package>`. It is taken from the folder layout on disk, never
+// from the SKILL.md frontmatter and never from a list maintained by hand.
+//
+// DETERMINISM: the output is a pure function of the skills/ tree. There is no
+// wall-clock stamp anywhere in the file, so a clean clone regenerates
+// catalog.json byte-for-byte and `--check` gives the same answer on every day.
+//
 // Usage:  node scripts/gen-catalog.mjs [--check] [--out catalog.json]
 //   --check   do not write; exit 1 if the existing catalog.json would change.
 //   --out P   write to P (default: <repo>/catalog.json).
+//   --help    Show this help.
 
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
@@ -31,6 +41,10 @@ let check = false;
 let outPath = DEFAULT_OUT;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--check') check = true;
+  else if (args[i] === '--help' || args[i] === '-h') {
+    console.log('Usage: gen-catalog.mjs [--check] [--out <file>]');
+    process.exit(0);
+  }
   else if (args[i] === '--out') outPath = resolve(args[++i]);
   else if (args[i].startsWith('--out=')) outPath = resolve(args[i].slice(7));
 }
@@ -138,6 +152,16 @@ function main() {
   const skills = [];
   for (const [pkg, name, dir] of found) {
     const fm = parseFrontmatter(readFileSync(join(dir, 'SKILL.md'), 'utf8'));
+    // The folder name IS the skill name. A frontmatter name that disagrees with
+    // the folder would make the catalogue ambiguous (path, id and install
+    // target would no longer be derivable), so it is a hard error here instead
+    // of a silently inconsistent entry.
+    if (fm.name && fm.name !== name) {
+      console.error(
+        `error: ${dir}/SKILL.md declares name '${fm.name}' but the folder is named '${name}'`
+      );
+      process.exit(1);
+    }
     const rel = `skills/${pkg}/${name}`;
     const paths = walkFiles(dir).map((p) => p.replace(REPO + '/', ''));
     const compat = fm.compatibility;
@@ -160,17 +184,36 @@ function main() {
   const catalog = {
     schema_version: '1.0.0',
     repository: 'Ottili-ONE/skills',
-    updated_at: new Date().toISOString().slice(0, 10),
     packages,
     skills,
   };
 
   const json = JSON.stringify(catalog, null, 2) + '\n';
   if (check) {
-    if (!existsSync(outPath)) { console.error('catalog missing:', outPath); process.exit(1); }
+    if (!existsSync(outPath)) {
+      console.error('catalog missing:', outPath, '— run: node scripts/gen-catalog.mjs');
+      process.exit(1);
+    }
     const existing = readFileSync(outPath, 'utf8');
-    if (existing === json) { console.log(`ok: catalog unchanged (${skills.length} skills, ${Object.keys(packages).length} packages)`); return 0; }
-    console.error('catalog would change; run without --check to regenerate');
+    if (existing === json) {
+      console.log(`ok: catalog unchanged (${skills.length} skills, ${Object.keys(packages).length} packages)`);
+      return 0;
+    }
+    // Report WHAT drifted, not only that something did: a reviewer has to be
+    // able to tell "a skill was added" from "someone hand-edited the file".
+    const before = JSON.parse(existing);
+    const beforeById = new Map((before.skills || []).map((s) => [s.id, s]));
+    const afterById = new Map(skills.map((s) => [s.id, s]));
+    const added = [...afterById.keys()].filter((id) => !beforeById.has(id));
+    const removed = [...beforeById.keys()].filter((id) => !afterById.has(id));
+    const changed = [...afterById.keys()].filter(
+      (id) => beforeById.has(id) && JSON.stringify(beforeById.get(id)) !== JSON.stringify(afterById.get(id))
+    );
+    console.error('catalog is out of date — it is GENERATED, never hand-edited.');
+    console.error('  run: node scripts/gen-catalog.mjs');
+    if (added.length) console.error(`  added:   ${added.join(', ')}`);
+    if (removed.length) console.error(`  removed: ${removed.join(', ')}`);
+    if (changed.length) console.error(`  changed: ${changed.join(', ')}`);
     process.exit(1);
   }
 

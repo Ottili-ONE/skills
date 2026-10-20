@@ -1,7 +1,6 @@
 {
   "schema_version": "1.0.0",
   "repository": "Ottili-ONE/skills",
-  "updated_at": "2026-10-16",
   "packages": {
     "agentic-data": {
       "label": "Agentic-data",
@@ -878,6 +877,9 @@
         "skills/engineering/foundation-v2-conformance/references/DESIGN.md",
         "skills/engineering/foundation-v2-conformance/references/EVALS.md",
         "skills/engineering/foundation-v2-conformance/references/SOURCES.md",
+        "skills/engineering/foundation-v2-conformance/references/examples/bad_consumer.tsx",
+        "skills/engineering/foundation-v2-conformance/references/examples/good_consumer.tsx",
+        "skills/engineering/foundation-v2-conformance/references/examples/tokens.json",
         "skills/engineering/foundation-v2-conformance/references/foundation-v2-conformance-procedure.md",
         "skills/engineering/foundation-v2-conformance/scripts/check_foundation_tokens.py",
         "skills/engineering/foundation-v2-conformance/scripts/check_foundation_tokens_test.py",
@@ -983,8 +985,12 @@
         "skills/engineering/outbox-idempotency/references/examples/bad_poller.py",
         "skills/engineering/outbox-idempotency/references/examples/good_outbox.sql",
         "skills/engineering/outbox-idempotency/references/examples/good_poller.py",
+        "skills/engineering/outbox-idempotency/references/examples/hostile_missing_dead_letter.sql",
+        "skills/engineering/outbox-idempotency/references/examples/hostile_no_company_id.sql",
+        "skills/engineering/outbox-idempotency/references/examples/hostile_tenant_leak.sql",
         "skills/engineering/outbox-idempotency/references/outbox-procedure.md",
         "skills/engineering/outbox-idempotency/scripts/check_outbox.py",
+        "skills/engineering/outbox-idempotency/scripts/check_outbox_platform.py",
         "skills/engineering/outbox-idempotency/scripts/check_outbox_test.py"
       ]
     },
@@ -1001,7 +1007,7 @@
       "compatibility": [
         "PostgreSQL 15+ (verified 18); framework-agnostic"
       ],
-      "description": "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing tenant_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents.",
+      "description": "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing company_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents.",
       "paths": [
         "skills/engineering/pg-rls-multitenant/SKILL.md",
         "skills/engineering/pg-rls-multitenant/references/DESIGN.md",

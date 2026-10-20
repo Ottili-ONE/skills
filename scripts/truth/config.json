@@ -1,13 +1,35 @@
 {
-  "install": "bash scripts/install.sh --check",
+  "install": "bash scripts/install.sh --check --target \"${TMPDIR:-/tmp}/skl-w0-01-install-check\" --package generic",
   "commands": {
-    "build": "python3 -I scripts/validate.py --everywhere",
+    "build": "node scripts/gen-catalog.mjs --check && python3 -I scripts/validate.py --everywhere",
     "lint": "python3 -I scripts/validate.py --everywhere",
     "test": "pytest -q {paths}"
   },
   "sharedGlobs": [
     "catalog.json"
   ],
+  "rootAllowlist": [
+    ".github",
+    ".gitignore",
+    ".npmrc",
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "README.md",
+    "catalog.json",
+    "docs",
+    "index",
+    "schema",
+    "scripts",
+    "skills",
+    "templates",
+    "tests"
+  ],
+  "language": {
+    "allowGlobs": [
+      "catalog.json"
+    ]
+  },
   "sql": {
     "requireRls": false,
     "requireIdempotent": false
