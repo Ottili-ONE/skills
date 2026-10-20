@@ -772,3 +772,32 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **Why it is not done here:** `README.md` and `.github/**` are not in the owned paths of the job
   card of SKL-W0-01, and the gate's ownership step fails a commit that touches a path outside
   them. The request is recorded here and in `docs/truth/REPAIR_LOG.md`.
+
+## G33 (cross-job request, TASK-0007, 2026-10-20): the repair log records the defects that are still open outside the owned paths
+
+- **What was done:** the repair log of this job (`docs/truth/REPAIR_LOG.md`) now carries an
+  index of every defect of SKL-W0-01 — symptom, reproduction command, root cause, the files
+  that carry the fix, a proof command that passes on the current trunk and the date — plus
+  a section "Follow-ups for later trunk repair jobs" with the 14 items that were measured
+  but could not be fixed from this job. `tests/hygiene/test_repair_log.py` is the guard: it
+  fails when a defect id is not in the index, when an id names two defects, when an index
+  entry lacks one of the six fields, when a proof command is missing from the proof block or
+  when a proof command marked `# auto` no longer exits 0.
+- **The open items, by owner** (path and exact symptom in
+  `docs/truth/REPAIR_LOG.md`, section "Follow-ups for later trunk repair jobs"):
+  - `skills-engineering-r3`: `.github/workflows/validate.yml:42` (the `*.test.mjs` glob ends in
+    `Cannot find module`/exit 1), `.github/workflows/validate.yml:69` (a bash script run with
+    `python3` → `SyntaxError`), `README.md:221,228,229` (the deleted `*.test.mjs` commands),
+    `index/skills.json` (5 lines drift, no `--check` mode), `scripts/validate_skills.py`
+    (10 of 39 skills validated, `UnboundLocalError`, the prompt regex counted twice),
+    `.gitignore` (no `.pytest_cache/`).
+  - `skills-business-de-r3`: 9 committed scratch files under `skills/business-de/*/tests/tmp/`,
+    `docs/gaps/SKL-W1-02.md:106` (points at the deleted status diaries).
+  - `skills-agentic-data-r3`: two skills ship a `references/EVALS.md` their `SKILL.md` never
+    links.
+  - unassigned: `skills/ref-*/**` (six descriptions still carry the deleted `business-de/`
+    path fragment — the tree is in no entry of `docs/R3_OWNERS.json`),
+    `docs/truth/REPO_PROBE.txt` (tracked, 0 bytes).
+  - operator: `scripts/truth/safe-commit.mjs` (git 2.53.0 returns nothing for
+    `--untracked-files=all`, so new files stay untracked), `docs/requests/` does not exist
+    although `AGENTS.md` points at it, the Docker daemon is not reachable on this host.
