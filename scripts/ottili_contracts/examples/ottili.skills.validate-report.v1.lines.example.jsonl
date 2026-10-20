@@ -1,0 +1,2 @@
+{"contract": "ottili.skills.validate-report/v1", "kind": "summary", "scope": "everywhere", "skills": 1, "findings": 1, "ok": false}
+{"contract": "ottili.skills.validate-report/v1", "kind": "finding", "scope": "everywhere", "message": "on-disk skill 'beta' (skills/demo/beta) is missing from the catalog"}

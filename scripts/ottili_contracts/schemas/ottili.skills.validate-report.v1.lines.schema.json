@@ -1,0 +1,107 @@
+{
+  "$defs": {
+    "ValidateFindingLine": {
+      "additionalProperties": false,
+      "description": "One finding line of the JSON Lines export of the validate report.\n\nEvery line after the summary is one finding, in the order the findings\nwere found. A consumer can therefore read the stream without knowing the\nnumber of findings in advance.\n\nInputs:\n    contract: the contract id, always ``ottili.skills.validate-report/v1``.\n    kind: always ``finding``.\n    scope: ``catalog`` or ``everywhere``.\n    message: one finding, byte-identical with the entry of the ``errors``\n    list of the JSON report.\nOutputs:\n    the mapping that is printed as one JSON Lines line.\nFailure modes:\n    ValidationError when a value does not match (a wrong kind, an unknown\n    key).",
+      "properties": {
+        "contract": {
+          "const": "ottili.skills.validate-report/v1",
+          "title": "Contract",
+          "type": "string"
+        },
+        "kind": {
+          "const": "finding",
+          "title": "Kind",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "catalog",
+            "everywhere"
+          ],
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract",
+        "kind",
+        "scope",
+        "message"
+      ],
+      "title": "ValidateFindingLine",
+      "type": "object"
+    },
+    "ValidateSummaryLine": {
+      "additionalProperties": false,
+      "description": "The summary line of the JSON Lines export of the validate report.\n\nIt is the FIRST line of ``scripts/validate.py --jsonl`` and it carries the\nverdict of the run: the number of skills the report covers and the number\nof findings. It is a second rendering of the same contract\n(``ottili.skills.validate-report/v1``), not a contract of its own.\n\nInputs:\n    contract: the contract id, always ``ottili.skills.validate-report/v1``.\n    kind: always ``summary``; it discriminates the line against\n    :class:`ValidateFindingLine`.\n    scope: ``catalog`` or ``everywhere``.\n    skills: the number of catalogue entries the report covers.\n    findings: the number of findings of the report.\n    ok: true when there is no finding at all.\nOutputs:\n    the mapping that is printed as the first JSON Lines line.\nFailure modes:\n    ValidationError when a value does not match (a wrong kind, a negative\n    count, an unknown key).",
+      "properties": {
+        "contract": {
+          "const": "ottili.skills.validate-report/v1",
+          "title": "Contract",
+          "type": "string"
+        },
+        "findings": {
+          "minimum": 0,
+          "title": "Findings",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "summary",
+          "title": "Kind",
+          "type": "string"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "scope": {
+          "enum": [
+            "catalog",
+            "everywhere"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "skills": {
+          "minimum": 0,
+          "title": "Skills",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "contract",
+        "kind",
+        "scope",
+        "skills",
+        "findings",
+        "ok"
+      ],
+      "title": "ValidateSummaryLine",
+      "type": "object"
+    }
+  },
+  "$id": "https://contracts.ottili.one/skills/validate-report/v1.lines.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "One line of the JSON Lines export of the validate report.\n\nInputs:\n    the root value: a :class:`ValidateSummaryLine` or a\n    :class:`ValidateFindingLine` mapping.\nOutputs:\n    ``model_validate`` returns the line; ``model_dump`` returns the\n    mapping unchanged, so a consumer round-trips a line without losing a\n    field.\nFailure modes:\n    ValidationError when the ``kind`` is neither ``summary`` nor\n    ``finding``, or when the mapping does not match the shape that\n    ``kind`` names.",
+  "discriminator": {
+    "mapping": {
+      "finding": "#/$defs/ValidateFindingLine",
+      "summary": "#/$defs/ValidateSummaryLine"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ValidateSummaryLine"
+    },
+    {
+      "$ref": "#/$defs/ValidateFindingLine"
+    }
+  ],
+  "title": "ottili.skills.validate-report/v1 (JSON Lines)"
+}
