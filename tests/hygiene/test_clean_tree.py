@@ -27,7 +27,6 @@ from hygiene.clean_tree import (
     seed_dirty,
 )
 
-
 pytestmark = pytest.mark.runs_last
 
 GUARD_TEST_ID = (
@@ -128,7 +127,7 @@ def test_the_guard_fails_when_a_test_dirties_the_worktree(tmp_path: Path) -> Non
     """
     root = repo_root()
     baseline = dirty_paths(root)
-    seed = root / "pytest-seeded-dirt-{}.txt".format(os.getpid())
+    seed = root / f"pytest-seeded-dirt-{os.getpid()}.txt"
     (tmp_path / "seed_dirt_plugin.py").write_text(_SEED_PLUGIN, encoding="utf-8")
 
     env = dict(os.environ)
@@ -147,8 +146,8 @@ def test_the_guard_fails_when_a_test_dirties_the_worktree(tmp_path: Path) -> Non
                 "no:cacheprovider",
                 "-p",
                 "seed_dirt_plugin",
-                "--confcutdir={}".format(root),
-                "--rootdir={}".format(root),
+                f"--confcutdir={root}",
+                f"--rootdir={root}",
                 GUARD_TEST_ID,
                 "-q",
             ],
@@ -157,6 +156,7 @@ def test_the_guard_fails_when_a_test_dirties_the_worktree(tmp_path: Path) -> Non
             capture_output=True,
             text=True,
             timeout=300,
+            check=False,
         )
     finally:
         seed.unlink(missing_ok=True)

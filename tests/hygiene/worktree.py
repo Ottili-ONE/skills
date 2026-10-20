@@ -15,13 +15,14 @@ import contextlib
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 @contextlib.contextmanager
-def temporary_worktree(revision: str = "HEAD"):
+def temporary_worktree(revision: str = "HEAD") -> Iterator[Path]:
     """Yield a throwaway checkout of a revision of this repository."""
     holder = Path(tempfile.mkdtemp(prefix="repo-worktree-"))
     target = holder / "tree"

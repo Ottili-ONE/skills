@@ -29,9 +29,10 @@ tenant rows to a reporting role, because the migration omitted the invoker flag.
 5. Expand/contract: adding a tenant column is an expand migration (add NOT NULL with backfill,
    add policy, run leak test) followed by a contract migration that drops the old key.
 6. Leak test: run `scripts/pg-rls-leak-test.sh --server` against a real PostgreSQL. The probe
-   runs as a non-superuser application role and reports three measurements: `a_sees_own = 1`
+   runs as a non-superuser application role and reports four measurements: `a_sees_own = 1`
    (the company sees its own row), `a_sees_b = 0` (it sees no row of another company) and
-   `unset_sees_rows = 0` (nobody sees a row while the session carries no company).
+   `unset_sees_rows = 0` (nobody sees a row while the session carries no company) and
+   `write_leaks = 0` (a row of another company was refused).
 7. Views: mark `security_invoker` explicitly; an unmarked view inherits the creator's privileges
    and bypasses RLS.
 

@@ -2,7 +2,8 @@
 
 Job: SKL-W1-01 — Canonical skills: rewritten to the real Ottili conventions.
 Owner of the paths this job writes: `skills-engineering-r3` (`docs/R3_OWNERS.json`).
-Written: 2026-10-16. Last updated: 2026-10-20 (TASK-0002, the tenant convention).
+Written: 2026-10-16. Last updated: 2026-10-20 (TASK-0002, the tenant convention, and the
+verification pass over it).
 Everything here is measured, not asserted.
 
 ## G-001 — the truth harness does not exist in this repo — RESOLVED 2026-10-20
@@ -117,8 +118,8 @@ Everything here is measured, not asserted.
 
 - `scripts/pg-rls-leak-test.sh` has two server modes. The `--server` mode was **verified**
   on 2026-10-20 against the real PostgreSQL 18.6 of this job: the positive case measures
-  `a_sees_own 1`, `a_sees_b 0`, `unset_sees_rows 0` (PASS) and the negative case (a table
-  without a policy) measures `2`, `1`, `2` (FAIL, "cross-tenant leak").
+  `a_sees_own 1`, `a_sees_b 0`, `unset_sees_rows 0`, `write_leaks 0` (PASS) and the negative
+  case (a table without a policy) measures `2`, `1`, `2`, `0` (FAIL, "cross-tenant leak").
 - The container mode (Docker `postgres:18-alpine`) could not be run: this host has no Docker
   daemon. It is kept because a developer machine needs it, but it is **unverified here**.
   The exact command is `bash skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh
@@ -134,8 +135,71 @@ Everything here is measured, not asserted.
   policies name it or apply to `PUBLIC`. The skill states both possibilities instead of
   guessing.
 
+## G-008 — the RLS gate did not look at the write path of a policy — FOUND AND FIXED 2026-10-20
+
+- **What the verification pass measured.** The static gate of the tenant checker asked one
+  question about a policy: does it read the canonical tenant GUC? It never asked what the
+  policy's `WITH CHECK` clause says. A migration with
+  `USING (company_id = current_setting('app.company_id', true)) WITH CHECK (true)` therefore
+  passed the gate with exit 0 — and on the real PostgreSQL of this job, the session of the
+  second company wrote a row that claimed the first company. The row was in the table. The
+  read path of that migration is closed, so the leak probe of the time reported a green
+  leak test on it.
+- **Root cause.** `ottili_rls/scanner.py` kept the whole policy body as one string, so the
+  `USING` clause and the `WITH CHECK` clause could not be told apart, and `ottili_rls/rules.py`
+  had no rule for the write path. The skill itself taught the rule ("INSERT wrong tenant |
+  rejected by `WITH CHECK`") and the gate did not enforce it.
+- **Fix.** The scanner reads a policy into its command and its two guards
+  (`PolicyFacts`), the rules require the tenant column in the guard that accepts a new row
+  (`WITH CHECK`, or `USING` when there is no `WITH CHECK`) and in the `USING` clause of a
+  policy that reads, and the leak harness measures the write path as well
+  (`write_leaks`). The new findings are `missing_tenant_guard` and
+  `unguarded_write_path`. The seven tests that hold this are in
+  `tests/hygiene/test_rls_core.py`, `tests/hygiene/test_rls_checker.py` and
+  `tests/hygiene/test_leak_probe.py`; each of them fails without the fix (measured: the
+  rule reverted, 7 failures; the old example migration, 1 failure).
+
+## G-009 — the example migration of the skill could not be applied twice — FOUND AND FIXED 2026-10-20
+
+- **What the verification pass measured.** `references/examples/good_migration.sql` — the
+  example every reader of the skill copies — created its policies with a plain
+  `CREATE POLICY`. A second application on the same schema failed with
+  `policy "tenant_isolation" for table "tenant_isolated_notes" already exists`, so a
+  deployment that failed half way could not be retried without leaving the schema half
+  migrated. The platform's own migrations do not have that defect: they create the policy
+  inside a `DO` block that asks `pg_policies` first.
+- **Fix.** The example now creates both policies in a `DO` block, in the shape of the
+  product migrations. It is applied twice on a real PostgreSQL by
+  `tests/hygiene/test_leak_probe.py::test_the_canonical_example_can_be_applied_twice`, and
+  the leak probe still measures `1`, `0`, `0`, `0` after the second application.
+
 ## What this pass did NOT do (and why)
 
+- **The `migrate` rung of the job gate was skipped for this run, and why.** The job gate
+  treats every changed `.sql` file as a product migration
+  (`scripts/truth/gate.mjs`: `migrations = live.filter((f) => f.path.endsWith('.sql'))`) and
+  then runs `commands.migrate` twice on a fresh database. This repository is a catalogue of
+  skills: it has no product schema, no migration runner and no `commands.migrate` in
+  `scripts/truth/config.json` (the W0 job never needed one), so the rung cannot run here.
+  The job card itself declares "Migration stamp block (SQL migration file names): none (this
+  job has no migrations of its own)". The only `.sql` file this job changes is
+  `skills/engineering/pg-rls-multitenant/references/examples/good_migration.sql` — a
+  reference example inside a skill, not a migration of a product.
+  **What proves the property instead:** `tests/hygiene/test_leak_probe.py::
+  test_the_canonical_example_can_be_applied_twice` applies that example twice on a real
+  PostgreSQL that `scripts/truth/db.mjs create --job SKL-W1-01 --fresh` made — the same
+  "apply twice on a fresh database" the rung would do — and the gate's `tests` rung runs it.
+  **Cross-job request to the kit owner (`scripts/truth/**`):** either let the job gate
+  ignore a `.sql` file under a `references/examples/` directory, or have the W0 job define a
+  `commands.migrate` for a repository that has no migrations. Until then, a job that
+  teaches SQL in a skill cannot pass the gate with the card's own command.
+- The verification pass over the tenant skill also cleared the type and lint debt of the
+  owned test tree, because the DONE WHEN of the job asks for ruff and mypy clean on the
+  owned paths: `mypy --strict tests` went from **52 errors in 11 files** (measured at
+  `HEAD`) to **0**, and `ruff check tests` from **23 errors** to **0**. The 27 test files
+  that were touched carry only annotations, import order and the explicit `check=False` of
+  a `subprocess.run` that already ignored the exit code; no assertion was weakened, no
+  test was skipped and no behaviour changed.
 - The five other canonical skills (`honest-status`, `outbox-idempotency`,
   `problem-json-contracts`, `foundation-v2-conformance`, `playwright-a11y-e2e`) are the
   subject of the remaining tasks of this job (TASK-0003 … TASK-0006). Only the tenant/RLS

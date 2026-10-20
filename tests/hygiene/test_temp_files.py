@@ -54,10 +54,10 @@ def test_no_test_source_writes_into_the_shared_temp_directory() -> None:
         relative = path.relative_to(repo_root()).as_posix()
         for needle, reason in FORBIDDEN.items():
             if needle in text:
-                offenders.append("{}: {} ({})".format(relative, needle, reason))
+                offenders.append(f"{relative}: {needle} ({reason})")
         if "tempfile.mkdtemp(" in text and "shutil.rmtree" not in text:
             offenders.append(
-                "{}: tempfile.mkdtemp( without shutil.rmtree".format(relative)
+                f"{relative}: tempfile.mkdtemp( without shutil.rmtree"
             )
     assert not offenders, "test files write outside their own directory:\n" + "\n".join(
         offenders

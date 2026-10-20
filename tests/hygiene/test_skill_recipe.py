@@ -56,7 +56,7 @@ def write_demo_skill(tree: Path) -> Path:
     return folder
 
 
-def run_validator(tree: Path) -> subprocess.CompletedProcess:
+def run_validator(tree: Path) -> subprocess.CompletedProcess[str]:
     """Run the validator of the engineering package in a checkout."""
     return subprocess.run(
         ["python3", "scripts/validate_skills.py"],

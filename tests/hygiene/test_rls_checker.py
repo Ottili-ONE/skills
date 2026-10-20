@@ -44,6 +44,27 @@ ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
 ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
 """
 
+# The write path of a policy is guarded by its WITH CHECK clause, not by its
+# USING clause: USING decides which existing rows the policy applies to,
+# WITH CHECK decides which new row may be written. A policy whose USING
+# clause is correct and whose WITH CHECK clause is wide open is a migration
+# that the real database lets a company cross.
+WIDE_CHECK_TEMPLATE = """\
+CREATE TABLE {table} (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id text        NOT NULL,
+    body       text        NOT NULL
+);
+
+CREATE POLICY {table}_tenant ON {table}
+    AS PERMISSIVE FOR ALL TO web_app
+    USING (company_id = current_setting('app.company_id', true))
+    WITH CHECK (true);
+
+ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
+ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
+"""
+
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -333,3 +354,67 @@ def test_a_configuration_with_two_tenant_gucs_is_a_usage_error(tmp_path: Path) -
     result = run(str(path), "--guc-names", str(config))
     assert result.returncode == 2, result.stdout + result.stderr
     assert "cannot read the accepted tenant GUC names" in result.stderr, result.stderr
+
+
+def test_a_wide_with_check_clause_is_rejected(tmp_path: Path) -> None:
+    """A policy that reads correctly but writes everything is a leak.
+
+    The USING clause of this migration is the product standard, so every
+    rule that only asks "does the policy read the tenant setting?" is
+    satisfied. The WITH CHECK clause is ``true``, so the database accepts a
+    row of any company. The gate has to see that.
+    """
+    sql = WIDE_CHECK_TEMPLATE.format(table="wide_check_notes")
+    path = write(tmp_path, "wide_check.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "write path of the policy is not constrained" in result.stderr, result.stderr
+
+
+def test_a_write_policy_that_checks_nothing_is_rejected(tmp_path: Path) -> None:
+    """A second policy that guards the write path with nothing is a hole."""
+    sql = WIDE_CHECK_TEMPLATE.format(table="wide_check_notes")
+    sql = sql.replace(
+        "CREATE POLICY wide_check_notes_tenant ON wide_check_notes\n"
+        "    AS PERMISSIVE FOR ALL TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true))\n"
+        "    WITH CHECK (true);",
+        "CREATE POLICY wide_check_notes_read ON wide_check_notes\n"
+        "    FOR SELECT TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true));\n"
+        "CREATE POLICY wide_check_notes_write ON wide_check_notes\n"
+        "    FOR INSERT TO web_app\n"
+        "    WITH CHECK (true);",
+    )
+    path = write(tmp_path, "wide_write_policy.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "write path of the policy is not constrained" in result.stderr, result.stderr
+
+
+def test_a_read_guard_without_the_tenant_column_is_rejected(tmp_path: Path) -> None:
+    """A USING clause that reads the setting but not the column is a leak."""
+    sql = TEMPLATE.format(table="no_column_guard", guc="app.company_id")
+    sql = sql.replace(
+        "USING (company_id = current_setting('app.company_id', true))",
+        "USING (current_setting('app.company_id', true) IS NOT NULL)",
+    )
+    path = write(tmp_path, "no_column_guard.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "does not name the tenant column" in result.stderr, result.stderr
+
+
+def test_the_real_migrations_of_the_product_are_not_rejected_by_the_new_rules() -> None:
+    """The new rules must not turn a real migration of the platform into a
+    finding: the three hq migrations and the DO-block shape are the corpus
+    the platform actually writes."""
+    corpus = sorted(FIXTURES.glob("*.sql")) + sorted(SHAPES.glob("*.sql"))
+    assert len(corpus) >= 4, corpus
+    for path in corpus:
+        if path.name == "ottili-apps-github-issue-link.sql":
+            # This one keys its policy on a legacy GUC; it is the known gap
+            # G-003 of the job and it is rejected for that reason.
+            continue
+        result = run(str(path))
+        assert result.returncode == 0, f"{path.name}: {result.stdout}{result.stderr}"

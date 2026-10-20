@@ -37,6 +37,27 @@ CREATE POLICY name ON table
 | Deny override (e.g. soft-deleted rows) | `RESTRICTIVE FOR SELECT` | `USING (deleted_at IS NULL)` |
 | Write must stay in tenant scope | `PERMISSIVE FOR INSERT WITH CHECK` | `WITH CHECK (company_id = current_setting('app.company_id', true))` |
 
+**The two guards are two different clauses.**
+`USING` says which existing rows the policy applies to; `WITH CHECK` says which
+new row may be written. A policy that names the tenant column in `USING` but
+not in `WITH CHECK` closes the read path and leaves the write path open: the
+company sees no foreign row, and can still write a row that claims a foreign
+company. The read probe of this skill cannot see that leak - it measures what
+is read, and nothing that should not be read is readable. The offline checker
+sees it: a policy that applies to a write command (`INSERT`, `UPDATE` or
+`ALL`) must name the tenant column in the guard that accepts the new row, and
+that guard is the `WITH CHECK` clause when there is one and the `USING` clause
+otherwise, because PostgreSQL falls back to `USING` when `WITH CHECK` is
+omitted. A policy that applies to a read command (`SELECT`, `DELETE` or
+`ALL`) must name the tenant column in its `USING` clause.
+
+**The migration has to be re-runnable.** The product migrations create their
+policy inside a `DO` block that asks `pg_policies` first, so a retry after a
+failed deployment does not abort with "policy already exists" and leave the
+schema half migrated. The example of this skill
+(`references/examples/good_migration.sql`) does the same and is applied twice
+by the test suite on a real PostgreSQL.
+
 ## 2. FORCE ROW LEVEL SECURITY
 - `ENABLE ROW LEVEL SECURITY` enables RLS; `FORCE ROW LEVEL SECURITY` forces evaluation even
   for table owners and superusers.
@@ -82,6 +103,15 @@ what it sees. Three measurements decide the verdict:
 | `a_sees_own` | 1 | the own-company read is wrong: the policy does not match the seed |
 | `a_sees_b` | 0 | cross-company leak: the policy is missing, wrong, or not forced |
 | `unset_sees_rows` | 0 | rows are visible without a company: the table is not isolated by default |
+| `write_leaks` | 0 | a row of another company was written: the `WITH CHECK` clause does not constrain the tenant column |
+
+The first three measurements read, the fourth writes. The write probe gives
+the session of the second company a row that claims the first one and expects
+the database to refuse it; the transaction is rolled back, so a leak leaves no
+row behind and the exit code of `psql` is the measurement. Both paths have to
+be measured, because they are guarded by two different clauses of a policy: a
+policy whose `USING` clause is the product standard and whose `WITH CHECK`
+clause is wide open hides every foreign row and still accepts a foreign row.
 
 The probe prints its measurements as `LABEL<tab>VALUE` lines; the verdict is taken by
 `scripts/check_leak_probe.py`, which fails when a measurement is missing — a probe that did
@@ -121,6 +151,14 @@ Bad (owner bypass — table created by migration role, no FORCE):
 ```sql
 CREATE TABLE notes (id uuid, company_id uuid, body text);
 -- migration role can read every tenant's notes until FORCE is added
+```
+Bad (write path open — the read path is closed, the write path is not):
+```sql
+CREATE POLICY notes_tenant ON notes
+  FOR ALL TO web_app
+  USING (company_id = current_setting('app.company_id', true))
+  WITH CHECK (true);
+-- no foreign row is readable, and a foreign row can still be written
 ```
 Bad (view bypass):
 ```sql

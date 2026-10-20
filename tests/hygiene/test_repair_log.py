@@ -291,6 +291,7 @@ def test_the_proof_block_documents_every_label_it_uses() -> None:
     labels = proof_commands(text)
     for defect_id, entry in index_entries(text).items():
         label, command = entry_label_and_command(entry)
+        assert label is not None, f"the entry of {defect_id} names no proof label"
         assert command == labels[label][0], (
             f"the command of {label} in the index is not the command of the proof block"
         )
@@ -359,6 +360,7 @@ def test_the_auto_proof_commands_still_pass(label: str) -> None:
         capture_output=True,
         text=True,
         timeout=300,
+        check=False,
         env={**os.environ, "TMPDIR": os.environ.get("TMPDIR", "/tmp")},
     )
     assert result.returncode == 0, (

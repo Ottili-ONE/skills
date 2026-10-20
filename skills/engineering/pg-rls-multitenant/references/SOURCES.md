@@ -86,10 +86,15 @@ here; the *checker* does not depend on the count, only on the name.
   application role (`truth_app`) that is not the owner of the table.
 - Positive case: a migration with `ENABLE` + `FORCE ROW LEVEL SECURITY` and a
   policy on `current_setting('app.company_id', true)` measures `a_sees_own 1`,
-  `a_sees_b 0`, `unset_sees_rows 0` — PASS.
+  `a_sees_b 0`, `unset_sees_rows 0`, `write_leaks 0` — PASS.
 - Negative case: the same table without a policy measures `a_sees_own 2`,
-  `a_sees_b 1`, `unset_sees_rows 2` — FAIL, with the findings
+  `a_sees_b 1`, `unset_sees_rows 2`, `write_leaks 0` — FAIL, with the findings
   "cross-tenant leak" and "rows visible without a tenant".
+- Write-path case (2026-10-20): a migration whose policy has the product
+  standard in its `USING` clause and `WITH CHECK (true)` measures
+  `a_sees_own 1`, `a_sees_b 0`, `unset_sees_rows 0` and `write_leaks 1` —
+  FAIL, with the finding "write leak". The read path of that migration is
+  closed and the write path is not, which is why the probe measures both.
 - The container mode of the harness (Docker `postgres:18-alpine`) could not be
   run on this host: there is no Docker daemon. The server mode is the one that
   counts, and it is the one the committed tests drive.

@@ -34,10 +34,27 @@ class FindingCode(str, Enum):
     MISSING_ENABLE_RLS = "missing_enable_rls"
     MISSING_FORCE_RLS = "missing_force_rls"
     MISSING_TENANT_POLICY = "missing_tenant_policy"
+    MISSING_TENANT_GUARD = "missing_tenant_guard"
+    UNGUARDED_WRITE_PATH = "unguarded_write_path"
     NON_CANONICAL_GUC = "non_canonical_guc"
     UNKNOWN_GUC = "unknown_guc"
     GRANT_ALL = "grant_all"
 
+
+class PolicyCommand(str, Enum):
+    """The command a row-level security policy applies to.
+
+    PostgreSQL defaults a policy without a ``FOR`` clause to ``ALL``. The
+    command decides which guard of the policy has to be constrained: a policy
+    that applies to ``SELECT`` guards the rows that are read, a policy that
+    applies to ``INSERT`` or ``UPDATE`` guards the rows that are written.
+    """
+
+    ALL = "all"
+    SELECT = "select"
+    INSERT = "insert"
+    UPDATE = "update"
+    DELETE = "delete"
 
 class GucName(BaseModel):
     """One setting name and its relation to the canonical tenant GUC."""
@@ -125,6 +142,49 @@ class TenantConvention(BaseModel):
         return self
 
 
+class PolicyFacts(BaseModel):
+    """What a migration states about one row-level security policy.
+
+    A policy has two guards and they are not the same guard: ``USING`` says
+    which existing rows the policy applies to, ``WITH CHECK`` says which new
+    rows may be written. PostgreSQL falls back to the ``USING`` expression
+    when a policy that writes has no ``WITH CHECK`` clause, so the effective
+    write guard is the ``WITH CHECK`` clause when there is one and the
+    ``USING`` clause otherwise.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str = ""
+    command: PolicyCommand = PolicyCommand.ALL
+    using_clause: str = ""
+    with_check_clause: str = ""
+    body: str = ""
+
+    @property
+    def guards_reads(self) -> bool:
+        """True when the policy decides which existing rows are visible."""
+        return self.command in (
+            PolicyCommand.ALL,
+            PolicyCommand.SELECT,
+            PolicyCommand.UPDATE,
+            PolicyCommand.DELETE,
+        )
+
+    @property
+    def guards_writes(self) -> bool:
+        """True when the policy decides which new rows may be written."""
+        return self.command in (
+            PolicyCommand.ALL,
+            PolicyCommand.INSERT,
+            PolicyCommand.UPDATE,
+        )
+
+    @property
+    def effective_write_check(self) -> str:
+        """Return the guard that decides which new rows may be written."""
+        return self.with_check_clause or self.using_clause
+
 class TableFacts(BaseModel):
     """What a migration states about one table."""
 
@@ -135,7 +195,7 @@ class TableFacts(BaseModel):
     column_list: str = ""
     enabled_rls: bool = False
     forced_rls: bool = False
-    policies: tuple[str, ...] = ()
+    policies: tuple[PolicyFacts, ...] = ()
 
 
 class MigrationFacts(BaseModel):

@@ -17,14 +17,14 @@ MD = REPO / "skills" / "ref-datev-extf" / "ref-datev-extf" / "SKILL.md"
 REVIEW = REPO / "docs" / "reviews" / "ref-datev-extf.md"
 
 
-def audit(args=("--json",)):
+def audit(args: tuple[str, ...] = ("--json",)) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
-        cwd=REPO, capture_output=True, text=True,
+        cwd=REPO, capture_output=True, text=True, check=False,
     )
 
 
-def test_corrupt_frontmatter_is_not_certified_and_audit_exits_zero():
+def test_corrupt_frontmatter_is_not_certified_and_audit_exits_zero() -> None:
     """Broken YAML frontmatter must not certify the skill and must not crash."""
     backup = MD.read_text()
     MD.write_text("---\nname: x\nreviewed_by: UNVERIFIED\nno closing fence")
@@ -38,7 +38,7 @@ def test_corrupt_frontmatter_is_not_certified_and_audit_exits_zero():
         MD.write_text(backup)
 
 
-def test_truncated_review_file_is_not_certified_and_audit_exits_zero():
+def test_truncated_review_file_is_not_certified_and_audit_exits_zero() -> None:
     """A truncated sign-off file must not certify the skill and must not crash."""
     backup = REVIEW.read_text()
     REVIEW.write_text("# truncated sign-off file\n")
@@ -52,7 +52,7 @@ def test_truncated_review_file_is_not_certified_and_audit_exits_zero():
         REVIEW.write_text(backup)
 
 
-def test_audit_json_is_machine_readable_and_counts_skills():
+def test_audit_json_is_machine_readable_and_counts_skills() -> None:
     """The --json report must enumerate every skill and stay deterministic."""
     r = audit()
     assert r.returncode == 0

@@ -22,6 +22,11 @@ from .scanner import guc_names_in, split_column_definitions, split_statements
 
 GRANT_ALL_RE = re.compile(r"\bGRANT\s+ALL\b", re.IGNORECASE)
 NOT_NULL_RE = re.compile(r"\bNOT\s+NULL\b", re.IGNORECASE)
+# The call that reads a session setting. Its argument is a setting name, and
+# the canonical setting name ends with the canonical column name
+# ("app.company_id"), so the call is removed before a clause is searched for
+# the column - otherwise the setting name would answer for the column.
+SETTING_CALL_RE = re.compile("current_setting[^()]*[(][^()]*[)]", re.IGNORECASE)
 
 
 def evaluate_migration(sql: str, convention: TenantConvention) -> list[Finding]:
@@ -56,7 +61,7 @@ def canonical_gucs_used(
     used: set[str] = set()
     for table in facts.tables:
         for policy in table.policies:
-            for name in guc_names_in(policy):
+            for name in guc_names_in(policy.body):
                 if name == canonical:
                     used.add(name)
     return used
@@ -96,7 +101,7 @@ def _table_findings(
                 )
             )
     elif table.policies and not any(
-        re.search(rf"\b{re.escape(column)}\b", policy, re.IGNORECASE)
+        re.search(rf"\b{re.escape(column)}\b", policy.body, re.IGNORECASE)
         for policy in table.policies
     ):
         findings.append(
@@ -141,7 +146,63 @@ def _table_findings(
             )
         else:
             findings.extend(_policy_findings(table, convention))
+            findings.extend(_guard_findings(table, convention))
     return findings
+
+
+def _guard_findings(
+    table: TableFacts, convention: TenantConvention
+) -> list[Finding]:
+    """Return the findings of the guards of the policies of one table.
+
+    A policy that reads has to name the tenant column in its ``USING``
+    clause, and a policy that writes has to name it in the guard that accepts
+    the new row. A guard that does not name the tenant column isolates
+    nothing: the row is not tied to the company of the session, so a row of
+    another company can be read or written.
+    """
+    findings: list[Finding] = []
+    column = convention.canonical_column
+    for policy in table.policies:
+        if policy.guards_reads and not _names_column(policy.using_clause, column):
+            findings.append(
+                Finding(
+                    code=FindingCode.MISSING_TENANT_GUARD,
+                    message=(
+                        f"the USING clause of the policy does not name the tenant "
+                        f"column '{column}', so the policy does not isolate rows "
+                        "by company"
+                    ),
+                    table=table.name,
+                )
+            )
+        if policy.guards_writes and not _names_column(
+            policy.effective_write_check, column
+        ):
+            findings.append(
+                Finding(
+                    code=FindingCode.UNGUARDED_WRITE_PATH,
+                    message=(
+                        f"the write path of the policy is not constrained to the "
+                        f"tenant column '{column}': its WITH CHECK clause is "
+                        "missing or does not name it, so a row of another "
+                        "company can be written"
+                    ),
+                    table=table.name,
+                )
+            )
+    return findings
+
+
+def _names_column(clause: str, column: str) -> bool:
+    """Return True when a policy clause names the given column."""
+    if not clause.strip():
+        return False
+    without_settings = SETTING_CALL_RE.sub(" ", clause)
+    return (
+        re.search(rf"\b{re.escape(column)}\b", without_settings, re.IGNORECASE)
+        is not None
+    )
 
 
 def _policy_findings(
@@ -151,7 +212,7 @@ def _policy_findings(
     findings: list[Finding] = []
     used: set[str] = set()
     for policy in table.policies:
-        used |= guc_names_in(policy)
+        used |= guc_names_in(policy.body)
     canonical = convention.canonical_name
     for name in sorted(used):
         status = classify_guc(name, convention)
@@ -192,21 +253,23 @@ def _policy_findings(
                     table=table.name,
                 )
             )
-    if not findings:
-        # A policy that reads no setting at all isolates nobody.
-        for policy in table.policies:
-            if not guc_names_in(policy):
-                findings.append(
-                    Finding(
-                        code=FindingCode.UNKNOWN_GUC,
-                        message=(
-                            "tenant policy is not keyed on an accepted tenant GUC "
-                            f"({canonical}): it reads no tenant setting at all"
-                        ),
-                        table=table.name,
-                    )
+    # A policy that reads no setting at all isolates nobody. The rule is
+    # independent of the other findings of the table: a table that is wrong
+    # in two ways has to say so twice, or the second way stays hidden until
+    # the first one is fixed.
+    for policy in table.policies:
+        if not guc_names_in(policy.body):
+            findings.append(
+                Finding(
+                    code=FindingCode.UNKNOWN_GUC,
+                    message=(
+                        "tenant policy is not keyed on an accepted tenant GUC "
+                        f"({canonical}): it reads no tenant setting at all"
+                    ),
+                    table=table.name,
                 )
-                break
+            )
+            break
     return findings
 
 

@@ -6,12 +6,15 @@ The probe runs as the application role and prints one measurement per line:
     a_sees_own<TAB>1
     a_sees_b<TAB>0
     unset_sees_rows<TAB>0
+    write_leaks<TAB>0
 
 ``a_sees_own`` is the number of rows tenant A may see (it seeded exactly
 one), ``a_sees_b`` is the number of rows of tenant B that tenant A may see
 and ``unset_sees_rows`` is the number of rows anybody may see while the
-session carries no tenant. A leak test passes when the three numbers are 1, 0
-and 0.
+session carries no tenant. ``write_leaks`` is the number of rows the session
+of the second tenant wrote while claiming the first tenant: the read path and
+the write path are guarded by two different clauses of a policy, so the probe
+measures both. A leak test passes when the four numbers are 1, 0, 0 and 0.
 
 A measurement that is missing is a failure, not a zero: the probe did not run,
 and a probe that did not run proves nothing.

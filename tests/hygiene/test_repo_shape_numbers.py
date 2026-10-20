@@ -30,6 +30,7 @@ import shutil
 import subprocess
 import tempfile
 import warnings
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -75,10 +76,8 @@ def split_cells(row: str) -> list[str]:
     ``git ls-files | wc -l`` in two.
     """
     stripped = row.strip()
-    if stripped.startswith("|"):
-        stripped = stripped[1:]
-    if stripped.endswith("|"):
-        stripped = stripped[:-1]
+    stripped = stripped.removeprefix("|")
+    stripped = stripped.removesuffix("|")
     cells: list[str] = []
     buffer: list[str] = []
     index = 0
@@ -159,7 +158,7 @@ def repository_is_shallow() -> bool:
 
 
 @contextlib.contextmanager
-def snapshot_checkouts(commits: list[str]):
+def snapshot_checkouts(commits: list[str]) -> Iterator[dict[str, Path]]:
     """Yield a checkout of every commit, created next to the repository."""
     if not commits:
         yield {}

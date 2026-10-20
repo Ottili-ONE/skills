@@ -19,15 +19,19 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 ENGINEERING = ROOT / "skills" / "engineering"
 
 
-def catalogue_skills() -> list[dict]:
+def catalogue_skills() -> list[dict[str, Any]]:
     """Every skill of the generated catalogue."""
-    catalog = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
-    return catalog["skills"]
+    catalog: object = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
+    assert isinstance(catalog, dict), "the catalogue must be a JSON object"
+    skills = catalog["skills"]
+    assert isinstance(skills, list), "the catalogue must hold a list of skills"
+    return skills
 
 
 def tracked_paths() -> list[str]:

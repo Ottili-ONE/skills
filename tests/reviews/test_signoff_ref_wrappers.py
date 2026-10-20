@@ -45,7 +45,7 @@ def audit(*args: str) -> subprocess.CompletedProcess[str]:
 def test_wrapper_is_marked_reviewed_by_unverified(name: str) -> None:
     """Every ref-* wrapper is marked reviewed_by: UNVERIFIED."""
     text = (SKILLS / name / name / "SKILL.md").read_text(encoding="utf-8")
-    assert re.search(r"^reviewed_by: UNVERIFIED$", text, flags=re.M), (
+    assert re.search(r"^reviewed_by: UNVERIFIED$", text, flags=re.MULTILINE), (
         f"{name} must stay at the UNVERIFIED sentinel"
     )
 
@@ -89,7 +89,7 @@ def test_a_wrapper_promoted_to_certified_without_a_filled_sign_off_block_fails()
     )
     try:
         md.write_text(
-            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.M),
+            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.MULTILINE),
             encoding="utf-8",
         )
         review.write_text(empty, encoding="utf-8")

@@ -20,16 +20,13 @@ Four jobs:
 """
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
-
 from hygiene.clean_tree import dirt_added_since, dirty_paths, repo_root
 
 _TREE_BASELINE: frozenset[str] = frozenset()
 
 
-def pytest_configure(config) -> None:
+def pytest_configure(config: pytest.Config) -> None:
     """Register the hygiene marker and record the tree state of this session."""
     config.addinivalue_line(
         "markers", "runs_last: run this test after every other test module"
@@ -38,7 +35,7 @@ def pytest_configure(config) -> None:
     _TREE_BASELINE = frozenset(dirty_paths(repo_root()))
 
 
-def pytest_collection_modifyitems(config, items) -> None:
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Move the ``runs_last`` tests to the end of the session.
 
     ``list.sort`` is stable, so the marked tests keep their relative order and
@@ -47,12 +44,12 @@ def pytest_collection_modifyitems(config, items) -> None:
     items.sort(key=lambda item: item.get_closest_marker("runs_last") is not None)
 
 
-def _module_of(item) -> str:
+def _module_of(item: pytest.Item) -> str:
     """The file a test item belongs to; the granularity of the module check."""
     return item.nodeid.split("::", 1)[0]
 
 
-def pytest_runtest_teardown(item, nextitem) -> None:
+def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> None:
     """Check the tree after every test module has run.
 
     The check compares the tree with the state at the start of the session, so a

@@ -41,15 +41,16 @@ GUC_NAMES = SKILL / "guc-names.json"
 # this job its own database with a non-superuser application role.
 JOB = "SKL-W1-01"
 
-# The output of a probe that saw exactly its own row and none of the other.
-GOOD_OUTPUT = "t\na_sees_own\t1\na_sees_b\t0\nunset_sees_rows\t0\n"
+# The output of a probe that saw exactly its own row, none of the other and
+# could not write a row of the other tenant.
+GOOD_OUTPUT = "t\na_sees_own\t1\na_sees_b\t0\nunset_sees_rows\t0\nwrite_leaks\t0\n"
 # The output of a probe that saw the other tenant's row as well.
-LEAKING_OUTPUT = "t\na_sees_own\t2\na_sees_b\t1\nunset_sees_rows\t2\n"
+LEAKING_OUTPUT = "t\na_sees_own\t2\na_sees_b\t1\nunset_sees_rows\t2\nwrite_leaks\t1\n"
 # The output of a probe that never ran: the markers are missing.
 MISSING_OUTPUT = "t\n"
 
 
-def run_harness(*args: str) -> subprocess.CompletedProcess:
+def run_harness(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["bash", str(HARNESS), *args],
         capture_output=True,
@@ -59,7 +60,7 @@ def run_harness(*args: str) -> subprocess.CompletedProcess:
     )
 
 
-def run_judge(path: Path) -> subprocess.CompletedProcess:
+def run_judge(path: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [shutil.which("python3") or "python3", str(JUDGE), str(path)],
         capture_output=True,
@@ -224,6 +225,83 @@ def probe_migration(tmp_path: Path, name: str, protected: bool) -> Path:
     return path
 
 
+def wide_check_migration(tmp_path: Path, name: str) -> Path:
+    """Write a migration whose read path is closed and whose write path is open.
+
+    The USING clause is the product standard, so every row of another company
+    is invisible to the probe. The WITH CHECK clause is ``true``, so the
+    database accepts a row that claims another company. The read probe
+    cannot see this, because nothing is readable that should not be.
+    """
+    sql = (
+        f"CREATE TABLE {name} (\n"
+        "    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+        "    company_id text NOT NULL,\n"
+        "    body       text NOT NULL\n"
+        ");\n"
+        f"CREATE POLICY {name}_tenant ON {name}\n"
+        "    AS PERMISSIVE FOR ALL TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true))\n"
+        "    WITH CHECK (true);\n"
+        f"ALTER TABLE {name} ENABLE ROW LEVEL SECURITY;\n"
+        f"ALTER TABLE {name} FORCE ROW LEVEL SECURITY;\n"
+        f"GRANT SELECT, INSERT ON {name} TO web_app;\n"
+    )
+    path = tmp_path / f"{name}.sql"
+    path.write_text(sql, encoding="utf-8")
+    return path
+
+
+def psql(url: str, sql: str) -> subprocess.CompletedProcess[str]:
+    """Run one statement against a database of the truth kit."""
+    return subprocess.run(
+        [
+            "psql",
+            url,
+            "-q",
+            "-t",
+            "-A",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-c",
+            sql,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def prepare_application_role(admin_url: str, app_url: str) -> None:
+    """Create the role the migration grants to and make the login a member."""
+    login_role = app_url.split("://", 1)[1].split(":", 1)[0].split("@", 1)[0]
+    database = app_url.rsplit("/", 1)[1].split("?", 1)[0]
+    created = psql(
+        admin_url,
+        "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'web_app')"
+        " THEN CREATE ROLE web_app NOLOGIN; END IF; END $$;",
+    )
+    assert created.returncode == 0, created.stdout + created.stderr
+    granted = psql(
+        admin_url,
+        f'GRANT CONNECT ON DATABASE "{database}" TO web_app;'
+        " GRANT USAGE ON SCHEMA public TO web_app;"
+        f" GRANT web_app TO {login_role};",
+    )
+    assert granted.returncode == 0, granted.stdout + granted.stderr
+
+
+def reachable(url: str) -> bool:
+    """True when the database of the job answers.
+
+    The truth kit hands out the URL of the database of the job, but the
+    database itself is created by ``db.mjs create``. A host that has no
+    PostgreSQL running has no database, and a test that claims a leak test
+    green without a database would be a lie.
+    """
+    return psql(url, "SELECT 1;").returncode == 0
+
+
 def test_the_probe_isolates_two_companies_on_a_real_postgres(tmp_path: Path) -> None:
     """The end-to-end rung: a real PostgreSQL, a non-superuser role, two companies.
 
@@ -286,3 +364,168 @@ def test_the_probe_catches_a_leak_on_a_real_postgres(tmp_path: Path) -> None:
     assert result.returncode == 1, result.stdout + result.stderr
     assert "cross-tenant leak" in result.stderr, result.stderr
     assert "rows visible without a tenant" in result.stderr, result.stderr
+
+
+def test_the_write_path_of_a_policy_is_a_leak_the_probe_sees(
+    tmp_path: Path,
+) -> None:
+    """The read path is closed, the write path is not, and both guards say so.
+
+    A policy whose USING clause is the product standard hides every row of
+    another company, so the probe of the read path measures 1, 0 and 0 and
+    would report a green leak test. Its WITH CHECK clause is wide open, so the
+    database writes a row that claims another company. The write measurement
+    of the probe and the static gate both have to reject it.
+    """
+    checker = SKILL / "scripts" / "check_rls_migration.py"
+    name = "rls_probe_wide_check"
+    tenant_a = "11111111-1111-4111-8111-111111111111"
+    tenant_b = "22222222-2222-4222-8222-222222222222"
+    migration = wide_check_migration(tmp_path, name)
+
+    urls = truth_kit_urls(JOB)
+    if urls is None:
+        result = run_harness("--server", "--job", JOB, str(migration), name)
+        assert result.returncode == 2, result.stdout + result.stderr
+        assert "PASS" not in result.stdout, result.stdout
+        return
+    admin_url, app_url = urls
+
+    if not reachable(admin_url):
+        result = run_harness(
+            "--server",
+            "--admin-url",
+            admin_url,
+            "--app-url",
+            app_url,
+            str(migration),
+            name,
+        )
+        assert result.returncode == 2, result.stdout + result.stderr
+        assert "PASS" not in result.stdout, result.stdout
+        return
+
+    prepare_application_role(admin_url, app_url)
+    applied = psql(admin_url, migration.read_text(encoding="utf-8"))
+    if applied.returncode != 0:
+        # No PostgreSQL on this host: the harness has to refuse, and it has
+        # to say that it refused. It must never report a green probe it did
+        # not make.
+        result = run_harness(
+            "--server", "--admin-url", admin_url, "--app-url", app_url, str(migration), name
+        )
+        assert result.returncode == 2, result.stdout + result.stderr
+        assert "PASS" not in result.stdout, result.stdout
+        return
+    try:
+        # The read path of this migration is closed: the three read
+        # measurements are right.
+        probed = run_harness(
+            "--server",
+            "--admin-url",
+            admin_url,
+            "--app-url",
+            app_url,
+            "--reset",
+            str(migration),
+            name,
+        )
+        assert "a_sees_own\t1" in probed.stdout, probed.stdout
+        assert "a_sees_b\t0" in probed.stdout, probed.stdout
+        assert "unset_sees_rows\t0" in probed.stdout, probed.stdout
+        # The write path is not closed, and the probe says so.
+        assert "write_leaks\t1" in probed.stdout, probed.stdout
+        assert probed.returncode == 1, probed.stdout + probed.stderr
+        assert "write leak" in probed.stderr, probed.stderr
+
+        # The write path of the same migration is open: the session of the
+        # second company writes a row that claims the first company.
+        written = psql(
+            app_url,
+            "BEGIN;"
+            f"SELECT set_config('app.company_id', '{tenant_b}', true);"
+            f"INSERT INTO {name} (company_id, body)"
+            f" VALUES ('{tenant_a}', 'row of B claiming A');"
+            "COMMIT;",
+        )
+        assert written.returncode == 0, written.stdout + written.stderr
+        rows = psql(
+            admin_url,
+            f"SELECT count(*) FROM {name}"
+            f" WHERE body = 'row of B claiming A' AND company_id = '{tenant_a}';",
+        )
+        assert rows.stdout.strip() == "1", rows.stdout
+    finally:
+        psql(admin_url, f'DROP TABLE IF EXISTS "{name}" CASCADE;')
+
+    # The static gate rejects the migration as well.
+    judged = subprocess.run(
+        [shutil.which("python3") or "python3", str(checker), str(migration)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert judged.returncode == 1, judged.stdout + judged.stderr
+    assert "write path of the policy is not constrained" in judged.stderr, judged.stderr
+
+
+def test_the_canonical_example_can_be_applied_twice(tmp_path: Path) -> None:
+    """The example the skill teaches must survive a second application.
+
+    A migration that cannot be applied twice cannot be retried after a
+    failed deployment, and a retry that aborts leaves the schema half
+    migrated. The product migrations create their policies inside a DO block
+    that asks pg_policies first; the example of the skill does the same, and
+    this test holds it to it on a real PostgreSQL.
+    """
+    example = SKILL / "references" / "examples" / "good_migration.sql"
+    urls = truth_kit_urls(JOB)
+    if urls is None:
+        result = run_harness("--server", "--job", JOB, str(example), "tenant_isolated_notes")
+        assert result.returncode == 2, result.stdout + result.stderr
+        assert "PASS" not in result.stdout, result.stdout
+        return
+    admin_url, app_url = urls
+    if not reachable(admin_url):
+        result = run_harness(
+            "--server",
+            "--admin-url",
+            admin_url,
+            "--app-url",
+            app_url,
+            str(example),
+            "tenant_isolated_notes",
+        )
+        assert result.returncode == 2, result.stdout + result.stderr
+        assert "PASS" not in result.stdout, result.stdout
+        return
+    prepare_application_role(admin_url, app_url)
+    psql(admin_url, "DROP TABLE IF EXISTS tenant_isolated_notes CASCADE;")
+    try:
+        for attempt in (1, 2):
+            applied = psql(admin_url, example.read_text(encoding="utf-8"))
+            assert applied.returncode == 0, (
+                f"application {attempt} failed: {applied.stdout}{applied.stderr}"
+            )
+        policies = psql(
+            admin_url,
+            "SELECT count(*) FROM pg_policies WHERE tablename = 'tenant_isolated_notes';",
+        )
+        assert policies.stdout.strip() == "2", policies.stdout
+        # The example is still the good one after the second application.
+        probed = run_harness(
+            "--server",
+            "--admin-url",
+            admin_url,
+            "--app-url",
+            app_url,
+            "--reset",
+            str(example),
+            "tenant_isolated_notes",
+        )
+        assert probed.returncode == 0, probed.stdout + probed.stderr
+        assert "a_sees_own\t1" in probed.stdout, probed.stdout
+        assert "a_sees_b\t0" in probed.stdout, probed.stdout
+        assert "unset_sees_rows\t0" in probed.stdout, probed.stdout
+    finally:
+        psql(admin_url, "DROP TABLE IF EXISTS tenant_isolated_notes CASCADE;")

@@ -251,6 +251,164 @@ def test_a_finding_renders_with_its_table() -> None:
 
 
 # ---------------------------------------------------------------------------
+# The guards of a policy: the rows a policy may read and the rows it may
+# write are two different clauses, and both have to name the tenant column.
+# ---------------------------------------------------------------------------
+
+
+NOTES_TABLE = (
+    "CREATE TABLE notes (\n"
+    "    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n"
+    "    company_id text        NOT NULL,\n"
+    "    body       text        NOT NULL\n"
+    ");\n"
+)
+
+
+def test_a_policy_is_read_into_its_command_and_its_guards() -> None:
+    """The scanner separates the command, the USING clause and the WITH CHECK."""
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_tenant ON notes\n"
+        "    AS PERMISSIVE FOR ALL TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true))\n"
+        "    WITH CHECK (company_id = current_setting('app.company_id', true));\n"
+        "ALTER TABLE notes ENABLE ROW LEVEL SECURITY;\n"
+        "ALTER TABLE notes FORCE ROW LEVEL SECURITY;\n"
+    )
+    facts = core().collect_facts(core().split_statements(sql))
+    table = facts.table("notes")
+    assert table is not None, facts
+    assert len(table.policies) == 1, table
+    policy = table.policies[0]
+    assert policy.command is core().PolicyCommand.ALL, policy
+    assert "company_id" in policy.using_clause, policy
+    assert "company_id" in policy.with_check_clause, policy
+
+
+def test_a_policy_without_a_for_clause_applies_to_every_command() -> None:
+    """PostgreSQL defaults a policy without a FOR clause to ALL."""
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_tenant ON notes\n"
+        "    USING (company_id = current_setting('app.company_id', true))\n"
+        "    WITH CHECK (company_id = current_setting('app.company_id', true));\n"
+    )
+    facts = core().collect_facts(core().split_statements(sql))
+    table = facts.table("notes")
+    assert table is not None, facts
+    assert table.policies[0].command is core().PolicyCommand.ALL, table.policies
+
+
+def test_the_write_guard_falls_back_to_the_using_clause() -> None:
+    """Without a WITH CHECK clause PostgreSQL checks new rows with USING."""
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_tenant ON notes\n"
+        "    FOR INSERT TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true));\n"
+    )
+    facts = core().collect_facts(core().split_statements(sql))
+    table = facts.table("notes")
+    assert table is not None, facts
+    policy = table.policies[0]
+    assert policy.with_check_clause == "", policy
+    assert policy.effective_write_check == policy.using_clause, policy
+
+
+def test_a_wide_with_check_leaves_the_write_path_open() -> None:
+    """A WITH CHECK that does not name the tenant column lets a foreign row in.
+
+    The USING clause of this policy is correct, so the read path is closed.
+    The write path is not: ``WITH CHECK (true)`` accepts a row of any
+    company. A gate that only asks "does the policy read the tenant
+    setting?" answers yes and lets the leak through.
+    """
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_tenant ON notes\n"
+        "    AS PERMISSIVE FOR ALL TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true))\n"
+        "    WITH CHECK (true);\n"
+        "ALTER TABLE notes ENABLE ROW LEVEL SECURITY;\n"
+        "ALTER TABLE notes FORCE ROW LEVEL SECURITY;\n"
+    )
+    findings = core().evaluate_migration(sql, convention())
+    codes = {finding.code for finding in findings}
+    assert core().FindingCode.UNGUARDED_WRITE_PATH in codes, findings
+
+
+def test_a_write_policy_without_the_tenant_column_is_a_finding() -> None:
+    """A separate INSERT policy that checks nothing is a hole of its own."""
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_read ON notes\n"
+        "    FOR SELECT TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true));\n"
+        "CREATE POLICY notes_write ON notes\n"
+        "    FOR INSERT TO web_app\n"
+        "    WITH CHECK (true);\n"
+        "ALTER TABLE notes ENABLE ROW LEVEL SECURITY;\n"
+        "ALTER TABLE notes FORCE ROW LEVEL SECURITY;\n"
+    )
+    findings = core().evaluate_migration(sql, convention())
+    codes = {finding.code for finding in findings}
+    assert core().FindingCode.UNGUARDED_WRITE_PATH in codes, findings
+
+
+def test_a_read_guard_that_does_not_name_the_tenant_column_is_a_finding() -> None:
+    """A USING clause that reads the tenant setting but not the column
+    exposes every row: the setting is set, the column is not compared."""
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_tenant ON notes\n"
+        "    FOR SELECT TO web_app\n"
+        "    USING (current_setting('app.company_id', true) IS NOT NULL);\n"
+        "ALTER TABLE notes ENABLE ROW LEVEL SECURITY;\n"
+        "ALTER TABLE notes FORCE ROW LEVEL SECURITY;\n"
+    )
+    findings = core().evaluate_migration(sql, convention())
+    codes = {finding.code for finding in findings}
+    assert core().FindingCode.MISSING_TENANT_GUARD in codes, findings
+
+
+def test_a_read_only_policy_is_not_a_write_finding() -> None:
+    """A policy that only reads is not asked for a write guard.
+
+    PostgreSQL denies an INSERT when no policy applies to it, so a table
+    whose only policy is FOR SELECT writes nothing. The gate must not report
+    a hole that the database does not have.
+    """
+    findings = core().evaluate_migration(GOOD_MIGRATION, convention())
+    assert findings == [], findings
+
+
+def test_a_write_policy_with_a_tenant_column_in_its_check_is_accepted() -> None:
+    """The product standard for a write policy is accepted."""
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_tenant ON notes\n"
+        "    AS PERMISSIVE FOR ALL TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true))\n"
+        "    WITH CHECK (company_id = current_setting('app.company_id', true));\n"
+        "ALTER TABLE notes ENABLE ROW LEVEL SECURITY;\n"
+        "ALTER TABLE notes FORCE ROW LEVEL SECURITY;\n"
+    )
+    assert core().evaluate_migration(sql, convention()) == []
+
+
+def test_the_rules_of_a_table_are_independent() -> None:
+    """Two wrong things in one table are reported as two findings.
+
+    The finding of one rule must not hide the finding of another: a table
+    that is missing FORCE RLS and whose policy reads no setting has to say
+    both, or the second one stays hidden until the first one is fixed.
+    """
+    sql = NOTES_TABLE + (
+        "CREATE POLICY notes_tenant ON notes\n"
+        "    FOR SELECT TO web_app\n"
+        "    USING (true);\n"
+        "ALTER TABLE notes ENABLE ROW LEVEL SECURITY;\n"
+    )
+    codes = {finding.code for finding in core().evaluate_migration(sql, convention())}
+    assert core().FindingCode.MISSING_FORCE_RLS in codes, codes
+    assert core().FindingCode.UNKNOWN_GUC in codes, codes
+
+
+# ---------------------------------------------------------------------------
 # The judgement of a leak probe.
 # ---------------------------------------------------------------------------
 
@@ -275,12 +433,29 @@ def test_the_judgement_names_the_leak() -> None:
 
 
 def test_a_clean_probe_output_passes() -> None:
-    """The three measurements of a clean probe: one own row, nothing else."""
+    """The four measurements of a clean probe: one own row, nothing else."""
     verdict = core().judge_probe_output(
-        "a_sees_own\t1\na_sees_b\t0\nunset_sees_rows\t0\n"
+        "a_sees_own\t1\na_sees_b\t0\nunset_sees_rows\t0\nwrite_leaks\t0\n"
     )
     assert verdict.passed, verdict.findings
-    assert len(verdict.measurements) == 3, verdict.measurements
+    assert len(verdict.measurements) == 4, verdict.measurements
+
+
+def test_a_probe_that_wrote_a_foreign_row_fails() -> None:
+    """A write leak is a failure, even when every read measurement is right.
+
+    The read path and the write path are guarded by two different clauses of
+    a policy. A policy whose USING clause is correct and whose WITH CHECK
+    clause is wide open hides every foreign row and still accepts a foreign
+    row, so a probe that only measures the reads calls that migration green.
+    """
+    verdict = core().judge_probe_output(
+        "a_sees_own\t1\na_sees_b\t0\nunset_sees_rows\t0\nwrite_leaks\t1\n"
+    )
+    assert not verdict.passed, verdict
+    assert any("write leak" in finding for finding in verdict.findings), (
+        verdict.findings
+    )
 
 
 # ---------------------------------------------------------------------------

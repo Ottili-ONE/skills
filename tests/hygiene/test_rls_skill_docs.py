@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILL = ROOT / "skills" / "engineering" / "pg-rls-multitenant"
@@ -20,9 +21,11 @@ EVALS = SKILL / "references" / "EVALS.md"
 SOURCES = SKILL / "references" / "SOURCES.md"
 
 
-def convention() -> dict[str, object]:
+def convention() -> dict[str, Any]:
     """Return the tenant convention of the skill."""
-    return json.loads(CONVENTION_FILE.read_text(encoding="utf-8"))
+    data: object = json.loads(CONVENTION_FILE.read_text(encoding="utf-8"))
+    assert isinstance(data, dict), "the convention file must hold a JSON object"
+    return data
 
 
 def test_the_convention_names_one_tenant_guc_and_one_column() -> None:
@@ -61,10 +64,10 @@ def test_the_legacy_names_are_only_mentioned_as_findings() -> None:
         assert name in text, f"{name} must be named as a rejected spelling"
 
 
-def test_the_procedure_documents_the_three_measurements() -> None:
-    """The leak probe decides on three measurements; the procedure says so."""
+def test_the_procedure_documents_the_four_measurements() -> None:
+    """The leak probe decides on four measurements; the procedure says so."""
     text = PROCEDURE.read_text(encoding="utf-8")
-    for name in ("a_sees_own", "a_sees_b", "unset_sees_rows"):
+    for name in ("a_sees_own", "a_sees_b", "unset_sees_rows", "write_leaks"):
         assert name in text, f"{name} must be documented in the procedure"
 
 

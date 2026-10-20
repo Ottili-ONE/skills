@@ -14,9 +14,9 @@ hold:
 """
 from __future__ import annotations
 
-import subprocess
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]

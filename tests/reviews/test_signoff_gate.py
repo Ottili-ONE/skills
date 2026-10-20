@@ -99,7 +99,7 @@ def test_a_filled_sign_off_block_certifies_the_skill() -> None:
     md_backup = md.read_text(encoding="utf-8")
     try:
         md.write_text(
-            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.M),
+            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.MULTILINE),
             encoding="utf-8",
         )
         file.write_text(filled, encoding="utf-8")
@@ -134,7 +134,7 @@ def test_a_certified_skill_with_an_empty_sign_off_block_is_a_problem() -> None:
     md_backup = md.read_text(encoding="utf-8")
     try:
         md.write_text(
-            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.M),
+            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.MULTILINE),
             encoding="utf-8",
         )
         file.write_text(empty, encoding="utf-8")
@@ -156,7 +156,7 @@ def test_a_certified_skill_whose_review_file_is_missing_is_a_problem() -> None:
     stash = review.with_name(review.name + ".missing-stash")
     try:
         md.write_text(
-            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.M),
+            re.sub(r"^reviewed_by: UNVERIFIED$", "reviewed_by: Dr. Anna Meier", md_backup, flags=re.MULTILINE),
             encoding="utf-8",
         )
         review.rename(stash)

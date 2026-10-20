@@ -20,6 +20,14 @@ repository uses them:
 | Table column | `company_id` | `company_id <type> NOT NULL`, first in every key and index |
 | Policy | `current_setting('app.company_id', true)` | the same name in `USING` and in `WITH CHECK` |
 
+Both guards of a policy have to name the tenant column. `USING` decides which
+existing rows the policy applies to, `WITH CHECK` decides which new row may be
+written, and PostgreSQL falls back to `USING` when `WITH CHECK` is omitted. A
+policy whose `USING` names `company_id` and whose `WITH CHECK` does not closes
+the read path and leaves the write path open: no foreign row is readable and
+a foreign row can still be written. The leak probe cannot see that - it
+measures what is read. The checker can, and reports it.
+
 `app.current_company_id`, `ottili.company_id`, `app.current_company` and
 `app.current_tenant` are legacy spellings. No session of the platform sets
 them, so a policy keyed on one isolates nobody — the checker reports it and
@@ -115,10 +123,12 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
 
 ## Verification checklist (all must pass before merge)
 - [ ] Every row table has at least one policy matching its tenant column
+- [ ] Every policy that writes names `company_id` in its `WITH CHECK` clause (or in its `USING` clause when there is no `WITH CHECK`)
 - [ ] FORCE ROW LEVEL SECURITY is set on all non-dev tables
 - [ ] No GRANT ALL on protected tables
-- [ ] Leak test harness runs green against a real PostgreSQL (`pg-rls-leak-test.sh` prints PASS: `a_sees_own 1`, `a_sees_b 0`, `unset_sees_rows 0`)
+- [ ] Leak test harness runs green against a real PostgreSQL (`pg-rls-leak-test.sh` prints PASS: `a_sees_own 1`, `a_sees_b 0`, `unset_sees_rows 0`, `write_leaks 0`)
 - [ ] Migration includes rollback SQL
+- [ ] The migration can be applied twice (the policy is created inside a `DO` block that asks `pg_policies` first)
 - [ ] Views use security_invoker = true or are excluded from RLS scope
 
 
@@ -132,16 +142,26 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
   The checker reads the shapes the product repositories write: a table protected
   inside a `DO $$ … $$` block, and a policy created with `EXECUTE` (which writes
   the setting name with doubled quotes).
+  It also reads the two guards of a policy apart. A policy that writes has to
+  name `company_id` in the guard that accepts the new row (`WITH CHECK`, or
+  `USING` when there is no `WITH CHECK`), and a policy that reads has to name
+  it in its `USING` clause. A policy that reads correctly and writes anything
+  is a finding (`write path of the policy is not constrained`): the read
+  probe cannot see that leak, because no foreign row is readable.
 - Run the leak probe against a real PostgreSQL:
   `scripts/pg-rls-leak-test.sh --server --job <JOB> <migration.sql> [table]` — must print PASS.
   The harness applies the migration, seeds two companies as the superuser and
   probes the table **as the application role**, which is neither a superuser
   nor the owner of the table, so row level security really decides what it
-  sees. PASS means three measurements: `a_sees_own = 1` (the company sees its
+  sees. PASS means four measurements: `a_sees_own = 1` (the company sees its
   own row), `a_sees_b = 0` (it sees no row of another company) and
   `unset_sees_rows = 0` (nobody sees a row while the session carries no
+  company) and `write_leaks = 0` (the database refused a row of another
   company). A measurement that is missing is a FAIL, not a zero — a probe
-  that did not run proves nothing.
+  that did not run proves nothing. The first three measurements read, the
+  fourth writes: the read path and the write path are guarded by two
+  different clauses of a policy, so a probe that only measured the reads
+  would call a migration with a wide `WITH CHECK` clause green.
   `--server` takes `--admin-url` and `--app-url`, or `--job` to take them from
   the truth kit; `--print-probe-sql` and `--parse FILE` run the same logic
   without a server, and the verdict itself lives in

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from .models import MigrationFacts, TableFacts
+from .models import MigrationFacts, PolicyCommand, PolicyFacts, TableFacts
 
 # A qualified SQL identifier: "notes" or "public.notes".
 IDENT = r"[A-Za-z_][\w$]*(?:\.[A-Za-z_][\w$]*)?"
@@ -55,6 +55,14 @@ DOLLAR_TAG_RE = re.compile(r"\$(?P<tag>[A-Za-z_]\w*)?\$")
 DOLLAR_BODY_RE = re.compile(
     r"\$(?P<tag>[A-Za-z_]\w*)?\$(?P<body>.*?)\$(?P<ctag>[A-Za-z_]\w*)?\$", re.DOTALL
 )
+# The three parts of a policy that decide what it guards: the command it
+# applies to, the clause that filters existing rows and the clause that
+# accepts new rows. A policy without a FOR clause applies to ALL commands.
+FOR_COMMAND_RE = re.compile(
+    r"\bFOR\s+(?P<command>ALL|SELECT|INSERT|UPDATE|DELETE)\b", re.IGNORECASE
+)
+USING_RE = re.compile(r"\bUSING\b", re.IGNORECASE)
+WITH_CHECK_RE = re.compile(r"\bWITH\s+CHECK\b", re.IGNORECASE)
 
 
 def split_statements(sql: str) -> list[str]:
@@ -122,7 +130,7 @@ def collect_facts(statements: list[str]) -> MigrationFacts:
     created: dict[str, str] = {}
     enabled: set[str] = set()
     forced: set[str] = set()
-    policies: dict[str, list[str]] = {}
+    policies: dict[str, list[PolicyFacts]] = {}
     _collect(statements, created, enabled, forced, policies, depth=0)
     names = sorted(set(created) | set(enabled) | set(forced) | set(policies))
     tables = tuple(
@@ -179,12 +187,49 @@ def guc_names_in(text: str) -> set[str]:
     return {match.group("guc").lower() for match in GUC_USE_RE.finditer(text)}
 
 
+def read_policy(name: str, body: str) -> PolicyFacts:
+    """Return the facts of one policy body.
+
+    The body is everything the policy says after the table it applies to.
+    The clauses are read as text: a clause runs from its keyword to the next
+    clause keyword, so the doubled-quote spelling of a policy that is created
+    with EXECUTE is read exactly like the plain one.
+    """
+    return PolicyFacts(
+        name=name,
+        command=_policy_command(body),
+        using_clause=_clause(body, USING_RE),
+        with_check_clause=_clause(body, WITH_CHECK_RE),
+        body=body,
+    )
+
+
+def _policy_command(body: str) -> PolicyCommand:
+    """Return the command a policy applies to (ALL when it names none)."""
+    match = FOR_COMMAND_RE.search(body)
+    if match is None:
+        return PolicyCommand.ALL
+    return PolicyCommand(match.group("command").lower())
+
+
+def _clause(body: str, marker: re.Pattern[str]) -> str:
+    """Return the text of one policy clause, without its keyword."""
+    match = marker.search(body)
+    if match is None:
+        return ""
+    start = match.end()
+    other = WITH_CHECK_RE if marker is USING_RE else USING_RE
+    end_match = other.search(body, start)
+    end = end_match.start() if end_match is not None else len(body)
+    return body[start:end].strip()
+
+
 def _collect(
     statements: list[str],
     created: dict[str, str],
     enabled: set[str],
     forced: set[str],
-    policies: dict[str, list[str]],
+    policies: dict[str, list[PolicyFacts]],
     depth: int,
 ) -> None:
     """Collect the facts of one level of statements."""
@@ -214,7 +259,9 @@ def _collect(
             match = CREATE_POLICY_LOOSE_RE.search(text)
         if match is not None:
             name = _base(match.group("name"))
-            policies.setdefault(name, []).append(match.group("body"))
+            policies.setdefault(name, []).append(
+                read_policy(match.group("pname"), match.group("body"))
+            )
         for body in _dollar_bodies(text):
             _collect(
                 split_statements(body),

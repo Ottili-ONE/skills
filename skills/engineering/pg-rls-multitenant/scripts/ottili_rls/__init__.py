@@ -19,11 +19,18 @@ from .models import (
     LeakVerdict,
     Measurement,
     MigrationFacts,
+    PolicyCommand,
+    PolicyFacts,
     TableFacts,
     TenantConvention,
 )
 from .rules import canonical_gucs_used, evaluate_migration
-from .scanner import collect_facts, split_column_definitions, split_statements
+from .scanner import (
+    collect_facts,
+    read_policy,
+    split_column_definitions,
+    split_statements,
+)
 
 __all__ = [
     "ConventionError",
@@ -34,6 +41,8 @@ __all__ = [
     "LeakVerdict",
     "Measurement",
     "MigrationFacts",
+    "PolicyCommand",
+    "PolicyFacts",
     "TableFacts",
     "TenantConvention",
     "canonical_gucs_used",
@@ -46,6 +55,7 @@ __all__ = [
     "log_event",
     "new_run_id",
     "parse_measurements",
+    "read_policy",
     "split_column_definitions",
     "split_statements",
 ]

@@ -5,6 +5,7 @@ The probe runs as the application role and prints one measurement per line:
     a_sees_own<TAB>1
     a_sees_b<TAB>0
     unset_sees_rows<TAB>0
+    write_leaks<TAB>0
 
 ``a_sees_own`` is the number of rows tenant A may see (it seeded exactly
 one), ``a_sees_b`` is the number of rows of tenant B that tenant A may see
@@ -12,6 +13,13 @@ and ``unset_sees_rows`` is the number of rows that anybody may see while the
 session carries no tenant at all. A leak test passes when the three numbers
 are 1, 0 and 0: the tenant sees its own row, sees no row of another tenant
 and sees nothing at all when no tenant is set.
+
+``write_leaks`` is the number of rows the session of the second tenant wrote
+while claiming the first tenant. It is 0 when the write was refused and 1
+when the database accepted it. The read path and the write path are guarded
+by two different clauses of a policy, so the probe measures both: a policy
+whose USING clause is correct and whose WITH CHECK clause is wide open hides
+every foreign row and still accepts a foreign row.
 
 A measurement that is missing is a failure, not a zero: the probe did not run,
 and a probe that did not run proves nothing.
@@ -31,6 +39,7 @@ EXPECTED_MEASUREMENTS: tuple[tuple[str, int], ...] = (
     ("a_sees_own", 1),
     ("a_sees_b", 0),
     ("unset_sees_rows", 0),
+    ("write_leaks", 0),
 )
 
 
@@ -79,4 +88,6 @@ def _wrong_measurement(name: str, expected: int, value: int) -> str:
         return f"same-tenant read wrong (expected {expected}, got {value})"
     if name == "a_sees_b":
         return f"cross-tenant leak (expected {expected}, got {value})"
+    if name == "write_leaks":
+        return f"write leak (expected {expected}, got {value})"
     return f"rows visible without a tenant (expected {expected}, got {value})"
