@@ -131,22 +131,32 @@ def test_evals_present(name: str) -> None:
 
 @pytest.mark.parametrize("name", SKILL_NAMES)
 def test_scripts_match_skill_md(name: str) -> None:
-    """The scripts line in SKILL.md must name scripts that actually exist."""
+    """The scripts of a skill and its SKILL.md must describe each other.
+
+    Two directions, both checked for every skill of the collection: a script
+    path that SKILL.md points at exists on disk, and every script the skill
+    ships is named in SKILL.md. This check used to skip the nine skills whose
+    SKILL.md did not use the `scripts:` summary line - a skip hides exactly
+    the mismatch this test exists to catch, so the nine SKILL.md files now
+    carry the line and the test runs against all ten skills.
+    """
     root = COLLECTION_ROOT / name
     body = (root / "SKILL.md").read_text(encoding="utf-8")
-    scripts_line = next(
-        (ln for ln in body.splitlines() if re.search(r"scripts:", ln.strip(), re.I)),
-        "",
-    )
-    if not scripts_line:
-        pytest.skip(f"{name}: no scripts: line")
+    script_lines = [ln for ln in body.splitlines() if re.search(r"scripts:", ln, re.I)]
+    assert script_lines, f"{name}: SKILL.md does not document its scripts"
+    named: set[str] = set()
+    for line in script_lines:
+        named.update(re.findall(r"([a-z][a-z0-9_\-]*\.py)", line))
+    assert named, f"{name}: scripts: line names no .py files"
     scripts_dir = root / "scripts"
-    if not scripts_dir.is_dir():
-        pytest.skip(f"{name}: no scripts/ dir")
-    names = re.findall(r"([a-z][a-z0-9_\-]*\.py)", scripts_line)
-    assert names, f"{name}: scripts: line names no .py files"
-    for n in names:
-        assert (scripts_dir / n).is_file(), f"{name}: scripts line names missing {n}"
+    assert scripts_dir.is_dir(), f"{name}: documents scripts: but has no scripts/ dir"
+    for script in sorted(named):
+        assert (scripts_dir / script).is_file(), f"{name}: scripts line names missing {script}"
+    shipped = {q.name for q in scripts_dir.glob("*.py")}
+    assert shipped == named, (
+        f"{name}: scripts/ ships {sorted(shipped - named)}, "
+        f"which SKILL.md does not name; SKILL.md names {sorted(named - shipped)}, which do not exist"
+    )
 
 
 @pytest.mark.parametrize("name", SKILL_NAMES)
@@ -177,7 +187,31 @@ def test_readme_lists_all_ten_skills() -> None:
         assert f"`{name}`" in body, f"README.md does not mention {name}"
 
 
-def test_handoff_exists() -> None:
-    body = (COLLECTION_ROOT / "HANDOFF.md").read_text(encoding="utf-8")
-    assert "re-verify" in body.lower(), "HANDOFF.md has no re-verification section"
-    assert "next ten" in body.lower(), "HANDOFF.md has no next-ten-skills section"
+def test_collection_ships_no_status_diary() -> None:
+    """The collection ships skills, not diaries about them.
+
+    A collection-level ``STATUS.md``/``HANDOFF.md`` is a status diary: it goes
+    stale the moment the skills change and nothing in the product reads it.
+    The re-verification material a diary used to hold now lives with the thing
+    it describes - in each skill's ``references/SOURCES.md`` and in the
+    runnable acceptance gate.
+    """
+    for diary in ("STATUS.md", "HANDOFF.md"):
+        assert not (COLLECTION_ROOT / diary).exists(), (
+            f"{diary} is a stale status diary; the collection must not ship one"
+        )
+
+
+@pytest.mark.parametrize("name", SKILL_NAMES)
+def test_each_skill_carries_its_own_reverification_material(name: str) -> None:
+    """What the removed collection diary used to carry must exist per skill.
+
+    The version pins and the retrieval dates are the re-verification record; a
+    skill that lost them has lost evidence that no diary can replace.
+    """
+    root = COLLECTION_ROOT / name
+    sources = (root / "references" / "SOURCES.md").read_text(encoding="utf-8")
+    assert len(URL_RE.findall(sources)) >= 6, f"{name}: fewer than 6 primary URLs"
+    assert re.search(r"20\d\d-\d\d-\d\d", sources), (
+        f"{name}: no retrieval date in references/SOURCES.md"
+    )

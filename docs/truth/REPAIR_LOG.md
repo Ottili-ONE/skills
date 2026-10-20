@@ -94,6 +94,10 @@ All engineering self-tests (`*_test.py`, `tests/*.py`, `run_long_test_test.sh`) 
        `skills/engineering/RESEARCH.md`, `skills/engineering/VERIFICATION.md`,
        `skills/agentic-data/AUDIT.md`, per-skill `references/EVALS.md`,
        `skills/business-de/config/REVERIFY_*.md`, `skills/business-de/*_state.json`
+       -- **superseded in TASK-0004 (2026-10-20) for the status diaries**: the
+       card of this wave grants `skills/**` to SKL-W0-01 and orders the deletion of
+       the status/handoff/reverify diaries. The per-skill `references/EVALS.md`
+       and the `*_state.json` files stay (see D-030).
        (owned by `skills-business-de-r3` / `skills-agentic-data-r3` / referenced by
        tests).
      - deleted: `long-test.log`, `long-test.log.out` (root logs, unreferenced except
@@ -804,3 +808,85 @@ python3 scripts/truth/gate.mjs job --job SKL-W0-01 ...   # see .truth/SKL-W0-01/
 
 The clean copy and the real clone are rebuilt from the committed state after
 every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
+
+## D-030 — 16 stale status diaries were still committed inside the skill packages
+
+- **Defect:** the tree still carried the pass-by-pass status diaries of the earlier
+  autonomous waves: 9 `STATUS.md` files, 3 collection `HANDOFF.md` files, 2
+  `skills/business-de/config/REVERIFY_*.md` files, `skills/agentic-data/references/PASS2-STATUS.md`,
+  `skills/agentic-data/references/PASS5-R3-05-REVERIFY.md` and
+  `docs/truth/REVERIFY-SKL-W0-01-TASK-0006.md`. Every one of them is a diary about
+  work that has been finished since; a reader cannot tell which claims are still true.
+  Proof of the defect: `git ls-files | grep -c STATUS` → 9 (must be 0) and
+  `git ls-files | grep -cE '(HANDOFF|GAPS|R3_PLAN|REVERIFY)'` → 16.
+- **Cause:** the earlier wave (D-00x above) kept them because `docs/R3_OWNERS.json`
+  assigns `skills/business-de/**` and `skills/agentic-data/**` to other jobs. The card of
+  this wave grants `skills/**` to SKL-W0-01 and orders exactly this deletion, so the
+  ownership map of round 3 no longer describes this task.
+- **Fix:** `git rm` of the 16 files above. The `references/EVALS.md` of the 30 skills
+  stay — they are skill content (`scripts/validate_skills.py` fails a skill without
+  one) and not diaries. `skills/agentic-data/browser-agent-playwright/references/handoff.md`
+  stays for the same reason: it is the hand-off *contract* of that skill and is linked
+  from its `SKILL.md`.
+- **Proof:** `git ls-files | grep -c STATUS` → 0;
+  `git ls-files | grep -cE '(HANDOFF|GAPS|R3_PLAN|REVERIFY)'` → 0;
+  `node scripts/gen-catalog.mjs --check` → "catalog unchanged" (the catalogue no longer
+  names a deleted file).
+
+## D-031 — a collection test asserted that a status diary exists
+
+- **Defect:** `skills/agentic-data/tests/test_collection.py::test_handoff_exists` read
+  `skills/agentic-data/HANDOFF.md` and asserted it contains a re-verification section.
+  After D-030 the file is gone and the test fails with `FileNotFoundError`
+  (`1 failed, 62 passed, 9 skipped`).
+- **Cause:** the test asserted the *existence of a diary*, not a property of the
+  skills. That premise is invalid once the tree policy is "a skill collection ships
+  skills, not diaries about them".
+- **Fix:** the test was rewritten, not deleted: `test_collection_ships_no_status_diary`
+  asserts that the collection contains no `STATUS.md`/`HANDOFF.md` (the new invariant),
+  and the new `test_each_skill_carries_its_own_reverification_material` asserts that
+  every skill keeps what the diary used to hold — >= 6 primary URLs and a retrieval
+  date in `references/SOURCES.md`.
+- **Proof:** `python3 -m pytest skills/agentic-data/tests/test_collection.py -q` →
+  `73 passed, 9 skipped`. With the old test body restored the file fails again.
+
+## D-032 — 34 dangling pointers to the deleted diaries
+
+- **Defect:** after D-030, 34 places still pointed at deleted files:
+  10 × `skills/agentic-data/*/references/SOURCES.md` ("see `references/PASS5-R3-05-REVERIFY.md`
+  for the full table"), 20 × `skills/business-de/config/versions.json` (`reverify_note`),
+  `skills/business-de/carrier-apis-de/references/SOURCES.md`,
+  `skills/business-de/PASS5_GATE.md`, `skills/business-de/README.md` and
+  `skills/engineering/README.md` ("See `HANDOFF.md` for what to re-verify").
+- **Cause:** the diaries were the only place some evidence and some navigation lived.
+- **Fix:** every pointer was replaced by the substance it pointed at — each source
+  carries its own retrieval date and HTTP result, `versions.json` keeps the
+  re-verification date, the READMEs point at the runnable commands
+  (`scripts/run_evals.py`, the per-skill self-tests).
+- **Proof:** `git grep -n -F '<deleted file name>' -- . ':!catalog.json'` → no hit for
+  `PASS2-STATUS.md`, `PASS5-R3-05-REVERIFY.md`, `REVERIFY_2026-10-14.md`,
+  `REVERIFY-SKL-W0-01-TASK-0006.md`; the remaining `REVERIFY_2026-10-15.md` hits are
+  only in `docs/gaps/SKL-W1-02.md`, which belongs to another job (G18).
+
+## D-033 — the duplicate-name proof was polluted by scratch copies of the tree
+
+- **Defect:** the proof
+  `find . -name SKILL.md | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+  printed 46 duplicate names in the worktree, although the tracked tree has none
+  (`git ls-files '*/SKILL.md' | ... | uniq -d` → empty).
+- **Cause:** this job's own scratch area `.truth/SKL-W0-01/` held 18 full copies of the
+  tree (clean-clone, clone and mutation-control copies of earlier passes). They are
+  git-ignored, so `git status` never showed them, but the file-system proof saw them.
+- **Fix:** the redundant scratch *copies* were removed (the evidence files
+  `before.txt`, `after.txt`, `notes.md`, the logs and the gate JSONs were kept).
+- **Proof:** `find . -name SKILL.md | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+  → empty; `find .truth -name SKILL.md | wc -l` → 0.
+
+## D-034 — the generated catalogue still named the deleted files
+
+- **Defect:** `catalog.json` listed 5 deleted `STATUS.md` paths in the `paths[]` array
+  of the agentic-data skills, so the catalogue pointed at files that no longer existed.
+- **Cause:** the catalogue is generated from the folders; the folders changed and the
+  catalogue had not been regenerated.
+- **Fix:** `node scripts/gen-catalog.mjs` (39 skills, 12 packages).
+- **Proof:** `node scripts/gen-catalog.mjs --check` → "ok: catalog unchanged".

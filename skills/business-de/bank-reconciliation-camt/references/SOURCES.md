@@ -1,4 +1,5 @@
 # bank-reconciliation-camt — SOURCES
+<!-- truth:allow-german-file: this catalogue quotes German law, law titles and source URLs verbatim -->
 
 Retrieval date: 2026-10-09. Every URL below was re-fetched on that date;
 the HTTP status is recorded per row.
@@ -95,7 +96,8 @@ trusting the corroboration.
 ## Re-verification 2026-10-15 (PASS 5 of skills-business-de-r3-05)
 
 Re-fetched every primary source with `curl -s -o /dev/null -w "%{http_code}"
---max-time 20 -L` on 2026-10-15. Full table: `config/REVERIFY_2026-10-15.md`.
+--max-time 20 -L` on 2026-10-15. Each source below carries its own retrieval
+date and HTTP result.
 
 - **dejure.org mirror fixed:** `https://dejure.org/gesetze/AO` now returns
   **200**; the `.html` variant still 404s. SOURCES entries that pointed at the

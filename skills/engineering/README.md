@@ -89,4 +89,4 @@ nothing). `scripts/check_related_graph.py` verifies the graph is acyclic. The
 edges are informational mentions, not runtime dependencies — a skill works
 without its Related neighbours being present.
 
-See `HANDOFF.md` for what to re-verify and when.
+Re-verify a skill with the self-test its `scripts/` folder ships (each skill has one).

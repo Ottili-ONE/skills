@@ -115,3 +115,4 @@ never a constant.
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/embed_decontam.py, scripts/minhash_lsh.py, scripts/ngram_decontam.py, scripts/normalize.py, scripts/plant_test.py, scripts/validate_skill.py

@@ -28,7 +28,7 @@ other skills.
 - **skr-journal-mapping** — Map SKR 03/04/18/25 accounts to posting templates;
   validates the complete journal against the chart of accounts.
   `scripts/map_skr.py`, `scripts/journal_check.py`.
-- **ust-edge-cases** — Umsatzsteuer edge cases: rounding, zero-rated, intra-community
+- **ust-edge-cases** — German VAT (UStG) edge cases: rounding, zero-rated, intra-community
   and chain transactions with a decision table per scenario.
   `scripts/ust_check.py`.
 - **webhooks-safe** — Validate webhook payloads before acting: signature
@@ -54,4 +54,5 @@ python3 skills/business-de/scripts/run_evals.py
 Each skill ships `references/EVALS.md` (5 prompts + 3 near-misses with expected
 exit codes), `references/SOURCES.md` (version pins and retrieval dates) and
 `evals_fixtures/` (shipped sample inputs for the runnable command sections).
-See `HANDOFF.md` for what to re-verify before the next ten skills.
+Re-verify a skill with `python3 skills/business-de/scripts/run_evals.py` and check the
+version pins in its `references/SOURCES.md`.

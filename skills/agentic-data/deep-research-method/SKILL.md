@@ -160,3 +160,4 @@ in `references/examples.md`.
 - examples: references/examples.md
 - incidents: references/incidents.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/score_sources.py

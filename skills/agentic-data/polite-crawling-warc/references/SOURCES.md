@@ -64,7 +64,7 @@ Two random sources re-fetched live to confirm nothing had moved:
 - https://raw.githubusercontent.com/iipc/warc-specifications/master/specifications/warc-format/warc-1.1/index.md — HTTP 200, 68,700 B (WARC 1.1 still the current revision; no WARC 1.2 exists).
 
 ## Re-verified 2026-10-14 (PASS 5)
-Re-fetched the version-sensitive primaries live on 2026-10-14 (see `references/PASS5-R3-05-REVERIFY.md` for the full table). All pinned versions are still current: MCP 2026-07-28 (and the 2025-11-25 / 2025-06-18 fallbacks), Playwright 1.64.0 on PyPI, datasketch 2.0.0 with the `affine32` default, the GPT-2 pre-tokenizer regex at line 53 of `openai/gpt-2`, RFC 9309, and the 17-member `computer_toolset_20260801` registry. The two known bot-blocked URLs (iso.org WARC, openai.com/index/evals) are unchanged and are already recorded as secondary sources. No fact drift.
+Re-fetched the version-sensitive primaries live on 2026-10-14 (each source below carries its own retrieval date and HTTP result). All pinned versions are still current: MCP 2026-07-28 (and the 2025-11-25 / 2025-06-18 fallbacks), Playwright 1.64.0 on PyPI, datasketch 2.0.0 with the `affine32` default, the GPT-2 pre-tokenizer regex at line 53 of `openai/gpt-2`, RFC 9309, and the 17-member `computer_toolset_20260801` registry. The two known bot-blocked URLs (iso.org WARC, openai.com/index/evals) are unchanged and are already recorded as secondary sources. No fact drift.
 
 ## Re-verification 2026-10-14 (EXPAND pass)
 

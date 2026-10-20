@@ -261,13 +261,22 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
     `log path not found`: a checker that could never pass.
   - Both are covered by `tests/hygiene/test_verify_status.py`; with the old file restored
     4 of its 5 tests fail, with the fix all 5 pass.
-- **Still open:** the repository has **no root `STATUS.md`** (only `skills/*/STATUS.md`,
-  which belong to other jobs), so the checker has never been run against a product-repo
-  claim table. The row format it expects is
-  `| <claim> | <command> | <exit code> <log path> |`.
-- **To close:** create the root `STATUS.md` (TASK-0008 owns it) with claim rows that point
-  at log files that exist in the tree, then run
-  `node scripts/verify-status.mjs STATUS.md --root .` and expect exit 0.
+- **Changed by TASK-0004 (2026-10-20):** the product tree no longer ships a
+  `STATUS.md` anywhere — the pass-by-pass status diaries were deleted (D-030 in
+  `docs/truth/REPAIR_LOG.md`), because the task card of this wave asks for "one tree,
+  no stale duplicate, no status diaries". The proposal below is therefore **withdrawn**:
+  creating a root `STATUS.md` (TASK-0008 owns it) would contradict that decision.
+- **What the checker is proven against now:** `tests/hygiene/test_verify_status.py`
+  writes a claim table into a temporary tree (valid table, missing log file, missing
+  claim, seeded bad row) and asserts the exit code of
+  `node scripts/verify-status.mjs <table> --root <tree>`; the skill's own self-test
+  `skills/engineering/honest-status/scripts/check_status_evidence_test.py` writes a
+  `STATUS.md` into a temporary directory as well. The row format is
+  `| <claim> | <command> | <exit code> <log path> |`. Both run in CI.
+- **Status:** the gap as written no longer exists — there is no product claim table to
+  check because the product deliberately has no status file. Re-open this gap only if
+  the operator decides that the product should ship a claim table again; the honest
+  place for such a table would then be the job's `.truth/` evidence, not the repository.
 
 ## G14 (cross-job request, TASK-0003, 2026-10-20): CI runs a shell script with `python3`
 
@@ -320,3 +329,37 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   gate red and block the commit.
 - **Decision:** the cross-job requests live in this file (G11, G14, G15). The
   pointer files were not created; the requester reads the gaps file.
+
+## G18 (cross-job notice, TASK-0004, 2026-10-20): `docs/gaps/SKL-W1-02.md` points at the deleted status diaries
+
+- **Observed:** `docs/gaps/SKL-W1-02.md:104-106` lists
+  `skills/business-de/config/REVERIFY_2026-10-15.md`,
+  `skills/business-de/config/REVERIFY_2026-10-14.md`, `skills/business-de/STATUS.md`
+  and `skills/business-de/HANDOFF.md` as files of the business-de package.
+- **Change:** those four files were deleted by SKL-W0-01 TASK-0004 — they were
+  pass-by-pass status diaries. The canonical skills live under
+  `skills/business-de/<skill>/` and are untouched; the evidence that lived in the two
+  `REVERIFY_*.md` files now sits with the thing it described, in
+  `skills/business-de/*/references/SOURCES.md` and in `config/versions.json`.
+- **Ownership:** `docs/gaps/SKL-W1-02.md` belongs to the job SKL-W1-02, so this job did
+  not edit it (a change outside the owned paths turns the truth gate red).
+- **Request (cross-job):** SKL-W1-02 should update lines 104-106 to the files that
+  exist today in `skills/business-de/`: `README.md`, `RESEARCH.md`, `PASS5_GATE.md`,
+  `config/versions.json` and the ten skill folders.
+
+## G19 (follow-up, TASK-0004, 2026-10-20): package-level documents that are neither status diaries nor named by the delete list
+
+- **Observed:** the delete list of this task names `STATUS.md`, `HANDOFF*`, `GAPS*`,
+  `R3_PLAN.md`, `REVERIFY*`, `EVALS.md` and `*.db`. The following committed documents
+  are **not** covered by it and were therefore left in place:
+  `skills/agentic-data/AUDIT.md`, `skills/agentic-data/references/PASS2-CONSOLIDATION.md`,
+  `skills/agentic-data/references/PASS4-R3-02-AUDIT.md`,
+  `skills/business-de/PASS5_GATE.md`, `skills/business-de/RESEARCH.md`,
+  `skills/engineering/RESEARCH.md`, `skills/engineering/VERIFICATION.md`.
+- **Assessment:** they are pass records and research notes — the same family as the
+  diaries that were deleted — but their names are not in the delete list, so deleting
+  them would exceed this task's slice. `skills/engineering/**` belongs to the
+  skills-engineering lane, `skills/business-de/**` to the skills-business-de lane.
+- **Follow-up:** the canonical-skills job decides per file whether it is product
+  documentation (keep it and link it) or a stale diary (delete it).
+  `docs/truth/REPO_SHAPE.md` lists them as the only remaining package-level documents.

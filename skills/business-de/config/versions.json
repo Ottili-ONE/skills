@@ -1,5 +1,5 @@
 {
-  "_comment": "Pinned versions for the business-de skills. Re-verify on every spec/validator bump; record the re-verification date in the skill's references/SOURCES.md. Never hardcode a version inside scripts or SKILL.md - read it from this file.",
+  "_comment": "truth:allow-german-file (German law titles and source URLs are quoted verbatim). Pinned versions for the business-de skills. Re-verify on every spec/validator bump; record the re-verification date in the skill's references/SOURCES.md. Never hardcode a version inside scripts or SKILL.md - read it from this file.",
   "xrechnung-zugferd": {
     "en16931": {
       "version": "1.2.4",
@@ -7,7 +7,7 @@
       "source": "https://www.cen.eu/standards/EN/16931",
       "verified": "2026-10-15",
       "note": "EN 16931-1:2017 with Corrigendum 2017-06 (v1.2.4). Factur-X profile model follows this version. Re-verify before any KoSIT validator upgrade.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "factur-x": {
       "version": "1.09.2",
@@ -15,21 +15,21 @@
       "source": "https://github.com/akretion/factur-x",
       "verified": "2026-10-15",
       "note": "Factur-X 1.09.2 / ZUGFeRD 2.5.2 (FNFE-MPE page, re-fetched 2026-10-09, HTTP 200). Pin bumped from 1.0.11 to match the live spec. The akretion/factur-x library tag is still dynamic (hatch-vcs) and is pinned separately as unverified. Re-verify on every release. Re-verified 2026-10-14: the github.com/akretion/factur-x repo is reachable (HTTP 200) but the library tag is still dynamic (hatch-vcs); pin stays unverified.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "kosit-validator": {
       "version": "v2026-08-31",
       "source": "https://github.com/itplr-kosit/validator-configuration-xrechnung",
       "verified": "2026-10-15",
       "note": "KoReSIT/itplr-kosit validator configuration (tag v2026-08-31, repo pushed 2026-09-04). Fallback: john-wink/en16931-php v0.2.0 (274/274 rules). Re-verify on release.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "ustg_obligation": {
       "law": "UStG §14",
       "effective": "2020-01-01",
       "verified": "2026-10-15",
       "note": "e-invoicing obligation for B2B in Germany. Re-verify against BMF Schreiben of 2024-11-15 before relying on transitional rules.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     }
   },
   "gobd-archive": {
@@ -39,7 +39,7 @@
       "source": "https://www.gesetze-im-internet.de/beg/",
       "verified": "2026-10-15",
       "note": "Retention classes: vouchers 8y, books/annual accounts 10y, commercial correspondence 6y. Verified 2026-10-08 against AO §147 Abs. 3 n.F. (effective 2025-01-01) via steuer-berater.de and whk-controlling.de. The BEG statute text itself 404'd at retrieval; the classes are now corroborated by AO §147, so treat as verified. Let the tax advisor confirm per entity.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "gobd_2014": {
       "version": "Gruenderzeitung 2014",
@@ -53,7 +53,7 @@
       "source": "https://www.gesetze-im-internet.de/ao/",
       "verified": "2026-10-15",
       "note": "Retention classes confirmed by steuer-berater.de lexikon (2025-12-03): 10y Bücher/Jahresabschlüsse, 8y Buchungsbelege, 6y andere Unterlagen/Geschäftsbriefe. Corroborated by whk-controlling.de (modified 2026-04-14) and R3_VERIFIED_FACTS.md. The gesetze-im-internet.de AO page 404'd at retrieval; re-fetch before audit.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     }
   },
   "datev-extf": {
@@ -63,19 +63,19 @@
       "source": "https://github.com/seamless-engineering/datev-extf",
       "verified": "2026-10-15",
       "note": "EXTF Versionsnummer=700, Formatversion=13 for Buchungsstapel (125 columns). Formatversion 10-12 are warnings; 13 is the current. EXTF_AS_OF 2026-09-25 per the seamless-engineering validator. DATEV does not publish a public version page; mark as unverified until DATEV confirms via the Prüfprogramm. Re-verify on every integration test run. Re-verified 2026-10-14: datev.de reachable (HTTP 200) but no public EXTF version page; the 700/13 pin remains unverified until DATEV confirms via the Pruefprogramm.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "extf_formatkennzeichen": {
       "value": "EXTF",
       "verified": "2026-10-15",
       "note": "Field 1 of the header. DTVF is the legacy alternative.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "extf_category": {
       "value": "21",
       "verified": "2026-10-15",
       "note": "Formatkategorie 21 = Buchungsstapel. 16 = Debitoren/Kreditoren.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     }
   },
   "skr-journal-mapping": {
@@ -84,7 +84,7 @@
       "verified": "2026-10-15",
       "source": "https://www.datev.de/",
       "note": "Pinned default Kontenrahmen for Ottili GmbH. SKR03 is the alternative for GmbH & Co. KG. Re-verify against DATEV/IDR before each build; the account list is stable, the tax keys are not.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "ust_rates_2026": {
       "standard": 19,
@@ -94,13 +94,13 @@
       "verified": "2026-10-15",
       "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "Rates valid for 2026. EU ViDA may change them from 2027-01-01 (secondary source, verify). Read from this file; never hardcode in scripts.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "am_konten": {
       "source": "https://github.com/seamless-engineering/datev-extf",
       "verified": "2026-10-15",
       "note": "Automatikkonten per SKR; EXTF_AS_OF 2026-09-25. A BU-Schluessel other than '40' on these is rejected or double-counted by DATEV.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     }
   },
   "ust-edge-cases": {
@@ -111,21 +111,21 @@
       "verified": "2026-10-15",
       "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "Turnover threshold for the previous calendar year. Re-verify before each build; unchanged for years.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "reverse_charge": {
       "law": "UStG §13b",
       "verified": "2026-10-15",
       "source": "https://dejure.org/gesetze/UStG/13b",
       "note": "§13b (Leistungsempfänger als Steuerschuldner) is the CURRENT reverse-charge article. The UStG was restructured: the old §3g (cross-border services reverse charge) is now the gas/electricity/heating/cooling place-of-supply rule (dejure.org, 2026-10-09). The buyer bears the VAT debt; the buyer's USt-IdNr. is mandatory. §13b is services only — a goods supply with a buyer USt-IdNr. uses §4a, not reverse charge. Residual uncertainty: whether the cross-border SERVICES reverse charge sits in §13b or another article is unverified (dejure.org text is JS-rendered); confirm with the tax advisor. Re-verified 2026-10-14: dejure.org returns HTTP 200 but the statute text is JS-rendered (empty curl body); the §13b renumbering remains unverified — tax advisor must confirm.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "oss": {
       "law": "UStG §18",
       "verified": "2026-10-15",
       "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "OSS for EU distance sales of goods and services. EU ViDA changes planned from 2027-01-01 (secondary source, verify).",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "rounding": {
       "law": "UStG §4 Abs. 3",
@@ -133,7 +133,7 @@
       "verified": "2026-10-15",
       "source": "https://www.gesetze-im-internet.de/ustg/",
       "note": "Highest-error-rate area in German VAT. Never round the total before the tax split.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     }
   },
   "bank-reconciliation-camt": {
@@ -143,7 +143,7 @@
       "verified": "2026-10-15",
       "source": "https://www.iso20022.org/iso20022/message-definitons",
       "note": "Current namespace is camt.053.001.08 (corroborated by de.wikipedia Camt-Format, 2026-10-09). Version 14 expected ~2026-09; re-verify before each build.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "mt940_version": {
       "version": "9",
@@ -159,7 +159,7 @@
       "verified": "2026-10-15",
       "source": "https://www.bundesbank.de/",
       "note": "German IBANs use a country-specific check-digit algorithm, not generic mod-97.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "duplicate_rule": {
       "match": [
@@ -177,14 +177,14 @@
       "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
       "verified": "2026-10-15",
       "note": "EU AI Act. Art. 50 transparency obligations apply from 2026-05-02 (high-risk rules phased to 2026-08-02 / 2027-08-02). Marked unverified until a lawyer confirms the enforcement calendar. Re-verified 2026-10-14: eur-lex returns HTTP 202 but the legal-content HTML body was empty for curl; the Art. 50 enforcement calendar remains unverified — lawyer must confirm.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "gdpr": {
       "regulation": "Regulation (EU) 2016/679",
       "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
       "verified": "2026-10-15",
       "note": "GDPR Art. 6 (lawful basis), Art. 30 (processing register). No amendment since entry into force.",
-      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched, see config/REVERIFY_2026-10-15.md."
+      "reverify_note": "Re-verified 2026-10-15 (PASS 5): primary source re-fetched."
     },
     "human_review_retention_years": {
       "value": 10,

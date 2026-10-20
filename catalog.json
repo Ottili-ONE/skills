@@ -80,7 +80,6 @@
       "description": "Drive a browser with Playwright for agents: grounding in DOM/ARIA, robust locators, network waits, prompt-injection defense for page content, and safe hand-off between browser and code. Use when an agent must scrape, test, or automate a site; never use raw page.evaluate for extraction; not for server-side scraping or non-browser automation. Verified 2026-10-14.",
       "paths": [
         "skills/agentic-data/browser-agent-playwright/SKILL.md",
-        "skills/agentic-data/browser-agent-playwright/STATUS.md",
         "skills/agentic-data/browser-agent-playwright/references/DESIGN.md",
         "skills/agentic-data/browser-agent-playwright/references/EVALS.md",
         "skills/agentic-data/browser-agent-playwright/references/SOURCES.md",
@@ -119,7 +118,6 @@
       "description": "Drive desktop and remote apps through accessibility trees and background input with safety layers: coordinate scaling, confirm() gates on destructive actions, screen-as-untrusted-data handling, platform quirks (macOS AX, Windows UIA, X11/Wayland). Use when an agent must click, type into or scroll an app it cannot reach through its API; never use raw screen scraping as the primary path. Verified 2026-10-13.",
       "paths": [
         "skills/agentic-data/computer-use-drivers/SKILL.md",
-        "skills/agentic-data/computer-use-drivers/STATUS.md",
         "skills/agentic-data/computer-use-drivers/fixtures/registry_20260801.json",
         "skills/agentic-data/computer-use-drivers/fixtures/sample_driver.py",
         "skills/agentic-data/computer-use-drivers/references/DESIGN.md",
@@ -151,7 +149,6 @@
       "description": "Deduplicate and decontaminate text corpora for LLM training: MinHash/LSH near-duplicate detection, n-gram and embedding-based decontamination, planted-item tests with pass/fail criteria. Use when preparing a training or evaluation dataset and you must remove duplicates and test-set leakage; not for single-document similarity.",
       "paths": [
         "skills/agentic-data/dedup-decontam/SKILL.md",
-        "skills/agentic-data/dedup-decontam/STATUS.md",
         "skills/agentic-data/dedup-decontam/references/DESIGN.md",
         "skills/agentic-data/dedup-decontam/references/EVALS.md",
         "skills/agentic-data/dedup-decontam/references/SOURCES.md",
@@ -278,7 +275,6 @@
       "description": "Build and consume stateless MCP servers and clients on the 2026-07-28 revision: server/discover, per-request metadata via _meta, tasks extension, OAuth 2.1 with PKCE, backward-compat negotiation down to 2025-11-25 and 2025-06-18. Use when an agent must scaffold an MCP server or client, debug a protocol handshake, map error codes to actions, or verify that a deployment is stateless and version-pinned. Not for general API design or non-MCP integrations.",
       "paths": [
         "skills/agentic-data/mcp-2026-07-28/SKILL.md",
-        "skills/agentic-data/mcp-2026-07-28/STATUS.md",
         "skills/agentic-data/mcp-2026-07-28/references/DESIGN.md",
         "skills/agentic-data/mcp-2026-07-28/references/EVALS.md",
         "skills/agentic-data/mcp-2026-07-28/references/SOURCES.md",
@@ -313,7 +309,6 @@
       "description": "Polite web crawling with WARC output: robots.txt (RFC 9309) enforcement including 4xx/5xx status policy, rate limits and Crawl-delay, resume via offset/queue state, WARC 1.1 record hygiene, and defense against hostile inputs. Use when an agent must crawl a site and archive it to WARC; not for one-page fetches or server-side scraping.",
       "paths": [
         "skills/agentic-data/polite-crawling-warc/SKILL.md",
-        "skills/agentic-data/polite-crawling-warc/STATUS.md",
         "skills/agentic-data/polite-crawling-warc/references/DESIGN.md",
         "skills/agentic-data/polite-crawling-warc/references/EVALS.md",
         "skills/agentic-data/polite-crawling-warc/references/SOURCES.md",
@@ -346,7 +341,6 @@
       "description": "Write, validate and evaluate Agent Skills against the open standard: description design that triggers reliably, progressive disclosure, front-matter validation, and eval-driven iteration with_skill/without_skill baselines. Use when an agent must author a skill, audit an existing one for standard compliance, or measure whether a skill fires on the prompts it should; not for writing ordinary documentation.",
       "paths": [
         "skills/agentic-data/skill-authoring-evals/SKILL.md",
-        "skills/agentic-data/skill-authoring-evals/STATUS.md",
         "skills/agentic-data/skill-authoring-evals/fixtures/sample_evals.json",
         "skills/agentic-data/skill-authoring-evals/fixtures/sample_firings.txt",
         "skills/agentic-data/skill-authoring-evals/references/DESIGN.md",

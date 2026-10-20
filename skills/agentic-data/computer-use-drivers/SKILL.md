@@ -223,3 +223,4 @@ sent as `enabled: false` and the call no-ops silently. Re-vendor
 - safety layers: references/safety-layers.md
 - coordinate scaling: references/coordinate-scaling.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/validate_driver.py

@@ -156,3 +156,4 @@ written entry in `references/bypass-register.md`, and this one has none.
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/gen_fixtures.py, scripts/verify_harness.py

@@ -92,3 +92,4 @@ member walk is explicit.
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/rate_limit.py, scripts/resume_state.py, scripts/robots.py, scripts/validate_skill.py, scripts/validate_warc.py, scripts/warc_writer.py

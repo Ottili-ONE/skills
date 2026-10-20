@@ -119,3 +119,4 @@ The four that matter most for *this* skill:
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/eval_metrics.py, scripts/evals_check.py, scripts/evals_md.py, scripts/validate_skill.py

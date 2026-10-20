@@ -7,7 +7,11 @@ Checks, for every skill under skills/agentic-data/:
      and exactly 3 near-miss prompts (## N<N> headings in the Near-miss
      prompts section)
   3. SKILL.md has a Related section (cross-link graph checked separately)
-  4. README.md and HANDOFF.md exist at the collection root
+  4. README.md exists at the collection root
+
+The collection-level HANDOFF.md was a status diary and was removed with the
+other status diaries (SKL-W0-01 TASK-0004). A skill collection is judged by
+its skills, not by a diary about them.
 
 Usage: python3 skills/agentic-data/scripts/r305_acceptance.py
 Exit code 0 only when every check passes.
@@ -63,7 +67,7 @@ def main() -> int:
         if "Related" not in related:
             failures.append(f"{name}: SKILL.md missing Related section")
 
-    for doc in ("README.md", "HANDOFF.md"):
+    for doc in ("README.md",):
         if not (ROOT / doc).exists():
             failures.append(f"missing collection {doc}")
 

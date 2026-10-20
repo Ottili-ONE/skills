@@ -11,7 +11,7 @@ Evals, validation, cross-links and handoff. Run 2026-10-15.
 | 3 | `python3 skills/business-de/scripts/audit_triggers_links.py` | 0 problems, acyclic, sinks: `gobd-archive` |
 | 4 | `python3 -m pytest -q` (per skill) | 184 passed; the 32 failures are all `PermissionError` on `/tmp/*` files owned by the `zentralag` sandbox user (pre-existing, not this job's code) |
 | 5 | every `references/EVALS.md` has >= 5 prompts + >= 3 near-misses | 10/10 |
-| 6 | `skills/business-de/README.md` + `skills/business-de/HANDOFF.md` | both present |
+| 6 | `skills/business-de/README.md` | present (the collection `HANDOFF.md` diary was removed in SKL-W0-01 TASK-0004) |
 | 7 | every SKILL.md < 500 lines | 10/10 (max 221) |
 
 ## What changed this pass
@@ -21,7 +21,9 @@ Evals, validation, cross-links and handoff. Run 2026-10-15.
   skr-journal-mapping +3, webhooks-safe +3, xrechnung-zugferd +2. Each trap was
   grounded by running the script it describes against a real input.
 - Re-verified every version pin in `config/versions.json` on 2026-10-15
-  (record: `config/REVERIFY_2026-10-15.md`); fixed the dejure.org mirror
+  (the per-source re-fetch table of that pass was a reverify diary and was
+  removed in SKL-W0-01 TASK-0004; each source now carries its own retrieval
+  date in `skills/business-de/*/references/SOURCES.md`); fixed the dejure.org mirror
   (`https://dejure.org/gesetze/AO` is 200, the `.html` suffix 404s).
 - Grounded every run-section command in shipped `evals_fixtures/`; added
   fixtures for datev-extf and gobd-archive.

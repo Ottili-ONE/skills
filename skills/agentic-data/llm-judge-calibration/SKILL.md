@@ -142,6 +142,7 @@ needs a definition AND at least one example.
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/calibrate_judge.py, scripts/gen_rubric.py, scripts/rubric_lint.py
 
 ## Provenance gate
 Every calibration report must record the judge model, the generator model and

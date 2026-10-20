@@ -139,3 +139,4 @@ extension, header-casing trap).
 - DESIGN: references/DESIGN.md
 - EVALS: references/EVALS.md
 - SOURCES: references/SOURCES.md
+- scripts: scripts/protocol_check.py, scripts/stateless_probe.py, scripts/version_negotiate.py
