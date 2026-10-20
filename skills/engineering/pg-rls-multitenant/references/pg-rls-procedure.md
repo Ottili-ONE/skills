@@ -67,9 +67,16 @@ date in the migration comment.
 
 ## 4. Leak test harness
 `scripts/check_rls_migration.py` is the **offline gate** that runs before the Docker harness.
-The Docker harness (`scripts/pg-rls-leak-test.sh`, planned) spins up `postgres:19-alpine`,
-applies schema + policies, then runs two sessions as different tenants and asserts
-cross-tenant reads return zero rows.
+It decides per table and reads the accepted tenant setting names from `guc-names.json`
+(configuration, not a constant of the script).
+
+The Docker harness (`scripts/pg-rls-leak-test.sh`) spins up `postgres:18-alpine`, applies
+schema + policies, seeds two tenants as the superuser and then probes the table **as the
+application role**: tenant A must see exactly its own row and zero rows of tenant B. The
+probe prints its measurements as `LABEL<tab>VALUE` lines (`a_sees_own 1`, `a_sees_b 0`);
+the verdict is taken by `scripts/check_leak_probe.py`, which fails when a measurement is
+missing — a probe that did not run proves nothing. `--print-probe-sql` and `--parse FILE`
+run the same logic without a Docker daemon.
 
 **Test cases (all must PASS, any FAIL blocks merge):**
 | Case | Assertion |

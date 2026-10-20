@@ -32,7 +32,7 @@ a committed test.
 | File | Source repository | Source path | Source commit |
 |---|---|---|---|
 | `hq-v2-docs-STATUS.md` | `hq-v2` | `docs/STATUS.md` | `fe9a1cbbb5dff2ebee2c1e33a6844bbb818dfaff` |
-| `console-v2-docs-STATUS.md` | `console-v2` | `docs/STATUS.md` | see `git -C console-v2 rev-parse HEAD` at retrieval time |
+| `console-v2-docs-STATUS.md` | `console-v2` | `docs/STATUS.md` | `2fda74bd02c972ce1cda559f24f4135543e90870` |
 
 - Retrieved: 2026-10-20.
 - Source license: Ottili Proprietary License 6.1.
@@ -40,3 +40,11 @@ a committed test.
   first claim tables are present. The lines are numbered in the file itself by
   the upstream repository's prose — the excerpt starts at line 1, so a line
   number reported by the checker is the line number of the upstream file.
+- `hq-v2-docs-STATUS.md` is 60 lines of the 3 022-line upstream file
+  (commit `fe9a1cbbb5dff2ebee2c1e33a6844bbb818dfaff`);
+  `console-v2-docs-STATUS.md` is 60 lines of the 6 225-line upstream file
+  (commit `2fda74bd02c972ce1cda559f24f4135543e90870`). Both upstream files
+  assert successes whose evidence files are **not** committed next to them, so
+  the checker must report them — that is the behaviour the excerpts guard.
+- The upstream files stay read-only. The manual proof against the full upstream
+  files is under `.truth/SKL-W0-01/` (git-ignored), never in a committed test.

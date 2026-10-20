@@ -1096,3 +1096,160 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   `…_r3_13_quickcreate_recent_lifecycle.sql`. The tables are unprotected for
   the table owner. Recorded as a cross-job request in
   `docs/gaps/SKL-W0-01.md` (G25); this job does not write into `hq-v2`.
+
+## D-042 — the honest-status checker could not read the format the product repositories write
+
+- **Defect:** the checker of the skill — `skills/engineering/honest-status/scripts/check_status_evidence.py`,
+  the implementation the skill installs and the one `scripts/verify-status.mjs` is supposed
+  to be a thin wrapper around — **crashes on every real STATUS.md of the product
+  repositories**:
+  `KeyError: 'UNFILED'` at `parse_status()` (line 68), because the real files have
+  no `## DONE` / `## VERIFIED` bucket headers at all. It therefore never reaches a
+  verdict about the 13 593 lines of real status prose it is meant to police.
+  The repository-level entry point `scripts/verify-status.mjs` was meanwhile a
+  **second, independent** table parser written in JavaScript, so the skill and the
+  tool of the repository could never agree (the JS one reported 322 rows for
+  `hq-v2`, the Python one crashed).
+- **Cause:** two defects in one place.
+  1. The parser only knew one grammar (the bucket headers of the skill). The
+     product repositories write **claim tables**: a row that asserts a success
+     names the command that was run, the exit code it returned and the log file
+     that proves it.
+  2. `scripts/verify-status.mjs` re-implemented the table parsing itself instead
+     of delegating to the skill, so the "one canonical implementation per
+     capability" rule was broken in the same directory the rule protects.
+- **Fix:**
+  - new module `skills/engineering/honest-status/scripts/status_tables.py` parses
+    the claim-table grammar: it splits markdown tables, skips the separator row,
+    finds the rows that assert a success (`exit 0`, `grün`, `passed`, `13 passed,
+    0 failed`, a check mark …), and collects the three elements of each claim —
+    the **command** (a backticked span that is a command, not a path), the
+    **exit code** (`exit 0`, `rc=1`, a bare `0` cell) and the **log path**
+    (a backticked span with a file suffix or a dotted last segment);
+  - `check_status_evidence.py` gained a `--format auto|bucket|table` switch, a
+    format detector and a table verdict: a claim that lacks any of the three
+    elements is a finding, and a named log path that does not exist is a
+    finding ("a log file that does not exist proves nothing"). The bucket
+    grammar is untouched and its own self-test still passes;
+  - `scripts/verify-status.mjs` is now a **thin adapter**: it resolves the
+    checker next to it and runs it, so the tool of the repository and the skill
+    an agent installs are the same code.
+- **Proof:**
+  - `node scripts/verify-status.mjs <nvme>/hq-v2/docs/STATUS.md --root <nvme>/hq-v2`
+    → **exit 1**, `112 unverified row(s)`, each with its **line number**
+    (first: `line 27: `npm install`` — no exit code, log path not found:
+    `npm-install.log`);
+  - `node scripts/verify-status.mjs <nvme>/console-v2/docs/STATUS.md --root <nvme>/console-v2`
+    → **exit 1**, `302 unverified row(s)` (first: `line 33: `npm test`` — no log path);
+  - `--json` names the offending rows, their line numbers and their problems;
+  - `python3 -m pytest tests/hygiene/test_verify_status.py -q` → 9 passed; the
+    committed test runs against the **real excerpts** copied into
+    `tests/fixtures/status/` (provenance in `tests/fixtures/PROVENANCE.md`), never
+    against a sibling repository.
+- **Guard:** `tests/hygiene/test_verify_status.py` asserts that the real excerpts
+  are reported with line numbers, that a claim with an existing log passes, and
+  that a claim without a log path, without an exit code or with a missing log
+  file fails. A third status grammar can never be silently accepted again.
+
+## D-043 — the RLS leak-test harness could never print PASS
+
+- **Defect:** `skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh`
+  — the harness that proves a tenant table does not leak — died with exit 1
+  after `>> running probe as web_app` and never printed a verdict, not even on a
+  migration that is correct.
+- **Cause:** two defects.
+  1. **The SQL.** The probe printed its measurements as *aliased* columns
+     (`SELECT count(*) AS a_sees_own FROM t`). The harness runs psql with
+     `-t -A` (tuples only, unaligned), and psql does **not** print the column
+     alias in that mode: the output was a bare `1` and a bare `0`. The label —
+     the only thing that says which measurement a number is — was lost in the
+     query, not in the parser.
+  2. **The parser.** The verdict was a shell pipeline
+     (`echo "$OUT" | grep a_sees_own | tail -1 | cut -f2`). `grep` matched
+     nothing, the pipeline failed, and `set -euo pipefail` killed the script
+     before the verdict. Even without `set -e`, a measurement that was *never
+     made* looked like a measurement of zero.
+- **Fix:**
+  - the probe now prints the label as a **value**:
+    `SELECT 'a_sees_own', count(*) FROM t;` → the output line is
+    `a_sees_own<TAB>1`, which survives `-t -A`;
+  - the judgement moved into `skills/engineering/pg-rls-multitenant/scripts/check_leak_probe.py`:
+    PASS only when `a_sees_own == 1` **and** `a_sees_b == 0`; a **missing**
+    measurement is a failure ("the probe did not run"), and so is an `ERROR:` in
+    the probe output;
+  - the harness reads the accepted tenant setting names from
+    `guc-names.json` (through the canonical loader of `check_rls_migration.py`,
+    which gained `--list-guc-names`) and sets **every** accepted name to the
+    tenant, so the harness works on every product repository without taking the
+    open decision about one canonical name; `--guc NAME` overrides it;
+  - two modes were added so the verdict is provable **without** a Docker
+    daemon: `--print-probe-sql` (prints the probe SQL) and `--parse FILE`
+    (judges a captured probe output). The Docker path is unchanged and stays
+    the default.
+- **Proof** (real PostgreSQL 18.6, container runtime replaced by a local server
+  because the Docker daemon is not reachable on this host — see G27):
+  - good migration (`references/examples/good_migration.sql`) → probe output
+    `a_sees_own 1` / `a_sees_b 0` → `PASS: RLS leak test green`, **exit 0**;
+  - seeded leaky migration (a permissive `USING (true)` policy) → probe output
+    `a_sees_own 2` / `a_sees_b 1` → `FAIL: RLS leak test - block merge`,
+    **exit 1**, with `cross-tenant leak (expected 0, got 1)`;
+  - `python3 -m pytest tests/hygiene/test_leak_probe.py -q` → 7 passed; the
+    committed test drives the two daemon-free modes and writes its bad inputs
+    itself, so no bad file is ever borrowed.
+- **Guard:** `tests/hygiene/test_leak_probe.py` asserts that the probe SQL
+  prints the labelled measurements (and no longer an alias), that every accepted
+  GUC name is set, and that a good probe output passes while a leaking output, a
+  missing measurement and an error in the output all fail.
+
+## D-044 — the preamble contract test asserted a README heading that the README never had
+
+- **Defect:** `node tests/orchestrator/test_preamble_contracts.test.mjs` failed
+  with `AssertionError: README has no preamble section`. The failure was
+  **pre-existing** (it is present at `HEAD`, commit `7fec9dd`, and no file of
+  this pass touched `README.md`).
+- **Cause:** the test asserted the literal string
+  `## Orchestrator preamble (generated)`. The README's heading is
+  `## Orchestrator preamble`, and the body of the section says that the block
+  **is generated** and must never be hand-edited. The assertion checked a
+  wording the document never used, so the test failed on a correct README.
+- **Fix:** the test now asserts the heading the document actually has
+  (`## Orchestrator preamble`) and keeps the meaningful part of the contract
+  (the README documents `node scripts/gen-preamble.mjs --check`). The document
+  was **not** changed: `README.md` is outside the owned paths of this job, and
+  the document was right.
+- **Proof:** `node tests/orchestrator/test_preamble_contracts.test.mjs` →
+  5 tests, 5 pass, 0 fail (before: 4 pass, 1 fail).
+
+## D-045 — the truth gate could not run its test step when a non-Python file changed
+
+- **Defect:** the gate step `tests` failed with
+  `pytest -q {paths} exited 4 — no tests ran — ERROR: not found: tests/orchestrator/test_preamble_contracts.test.mjs`.
+  The gate hands the **changed** files to the test command; `pytest` cannot
+  collect a `.mjs` file and refuses the whole run with a usage error. Every
+  job of this repository that touched a non-Python file hit this.
+- **Cause:** `commands.test` in `scripts/truth/config.json` was the bare
+  `pytest -q {paths}`. The paths are not filtered by type.
+- **Fix:** `commands.test` now selects the collectable Python tests out of the
+  changed paths and falls back to the whole repository suite when the change
+  contains no Python test file:
+  `P=$(printf '%s\n' {paths} | grep -E '(^|/)test_[^/]*\.py$' | tr '\n' ' '); if [ -n "$P" ]; then pytest -q $P; else pytest -q tests; fi`
+  The pattern is pytest's own default collection pattern (`test_*.py`), so a
+  changed non-test Python file is not mistaken for a test module.
+- **Proof:** the gate step `tests` now runs the two changed test modules
+  (16 tests, all pass) instead of failing with a usage error; the whole
+  repository suite (`pytest -q tests` → 79 passed) stays green.
+
+### Justification for the `language.allowGlobs` entries of `scripts/truth/config.json`
+
+The truth kit requires a justification in this log for every per-scan
+exemption. The entries are:
+
+| Glob | Why |
+|---|---|
+| `catalog.json` | The generated catalogue carries the German descriptions of the German business skills (carriers, invoices, VAT). It is generated output (`generatedGlobs`), not prose of this repository. |
+| `tests/fixtures/status/**` | The two excerpts of the real `docs/STATUS.md` files of `hq-v2` and `console-v2`. They are **verbatim user-facing German prose** of the product repositories, copied so that a committed test never has to read a sibling repository. They are test data, not code, and they must stay byte-identical to their source (provenance: `tests/fixtures/PROVENANCE.md`). |
+
+The German success vocabulary that the checker needs to recognise those files
+lives in `skills/engineering/honest-status/scripts/status_tables.py`, which
+carries the scanner's own file-level marker `truth:allow-german-file` and the
+reason next to it. No other file of this repository was exempted.

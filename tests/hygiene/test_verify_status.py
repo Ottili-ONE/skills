@@ -1,22 +1,29 @@
 """Regression tests for scripts/verify-status.mjs (SKL-W0-01).
 
-``scripts/verify-status.mjs`` is the honest-status checker: it reads a
-``STATUS.md`` claim table and fails a row whose command produced no evidence
-file. Two defects made the checker unusable, and both are guarded here:
+``scripts/verify-status.mjs`` is the honest-status checker. It reads a
+STATUS.md and fails every claim that is not backed by evidence.
 
+Three defects made it useless, and all three are guarded here:
+
+* it did not understand the format the product repositories write. Their
+  STATUS.md files are claim tables — a row that asserts a success must name
+  the command that was run, the exit code it returned and the log file that
+  proves it. The checker read neither the rows nor their line numbers and
+  answered "no false-done claims" for thousands of lines of prose;
 * ``raw.rstrip()`` — a *Python* method — was called on a JavaScript string, so
-  the checker died with ``TypeError: raw.rstrip is not a function`` on the
-  first table row it saw.
+  the checker died with ``TypeError: raw.rstrip is not a function``;
 * ``require("node:fs")`` was called inside an ES module, where ``require`` is
   not defined. The resulting ``ReferenceError`` was swallowed by a bare
   ``catch``, so the log path was never checked and EVERY row was reported as
   "log path not found" — a checker that can never pass.
 
-The tests below build a throwaway fixture tree under ``tmp_path``; they never
-write into the repository.
+The real excerpts under ``tests/fixtures/status`` are verbatim copies of two
+product repositories (provenance in ``tests/fixtures/PROVENANCE.md``); the
+bad inputs are written inside the tests.
 """
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -24,12 +31,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 VERIFY_STATUS = ROOT / "scripts" / "verify-status.mjs"
 NODE = shutil.which("node") or "node"
+FIXTURES = ROOT / "tests" / "fixtures" / "status"
 
+# A claim table in the format the product repositories write.
 TABLE = """# Status
 
-| claim | command | result |
+| Claim | Result | Evidence |
 |---|---|---|
-| {claim} | `{command}` | {result} |
+| {claim} | {result} | {evidence} |
 """
 
 
@@ -47,49 +56,66 @@ def run_checker(status_file: Path | None = None, *args: str) -> subprocess.Compl
     )
 
 
-def make_tree(tmp_path: Path, claim: str, command: str, result: str) -> Path:
+def write_status(tmp_path: Path, claim: str, result: str, evidence: str) -> Path:
     """Write a STATUS.md with one claim row plus the log file it points at."""
     tree = tmp_path / "tree"
-    (tree / "logs").mkdir(parents=True)
+    (tree / "logs").mkdir(parents=True, exist_ok=True)
     status = tree / "STATUS.md"
     status.write_text(
-        TABLE.format(claim=claim, command=command, result=result),
+        TABLE.format(claim=claim, result=result, evidence=evidence),
         encoding="utf-8",
     )
     return status
 
 
-def test_a_claim_with_an_existing_log_passes(tmp_path: Path) -> None:
-    """A row whose evidence file exists is verified -> exit 0.
+def test_the_real_status_excerpts_fail_with_line_numbers() -> None:
+    """Two real product STATUS.md files must be reported, not waved through."""
+    files = sorted(FIXTURES.glob("*.md"))
+    assert len(files) == 2, f"expected 2 real STATUS excerpts as fixtures, found {files}"
+    for path in files:
+        result = run_checker(path, "--root", str(ROOT))
+        assert result.returncode == 1, f"{path.name}: {result.stdout}{result.stderr}"
+        assert "unverified row(s)" in result.stderr, result.stderr
+        assert "line " in result.stderr, result.stderr
 
-    This is the case that crashed before the fix and that the swallowed
-    ``require`` made impossible to pass.
-    """
-    tree = tmp_path / "tree"
-    (tree / "logs").mkdir(parents=True)
-    (tree / "logs" / "evidence.log").write_text("ran\n", encoding="utf-8")
-    status = tree / "STATUS.md"
-    status.write_text(
-        TABLE.format(
-            claim="the installer installs every skill",
-            command="bash scripts/install.sh --package engineering",
-            result="0 logs/evidence.log",
-        ),
-        encoding="utf-8",
+
+def test_a_real_status_excerpt_is_reported_as_json() -> None:
+    """--json names the offending rows and their line numbers."""
+    path = FIXTURES / "hq-v2-docs-STATUS.md"
+    result = run_checker(path, "--root", str(ROOT), "--json")
+    assert result.returncode == 1, result.stdout + result.stderr
+    data = json.loads(result.stdout)
+    assert data["status"] == "fail", data
+    assert data["rows_checked"] > 0, data
+    assert data["findings"], data
+    first = data["findings"][0]
+    assert first["line"] > 0, data
+    assert first["problems"], data
+
+
+def test_a_claim_with_an_existing_log_passes(tmp_path: Path) -> None:
+    """A row whose evidence file exists is verified -> exit 0."""
+    (tmp_path / "tree" / "logs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "tree" / "logs" / "evidence.log").write_text("ran\n", encoding="utf-8")
+    status = write_status(
+        tmp_path,
+        claim="`npm test`",
+        result="**13 passed, 0 failed**, exit 0",
+        evidence="`logs/evidence.log`",
     )
 
-    result = run_checker(status, "--root", str(tree))
+    result = run_checker(status, "--root", str(tmp_path / "tree"))
     assert result.returncode == 0, result.stdout + result.stderr
     assert "all 1 claim rows verified" in result.stdout, result.stdout
 
 
 def test_a_claim_with_a_missing_log_fails(tmp_path: Path) -> None:
     """A row whose evidence file is missing is reported, not silently accepted."""
-    status = make_tree(
+    status = write_status(
         tmp_path,
-        claim="the installer installs every skill",
-        command="bash scripts/install.sh --package engineering",
-        result="0 logs/does-not-exist.log",
+        claim="`npm test`",
+        result="**13 passed, 0 failed**, exit 0",
+        evidence="`logs/does-not-exist.log`",
     )
 
     result = run_checker(status, "--root", str(tmp_path / "tree"))
@@ -98,34 +124,60 @@ def test_a_claim_with_a_missing_log_fails(tmp_path: Path) -> None:
     assert "TypeError" not in result.stderr, result.stderr
 
 
-def test_a_row_without_a_log_path_is_reported(tmp_path: Path) -> None:
+def test_a_claim_without_a_log_path_fails(tmp_path: Path) -> None:
     """A row that names no evidence file at all is a finding."""
-    status = make_tree(
+    status = write_status(
         tmp_path,
-        claim="the build is green",
-        command="make build",
-        result="0",
+        claim="`npm test`",
+        result="**13 passed, 0 failed**, exit 0",
+        evidence="nothing to open",
     )
 
     result = run_checker(status, "--root", str(tmp_path / "tree"))
     assert result.returncode == 1, result.stdout + result.stderr
     assert "no log path" in result.stderr, result.stderr
-    assert "TypeError" not in result.stderr, result.stderr
 
 
-def test_json_output_reports_the_finding(tmp_path: Path) -> None:
-    """--json lists the offending row and its line number."""
-    status = make_tree(
+def test_a_claim_without_an_exit_code_fails(tmp_path: Path) -> None:
+    """"it passed" without an exit code is not a verified claim."""
+    status = write_status(
         tmp_path,
-        claim="the installer installs every skill",
-        command="bash scripts/install.sh --package engineering",
-        result="0 logs/does-not-exist.log",
+        claim="`npm test`",
+        result="**13 passed**",
+        evidence="`logs/evidence.log`",
+    )
+    (tmp_path / "tree" / "logs" / "evidence.log").write_text("ran\n", encoding="utf-8")
+
+    result = run_checker(status, "--root", str(tmp_path / "tree"))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "no exit code" in result.stderr, result.stderr
+
+
+def test_a_row_that_asserts_no_success_is_not_a_claim(tmp_path: Path) -> None:
+    """A table of facts is not a set of claims; it must not produce findings."""
+    status = write_status(
+        tmp_path,
+        claim="Node / npm",
+        result="v24.19.0 / 11.17.0",
+        evidence="`node -v`",
     )
 
-    result = run_checker(status, "--root", str(tmp_path / "tree"), "--json")
-    assert result.returncode == 1, result.stdout + result.stderr
-    assert '"status": "fail"' in result.stdout, result.stdout
-    assert '"log path not found: logs/does-not-exist.log"' in result.stdout, result.stdout
+    result = run_checker(status, "--root", str(tmp_path / "tree"))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "all 0 claim rows verified" in result.stdout, result.stdout
+
+
+def test_the_bucket_format_still_works(tmp_path: Path) -> None:
+    """The grammar of the skill itself keeps working."""
+    (tmp_path / "evidence.json").write_text("{}", encoding="utf-8")
+    status = tmp_path / "STATUS.md"
+    status.write_text(
+        "## DONE\n- [x] the checker ships - evidence: evidence.json\n",
+        encoding="utf-8",
+    )
+
+    result = run_checker(status, "--root", str(tmp_path))
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_usage_error_when_no_file_is_given() -> None:

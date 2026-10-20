@@ -901,7 +901,8 @@
         "skills/engineering/honest-status/references/SOURCES.md",
         "skills/engineering/honest-status/references/honest-status-procedure.md",
         "skills/engineering/honest-status/scripts/check_status_evidence.py",
-        "skills/engineering/honest-status/scripts/check_status_evidence_test.py"
+        "skills/engineering/honest-status/scripts/check_status_evidence_test.py",
+        "skills/engineering/honest-status/scripts/status_tables.py"
       ]
     },
     {
@@ -1014,6 +1015,7 @@
         "skills/engineering/pg-rls-multitenant/references/examples/hostile_2_no_company_id.sql",
         "skills/engineering/pg-rls-multitenant/references/examples/hostile_3_grant_all.sql",
         "skills/engineering/pg-rls-multitenant/references/pg-rls-procedure.md",
+        "skills/engineering/pg-rls-multitenant/scripts/check_leak_probe.py",
         "skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py",
         "skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py",
         "skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh"

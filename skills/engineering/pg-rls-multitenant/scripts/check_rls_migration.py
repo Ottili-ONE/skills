@@ -276,7 +276,9 @@ def scan(text: str, guc_names: list[str]) -> tuple[list[str], list[str]]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Check tenant RLS in a migration.")
-    ap.add_argument("migrations", nargs="+", help="migration SQL file(s) to check")
+    ap.add_argument(
+        "migrations", nargs="*", help="migration SQL file(s) to check"
+    )
     ap.add_argument(
         "--guc-names",
         default=str(DEFAULT_GUC_FILE),
@@ -284,6 +286,11 @@ def main() -> int:
     )
     ap.add_argument(
         "--json", action="store_true", help="emit machine-readable JSON instead of text"
+    )
+    ap.add_argument(
+        "--list-guc-names",
+        action="store_true",
+        help="print the accepted tenant GUC names (one per line) and exit",
     )
     args = ap.parse_args()
 
@@ -293,6 +300,19 @@ def main() -> int:
         print(
             f"FAIL: cannot read the accepted tenant GUC names from "
             f"{args.guc_names}: {exc}",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.list_guc_names:
+        for name in guc_names:
+            print(name)
+        return 0
+
+    if not args.migrations:
+        print(
+            "FAIL: no migration file given "
+            "(usage: check_rls_migration.py <migration.sql> ...)",
             file=sys.stderr,
         )
         return 2

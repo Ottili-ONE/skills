@@ -24,7 +24,7 @@ document cannot drift away from the tree again without turning the suite red.
 | Packages that contain skills | 12 | `python3 -c "import json;print(len(json.load(open('catalog.json'))['packages']))"` |
 | `SKILL.md` files in the tree | 40 | `git ls-files '*/SKILL.md' \| wc -l` |
 | Directories under `skills/` | 14 | `ls -d skills/*/ \| wc -l` |
-| Tracked files | 652 | `git ls-files \| wc -l` |
+| Tracked files | 663 | `git ls-files \| wc -l` |
 | Skill directories with a duplicated name | 0 | `git ls-files '*/SKILL.md' \| xargs -n1 dirname \| xargs -n1 basename \| sort \| uniq -d \| wc -l` |
 
 The 40th `SKILL.md` is `templates/skill/SKILL.md`, the starting point for a new
@@ -53,7 +53,7 @@ skills/<package>/<skill-name>/
 
 | What | Value | Command |
 | --- | --- | --- |
-| Tracked files under `tests/` | 33 | `git ls-files 'tests/**' \| wc -l` |
+| Tracked files under `tests/` | 41 | `git ls-files 'tests/**' \| wc -l` |
 | Tracked files under the per-skill `tests/` directories | 112 | `git ls-files 'skills/*/*/tests/**' \| wc -l` |
 
 ## Catalogue generated from folders

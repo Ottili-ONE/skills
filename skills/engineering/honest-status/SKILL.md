@@ -35,6 +35,21 @@ Standard: name/description/length rules — [agentskills.io standard](../referen
 | BLOCKED | Cannot proceed without an external answer | open question + owner |
 | FALSE_DONE | Claimed done but no evidence exists | flag, downgrade to IN_PROGRESS |
 
+## The other grammar — the claim table of the product repositories
+The Ottili product repositories do not write buckets; they write claim tables.
+A row that asserts a success is a **claim**, and a claim is only honest when it
+names all three of these:
+
+| Element | Example | If it is missing |
+|---------|---------|------------------|
+| the command that was run | `` `npm test` `` | "no command" — what was measured? |
+| the exit code it returned | `exit 0`, `rc=0`, a bare `0` cell | "no exit code" — green is an opinion |
+| the log file that proves it | `` `npm-test.log` `` | "no log path" / "log path not found" — nothing opens |
+
+A log path that is named but does not exist is a finding: a file that is not
+there proves nothing. The checker reports every unverified row **with its line
+number**, so the row can be opened and fixed.
+
 ## Numbered procedure (summary; full recipe in references/honest-status-procedure.md)
 1. **Enumerate claims** — list every claim in the current STATUS.md or handoff.
 2. **Find evidence** — for each claim, locate a runnable artifact (test, log, command output).
@@ -95,10 +110,20 @@ Bad (DONE and IN_PROGRESS merged — hides what is actually shippable):
 - [ ] `python3 scripts/check_status_evidence.py STATUS.md --root .` exits 0.
 
 ## Scripts
-- `scripts/check_status_evidence.py` — offline, deterministic gate. A claim in DONE or
-  VERIFIED without an evidence pointer that resolves to a non-empty file is downgraded to
-  FALSE_DONE. Exit 0 = clean; 1 = findings; 2 = usage error.
+- `scripts/check_status_evidence.py` — offline, deterministic gate. It reads **both**
+  grammars and detects the one in use: the buckets of this skill (a claim in
+  DONE or VERIFIED without an evidence pointer that resolves to a non-empty file
+  is downgraded to FALSE_DONE) and the claim table of the product repositories
+  (a row must name the command, the exit code and an existing log file).
+  `--format auto|bucket|table` forces the grammar. Exit 0 = clean; 1 = findings;
+  2 = usage error.
+- `scripts/status_tables.py` — the parser of the claim-table grammar. It is
+  imported by the checker; the table format is understood in exactly one place.
 - `scripts/check_status_evidence_test.py` — offline self-tests (good/bad STATUS fixtures).
+
+The repository-level entry point `scripts/verify-status.mjs` is a thin adapter
+for the same checker, so the tool of the repository and the skill an agent
+installs can never disagree.
 
 ## References
 - Full procedure, decision table and worked examples: `references/honest-status-procedure.md`.

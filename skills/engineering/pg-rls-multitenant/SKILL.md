@@ -100,7 +100,7 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
 - [ ] Every row table has at least one policy matching its tenant column
 - [ ] FORCE ROW LEVEL SECURITY is set on all non-dev tables
 - [ ] No GRANT ALL on protected tables
-- [ ] Leak test harness runs green against Docker Postgres
+- [ ] Leak test harness runs green against Docker Postgres (`pg-rls-leak-test.sh` prints PASS)
 - [ ] Migration includes rollback SQL
 - [ ] Views use security_invoker = true or are excluded from RLS scope
 
@@ -111,6 +111,17 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
   checker: `guc-names.json` (next to the script) lists the names the product
   repositories use. A migration that keys on a name nobody sets isolates nobody.
 - Run the Docker harness: `scripts/pg-rls-leak-test.sh <migration.sql> [table]` — must print PASS.
+  The harness applies the migration to a throwaway PostgreSQL, seeds two tenants as
+  the superuser and probes the table **as the application role**: PASS means tenant A
+  sees exactly its own row (`a_sees_own = 1`) and **zero** rows of tenant B
+  (`a_sees_b = 0`). A measurement that is missing is a FAIL, not a zero — a probe
+  that did not run proves nothing. Two modes need no Docker daemon:
+  `--print-probe-sql` (prints the probe SQL) and `--parse FILE` (judges a captured
+  probe output); the verdict itself lives in `scripts/check_leak_probe.py`.
+  The tenant setting names the probe sets are **configuration**
+  (`guc-names.json`), not a constant of the harness: it sets every accepted name
+  to the same tenant, so it works on every repository without taking the open
+  decision about one canonical name. `--guc NAME` overrides it.
 - Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
 - Full procedure, version table, worked examples, and pitfalls: `references/pg-rls-procedure.md`.
 - Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.

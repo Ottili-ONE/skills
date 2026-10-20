@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Check a STATUS.md for false-done claims.
 
-A claim is FALSE_DONE unless it names an evidence pointer that (a) exists on disk and
-(b) is non-empty and (c) can be checked in under 60 seconds. Buckets: DONE, VERIFIED,
-IN_PROGRESS, BLOCKED, FALSE_DONE. DONE and VERIFIED are the only buckets allowed to carry
-evidence pointers; every claim in them without a pointer is downgraded to FALSE_DONE.
+Two grammars are understood, because the product repositories write two:
+
+* the buckets of this skill — DONE, VERIFIED, IN_PROGRESS, BLOCKED, FALSE_DONE.
+  A claim in DONE or VERIFIED must name an evidence pointer that (a) exists on
+  disk, (b) is non-empty and (c) can be checked in under 60 seconds;
+* the claim table of the product repositories — a row that asserts a success
+  must name the command that was run, the exit code it returned and the log
+  file that proves it (see ``status_tables.py``).
+
+The grammar is detected automatically; ``--format`` forces one.
 
 Usage:
-  python3 check_status_evidence.py STATUS.md [--root .] [--json] [--strict]
+  python3 check_status_evidence.py STATUS.md [--root .] [--json] [--format auto|bucket|table]
 Exit 0 = no false-done claims; 1 = findings; 2 = usage error.
 """
 from __future__ import annotations
@@ -17,6 +23,9 @@ import json
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import status_tables  # noqa: E402  (the skill ships both files side by side)
 
 BUCKETS = {"DONE", "VERIFIED", "IN_PROGRESS", "BLOCKED", "FALSE_DONE"}
 # A claim line: "- [ ] text" or "- [x] text", optionally followed by "evidence: <path>".
@@ -72,11 +81,82 @@ def parse_status(text: str) -> dict[str, list[dict]]:
     return buckets
 
 
+BUCKET_HEADER_RE = re.compile(
+    r"^##\s+(DONE|VERIFIED|IN_PROGRESS|BLOCKED|FALSE_DONE)\s*$", re.IGNORECASE | re.MULTILINE
+)
+
+
+def detect_format(text: str) -> str:
+    """Return "bucket", "table" or "unknown" for the grammar a file uses."""
+    if BUCKET_HEADER_RE.search(text):
+        return "bucket"
+    if status_tables.tables(text):
+        return "table"
+    return "unknown"
+
+
+def table_findings(text: str, root: Path) -> tuple[list[dict], int]:
+    """Check the claim tables of a STATUS.md.
+
+    A claim is a row that asserts a success. It must name the command that was
+    run, the exit code that command returned and the log file that proves it;
+    a log file that does not exist proves nothing.
+    """
+    findings: list[dict] = []
+    claim_rows = status_tables.claims(text)
+    for claim in claim_rows:
+        problems: list[str] = []
+        if not claim["commands"]:
+            problems.append("no command")
+        if claim["exit_code"] is None:
+            problems.append("no exit code")
+        if not claim["paths"]:
+            problems.append("no log path")
+        else:
+            for path in claim["paths"]:
+                if not (root / path).exists():
+                    problems.append(f"log path not found: {path}")
+        if problems:
+            findings.append(
+                {"line": claim["line"], "claim": claim["claim"], "problems": problems}
+            )
+    return findings, len(claim_rows)
+
+
+def report_table(status: str, text: str, root: Path, as_json: bool) -> int:
+    """Report the findings of the claim-table grammar."""
+    findings, checked = table_findings(text, root)
+    if as_json:
+        print(json.dumps({
+            "status": "fail" if findings else "ok",
+            "file": status,
+            "format": "table",
+            "rows_checked": checked,
+            "findings": findings,
+        }, indent=2, sort_keys=True))
+        return 1 if findings else 0
+    if findings:
+        print(f"FAIL: {status} — {len(findings)} unverified row(s)", file=sys.stderr)
+        for finding in findings:
+            print(f"  - line {finding['line']}: {finding['claim'] or '(empty)'}", file=sys.stderr)
+            for problem in finding["problems"]:
+                print(f"      {problem}", file=sys.stderr)
+        return 1
+    print(f"ok: {status} — all {checked} claim rows verified")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("status", help="STATUS.md file")
     ap.add_argument("--root", default=".", help="root for resolving relative evidence paths")
     ap.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    ap.add_argument(
+        "--format",
+        choices=("auto", "bucket", "table"),
+        default="auto",
+        help="the grammar of the file (auto detects buckets first, then tables)",
+    )
     args = ap.parse_args()
 
     try:
@@ -86,6 +166,17 @@ def main() -> int:
         return 2
 
     root = Path(args.root).resolve()
+    fmt = detect_format(text) if args.format == "auto" else args.format
+    if fmt == "unknown":
+        print(
+            f"FAIL: {args.status}: no recognisable status format "
+            "(no bucket headers and no claim table)",
+            file=sys.stderr,
+        )
+        return 2
+    if fmt == "table":
+        return report_table(args.status, text, root, args.json)
+
     buckets = parse_status(text)
 
     findings: list[dict] = []
@@ -144,6 +235,7 @@ def main() -> int:
         print(json.dumps({
             "status": "fail" if findings else "ok",
             "file": args.status,
+            "format": "bucket",
             "buckets": {b: len(v) for b, v in buckets.items()},
             "findings": findings,
         }, indent=2, sort_keys=True))

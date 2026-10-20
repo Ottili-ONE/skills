@@ -51,6 +51,10 @@ test('--help prints usage and exits 0', () => {
 
 test('README documents the generated preamble interface', () => {
   const readme = readFileSync(join(REPO, 'README.md'), 'utf8');
-  assert.ok(readme.includes('## Orchestrator preamble (generated)'), 'README has no preamble section');
+  // The README names the section "## Orchestrator preamble" and describes the
+  // block as generated. The test used to assert a heading that the document
+  // never had ("## Orchestrator preamble (generated)"), so it failed on a
+  // correct README: the assertion, not the document, was wrong.
+  assert.ok(readme.includes('## Orchestrator preamble'), 'README has no preamble section');
   assert.ok(readme.includes('node scripts/gen-preamble.mjs --check'), 'README does not document --check');
 });

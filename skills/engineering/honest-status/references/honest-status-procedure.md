@@ -57,10 +57,19 @@ Every line must be checkable in under 60 seconds.
 ```
 (No evidence pointers; every claim is false-done.)
 
+## The claim table of the product repositories
+The Ottili product repositories do not write buckets; they write claim tables, and
+the checker understands that grammar too (`--format auto` detects it). A claim row is
+honest only when it names **all three**: the command that was run, the exit code it
+returned and the log file that proves it. A named log file that does not exist is a
+finding, and the finding carries the line number of the row.
+
 ## Exact commands
 - Enumerate claims: `grep -n 'DONE\|VERIFIED\|IN_PROGRESS\|BLOCKED' STATUS.md`
 - Verify evidence exists: `test -f <path> && echo OK || echo MISSING`
 - Run the check: `python3 scripts/check_status_evidence.py STATUS.md --root .`
+- Force the grammar: `python3 scripts/check_status_evidence.py STATUS.md --root . --format table`
+- Machine-readable verdict: `python3 scripts/check_status_evidence.py STATUS.md --root . --json`
 
 ## Pitfalls
 - Done without a pointer is the most common lie.

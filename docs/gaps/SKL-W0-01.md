@@ -544,3 +544,41 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   installed skills should stop defaulting a corpus path to `/srv/ottili/repo`
   (the file was rewritten in this pass for `pg-rls-multitenant`; other skills
   may still carry the same default).
+
+## G27 (UNVERIFIED rung, environment, 2026-10-20): the Docker daemon is not reachable, so the leak-test harness could not be run as shipped
+
+- **What is UNVERIFIED:** the **containerised** end-to-end rung of
+  `skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh` — the part
+  that pulls `postgres:18-alpine`, starts a container, applies a migration into
+  it and probes it. It is **not** verified on this host.
+- **Observed:** `docker info` → exit 1,
+  `permission denied while trying to connect to the docker API at unix:///var/run/docker.sock`.
+  The `docker` client is installed (`/usr/bin/docker`), the daemon socket is not
+  reachable for this user.
+- **Exact command that would close the gap** (run it on a host with a Docker
+  daemon, as the user that owns the socket):
+  ```
+  docker run --rm --name pg-rls-leak-$$ -e POSTGRES_PASSWORD=secret \
+    -e POSTGRES_USER=postgres -d postgres:18-alpine
+  docker exec pg-rls-leak-$$ pg_isready -U postgres
+  skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh \
+    skills/engineering/pg-rls-multitenant/references/examples/good_migration.sql
+  ```
+  Expected: `PASS: RLS leak test green`, exit 0. With the leaky migration
+  (a permissive `USING (true)` policy) the same command must print
+  `FAIL: RLS leak test - block merge` and exit 1.
+- **What IS verified (the same code path against real PostgreSQL):** the harness
+  was run end to end against **real PostgreSQL 18.6** on this host with only the
+  container runtime replaced by a local server (a `docker` shim under
+  `.truth/SKL-W0-01/docker-shim/`, git-ignored, manual proof only):
+  - good migration → probe output `a_sees_own 1`, `a_sees_b 0` →
+    `PASS: RLS leak test green`, exit 0;
+  - seeded leaky migration → probe output `a_sees_own 2`, `a_sees_b 1` →
+    `FAIL: RLS leak test - block merge`, exit 1.
+  So the SQL, the seeding, the role switch and the verdict are proven; what
+  stays unproven is only that `docker run`/`docker exec`/`docker rm` behave the
+  same way on a host with a daemon.
+- **The committed test does not need Docker:** `tests/hygiene/test_leak_probe.py`
+  drives the two daemon-free modes of the same script — `--print-probe-sql`
+  (the probe SQL) and `--parse FILE` (the verdict) — and writes its own bad
+  inputs, so the suite stays green in a clean clone.
