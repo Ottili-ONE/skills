@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-20",
+  "purpose": "Accepted tenant GUC names for the RLS checker. The checker reads this file instead of hard-coding one name.",
+  "canonical_name": null,
+  "canonical_decision": "OPEN - the owner decides which name every repository uses. This repository does not take that decision; it only records what the product repositories use today.",
+  "census_command": "grep -rlE \"current_setting\\('NAME'\" --include='*.sql' <repo-root>",
+  "census_scope": [
+    "hq-v2",
+    "console-v2",
+    "ld3-v2",
+    "ottili-platform",
+    "ottili-apps",
+    "alran-core-v2",
+    "alran-clients-v2",
+    "ottilionev1",
+    "skills"
+  ],
+  "accepted_names": [
+    {
+      "name": "app.company_id",
+      "status": "dominant",
+      "occurrences": 3027,
+      "files_by_repository": {
+        "hq-v2": 511,
+        "alran-core-v2": 340,
+        "console-v2": 121,
+        "ottili-platform": 47,
+        "alran-clients-v2": 47,
+        "ottili-apps": 19,
+        "ld3-v2": 8,
+        "skills": 2
+      }
+    },
+    {
+      "name": "app.current_company_id",
+      "status": "legacy",
+      "occurrences": 919,
+      "files_by_repository": {
+        "ld3-v2": 218,
+        "alran-clients-v2": 23,
+        "ottilionev1": 18
+      }
+    },
+    {
+      "name": "ottili.company_id",
+      "status": "apps-and-platform",
+      "occurrences": 267,
+      "files_by_repository": {
+        "ottili-apps": 39,
+        "ottili-platform": 34,
+        "hq-v2": 3
+      }
+    },
+    {
+      "name": "app.current_company",
+      "status": "legacy",
+      "occurrences": 51,
+      "files_by_repository": {
+        "hq-v2": 17,
+        "skills": 1
+      }
+    }
+  ],
+  "known_non_tenant_names": [
+    {
+      "name": "ottili.actor_ref",
+      "why": "carries the acting subject, not the tenant discriminator"
+    },
+    {
+      "name": "app.current_tenant_key",
+      "why": "legacy ottilionev1 tables are keyed on tenant_key, not company_id"
+    },
+    {
+      "name": "app.is_superadmin",
+      "why": "role flag, not a tenant discriminator"
+    }
+  ]
+}
