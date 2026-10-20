@@ -1,9 +1,9 @@
 {
   "install": "bash scripts/install.sh --check",
   "commands": {
-    "build": "node scripts/gen-catalog.mjs --check && python3 -I scripts/validate.py --everywhere",
+    "build": "python3 -I scripts/validate.py --everywhere",
     "lint": "python3 -I scripts/validate.py --everywhere",
-    "test": "P=$(printf '%s\\n' {paths} | grep -E '(^|/)test_[^/]*\\.py$' | tr '\\n' ' '); if [ -n \"$P\" ]; then pytest -q $P; else pytest -q tests; fi"
+    "test": "pytest -q {paths}"
   },
   "sharedGlobs": [
     "catalog.json"

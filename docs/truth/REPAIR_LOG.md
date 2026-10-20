@@ -1441,3 +1441,63 @@ reason next to it. No other file of this repository was exempted.
     falls back to `pytest -q tests` when the change contains none.
 - **Proof:** the gate test step with the config command → **6 test path(s)
   passed**, exit 0; the full suite → **121 passed**.
+
+## D-050 — the two commands of the pack-v3 decision now run unchanged (D-049 closed)
+
+- **Defect (from D-049, re-measured at the start of this pass):** the decision of
+  2026-10-19 names the commands of the config as
+  `install "bash scripts/install.sh --check"` and `test "pytest -q {paths}"`.
+  Both still failed, so the config carried workarounds instead of the decision:
+  ```
+  bash scripts/install.sh --check
+  error: --target is required                    # exit 2
+  pytest -q tests/orchestrator/test_gen_preamble.test.mjs
+  ERROR: not found: .../tests/orchestrator/test_gen_preamble.test.mjs
+  (no match in any of [<Package orchestrator>])  # exit 4
+  ```
+- **Cause 1:** `scripts/install.sh` refused `--check` without a `--target`, so the
+  install command of the decision could not be the install command of the gate.
+- **Cause 2:** the test files of `tests/orchestrator/` and `tests/reviews/` were
+  Node 22 `node:test` modules. The gate collects the changed test files and hands
+  them to `pytest -q {paths}`; pytest cannot collect a `*.test.mjs` path.
+- **Fix (the code, not the expectation):**
+  1. `scripts/install.sh --check` works without `--target`: it verifies every skill
+     folder of every package against a scratch directory
+     (`${TMPDIR:-/tmp}/ottili-install-check`) that is never created. A skill
+     folder without a `SKILL.md` is reported; the auxiliary folders `references/`,
+     `scripts/`, `tests/` and `config/` of a package are not skills. Regression
+     tests in `tests/hygiene/test_install.py`, including one that breaks a fixture
+     (a skill folder without a `SKILL.md` -> exit 1).
+  2. the six `*.test.mjs` modules of `tests/orchestrator/` and `tests/reviews/` were
+     converted to pytest modules (`test_*.py`) with the same assertions. All six
+     were green under `node --test` before the conversion:
+     ```
+     tests/orchestrator/test_gen_preamble.test.mjs          PASS
+     tests/orchestrator/test_preamble_contracts.test.mjs    PASS
+     tests/orchestrator/test_preamble_reproducible.test.mjs PASS
+     tests/reviews/test_signoff_gate.test.mjs                PASS
+     tests/reviews/test_signoff_ref_wrappers.test.mjs        PASS
+     tests/reviews/test_ust_legal_corrections.test.mjs       PASS
+     ```
+  3. `scripts/truth/config.json` carries the decision's command strings unchanged.
+     The catalogue guard is not lost: `scripts/validate.py --everywhere` cross-checks
+     the generated catalogue against the `skills/` folders, and
+     `tests/hygiene/test_catalog.py` compares the regenerated catalogue byte-for-byte
+     with the committed one.
+- **Measured exit codes of every command of the config (each run once):**
+
+  | command | exit | output |
+  |---|---|---|
+  | `bash scripts/install.sh --check` | **0** | `check: 39 skill(s) verified, nothing written` |
+  | `python3 -I scripts/validate.py --everywhere` | **0** | `ok: 39 skills validated` |
+  | `pytest -q <changed test paths>` | **0** | `8 passed` (1 path), `20 passed` (3 paths) |
+  | `node scripts/gen-catalog.mjs --check` | **0** | `ok: catalog unchanged (39 skills, 12 packages)` |
+
+- **Proof:** the trunk gate -> install **PASS**, build **PASS**, lint **PASS**,
+  typecheck/migrate/boot/smoke **skip**, hygiene **PASS** (15 root entries, all
+  allowed); the job gate -> **PASS**; the full suite -> **126 passed** before the
+  conversion and **169 passed** after it.
+- **Open (cross-job, not mine):** `.github/workflows/validate.yml` and `README.md`
+  still glob the deleted `*.test.mjs` files. They belong to `skills-engineering-r3`
+  and are outside the owned paths of this job card; the exact patch is in
+  `docs/gaps/SKL-W0-01.md` (G32).

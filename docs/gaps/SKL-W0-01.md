@@ -78,21 +78,26 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 
 | Invariant | Test | Real repo | Broken fixture |
 |---|---|---|---|
-| no tracked symlink with an absolute target | `no-bad-symlinks.test.mjs` | PASS | PASS (fails) |
-| no tracked symlink that is a self-loop | `no-bad-symlinks.test.mjs` | PASS | PASS (fails) |
-| no tracked symlink with a dangling target | `no-bad-symlinks.test.mjs` | PASS | PASS (fails) |
-| no tracked database/journal files | `no-database-files.test.mjs` | PASS | PASS (fails) |
-| root entries restricted to `rootAllowlist` | `root-allowlist.test.mjs` | PASS | PASS (fails) |
-| no tracked file above 5 MiB without a reason | `no-large-files.test.mjs` | PASS | PASS (fails) |
-| every workspace project name is unique | `unique-projects.test.mjs` | PASS | PASS (fails) |
-| every internal dependency uses the workspace protocol | `workspace-protocol.test.mjs` | PASS | PASS (fails) |
-| `.npmrc` maps `@ottili` to the private registry, no public fallback | `npmrc-scope.test.mjs` | PASS | PASS (fails) |
+| no tracked symlink with an absolute target | `tests/hygiene/test_no_bad_symlinks.py` | PASS | PASS (fails) |
+| no tracked symlink that is a self-loop | `tests/hygiene/test_no_bad_symlinks.py` | PASS | PASS (fails) |
+| no tracked symlink with a dangling target | `tests/hygiene/test_no_bad_symlinks.py` | PASS | PASS (fails) |
+| no tracked symlink whose target leaves the checkout | `tests/hygiene/test_no_bad_symlinks.py` | PASS | PASS (fails) |
+| no tracked database/journal files | `tests/hygiene/test_no_database_files.py` | PASS | PASS (fails) |
+| root entries restricted to `rootAllowlist` | `tests/hygiene/test_root_allowlist.py` | PASS | PASS (fails) |
+| no tracked file above 5 MiB without a reason | `tests/hygiene/test_no_large_files.py` | PASS | PASS (fails) |
+| every workspace project name is unique | `tests/hygiene/test_workspace_projects.py` | PASS | PASS (fails) |
+| every internal dependency uses the workspace protocol | `tests/hygiene/test_workspace_projects.py` | PASS | PASS (fails) |
+| `.npmrc` maps `@ottili` to the private registry, no public fallback | `tests/hygiene/test_npmrc_scope.py` | PASS | PASS (fails) |
 
-- **Shared helper:** `tests/hygiene/_fixture.mjs` (creates throwaway git repositories for the broken
+- **Shared helper:** `tests/hygiene/repo_guard.py` (creates throwaway git repositories for the broken
   fixtures; never writes into the real worktree).
-- **`scripts/truth/heavy.sh` is absent** from this repo (see G1), so the tests were run directly with
-  `node tests/hygiene/<name>.test.mjs`. They are plain Node 22 `node:test` modules with no
-  dependencies beyond Node and git.
+- **Runner:** pytest — the configured runner of the truth kit (`scripts/truth/config.json` →
+  `commands.test` = `pytest -q {paths}`). The modules use nothing but the Python standard library
+  and `git`.
+- **Run through the kit:** `scripts/truth/heavy.sh --class build -- pytest -q tests/hygiene` →
+  107 passed. The seven `*.test.mjs` files of `tests/hygiene/` and their helper were replaced by
+  these pytest modules in commit `3fd5ac3`, because a `node:test` module is never collected by
+  pytest — the gate would have passed a suite that never ran.
 - **Pre-existing, not mine:** `skills/agentic-data/skill-authoring-evals/report_test.json` shows as
   modified; it was already modified before this pass and belongs to the `skills-agentic-data-r3-02`
   job. Left untouched.
@@ -679,34 +684,91 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   migrations of the census (G28) and it is the **only** remaining finding
   that is not a real hole.
 
-## G31 (decision deviation, TASK-0006, 2026-10-20): two commands of the pack-v3 decision do not run in this repository
+## G31 (CLOSED in TASK-0006 VERIFY, 2026-10-20): the two commands of the pack-v3 decision that did not run now run unchanged
 
 - **What the decision asks:** the config of the truth kit carries
   `install "bash scripts/install.sh --check"`, `build` and `lint`
   `"python3 -I scripts/validate.py --everywhere"` and `test "pytest -q {paths}"`.
-- **What was found:** two of those command strings fail in this repository,
-  measured before anything was written:
+- **What was found (measured before anything was written):** two of those command strings failed
+  in this repository:
   ```
   bash scripts/install.sh --check
   error: --target is required                    # exit 2
   pytest -q tests/orchestrator/test_gen_preamble.test.mjs
-  ERROR: not found: …/tests/orchestrator/test_gen_preamble.test.mjs
+  ERROR: not found: .../tests/orchestrator/test_gen_preamble.test.mjs
   (no match in any of [<Package orchestrator>])  # exit 4
   ```
-  `install.sh` requires `--target`, and pytest cannot collect the
-  `*.test.mjs` files of `tests/orchestrator/` that the gate puts into
-  `{paths}`.
-- **What this job did:** the config keeps the commands that work —
-  `install` with `--target` and the virtual package `generic` (exit 0),
-  `test` with the filter for the `test_*.py` paths and the fallback to
-  `pytest -q tests` (exit 0). `build` additionally runs
-  `node scripts/gen-catalog.mjs --check`, because the catalogue of this
-  repository is generated from the `skills/` folders and the gate's job path
-  does not run the build step at all — the catalogue guard would then only
-  live in a test file that the gate does not always execute. `lint` is the
-  decision's string unchanged. `commands.migrate` was removed, as the
-  decision asks: this job owns no migrations, and the gate reports the
-  migration step as `skip`.
-- **What is proven now:** the exact commands and their exit codes are in
-  `docs/truth/REPAIR_LOG.md` (D-048, D-049); the gate run of this pass is
-  `PASS` on every step that applies.
+- **Root cause 1 - `scripts/install.sh`:** the installer demanded `--target` even in `--check`
+  mode, so the install command of the decision could not be the install command of the gate.
+- **Root cause 2 - the test files:** the test files of `tests/orchestrator/` and `tests/reviews/`
+  were Node 22 `node:test` modules (`*.test.mjs`). The gate collects the *changed* test files
+  and hands them to `pytest -q {paths}`; pytest cannot collect a `*.test.mjs` path (exit 4), so
+  every commit that touched one of them would have failed the gate. The workaround of the
+  previous pass (a shell filter in the config) hid the defect instead of fixing it.
+- **What this pass did (the code, not the expectation):**
+  1. `scripts/install.sh --check` works without `--target` now: it verifies every skill folder of
+     every package against a scratch directory (`${TMPDIR:-/tmp}/ottili-install-check`) that is
+     never created. Regression tests: `tests/hygiene/test_install.py`.
+  2. the six `*.test.mjs` modules of `tests/orchestrator/` and `tests/reviews/` were converted to
+     pytest modules (`test_*.py`) with the same assertions - all six were green under `node --test`
+     before the conversion, and every pytest conversion is green.
+  3. `scripts/truth/config.json` now carries the decision's command strings unchanged:
+     `install "bash scripts/install.sh --check"`, `build` and `lint`
+     `"python3 -I scripts/validate.py --everywhere"`, `test "pytest -q {paths}"`.
+     The catalogue guard is not lost: `scripts/validate.py --everywhere` cross-checks the generated
+     catalogue against the `skills/` folders, and `tests/hygiene/test_catalog.py` compares the
+     regenerated catalogue byte-for-byte with the committed one.
+- **Measured after the fix:** `bash scripts/install.sh --check` -> exit 0 (39 skills verified,
+  nothing written); `python3 -I scripts/validate.py --everywhere` -> exit 0; `pytest -q <changed
+  test paths>` -> exit 0; trunk gate -> install/build/lint `PASS`, typecheck/migrate/boot/smoke
+  `skip` (as task 8 expects), hygiene `PASS` (15 root entries, all allowed).
+
+## G32 (cross-job request, TASK-0006 VERIFY, 2026-10-20): the CI workflow and the README still glob the deleted `*.test.mjs` test files
+
+- **Owner:** `.github/workflows/validate.yml` and `README.md` belong to `skills-engineering-r3`
+  (`docs/R3_OWNERS.json`), but they are outside the owned paths of this job card - the gate
+  rejects a commit that changes a file outside them. This job therefore does not change them.
+- **What breaks (measured after the deletion, on this tree):** the CI step
+  "Run orchestrator contract tests" and the README block "Node suites" both glob
+  `tests/orchestrator/*.test.mjs`. With no matching file, bash (without `nullglob`) hands the
+  literal pattern to `node`:
+  ```
+  === tests/orchestrator/*.test.mjs ===
+  node:internal/modules/cjs/loader: ... MODULE_NOT_FOUND
+  CI STEP EXIT: 1
+  ```
+  The README block was already red before this pass, because the previous pass deleted
+  `tests/hygiene/*.test.mjs` (commit `3fd5ac3`) and that glob no longer matched either.
+- **The exact patch (one step in the workflow, two lines in the README):**
+  ```yaml
+        - name: Run orchestrator contract tests
+          run: |
+            set -euo pipefail
+            for t in tests/orchestrator/*.test.mjs; do
+              echo "=== $t ==="
+              node "$t"
+            done
+  ```
+  becomes
+  ```yaml
+        - name: Run orchestrator contract tests
+          run: |
+            set -euo pipefail
+            python3 -m pytest -q tests/orchestrator tests/reviews
+  ```
+  and in `README.md` (section "Run the tests") step 7 becomes
+  `7. the orchestrator contract tests, `python3 -m pytest -q tests/orchestrator tests/reviews``
+  while the local block
+  ```
+  # Node suites (node:test - no test runner to install).
+  for t in tests/orchestrator/*.test.mjs; do node "$t" || exit 1; done
+  for t in tests/hygiene/*.test.mjs tests/reviews/*.test.mjs; do node "$t" || exit 1; done
+  ```
+  becomes
+  ```
+  # Python suites (pytest - the configured runner of the truth kit).
+  python3 -m pytest -q tests/orchestrator tests/reviews tests/hygiene
+  ```
+- **Why it is not done here:** `README.md` and `.github/**` are not in the owned paths of the job
+  card of SKL-W0-01, and the gate's ownership step fails a commit that touches a path outside
+  them. The request is recorded here and in `docs/truth/REPAIR_LOG.md`.
