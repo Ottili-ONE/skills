@@ -890,3 +890,49 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   catalogue had not been regenerated.
 - **Fix:** `node scripts/gen-catalog.mjs` (39 skills, 12 packages).
 - **Proof:** `node scripts/gen-catalog.mjs --check` → "ok: catalog unchanged".
+
+## D-035 — the collection scripts check skipped 9 of the 10 skills
+
+- **Defect:** `skills/agentic-data/tests/test_collection.py::test_scripts_match_skill_md`
+  looked for a `scripts:` summary line in `SKILL.md` and **skipped** the skill when it
+  found none. Nine of the ten skills document their scripts as
+  ``scripts/foo.py`` inside their checklists instead of in a summary line, so the
+  check ran against one skill only. The truth gate refuses a test run that reports
+  skipped tests ("skipped tests prove nothing"), and the gate's `tests` step failed:
+  `FAIL tests the run reports skipped tests`.
+- **Cause:** the check was written against one documentation format and used a skip
+  to hide the other nine, so a mismatch between `scripts/` and `SKILL.md` would have
+  gone unnoticed for nine skills.
+- **Fix:** the nine `SKILL.md` files now carry the same summary line the tenth one
+  had (`- scripts: scripts/a.py, scripts/b.py`), listing **every** script the skill
+  ships - seven scripts were not documented anywhere before (`evals_md.py`,
+  `minhash_lsh.py`, `plant_test.py`, `gen_fixtures.py`, `gen_rubric.py`,
+  `rubric_lint.py`, `validate_skill.py` in two skills). The test was rewritten to
+  assert both directions without a skip: a script path named in `SKILL.md` exists,
+  and every script the skill ships is named in `SKILL.md`.
+- **Proof:** `python3 -m pytest skills/agentic-data/tests/test_collection.py -q` →
+  `82 passed` (was `62 passed, 9 skipped, 1 failed`). The gate's `tests` step →
+  `PASS  tests  1 test path(s) passed`.
+
+## D-036 — the language step flagged the German business-domain source catalogues
+
+- **Defect:** the truth gate's `language` step failed on three files that this pass
+  had to touch: `skills/business-de/bank-reconciliation-camt/references/SOURCES.md`,
+  `skills/business-de/carrier-apis-de/references/SOURCES.md` and
+  `skills/business-de/config/versions.json` (`language-umlaut` on `DFÜ-Abkommen`,
+  `language-identifier` on the German URLs `gesetze-im-internet.de/ao/` and
+  `steuer-berater.de`). It also flagged one German word in the English package
+  README (`skills/business-de/README.md:31`).
+- **Cause:** the three data files quote German law, German law titles and German
+  source URLs verbatim - that is their content, not untranslated prose. The gate
+  scans a whole file as soon as the file changes, so pre-existing German in a
+  touched file counts against the change.
+- **Fix:** the kit's own escape hatch was used instead of a threshold change -
+  `truth:allow-german-file` in the head of the two source catalogues and in the
+  `_comment` of `config/versions.json` (the kit's scanner skips a file whose first
+  five lines carry that marker). The one German word in the English README was
+  reworded to the wording the catalogue already uses ("German VAT (UStG) edge
+  cases"). `scripts/truth/config.json` was left untouched.
+- **Proof:** the gate's `language` step → `PASS  language  31 file(s) scanned`; the
+  kit's own scanner over every changed file reports nothing outside `catalog.json`,
+  which the kit allows by configuration.
