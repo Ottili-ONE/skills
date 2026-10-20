@@ -13,7 +13,7 @@ Each prompt is a realistic request an agent would receive. Expected behaviour sh
 **What the skill changes vs no skill**: without the skill an agent adds `organization_id` and calls it done, leaving the old policy referencing a different key or the column nullable. The skill forces an expand-migrate-contract sequence and re-points the policy at the new key, so a renamed tenant key is caught before merge.
 
 ## 3. "User A reports seeing User B's row in `tenant_isolated_notes`."
-- Expected: Agent opens `references/pg-rls-procedure.md`, runs the leak test harness against a Docker Postgres, and inspects for: missing FORCE RLS (owner bypass), a view with `security_invoker=false`, a missing GRANT (error 42501), or the sub-select race. It reproduces the leak with two parallel sessions.
+- Expected: Agent opens `references/pg-rls-procedure.md`, runs the leak probe against a real PostgreSQL (`scripts/pg-rls-leak-test.sh --server`), and inspects for: missing FORCE RLS (owner bypass), a view with `security_invoker=false`, a missing GRANT (error 42501), or the sub-select race. It reproduces the leak with two parallel sessions and reads the three measurements (`a_sees_own`, `a_sees_b`, `unset_sees_rows`).
 - Failure signs: agent only reads the code, never runs the harness, or blames the application layer without checking `FORCE ROW LEVEL SECURITY`.
 **What the skill changes vs no skill**: without the skill an agent reads the code and blames the application layer. The skill makes the two-parallel-session leak harness the first response, so a missing FORCE RLS, a security-definer view or a missing GRANT is reproduced, not argued about.
 
@@ -27,13 +27,18 @@ Each prompt is a realistic request an agent would receive. Expected behaviour sh
 - Failure signs: agent says `service_role` is fine for client use, or treats the Supabase key model as a Postgres feature.
 **What the skill changes vs no skill**: without the skill an agent keeps `service_role` in the client because "it's just a key". The skill makes it explicit that `service_role` bypasses RLS entirely and must never leave the server, so a Supabase shortcut does not become a tenant leak.
 
+## 6. "Our migration keys the policy on `current_setting('ottili.company_id', true)`. Is that right?"
+- Expected: Agent answers no. `app.company_id` is the one tenant GUC of the platform, and no session sets `ottili.company_id`, so the policy isolates nobody: the table looks protected and is not. It re-points the policy (and the session setting that feeds it) at `app.company_id`, runs `scripts/check_rls_migration.py` — which reports the legacy name as a finding — and proves the result with the leak probe (`a_sees_b = 0` and `unset_sees_rows = 0`).
+- Failure signs: agent accepts a second spelling of the tenant setting; agent "fixes" the policy without changing the session that sets the setting; agent argues from the code and never runs the probe.
+**What the skill changes vs no skill**: without the skill an agent accepts any setting name the code happens to use, and the table keeps a policy that no session can satisfy. The skill names the one tenant GUC, explains why a second name isolates nobody, and proves the result against a real database.
+
 ## Worked examples
 
 **Good migration** (every clause present, checker passes):
 ```sql
 CREATE TABLE tenant_isolated_notes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id uuid NOT NULL REFERENCES workspaces(id),
+  company_id uuid NOT NULL,
   body text NOT NULL
 );
 ALTER TABLE tenant_isolated_notes ENABLE ROW LEVEL SECURITY;

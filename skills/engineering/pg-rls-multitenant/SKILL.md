@@ -1,6 +1,6 @@
 ---
 name: pg-rls-multitenant
-description: "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing company_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents."
+description: "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing a company_id discriminator (or a legacy tenant/organization/namespace column) for missing RLS, or investigating 'user X saw user Y's data' incidents."
 license: MIT-compat
 compatibility: "PostgreSQL 15+ (verified 18); framework-agnostic"
 metadata: {}
@@ -9,6 +9,23 @@ allowed-tools: []
 
 Standard: name/description/length rules — [agentskills.io standard](../references/agentskills-standard.md).
 # PG RLS Multitenant Skill — Quick Reference (body <500 lines; full procedure in references/pg-rls-procedure.md)
+
+## The tenant convention of the platform
+There is exactly one tenant GUC and one tenant column, and every Ottili
+repository uses them:
+
+| What | The one name | How it is set |
+|------|--------------|---------------|
+| Session setting | `app.company_id` | `SELECT set_config('app.company_id', '<company uuid>', true)` — from the verified server-side session, never from a request body |
+| Table column | `company_id` | `company_id <type> NOT NULL`, first in every key and index |
+| Policy | `current_setting('app.company_id', true)` | the same name in `USING` and in `WITH CHECK` |
+
+`app.current_company_id`, `ottili.company_id`, `app.current_company` and
+`app.current_tenant` are legacy spellings. No session of the platform sets
+them, so a policy keyed on one isolates nobody — the checker reports it and
+the leak probe measures it. The name lives in one file
+(`guc-names.json`, next to this skill), so the decision is recorded once and
+read by every checker.
 
 ## When to use this skill (trigger)
 Any of these fires it:
@@ -37,7 +54,7 @@ Any of these fires it:
 | 2. Backfill | `UPDATE t SET company_id = <owner> WHERE company_id IS NULL` | Must run in batches on large tables; record the batch size |
 | 3. Constrain | `ALTER TABLE t ALTER COLUMN company_id SET NOT NULL` + `CHECK` | CHECK must match the app tenant format (UUID v4) |
 | 4. Policy | `CREATE POLICY ... USING (company_id = current_setting(...))` | Policy must exist before the app depends on isolation |
-| 5. Leak test | Run `scripts/check_rls_migration.py` + Docker harness | All 7 cases must PASS; any FAIL blocks merge |
+| 5. Leak test | Run `scripts/check_rls_migration.py` + `scripts/pg-rls-leak-test.sh --server` | The three measurements must be 1, 0, 0; any other value blocks the merge |
 | 6. Contract | Separate `V<n>__<desc>__contract_*.sql` migration dropping the old column | N = 4 weeks minimum after expand lands in production; record the date in the migration comment; rollback SQL in a `-- ROLLBACK` block |
 
 ## Decision table — leak-test outcome
@@ -100,31 +117,36 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
 - [ ] Every row table has at least one policy matching its tenant column
 - [ ] FORCE ROW LEVEL SECURITY is set on all non-dev tables
 - [ ] No GRANT ALL on protected tables
-- [ ] Leak test harness runs green against Docker Postgres (`pg-rls-leak-test.sh` prints PASS)
+- [ ] Leak test harness runs green against a real PostgreSQL (`pg-rls-leak-test.sh` prints PASS: `a_sees_own 1`, `a_sees_b 0`, `unset_sees_rows 0`)
 - [ ] Migration includes rollback SQL
 - [ ] Views use security_invoker = true or are excluded from RLS scope
 
 
 ## Verification
 - Run the offline gate: `python3 scripts/check_rls_migration.py <migration.sql>` — must exit 0.
-  The accepted tenant setting names are **configuration**, not a constant of the
-  checker: `guc-names.json` (next to the script) lists the names the product
-  repositories use. A migration that keys on a name nobody sets isolates nobody.
+  The tenant convention is **configuration**, not a constant of the checker:
+  `guc-names.json` (next to this skill) names the one tenant GUC
+  (`app.company_id`), the one tenant column (`company_id`) and the legacy
+  names it rejects. A migration that keys its policy on a legacy name is a
+  finding, because no session of the platform sets that name.
   The checker reads the shapes the product repositories write: a table protected
   inside a `DO $$ … $$` block, and a policy created with `EXECUTE` (which writes
   the setting name with doubled quotes).
-- Run the Docker harness: `scripts/pg-rls-leak-test.sh <migration.sql> [table]` — must print PASS.
-  The harness applies the migration to a throwaway PostgreSQL, seeds two tenants as
-  the superuser and probes the table **as the application role**: PASS means tenant A
-  sees exactly its own row (`a_sees_own = 1`) and **zero** rows of tenant B
-  (`a_sees_b = 0`). A measurement that is missing is a FAIL, not a zero — a probe
-  that did not run proves nothing. Two modes need no Docker daemon:
-  `--print-probe-sql` (prints the probe SQL) and `--parse FILE` (judges a captured
-  probe output); the verdict itself lives in `scripts/check_leak_probe.py`.
-  The tenant setting names the probe sets are **configuration**
-  (`guc-names.json`), not a constant of the harness: it sets every accepted name
-  to the same tenant, so it works on every repository without taking the open
-  decision about one canonical name. `--guc NAME` overrides it.
+- Run the leak probe against a real PostgreSQL:
+  `scripts/pg-rls-leak-test.sh --server --job <JOB> <migration.sql> [table]` — must print PASS.
+  The harness applies the migration, seeds two companies as the superuser and
+  probes the table **as the application role**, which is neither a superuser
+  nor the owner of the table, so row level security really decides what it
+  sees. PASS means three measurements: `a_sees_own = 1` (the company sees its
+  own row), `a_sees_b = 0` (it sees no row of another company) and
+  `unset_sees_rows = 0` (nobody sees a row while the session carries no
+  company). A measurement that is missing is a FAIL, not a zero — a probe
+  that did not run proves nothing.
+  `--server` takes `--admin-url` and `--app-url`, or `--job` to take them from
+  the truth kit; `--print-probe-sql` and `--parse FILE` run the same logic
+  without a server, and the verdict itself lives in
+  `scripts/check_leak_probe.py`. The tenant setting the probe sets comes from
+  the same convention file; `--guc NAME` overrides it for a one-off probe.
 - Run the standard validator of the repository (from the repository root, not from this skill folder): `python3 scripts/validate_skills.py` — must report OK.
 - Full procedure, version table, worked examples, and pitfalls: `references/pg-rls-procedure.md`.
 - Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.

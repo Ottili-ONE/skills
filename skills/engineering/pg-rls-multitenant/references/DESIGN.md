@@ -28,14 +28,26 @@ tenant rows to a reporting role, because the migration omitted the invoker flag.
 4. Grants: `GRANT SELECT` only (never ALL); the app role gets SELECT, the owner keeps DDL.
 5. Expand/contract: adding a tenant column is an expand migration (add NOT NULL with backfill,
    add policy, run leak test) followed by a contract migration that drops the old key.
-6. Leak test: connect as `reader_tenant_a` and `reader_tenant_b`; assert A sees only A's rows and
-   B sees only B's rows; assert the owner role sees everything only when FORCE is off.
+6. Leak test: run `scripts/pg-rls-leak-test.sh --server` against a real PostgreSQL. The probe
+   runs as a non-superuser application role and reports three measurements: `a_sees_own = 1`
+   (the company sees its own row), `a_sees_b = 0` (it sees no row of another company) and
+   `unset_sees_rows = 0` (nobody sees a row while the session carries no company).
 7. Views: mark `security_invoker` explicitly; an unmarked view inherits the creator's privileges
    and bypasses RLS.
 
 ## Scripts (shipped)
-- `scripts/check_rls_migration.py` — scans a migration for company_id column, policy, FORCE, GRANT,
-   rollback block, view invoker flag; exits 0/1/2. Self-tested via `check_rls_migration_test.py`.
+- `scripts/check_rls_migration.py` — the adapter: reads the migration files, applies the rules
+   of the `ottili_rls` package and prints the verdict; exits 0/1/2. Self-tested via
+   `check_rls_migration_test.py`.
+- `scripts/ottili_rls/` — the core: the data model (`models.py`), the reader of the tenant
+   convention (`convention.py`), the SQL scanner (`scanner.py`), the rules (`rules.py`), the
+   judgement of a probe output (`leak.py`) and the structured run log (`logging.py`). Every
+   part of it is pure and typed; the I/O lives in the adapters.
+- `scripts/pg-rls-leak-test.sh` — the leak harness: applies a migration to a real PostgreSQL
+   (`--server`) or to a throwaway container, seeds two companies and probes the table as the
+   application role.
+- `scripts/check_leak_probe.py` — the judge of a probe output: PASS only when the three
+   measurements are 1, 0 and 0.
 
 ## Five eval prompts
 1. "Add a `notes` table for the workspace tenant." → migration must include `company_id`, policy,

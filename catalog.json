@@ -1002,7 +1002,7 @@
       "compatibility": [
         "PostgreSQL 15+ (verified 18); framework-agnostic"
       ],
-      "description": "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing company_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents.",
+      "description": "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing a company_id discriminator (or a legacy tenant/organization/namespace column) for missing RLS, or investigating 'user X saw user Y's data' incidents.",
       "paths": [
         "skills/engineering/pg-rls-multitenant/SKILL.md",
         "skills/engineering/pg-rls-multitenant/guc-names.json",
