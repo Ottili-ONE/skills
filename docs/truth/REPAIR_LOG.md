@@ -1835,6 +1835,35 @@ reason next to it. No other file of this repository was exempted.
 - **Date:** 2026-10-20
 
 
+## D-066 — the shape guard turned the suite red for the job that comes next
+
+- **Defect:** the guard of `docs/truth/REPO_SHAPE.md` compared the *counts* of the
+  document with the *current* tree. The next job — the W1 canonical-skills job — adds
+  a skill folder and regenerates the catalogue, which is a healthy change; the guard
+  then failed with "Skills in the catalogue: document says 39, command says 40",
+  "`SKILL.md` files in the tree: document says 40, command says 41" and "Tracked files:
+  document says 667, command says 668". The document lives in `docs/truth/`, which that
+  job does not own, so the failure had no fix the job was allowed to make.
+- **Reproduction:** a clean clone, one skill folder added under `skills/engineering/`,
+  `node scripts/gen-catalog.mjs`, then
+  `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` —
+  `FAILED …::test_repo_shape_numbers_are_reproducible` (three drift messages).
+- **Cause:** a snapshot of the tree was enforced as an invariant of the tree. Every
+  commit that adds a file moves the counts, so the guard punished exactly the work the
+  next job has to do.
+- **Fix:** `docs/truth/REPO_SHAPE.md` — every row carries a scope now: `live` for the
+  invariants of the tree, `snapshot@9390db6` for the counts, and a section explains
+  both; `tests/hygiene/test_repo_shape_numbers.py` — the guard runs a `live` row
+  against the checkout under test and a `snapshot@<commit>` row in a checkout of the
+  commit it names, and a new test proves that a skill added to the tree no longer
+  turns the guard red.
+- **Proof:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q -k growth`
+  — the new test fails against the pre-fix guard (measured: the pre-fix guard reports
+  three drift messages on the very same tree) and passes against the fixed one.
+- **Index proof:** `P41`
+- **Date:** 2026-10-20
+
+
 # SKL-W0-01 — TASK-0007 (2026-10-20) — repair log entry
 
 This section is the **index of the trunk repairs of job SKL-W0-01**. One entry
@@ -2458,6 +2487,16 @@ one of them exited 0; the transcript is in `.truth/SKL-W0-01/after.txt`.
 - **Date:** 2026-10-20
 
 
+#### D-066 — the shape guard turned the suite red for the job that comes next
+
+- **Symptom:** a healthy tree change (the next job adds a skill folder and regenerates the catalogue) turned the suite red with "Skills in the catalogue: document says 39, command says 40", "`SKILL.md` files in the tree: document says 40, command says 41" and "Tracked files: document says 667, command says 668"; the document that carries the numbers belongs to `docs/truth/`, which the next job does not own.
+- **Reproduction:** a clean clone, one skill folder added under `skills/engineering/`, `node scripts/gen-catalog.mjs`, then `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` — `FAILED tests/hygiene/test_repo_shape_numbers.py::test_repo_shape_numbers_are_reproducible`.
+- **Root cause:** the counts of `docs/truth/REPO_SHAPE.md` were live numbers checked against the current tree, so every commit that adds a file moved them; a snapshot of the tree was enforced as an invariant of the tree.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` — every row carries a scope (`live` for the invariants of the tree, `snapshot@9390db6` for the counts) and the document explains both; `tests/hygiene/test_repo_shape_numbers.py` — the guard runs a live row against the checkout under test and a snapshot row in a checkout of the commit it names, and a new test proves that adding a skill no longer turns the guard red.
+- **Proof:** `P41` — `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q -k growth`
+- **Date:** 2026-10-20
+
+
 ## Proof commands executed on 2026-10-20
 
 Every proof command of the index was re-run on the trunk of this pass. The
@@ -2797,23 +2836,32 @@ $ python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q   # auto
 exit=0
 ```
 
+### P41 — the shape guard survives a healthy tree change
+
+```
+$ python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q -k growth   # auto
+.                                                                        [100%]
+1 passed, 4 deselected in 1.87s
+exit=0
+```
+
 ### GATE — the job gate (install, build, lint, language, tests, hygiene, ownership)
 
 ```
 $ node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "scripts/install.sh,scripts/validate.py,catalog.json,skills/**,tests/**,docs/truth,docs/gaps,business-de,scratch,undefined,*.db,*.db-shm,*.db-wal,STATUS.md,HANDOFF*.md,GAPS*.md,R3_PLAN.md,REVERIFY*.md,EVALS.md,docs/STATUS*,docs/HANDOFF*,docs/GAPS*,docs/R3_PLAN*,scripts/gen-catalog.mjs,scripts/verify-status.mjs,scripts/truth/config.json" --exclude "scripts/truth/*.mjs,scripts/truth/*.sh,scripts/truth/lib/**,scripts/truth/checks/**,scripts/truth/MANIFEST.sha256,scripts/truth/KIT_VERSION,scripts/truth/README.md,scripts/truth/package.json,scripts/truth/package-lock.json,scripts/truth/node_modules/**" --skip registry,e2e
-PASS  ownership        0ms  3 file(s) changed, all inside the owned paths
-PASS  shrink          87ms  no deletions or large reductions
-PASS  syntax          40ms  3 changed file(s) parse
+PASS  ownership        0ms  4 file(s) changed, all inside the owned paths
+PASS  shrink          124ms  no deletions or large reductions
+PASS  syntax          46ms  4 changed file(s) parse
 skip  sql              0ms  no SQL files changed
-PASS  language         8ms  3 file(s) scanned
-PASS  stubs            2ms  3 file(s) scanned
-PASS  secrets          2ms  3 file(s) scanned
-PASS  size            0ms  3 file(s) scanned
+PASS  language        21ms  4 file(s) scanned
+PASS  stubs            1ms  4 file(s) scanned
+PASS  secrets          3ms  4 file(s) scanned
+PASS  size            0ms  4 file(s) scanned
 skip  i18n             1ms  no UI and no catalogues in this job
-PASS  lint           143ms  python3 -I scripts/validate.py --everywhere
+PASS  lint           134ms  python3 -I scripts/validate.py --everywhere
 skip  typecheck        0ms  no commands.typecheck in scripts/truth/config.json
 skip  migrate          0ms  job has no migrations and --db was not given
-PASS  tests           3.5s  1 test path(s) passed
+PASS  tests           3.3s  1 test path(s) passed
 
 GATE PASSED  SKL-W0-01
 exit=0

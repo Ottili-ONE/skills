@@ -878,3 +878,34 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **The request:** decide whether `commands.lint` becomes `ruff check` (and then make
   the CI image carry `ruff`), or keep the current command and rename the step so that it
   does not claim to be a lint.
+
+## G37 (cross-job notice, TASK-0008 second pass, 2026-10-20): what the next job has to do when it adds a skill
+
+- **What was measured:** a clean clone of the trunk, one skill folder added under
+  `skills/engineering/`, `node scripts/gen-catalog.mjs` — the state the W1
+  canonical-skills job starts from — and then the whole suite. **Five** tests went
+  red. One of them was the shape guard of `docs/truth/REPO_SHAPE.md` ("Skills in the
+  catalogue: document says 39, command says 40"), a failure the next job cannot fix
+  because it does not own `docs/truth/`; that one is closed by D-066 of this pass. The
+  other four are the next job's own obligations and are listed here so that it does
+  not have to discover them one at a time:
+  1. `tests/hygiene/test_skill_eval_sets.py` — an engineering skill must ship
+     `references/EVALS.md` (the eval set of the skill).
+  2. `tests/hygiene/test_skill_docs.py` — `scripts/validate_skills.py` exits 1 and
+     reports four findings for the new skill: the description lacks a
+     "when to use" trigger, the frontmatter carries the non-portable field
+     `version`, `references/EVALS.md` is missing, `references/SOURCES.md` is
+     missing. The two of the four that the documentation of the skill does not
+     mention are the sources of the skill.
+  3. and 4. `tests/hygiene/test_repair_log.py` — the proof commands P38 and P40 of
+     the repair log re-run the two suites above, so they turn red with them.
+- **The recipe, measured:** add the skill folder, write a description that says
+  *when to use* it, keep the frontmatter to the portable fields (no `version`), ship
+  `references/EVALS.md` and `references/SOURCES.md`, regenerate the catalogue with
+  `node scripts/gen-catalog.mjs` and commit `catalog.json` with the skill. After
+  that the suite of the job is green — the shape guard included.
+- **What the next job does NOT have to do:** the counts of `docs/truth/REPO_SHAPE.md`
+  are a **snapshot** at commit `9390db6` since D-066, and the live rows of that
+  document (one installer, one validator, no duplicate skill name, no status diary,
+  no root entry outside the allowlist, no skill missing from the catalogue) hold in
+  every healthy checkout. The document no longer needs an update for a new skill.
