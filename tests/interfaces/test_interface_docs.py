@@ -151,3 +151,26 @@ def test_the_false_claim_about_the_reference_packages_does_not_come_back() -> No
         assert "reserved on-demand names" not in text, (
             f"{document.name} claims that the ref-* packages are reserved on-demand names"
         )
+
+
+def test_the_entry_points_are_executable_in_the_index() -> None:
+    """A consumer runs ``./scripts/install.sh``; the bit must be set.
+
+    The README tells the consumer to run ``./scripts/install.sh --target ...``.
+    A rewrite of the script that loses the executable bit breaks every one of
+    those commands, and nothing in the test suite notices: the tests call the
+    script with ``bash``. The mode of the tracked file is therefore part of
+    the contract and is checked here.
+    """
+    for script in (INSTALL, VALIDATE):
+        relative = script.relative_to(ROOT).as_posix()
+        result = subprocess.run(
+            ["git", "ls-files", "-s", relative],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert result.stdout.startswith("100755"), (
+            f"{relative} is not executable in the index: {result.stdout.strip()}"
+        )
