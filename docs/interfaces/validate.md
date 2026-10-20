@@ -33,6 +33,11 @@ python3 scripts/validate.py --version              # the contract id, exit 0
 python3 scripts/validate.py --help                 # usage text, exit 0
 ```
 
+`--json` and `--jsonl` render the SAME report and are therefore mutually
+exclusive: asking for both is a usage error, `error: argument --jsonl: not
+allowed with argument --json`, exit 2, with no report on stdout. Letting one
+flag win silently would print a format the caller did not ask for.
+
 The tool is **standard library only** (`python3 -I` works, no package is
 installed). It therefore runs on the CI runner before anything is installed,
 and the contract tests can copy it into a throwaway fixture tree.
@@ -108,14 +113,36 @@ that the contract does not define, and a parquet export would have to invent a
 schema. The two machine formats that ARE defined — one JSON object and JSON
 Lines — cover the two real use cases (a single report and a stream).
 
+### The JSON Lines format has a schema of its own
+
+The JSON Lines stream is a second rendering of the same contract, and a line
+has a different shape than the report (`kind`, and one finding per line).
+A line therefore does NOT validate against the report schema — a consumer that
+tried got `Additional properties are not allowed ('findings', 'kind' were
+unexpected')`. The contract publishes a second schema for it:
+
+| | |
+| --- | --- |
+| Lines schema | `scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.lines.schema.json` |
+| Lines `$id` | `https://contracts.ottili.one/skills/validate-report/v1.lines.schema.json` |
+| Typed view | `scripts/ottili_contracts/models.py` → `ValidateLine` (`ValidateSummaryLine` \| `ValidateFindingLine`) |
+| Worked example | `scripts/ottili_contracts/examples/ottili.skills.validate-report.v1.lines.example.jsonl` |
+
+The lines schema describes ONE line: a `oneOf` of the summary line and the
+finding line, discriminated on `kind`. A consumer validates every line of the
+stream against it; the contract test
+`test_the_jsonl_export_validates_against_the_published_lines_schema` does
+exactly that on the real output of the tool.
+
 ## The contract
 
 | | |
 | --- | --- |
 | Contract id | `ottili.skills.validate-report/v1` |
-| JSON Schema | `scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json` |
-| Typed view (pydantic) | `scripts/ottili_contracts/models.py` → `ValidateReport` |
-| Worked example | `scripts/ottili_contracts/examples/ottili.skills.validate-report.v1.example.json` |
+| JSON Schema (the `--json` object) | `scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json` |
+| JSON Schema (one `--jsonl` line) | `scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.lines.schema.json` |
+| Typed view (pydantic) | `scripts/ottili_contracts/models.py` → `ValidateReport`, `ValidateLine` |
+| Worked examples | `scripts/ottili_contracts/examples/ottili.skills.validate-report.v1.example.json`, `...v1.lines.example.jsonl` |
 | Registry | `scripts/ottili_contracts/__init__.py` → `CONTRACTS` |
 
 The JSON Schema is the normative artefact; the pydantic model is the typed view
@@ -170,6 +197,8 @@ disappear.
 - The JSON Lines export round-trips into the JSON report: the finding lines
   carry the findings of the report in the same order, the summary line carries
   their number and the verdict.
+- Every line of the JSON Lines export validates against the lines schema and
+  round-trips through the `ValidateLine` model unchanged.
 - The report is deterministic: two runs on the same tree produce byte-identical
   output (the validator reads no clock, no network and no environment state).
 

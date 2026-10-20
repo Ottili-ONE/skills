@@ -213,6 +213,8 @@ committed schema is byte-identical with what the generator produces.
   '<name>'`, exit 2.
 - The target cannot be created → `error: target '<target>' cannot be created`,
   exit 1.
+- A path that carries a `|` is NOT a failure mode: the manifest stays a valid
+  payload of the contract (see the round-trip section).
 - The manifest library is missing → `error: <path>/install-manifest.sh is
   missing; the installer needs the repository layout`, exit 2.
 - `meta` package → stdout `note: package 'meta' is reserved and ships no skills
@@ -230,6 +232,13 @@ committed schema is byte-identical with what the generator produces.
   exactly the set `--dry-run` lists, in the same order, and a real install
   leaves a folder tree that a subsequent run reports as `skipped` for every
   skill.
+- The manifest survives ANY path the file system accepts. A target directory
+  is free to carry a `|`, a space or a quote; the manifest of such a run still
+  validates against the schema and carries the action the contract allows. An
+  earlier version kept the manifest rows as a `|`-delimited string and split
+  them again while printing: a path with a `|` shifted every field and the
+  manifest published an `action` like `b/skill`. The rows are now rendered to
+  their JSON form once, in `manifest_add`, and never parsed back.
 
 ## From a clean checkout
 

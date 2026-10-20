@@ -11,6 +11,8 @@ These tests hold the three documents of the interfaces —
 
 * every flag of a tool is documented, and every documented flag exists,
 * every published contract id of the code is documented, and no other id is,
+* every published schema file is documented, so no rendering of a contract
+  can be published without its normative artefact being named,
 * every file the documents name exists,
 * the false claim about the ``ref-*`` packages does not come back.
 """
@@ -174,3 +176,36 @@ def test_the_entry_points_are_executable_in_the_index() -> None:
         assert result.stdout.startswith("100755"), (
             f"{relative} is not executable in the index: {result.stdout.strip()}"
         )
+
+
+def test_every_published_schema_is_documented() -> None:
+    """A schema a consumer must read is named in at least one document.
+
+    The JSON Lines export has a schema of its own (``--jsonl`` prints lines,
+    not the report object). It was published without a schema and without a
+    document, so a consumer had no normative artefact to read; this guard
+    keeps every schema of the registry reachable from the documents.
+    """
+    schema_files = [
+        entry[key]
+        for entry in CONTRACTS.values()
+        for key in ("schema", "lines_schema")
+        if key in entry
+    ]
+    assert schema_files, "the registry publishes no schema at all"
+    for name in schema_files:
+        assert any(name in document.read_text(encoding="utf-8") for document in DOCUMENTS), (
+            f"no document names the published schema {name}"
+        )
+
+
+def test_every_published_example_is_documented() -> None:
+    """A worked example a consumer copies is named in at least one document."""
+    for entry in CONTRACTS.values():
+        for key in ("example", "lines_example"):
+            if key not in entry:
+                continue
+            assert any(
+                entry[key] in document.read_text(encoding="utf-8")
+                for document in DOCUMENTS
+            ), f"no document names the published example {entry[key]}"

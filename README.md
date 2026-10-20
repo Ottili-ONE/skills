@@ -229,8 +229,17 @@ next to it.
 
 | Contract id | Published by | JSON Schema | Typed view |
 | --- | --- | --- | --- |
-| `ottili.skills.validate-report/v1` | `scripts/validate.py --json` / `--jsonl` | [`scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json`](scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json) | `scripts/ottili_contracts/models.py` |
-| `ottili.skills.install-manifest/v1` | `scripts/install.sh --json` | [`scripts/ottili_contracts/schemas/ottili.skills.install-manifest.v1.schema.json`](scripts/ottili_contracts/schemas/ottili.skills.install-manifest.v1.schema.json) | `scripts/ottili_contracts/models.py` |
+| `ottili.skills.validate-report/v1` | `scripts/validate.py --json` | [`ottili.skills.validate-report.v1.schema.json`](scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json) | `models.py` → `ValidateReport` |
+| `ottili.skills.validate-report/v1` | `scripts/validate.py --jsonl` | [`ottili.skills.validate-report.v1.lines.schema.json`](scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.lines.schema.json) | `models.py` → `ValidateLine` |
+| `ottili.skills.install-manifest/v1` | `scripts/install.sh --json` | [`ottili.skills.install-manifest.v1.schema.json`](scripts/ottili_contracts/schemas/ottili.skills.install-manifest.v1.schema.json) | `models.py` → `InstallManifest` |
+
+The report is published in two renderings — one JSON object and a JSON Lines stream — and
+the lines have a shape of their own (`kind` plus one finding per line). The second row is
+the schema of ONE line of the stream; both are part of contract `v1`. A line that a
+consumer validates against the report schema fails, which is why the lines schema exists.
+
+`--json` and `--jsonl` render the same report and are therefore mutually exclusive: asking
+for both is a usage error (exit 2).
 
 The schemas are generated from the typed view, and a contract test asserts that the
 committed file and the model are the same thing:

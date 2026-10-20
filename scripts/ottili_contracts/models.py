@@ -21,9 +21,9 @@ the real output of the tool must validate against both.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 #: The contract id of the report published by ``scripts/validate.py``.
 CONTRACT_VALIDATE_REPORT = "ottili.skills.validate-report/v1"
@@ -133,3 +133,88 @@ class InstallManifest(BaseModel):
     ok: bool
     skills: list[InstallEntry]
     error: str | None = None
+
+
+class ValidateSummaryLine(BaseModel):
+    """The summary line of the JSON Lines export of the validate report.
+
+    It is the FIRST line of ``scripts/validate.py --jsonl`` and it carries the
+    verdict of the run: the number of skills the report covers and the number
+    of findings. It is a second rendering of the same contract
+    (``ottili.skills.validate-report/v1``), not a contract of its own.
+
+    Inputs:
+        contract: the contract id, always ``ottili.skills.validate-report/v1``.
+        kind: always ``summary``; it discriminates the line against
+        :class:`ValidateFindingLine`.
+        scope: ``catalog`` or ``everywhere``.
+        skills: the number of catalogue entries the report covers.
+        findings: the number of findings of the report.
+        ok: true when there is no finding at all.
+    Outputs:
+        the mapping that is printed as the first JSON Lines line.
+    Failure modes:
+        ValidationError when a value does not match (a wrong kind, a negative
+        count, an unknown key).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    contract: Literal["ottili.skills.validate-report/v1"]
+    kind: Literal["summary"]
+    scope: ValidateScope
+    skills: int = Field(ge=0)
+    findings: int = Field(ge=0)
+    ok: bool
+
+
+class ValidateFindingLine(BaseModel):
+    """One finding line of the JSON Lines export of the validate report.
+
+    Every line after the summary is one finding, in the order the findings
+    were found. A consumer can therefore read the stream without knowing the
+    number of findings in advance.
+
+    Inputs:
+        contract: the contract id, always ``ottili.skills.validate-report/v1``.
+        kind: always ``finding``.
+        scope: ``catalog`` or ``everywhere``.
+        message: one finding, byte-identical with the entry of the ``errors``
+        list of the JSON report.
+    Outputs:
+        the mapping that is printed as one JSON Lines line.
+    Failure modes:
+        ValidationError when a value does not match (a wrong kind, an unknown
+        key).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    contract: Literal["ottili.skills.validate-report/v1"]
+    kind: Literal["finding"]
+    scope: ValidateScope
+    message: str
+
+
+#: One line of the JSON Lines export of the validate report: either the
+#: summary or one finding. The union is discriminated on ``kind``.
+ValidateLineInner = Annotated[
+    Union[ValidateSummaryLine, ValidateFindingLine], Field(discriminator="kind")
+]
+
+
+class ValidateLine(RootModel[ValidateLineInner]):
+    """One line of the JSON Lines export of the validate report.
+
+    Inputs:
+        the root value: a :class:`ValidateSummaryLine` or a
+        :class:`ValidateFindingLine` mapping.
+    Outputs:
+        ``model_validate`` returns the line; ``model_dump`` returns the
+        mapping unchanged, so a consumer round-trips a line without losing a
+        field.
+    Failure modes:
+        ValidationError when the ``kind`` is neither ``summary`` nor
+        ``finding``, or when the mapping does not match the shape that
+        ``kind`` names.
+    """

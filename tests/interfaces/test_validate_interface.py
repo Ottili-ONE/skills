@@ -12,7 +12,8 @@ What these tests hold:
   Lines export validate against the committed JSON Schema and against the
   typed (pydantic) view, and the two views never drift apart,
 * the output formats round-trip: the JSON Lines export rebuilds the JSON
-  report, and two runs of the same tree produce the same bytes,
+  report, both machine formats validate against their published schema and
+  two runs of the same tree produce the same bytes,
 * the failure modes are the documented ones: a missing or broken catalogue is
   a usage error (exit 2) and a finding is a validation error (exit 1),
 * every public function documents its inputs, its outputs and its failure
@@ -27,6 +28,7 @@ import sys
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATE = ROOT / "scripts" / "validate.py"
@@ -36,12 +38,17 @@ if str(ROOT / "scripts") not in sys.path:
 
 from ottili_contracts import (  # noqa: E402
     CONTRACT_VALIDATE_REPORT,
+    lines_example_path,
+    lines_model_for,
+    lines_schema_path,
     load_example,
+    load_lines_example,
+    load_lines_schema,
     load_schema,
     model_for,
     schema_path,
 )
-from ottili_contracts.generate import render_schema  # noqa: E402
+from ottili_contracts.generate import render_lines_schema, render_schema  # noqa: E402
 
 SKILL_MD = """---
 name: {name}
@@ -288,3 +295,127 @@ def test_every_public_function_documents_its_contract() -> None:
                 assert marker in docstring.lower(), (
                     f"{path.name}:{node.name} does not state its {marker}"
                 )
+
+
+def test_the_two_machine_formats_cannot_be_asked_for_at_once() -> None:
+    """--json and --jsonl render the same report: asking for both is a usage error.
+
+    Silently letting one flag win would print a format the caller did not
+    ask for, so the two are mutually exclusive and the tool exits 2.
+    """
+    result = run_validator("--everywhere", "--json", "--jsonl")
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert result.stdout == "", "a usage error prints no report at all"
+    assert "not allowed with" in result.stderr
+
+
+def test_a_catalogue_entry_without_a_name_is_a_usage_error(tmp_path: Path) -> None:
+    """A broken entry is reported, never raised: no traceback, exit 2.
+
+    The entry points at a folder that does not exist, so the catalogue
+    validation returns before it reaches the name — the tree cross-check is
+    then the first code that touches it. It used to raise a bare KeyError and
+    print a traceback with exit 1.
+    """
+    tree = tmp_path / "nameless"
+    (tree / "scripts").mkdir(parents=True)
+    (tree / "scripts" / "validate.py").write_text(
+        VALIDATE.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tree / "catalog.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0.0",
+                "repository": "demo",
+                "packages": {
+                    "demo": {"label": "d", "description": "d", "path": "skills/demo"}
+                },
+                "skills": [
+                    {
+                        "id": "alpha",
+                        "package": "demo",
+                        "path": "skills/demo/alpha",
+                        "description": "d",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = run_validator(
+        "--everywhere", cwd=tree, script=tree / "scripts" / "validate.py"
+    )
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "Traceback" not in result.stderr
+    assert "missing a required field" in result.stderr
+    assert "'name'" in result.stderr
+
+
+def test_the_jsonl_export_validates_against_the_published_lines_schema() -> None:
+    """Every line of the JSON Lines export is a valid line of the contract.
+
+    The report schema describes the single JSON object; the lines schema
+    describes one line of the stream. Without it a consumer that validated a
+    ``--jsonl`` line against the only published schema failed.
+    """
+    schema = load_lines_schema(CONTRACT_VALIDATE_REPORT)
+    result = run_validator("--everywhere", "--jsonl")
+    assert result.returncode == 0, result.stdout + result.stderr
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert lines, "the JSON Lines export is empty"
+    for line in lines:
+        jsonschema.validate(line, schema)
+        assert lines_model_for(CONTRACT_VALIDATE_REPORT).model_validate(
+            line
+        ).model_dump() == line
+
+
+def test_a_finding_line_is_a_valid_line_of_the_lines_schema(tmp_path: Path) -> None:
+    """The lines schema covers the finding line, not only the summary."""
+    tree = make_fixture_tree(tmp_path)
+    result = run_validator(
+        "--everywhere", "--jsonl", cwd=tree, script=tree / "scripts" / "validate.py"
+    )
+    assert result.returncode == 1, result.stdout + result.stderr
+    lines = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    kinds = [line["kind"] for line in lines]
+    assert kinds[0] == "summary"
+    assert "finding" in kinds, "the fixture has a finding, so a finding line must exist"
+    schema = load_lines_schema(CONTRACT_VALIDATE_REPORT)
+    for line in lines:
+        jsonschema.validate(line, schema)
+
+
+def test_the_committed_lines_schema_matches_the_typed_view() -> None:
+    """The lines schema is generated from its model: the two cannot drift."""
+    assert lines_schema_path(CONTRACT_VALIDATE_REPORT).read_text(
+        encoding="utf-8"
+    ) == render_lines_schema(CONTRACT_VALIDATE_REPORT)
+
+
+def test_the_lines_example_validates_against_the_lines_contract() -> None:
+    """The published JSON Lines example is a valid payload of the contract."""
+    schema = load_lines_schema(CONTRACT_VALIDATE_REPORT)
+    example = load_lines_example(CONTRACT_VALIDATE_REPORT)
+    assert example, "the JSON Lines example is empty"
+    assert example[0]["kind"] == "summary"
+    for line in example:
+        jsonschema.validate(line, schema)
+        lines_model_for(CONTRACT_VALIDATE_REPORT).model_validate(line)
+    assert lines_example_path(CONTRACT_VALIDATE_REPORT).name.endswith(".jsonl")
+
+
+def test_the_lines_schema_rejects_a_line_the_tool_never_prints() -> None:
+    """The lines schema is a contract, not a rubber stamp."""
+    schema = load_lines_schema(CONTRACT_VALIDATE_REPORT)
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(
+            {
+                "contract": CONTRACT_VALIDATE_REPORT,
+                "kind": "summary",
+                "scope": "everywhere",
+                "skills": 1,
+                "ok": True,
+            },
+            schema,
+        )

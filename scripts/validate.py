@@ -222,7 +222,9 @@ def validate_tree(catalog: dict[str, Any], root: Path = ROOT) -> list[str]:
         a list of findings; an empty list means the tree and the catalogue
         describe the same set of skills.
     Failure modes:
-        none. Every inconsistency is a finding.
+        KeyError when a catalogue entry has no name. The caller treats that as
+        a broken catalogue and exits with :data:`EXIT_USAGE`; the tool never
+        raises a traceback at the consumer.
     """
     errors: list[str] = []
     on_disk = scan_tree(root)
@@ -370,12 +372,13 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument(
         "--json",
         action="store_true",
         help="machine-readable report on stdout (contract ottili.skills.validate-report/v1)",
     )
-    parser.add_argument(
+    output.add_argument(
         "--jsonl",
         action="store_true",
         help="machine-readable report as JSON Lines on stdout (one summary line, one line per finding)",
@@ -402,8 +405,9 @@ def main(argv: list[str] | None = None) -> int:
         the process exit code: 0 without findings, 1 with findings, 2 for a
         usage error or an unreadable catalogue.
     Failure modes:
-        an unreadable or malformed ``catalog.json`` is reported on stderr and
-        exits 2. Every other inconsistency is a finding and exits 1.
+        an unreadable or malformed ``catalog.json`` and a catalogue entry
+        without a required field are reported on stderr and exit 2. Every
+        other inconsistency is a finding and exits 1.
     """
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -425,12 +429,11 @@ def main(argv: list[str] | None = None) -> int:
     scope = SCOPE_EVERYWHERE if args.everywhere else SCOPE_CATALOG
     try:
         errors = validate_catalog(catalog)
+        if args.everywhere:
+            errors.extend(validate_tree(catalog))
     except KeyError as exc:
         print(f"error: catalog entry is missing a required field: {exc}", file=sys.stderr)
         return EXIT_USAGE
-
-    if args.everywhere:
-        errors.extend(validate_tree(catalog))
 
     report = build_report(scope, catalog, errors)
 

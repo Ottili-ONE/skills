@@ -40,8 +40,10 @@ PACKAGE=""
 JSON=0
 SKILLS=()
 
-# The manifest rows of the current run: name|package|source|destination|action|error
+# The manifest rows of the current run: one rendered JSON object per skill,
+# and the action of each of them (the verdict of the run is computed from it).
 MANIFEST_ROWS=()
+MANIFEST_ACTIONS=()
 MANIFEST_MODE="install"
 
 if [[ ! -f "$MANIFEST_LIB" ]]; then

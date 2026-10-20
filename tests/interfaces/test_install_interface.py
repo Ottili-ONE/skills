@@ -262,3 +262,66 @@ def test_every_shell_function_documents_its_contract() -> None:
                 assert marker in text, (
                     f"{path.name}:{match.group(1)} does not state its {marker}"
                 )
+
+
+def test_a_pipe_in_a_path_does_not_corrupt_the_manifest(tmp_path: Path) -> None:
+    """A target directory may carry a '|': the manifest must stay a manifest.
+
+    The rows used to be kept as a "|"-delimited string and split again in
+    ``manifest_emit``. A path with a "|" shifted every field, so the manifest
+    published an ``action`` like "b/skill" — valid JSON that violates the
+    contract schema.
+    """
+    target = tmp_path / "a|b"
+    result = run_install("--target", str(target), "--package", "engineering", "--json")
+    assert result.returncode == 0, result.stdout + result.stderr
+    manifest = json.loads(result.stdout)
+    assert manifest["target"] == str(target)
+    jsonschema.validate(manifest, load_schema(CONTRACT_INSTALL_MANIFEST))
+    assert [entry["name"] for entry in manifest["skills"]] == engineering_skills()
+    assert all(entry["action"] == "copied" for entry in manifest["skills"])
+    assert all(entry["error"] is None for entry in manifest["skills"])
+    for entry in manifest["skills"]:
+        assert entry["destination"] == str(target / entry["name"])
+
+
+def test_an_error_row_survives_a_pipe_in_the_message(tmp_path: Path) -> None:
+    """The error path builds the same row: its reason must survive a '|'.
+
+    The installer is copied into a tree whose own path carries a "|", so the
+    reason of the unresolvable skill ("source skill directory missing:
+    <tree>/skills/*/<name>") carries one as well.
+    """
+    tree = tmp_path / "a|b"
+    (tree / "scripts" / "lib").mkdir(parents=True)
+    (tree / "scripts" / "install.sh").write_text(
+        INSTALL.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tree / "scripts" / "lib" / "install-manifest.sh").write_text(
+        MANIFEST_LIB.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tree / "skills").symlink_to(ROOT / "skills")
+
+    result = subprocess.run(
+        [
+            "bash",
+            str(tree / "scripts" / "install.sh"),
+            "--target",
+            str(tmp_path / "target"),
+            "no-such-skill-xyz",
+            "--json",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1, result.stdout + result.stderr
+    manifest = json.loads(result.stdout)
+    jsonschema.validate(manifest, load_schema(CONTRACT_INSTALL_MANIFEST))
+    assert manifest["ok"] is False
+    entry = manifest["skills"][0]
+    assert entry["name"] == "no-such-skill-xyz"
+    assert entry["action"] == "error"
+    assert "|" in entry["error"], "the fixture must exercise a pipe in the reason"
+    assert str(tree / "skills") in entry["error"]

@@ -286,3 +286,53 @@ Everything here is measured, not asserted.
   (`shared-tree-git`, `long-test-discipline`, `module-contract-first`) were **not** deleted
   here: the deletion belongs to TASK-0006 together with the catalogue change, so that no
   pass leaves the repository with a broken "Related skills" link.
+
+## G-014 — four contract defects the VERIFY pass of TASK-0003 found — FOUND AND FIXED 2026-10-20
+
+The build pass of TASK-0003 landed the two contracts (`bbb9ec4`, `431aabb`, `222685d`).
+The independent verification of this pass executed the interfaces instead of trusting the
+notes and found four real defects. All four are fixed here, each with a regression test
+that fails without the fix (measured by reverting the fix and watching the test fail).
+
+- **D-1 — the install manifest was corrupted by a `|` in a path.** `manifest_add` kept a
+  row as `name|package|source|destination|action|error` and `manifest_emit` split it
+  again. A target directory may legally carry a `|`; every field then shifted. Measured on
+  `HEAD`: `install.sh --target '<dir>/a|b' --package engineering --json` published
+  `"action": "b/acceptance-harness", "error": "copied"` — valid JSON that violates the
+  published schema (`action` is not in the enum). Fixed by rendering each row to its JSON
+  form once in `manifest_add`; the row is never parsed back. Guards:
+  `tests/interfaces/test_install_interface.py::test_a_pipe_in_a_path_does_not_corrupt_the_manifest`
+  and `::test_an_error_row_survives_a_pipe_in_the_message`.
+- **D-2 — the JSON Lines export had no schema.** The tool publishes the report twice
+  (`--json` and `--jsonl`) under ONE contract id, but the committed schema described only
+  the report object. A consumer that validated a `--jsonl` line failed with
+  `Additional properties are not allowed ('findings', 'kind' were unexpected')`. The
+  README claimed the single schema covered `--jsonl` too, which was false. Fixed by
+  publishing a second normative artefact of contract `v1`: the lines schema
+  (`...validate-report.v1.lines.schema.json`), generated from a discriminated union
+  (`ValidateLine` = summary | finding) with its own worked `.jsonl` example. Guards:
+  `::test_the_jsonl_export_validates_against_the_published_lines_schema`,
+  `::test_the_committed_lines_schema_matches_the_typed_view`,
+  `::test_the_lines_example_validates_against_the_lines_contract` and the document guard
+  `tests/interfaces/test_interface_docs.py::test_every_published_schema_is_documented`.
+- **D-3 — `--json` and `--jsonl` together were accepted silently.** Both render the same
+  report; `--jsonl` won and the caller got a format it had not asked for, exit 0. Now an
+  `argparse` mutually exclusive group: exit 2, no report on stdout. Guard:
+  `::test_the_two_machine_formats_cannot_be_asked_for_at_once`.
+- **D-4 — a catalogue entry without a `name` raised a bare `KeyError`.** `validate_tree`
+  was called OUTSIDE the `try` that turns a broken catalogue into a usage error, so
+  `--everywhere` printed a Python traceback and exited 1 while `docs/interfaces/validate.md`
+  promises "No traceback: the tool reports, it does not raise" and exit 2. Fixed by moving
+  the tree cross-check into the guarded block. Guard:
+  `::test_a_catalogue_entry_without_a_name_is_a_usage_error`.
+
+## G-015 — `docs/truth/REPO_SHAPE.md` does not list the contract registry — FOUND 2026-10-20
+
+- **What is missing.** This pass added `scripts/lib/` (the manifest library) and
+  `scripts/ottili_contracts/` (the contract registry: schemas, typed view, examples) to
+  the repository. `docs/truth/REPO_SHAPE.md` enumerates the tools of the repository and
+  does not mention either directory. Nothing drifted: its "Tools - exactly one each" table
+  still holds exactly one installer and one aggregate validator.
+- **Requested from the owner of `docs/truth/`:** add the contract registry (and the
+  manifest library) to the tools table of `docs/truth/REPO_SHAPE.md`. The document is not
+  owned by this job, so this pass cannot edit it.
