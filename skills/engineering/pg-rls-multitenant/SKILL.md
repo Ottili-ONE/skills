@@ -125,7 +125,7 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
   (`guc-names.json`), not a constant of the harness: it sets every accepted name
   to the same tenant, so it works on every repository without taking the open
   decision about one canonical name. `--guc NAME` overrides it.
-- Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
+- Run the standard validator of the repository (from the repository root, not from this skill folder): `python3 scripts/validate_skills.py` — must report OK.
 - Full procedure, version table, worked examples, and pitfalls: `references/pg-rls-procedure.md`.
 - Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.

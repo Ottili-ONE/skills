@@ -1697,6 +1697,123 @@ reason next to it. No other file of this repository was exempted.
   `python3 -m pytest tests/hygiene/test_repair_log.py -q` fail.
 - **Index proof:** `P33`
 - **Date:** 2026-10-20
+## D-059 — the installer wrote — and with --force deleted — outside the target directory
+
+- **Defect:** `bash scripts/install.sh --force --target <dir> ../pkg/good` resolved the
+  destination to `<dir>/../pkg/good`, deleted that directory (`rm -rf "$dest"`) and
+  wrote the skill there. A folder OUTSIDE the target was destroyed; the installer
+  never asked and never printed where it wrote. The same name without `--force`
+  wrote outside the target as well.
+- **Cause:** the skill name was used unvalidated as a path component of the
+  destination (`dest="$TARGET/$name"`). The "ambiguous package" check fired only
+  when the tree held more than one package, so the refusal was accidental
+  protection, not a guard. A single-package tree was enough to escape.
+- **Fix:** `scripts/install.sh` — every skill name is checked against
+  `^[A-Za-z0-9._-]+$` (no path separator, no `.`/`..`, no leading dash) BEFORE
+  anything is written; an unsafe name is refused with exit 2.
+  `tests/hygiene/test_install.py` — a fixture with a folder outside the target
+  proves that the name is refused and that the folder survives.
+- **Proof:** the four new installer tests fail against the pre-fix installer
+  (measured: `git show HEAD:scripts/install.sh`).
+- **Index proof:** `P34`
+- **Date:** 2026-10-20
+
+## D-060 — `--check` refused a target that the install accepts
+
+- **Defect:** `bash scripts/install.sh --check --target <dir>/does/not/exist --package engineering`
+  exited 1 with `error: target parent '<dir>/does/not/exist' does not exist`, while
+  the very same target was installed without complaint (exit 0): the install creates
+  the tree with `mkdir -p`. The check was stricter than the install and reported a
+  false failure.
+- **Cause:** the check demanded that the PARENT of the target already existed. The
+  install never demanded that.
+- **Fix:** `scripts/install.sh` — the check now walks up to the nearest EXISTING
+  ancestor of the target and asks whether the tree could be created there; a target
+  that cannot be created (an ancestor that is a file) is still refused.
+  `tests/hygiene/test_install.py` — one test proves that the check accepts the
+  target the install accepts, one that it refuses the target that cannot exist.
+- **Proof:** the two new installer tests fail against the pre-fix installer.
+- **Index proof:** `P35`
+- **Date:** 2026-10-20
+
+## D-061 — the catalogue generator ignored an unknown option and overwrote the catalogue
+
+- **Defect:** `node scripts/gen-catalog.mjs --chek` printed
+  `ok: wrote .../catalog.json — 39 skills, 12 packages` and exited 0: the unknown
+  option was ignored, so a typo of `--check` silently WROTE the catalogue instead
+  of checking it. `node scripts/gen-catalog.mjs --out` (without a file path) died
+  with a node stack trace (`TypeError [ERR_INVALID_ARG_TYPE]`) instead of a usage
+  error.
+- **Cause:** the option loop had no `else` branch, so every argument it did not know
+  was dropped, and `--out` read the next argument without checking that there was one.
+- **Fix:** `scripts/gen-catalog.mjs` — an unknown option is refused with exit 2, a
+  `--out` without a file path is refused with exit 2, and neither writes a file.
+  `tests/hygiene/test_catalog.py` — two tests prove the refusal and that no
+  catalogue is written.
+- **Proof:** the two new catalogue tests fail against the pre-fix generator.
+- **Index proof:** `P36`
+- **Date:** 2026-10-20
+
+## D-062 — the validator collapsed two skills that carry the same folder name
+
+- **Defect:** `scripts/validate.py --everywhere` collected the skill folders of the
+  tree in a dict keyed by the folder name, so a skill name that lives in two
+  packages silently kept only the LAST folder. A skill that was missing from the
+  catalogue stayed invisible, and the installer (which refuses an ambiguous name)
+  could not tell which of the two folders it was supposed to install.
+- **Cause:** one folder name per key was assumed; the tree never had such a pair, so
+  nothing ever noticed.
+- **Fix:** `scripts/validate.py` — every folder of a name is kept and a name that
+  lives in two packages is reported as `duplicate skill name '<name>' on disk`.
+  `tests/hygiene/test_validate.py` — a fixture with two packages that hold the same
+  folder name proves the report.
+- **Proof:** the new validator test fails against the pre-fix validator.
+- **Index proof:** `P37`
+- **Date:** 2026-10-20
+
+## D-063 — a skill documented a verification command that cannot run
+
+- **Defect:** `skills/engineering/problem-json-contracts/SKILL.md` documented
+  `python3 scripts/validate_problem_examples.py --schema-dir references/examples/schemas --catalogue references/examples/catalogue.json`.
+  Copy and paste: `not a directory: references/examples/schemas`, exit 2. The
+  fixtures of the skill live one level deeper
+  (`references/examples/good/schemas`, `references/examples/good/catalogue.json`),
+  and the skill's own self-test uses exactly those paths.
+- **Cause:** the documented path lost the `good/` segment when the fixture tree was
+  moved; nothing executed the command of a SKILL.md.
+- **Fix:** `skills/engineering/problem-json-contracts/SKILL.md` — the documented
+  command names the fixtures that exist, and the "Run the offline gate" line keeps
+  the placeholder form that `scripts/gen-preamble.mjs` pins.
+  `tests/hygiene/test_skill_docs.py` — a new guard runs every command a SKILL.md
+  documents whose input is part of the tree.
+- **Proof:** the guard fails when the documented path is broken again (measured) and
+  is green on the fixed document.
+- **Index proof:** `P38`
+- **Date:** 2026-10-20
+
+## D-064 — three skills documented the repository validator with a path that does not exist inside the skill
+
+- **Defect:** `skills/engineering/{outbox-idempotency,pg-rls-multitenant,problem-json-contracts}/SKILL.md`
+  documented `python3 scripts/validate_skills.py` as a command of the skill. No
+  engineering skill ships that script: it lives in the repository root, so the
+  command fails with `can't open file '.../skills/engineering/<skill>/scripts/validate_skills.py'`
+  (exit 2) when it is copied into the skill folder, which is where the reader is.
+- **Cause:** the command was written for the repository, but the document reads like
+  a command of the skill. The honest-status skill had the same defect with
+  `STATUS.md`, a file it does not ship either.
+- **Fix:** `skills/engineering/outbox-idempotency/SKILL.md`,
+  `skills/engineering/pg-rls-multitenant/SKILL.md`,
+  `skills/engineering/problem-json-contracts/SKILL.md` — the command now says that
+  it runs from the repository root.
+  `skills/engineering/honest-status/SKILL.md` — the status file is named as the
+  file of the repository an agent works on, and the self-test of the checker is
+  added as the command that runs inside the skill.
+  `tests/hygiene/test_skill_docs.py` — the guard resolves every documented script
+  and runs every documented command whose input is part of the tree.
+- **Proof:** the new guard is green on the fixed documents.
+- **Index proof:** `P39`
+- **Date:** 2026-10-20
+
 
 # SKL-W0-01 — TASK-0007 (2026-10-20) — repair log entry
 
@@ -2257,6 +2374,60 @@ one of them exited 0; the transcript is in `.truth/SKL-W0-01/after.txt`.
 - **Fix (files):** `tests/hygiene/test_repair_log.py` — every follow-up item must name a path in its title and carry a symptom in its body, plus a mutation test.
 - **Proof:** `P33` — `python3 -m pytest tests/hygiene/test_repair_log.py -q`
 - **Date:** 2026-10-20
+#### D-059 — the installer wrote (and with --force deleted) outside the target directory
+
+- **Symptom:** `install.sh --force --target <dir> ../pkg/good` deleted `<dir>/../pkg/good` and wrote the skill there, so a folder outside the target was destroyed without a question.
+- **Reproduction:** `bash scripts/install.sh --force --target <dir> ../pkg/good` in a tree with one package and a folder `<dir>/../pkg/good` — the marker file of that folder is gone after the run.
+- **Root cause:** the skill name was used unvalidated as a path component of the destination (`dest="$TARGET/$name"`); the "ambiguous package" check only fired by accident, when the tree held more than one package.
+- **Fix (files):** `scripts/install.sh` — every skill name is checked against `^[A-Za-z0-9._-]+$` before anything is written and an unsafe name is refused with exit 2; `tests/hygiene/test_install.py` — a fixture with a folder outside the target proves the refusal and the survival of that folder.
+- **Proof:** `P34` — `python3 -m pytest tests/hygiene/test_install.py -q -k "escapes_the_target"`
+- **Date:** 2026-10-20
+
+#### D-060 — `--check` refused a target that the install accepts
+
+- **Symptom:** `install.sh --check --target <dir>/does/not/exist --package engineering` exited 1 with "target parent does not exist", while the same target was installed without complaint (exit 0).
+- **Reproduction:** `bash scripts/install.sh --check --target "$PWD/.truth/SKL-W0-01/attack/new/deep/target" --package engineering` — exit 1; `bash scripts/install.sh --target "$PWD/.truth/SKL-W0-01/attack/new/deep/target" --package engineering` — exit 0.
+- **Root cause:** the check demanded that the parent of the target already existed; the install creates that tree with `mkdir -p` and never demanded it.
+- **Fix (files):** `scripts/install.sh` — the check walks up to the nearest existing ancestor and asks whether the tree could be created there; a target below a file is still refused; `tests/hygiene/test_install.py` — two tests prove both directions.
+- **Proof:** `P35` — `python3 -m pytest tests/hygiene/test_install.py -q -k "parent_does_not_exist or cannot_be_created"`
+- **Date:** 2026-10-20
+
+#### D-061 — the catalogue generator ignored an unknown option and overwrote the catalogue
+
+- **Symptom:** `node scripts/gen-catalog.mjs --chek` wrote the catalogue and exited 0 instead of checking it; `node scripts/gen-catalog.mjs --out` died with a node stack trace.
+- **Reproduction:** `node scripts/gen-catalog.mjs --chek` — "ok: wrote .../catalog.json"; `node scripts/gen-catalog.mjs --out` — "TypeError [ERR_INVALID_ARG_TYPE]".
+- **Root cause:** the option loop had no `else` branch, so every unknown argument was dropped, and `--out` read the next argument without checking that one existed.
+- **Fix (files):** `scripts/gen-catalog.mjs` — an unknown option and an `--out` without a file path are refused with exit 2 and write nothing; `tests/hygiene/test_catalog.py` — two tests prove the refusal.
+- **Proof:** `P36` — `python3 -m pytest tests/hygiene/test_catalog.py -q -k "unknown_option or without_a_value"`
+- **Date:** 2026-10-20
+
+#### D-062 — the validator collapsed two skills that carry the same folder name
+
+- **Symptom:** `validate.py --everywhere` kept only the last folder of a skill name, so a skill that lived in two packages and was missing from the catalogue stayed invisible.
+- **Reproduction:** a tree with `skills/demo/alpha/SKILL.md` and `skills/other/alpha/SKILL.md` and a catalogue that knows only `demo/alpha` — the pre-fix validator reported no duplicate.
+- **Root cause:** the on-disk scan used a dict keyed by the folder name and therefore assumed that every name lives exactly once in the tree.
+- **Fix (files):** `scripts/validate.py` — every folder of a name is kept and a name that lives twice is reported as "duplicate skill name"; `tests/hygiene/test_validate.py` — a fixture with two packages proves the report.
+- **Proof:** `P37` — `python3 -m pytest tests/hygiene/test_validate.py -q -k "duplicate"`
+- **Date:** 2026-10-20
+
+#### D-063 — a skill documented a verification command that cannot run
+
+- **Symptom:** the RFC 9457 validator command of `skills/engineering/problem-json-contracts/SKILL.md` names `references/examples/schemas` and `references/examples/catalogue.json`; neither exists, the command exits 2 with "not a directory".
+- **Reproduction:** `cd skills/engineering/problem-json-contracts && python3 scripts/validate_problem_examples.py --schema-dir references/examples/schemas --catalogue references/examples/catalogue.json` — exit 2.
+- **Root cause:** the documented path lost the `good/` segment of the fixture tree; no test executed the commands a SKILL.md prints.
+- **Fix (files):** `skills/engineering/problem-json-contracts/SKILL.md` — the command names the fixtures that exist and keeps the placeholder form that the preamble generator pins; `tests/hygiene/test_skill_docs.py` — a guard runs every documented command whose input is part of the tree.
+- **Proof:** `P38` — `python3 -m pytest tests/hygiene/test_skill_docs.py -q`
+- **Date:** 2026-10-20
+
+#### D-064 — three skills documented the repository validator with a path that does not exist inside the skill
+
+- **Symptom:** `python3 scripts/validate_skills.py` is documented as a command of three engineering skills, but no engineering skill ships that script; copied into the skill folder it exits 2 with "can't open file".
+- **Reproduction:** `cd skills/engineering/problem-json-contracts && python3 scripts/validate_skills.py` — exit 2.
+- **Root cause:** a command of the repository was written like a command of the skill; the honest-status skill had the same defect with a `STATUS.md` it does not ship.
+- **Fix (files):** `skills/engineering/outbox-idempotency/SKILL.md`, `skills/engineering/pg-rls-multitenant/SKILL.md`, `skills/engineering/problem-json-contracts/SKILL.md` — the command says that it runs from the repository root; `skills/engineering/honest-status/SKILL.md` — the status file is named as the file of the repository an agent works on and the self-test of the checker is added; `tests/hygiene/test_skill_docs.py` — the guard resolves every documented script.
+- **Proof:** `P39` — `python3 -m pytest tests/hygiene/test_skill_docs.py -q -k "documented_script_exists"`
+- **Date:** 2026-10-20
+
 
 ## Proof commands executed on 2026-10-20
 
@@ -2535,6 +2706,59 @@ $ python3 -m pytest tests/hygiene/test_repair_log.py -q
 29 passed in 5.05s
 exit=0
 ```
+### P34 — the installer refuses a skill name that escapes the target
+
+```
+$ python3 -m pytest tests/hygiene/test_install.py -q -k "escapes_the_target"   # auto
+.                                                                        [100%]
+1 passed, 20 deselected in 0.10s
+exit=0
+```
+
+### P35 — the check accepts the target the install accepts and refuses the impossible one
+
+```
+$ python3 -m pytest tests/hygiene/test_install.py -q -k "parent_does_not_exist or cannot_be_created"   # auto
+..                                                                       [100%]
+2 passed, 19 deselected in 0.66s
+exit=0
+```
+
+### P36 — the catalogue generator refuses an unknown option and an incomplete `--out`
+
+```
+$ python3 -m pytest tests/hygiene/test_catalog.py -q -k "unknown_option or without_a_value"   # auto
+..                                                                       [100%]
+2 passed, 5 deselected in 0.15s
+exit=0
+```
+
+### P37 — the validator reports a skill name that lives in two packages
+
+```
+$ python3 -m pytest tests/hygiene/test_validate.py -q -k "duplicate"   # auto
+.                                                                        [100%]
+1 passed, 4 deselected in 0.11s
+exit=0
+```
+
+### P38 — every command a skill documents runs
+
+```
+$ python3 -m pytest tests/hygiene/test_skill_docs.py -q   # auto
+..                                                                       [100%]
+2 passed in 3.18s
+exit=0
+```
+
+### P39 — every script a skill documents exists
+
+```
+$ python3 -m pytest tests/hygiene/test_skill_docs.py -q -k "documented_script_exists"   # auto
+.                                                                        [100%]
+1 passed, 1 deselected in 0.06s
+exit=0
+```
 
 ### GATE — the job gate (install, build, lint, language, tests, hygiene, ownership)
 
@@ -2625,6 +2849,29 @@ exact symptom; the owner is the job that holds the path in
     scratch repository), so new files stay untracked unless they are staged
     explicitly. The kit belongs to the operator and may not be edited by a
     job. Owner: operator.
+
+17. **`skills/orchestrator-preamble/orchestrator-preamble/SKILL.md:35`** — the four
+    check commands of the preamble name `scripts/check_rls_migration.py`,
+    `scripts/check_outbox.py`, `scripts/check_problem_catalogue.py` and
+    `scripts/check_status_evidence.py`. Those scripts live inside the canonical
+    engineering skills, so a reader who copies the command into the preamble folder
+    gets `No such file or directory` (exit 1). The generated
+    `references/preamble.md` prints the same commands and neither document says in
+    which folder the command runs. The generator `scripts/gen-preamble.mjs` is
+    outside the owned paths of SKL-W0-01, and it pins the gate command of the four
+    canonical skills verbatim, so the fix belongs to the job that owns the
+    generator and the preamble. Owner: `skills-engineering-r3` (`scripts/**`).
+18. **`scripts/truth/config.json`** — the `lint` step of the truth gate runs the
+    same command as the `build` step (`python3 -I scripts/validate.py --everywhere`),
+    so a lint regression cannot be seen by the gate: the step is green whenever the
+    build is green. A real linter is installed on this host — `ruff` 0.16.8 — and it
+    reports 23 findings in `tests/` and 8 in `scripts/`; the findings of `tests/`
+    are inside the owned paths of this job, the findings of `scripts/validate_skills.py`,
+    `scripts/build-index.py`, `scripts/check_related_graph.py`,
+    `scripts/install-skill.py` and `scripts/validate_reviewed_by.py` are not. The
+    command was NOT changed here on purpose: a trunk gate that depends on a binary
+    the CI image may not carry would turn the W1 jobs red. Owner: operator (the
+    config) and `skills-engineering-r3` (the linter findings of `scripts/**`).
 13. **`docs/requests/` and `docs/lane-requests/`** — the directories do not
     exist, so the instruction of `AGENTS.md` ("write
     `docs/requests/<job>-<n>.md`") cannot be followed from this job; the

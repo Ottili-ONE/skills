@@ -114,7 +114,6 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    global CATALOG_PATH
     if not CATALOG_PATH.is_file():
         print(f"error: catalog not found at {CATALOG_PATH}", file=sys.stderr)
         return 1
@@ -127,6 +126,11 @@ def main() -> int:
         # It cross-checks the generated catalog against the skills/ folders on
         # disk so a skill that exists on disk but is missing from the catalog
         # (or vice versa) is reported here rather than silently ignored.
+        # One folder name can live in more than one package. A dict that keeps
+        # only the LAST folder of a name silently drops the other one, so a
+        # skill that is missing from the catalogue would stay invisible. Every
+        # folder of a name is therefore kept, and a name that lives twice is
+        # reported as the duplicate it is.
         on_disk: dict[str, list[str]] = {}
         for skill_dir in sorted((ROOT / "skills").rglob("*")):
             if not skill_dir.is_dir():
@@ -135,12 +139,15 @@ def main() -> int:
             if not sm.is_file():
                 continue
             rel = skill_dir.relative_to(ROOT).as_posix()
-            pkg = rel.split("/")[1] if len(rel.split("/")) > 1 else ""
-            on_disk[skill_dir.name] = [rel, pkg]
+            on_disk.setdefault(skill_dir.name, []).append(rel)
         catalog_names = {e["name"] for e in catalog.get("skills", [])}
-        for name, (rel, pkg) in sorted(on_disk.items()):
+        for name, found in sorted(on_disk.items()):
+            if len(found) > 1:
+                errors.append(
+                    f"duplicate skill name '{name}' on disk: {', '.join(sorted(found))}"
+                )
             if name not in catalog_names:
-                errors.append(f"on-disk skill '{name}' ({rel}) is missing from the catalog")
+                errors.append(f"on-disk skill '{name}' ({found[0]}) is missing from the catalog")
         for name in sorted(catalog_names - set(on_disk)):
             errors.append(f"catalog entry '{name}' has no SKILL.md on disk")
 

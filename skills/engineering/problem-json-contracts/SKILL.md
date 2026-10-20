@@ -100,10 +100,10 @@ Bad (retry_after as HTTP-date — most clients ignore it):
 - [ ] `scripts/check_problem_catalogue.py` passes in CI
 
 ## Verification
-- Run the offline gate: `python3 scripts/check_problem_catalogue.py --catalogue <cat> --openapi <spec> --schema-dir <dir>` — must exit 0.
-- Run the RFC 9457 shape validator: `python3 scripts/validate_problem_examples.py --schema-dir references/examples/schemas --catalogue references/examples/catalogue.json` — must print OK.
+- Run the offline gate: `python3 scripts/check_problem_catalogue.py --catalogue <cat> --openapi <spec> --schema-dir <dir>` — must exit 0. On the fixtures of this skill: `python3 scripts/check_problem_catalogue.py --catalogue references/examples/good/catalogue.json --openapi references/examples/good/openapi.yaml --schema-dir references/examples/good/schemas`.
+- Run the RFC 9457 shape validator: `python3 scripts/validate_problem_examples.py --schema-dir references/examples/good/schemas --catalogue references/examples/good/catalogue.json` — must print OK.
 - Run the catalogue checker against every fixture: `python3 scripts/check_problem_catalogue_test.py` — must print ok (1 good, 6 bad, 1 malformed).
-- Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
+- Run the standard validator of the repository (from the repository root, not from this skill folder): `python3 scripts/validate_skills.py` — must report OK.
 - Full procedure, version table, worked examples, and pitfalls: `references/problem-procedure.md`.
 - Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.

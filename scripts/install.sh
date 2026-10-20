@@ -68,6 +68,30 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# A skill name is a plain folder name. The name becomes a path component of
+# the destination ("$TARGET/$name"), so a name that carries a path separator
+# ("../pkg/skill") would let the installer write — and with --force DELETE —
+# outside the target directory. Such a name is refused before anything is
+# written; every skill folder of this tree matches the accepted charset.
+valid_skill_name() {
+  local name="$1"
+  [[ -n "$name" ]] || return 1
+  [[ "$name" != */* ]] || return 1
+  [[ "$name" != "." && "$name" != ".." ]] || return 1
+  [[ "$name" != -* ]] || return 1
+  [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]] || return 1
+  return 0
+}
+
+if [[ ${#SKILLS[@]} -gt 0 ]]; then
+  for name in "${SKILLS[@]}"; do
+    if ! valid_skill_name "$name"; then
+      echo "error: invalid skill name '$name': a skill name must be a plain folder name (letters, digits, '.', '_' and '-')" >&2
+      exit 2
+    fi
+  done
+fi
+
 # `--check` without a --target verifies the whole repository. The gate runs
 # exactly `bash scripts/install.sh --check`, so the check has to be meaningful
 # on its own: it resolves every skill of every package and checks the scratch
@@ -218,7 +242,6 @@ SKILLS=("${UNIQ[@]}")
 # --- --check: verify the preconditions, write nothing. ---
 if [[ $CHECK -eq 1 ]]; then
   rc=0
-  target_parent="$(dirname "$TARGET")"
   if [[ -e "$TARGET" ]]; then
     if [[ ! -d "$TARGET" ]]; then
       echo "error: target '$TARGET' exists and is not a directory" >&2
@@ -227,12 +250,25 @@ if [[ $CHECK -eq 1 ]]; then
       echo "error: target '$TARGET' is not writable" >&2
       rc=1
     fi
-  elif [[ ! -d "$target_parent" ]]; then
-    echo "error: target parent '$target_parent' does not exist" >&2
-    rc=1
-  elif [[ ! -w "$target_parent" ]]; then
-    echo "error: target parent '$target_parent' is not writable" >&2
-    rc=1
+  else
+    # The install creates the target tree with `mkdir -p`, so a missing parent
+    # directory is NOT an error: the check has to look at the nearest
+    # EXISTING ancestor and ask whether the tree could be created there. A
+    # check that is stricter than the install reports a false failure for a
+    # target the install would accept.
+    ancestor="$TARGET"
+    while [[ ! -e "$ancestor" ]]; do
+      ancestor_parent="$(dirname "$ancestor")"
+      [[ "$ancestor_parent" == "$ancestor" ]] && break
+      ancestor="$ancestor_parent"
+    done
+    if [[ ! -d "$ancestor" ]]; then
+      echo "error: target '$TARGET' cannot be created: '$ancestor' is not a directory" >&2
+      rc=1
+    elif [[ ! -w "$ancestor" ]]; then
+      echo "error: target parent '$ancestor' is not writable" >&2
+      rc=1
+    fi
   fi
 
   for name in "${SKILLS[@]}"; do

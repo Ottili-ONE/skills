@@ -246,3 +246,75 @@ def test_check_fails_on_a_skill_folder_without_a_skill_md(tmp_path: Path) -> Non
     )
     assert broken.returncode == 1, broken.stdout + broken.stderr
     assert "has no SKILL.md" in broken.stderr
+
+
+def test_a_skill_name_that_escapes_the_target_is_refused(tmp_path: Path) -> None:
+    """A skill name is a path component of the destination: it must not escape.
+
+    The destination is ``$TARGET/$name``. A name like ``../pkg/good`` therefore
+    points OUTSIDE the target directory, and with ``--force`` the installer
+    deleted that directory (``rm -rf "$dest"``) before it wrote the skill
+    there. The installer refused every such name instead, and it refuses it
+    before it writes anything.
+    """
+    fixture = tmp_path / "fixture"
+    (fixture / "scripts").mkdir(parents=True)
+    shutil.copy(INSTALL, fixture / "scripts" / "install.sh")
+    skill = fixture / "skills" / "pkg" / "good"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: good\n---\n", encoding="utf-8")
+    target = fixture / "target"
+    target.mkdir()
+    # A directory OUTSIDE the target that must survive the attempt.
+    outside = fixture / "pkg" / "good"
+    outside.mkdir(parents=True)
+    (outside / "MARKER").write_text("keep me", encoding="utf-8")
+
+    for extra in ([], ["--force"]):
+        result = subprocess.run(
+            ["bash", str(fixture / "scripts" / "install.sh"), *extra,
+             "--target", str(target), "../pkg/good"],
+            cwd=fixture,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 2, (
+            f"a traversing skill name must be refused (rc={result.returncode})\n"
+            f"{result.stdout}{result.stderr}"
+        )
+        assert "invalid skill name" in result.stderr
+        assert (outside / "MARKER").is_file(), "the installer touched a directory outside the target"
+
+
+def test_a_skill_name_with_a_path_separator_is_refused(tmp_path: Path) -> None:
+    """``skills/pkg/good`` is not a skill name; only plain folder names are."""
+    result = run_install("--check", "--target", str(tmp_path / "t"), "engineering/honest-status")
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "invalid skill name" in result.stderr
+
+
+def test_check_accepts_a_target_whose_parent_does_not_exist(tmp_path: Path) -> None:
+    """The check mirrors the install: ``mkdir -p`` creates the target tree.
+
+    The check used to refuse a target whose parent directory was missing,
+    although the install creates that tree with ``mkdir -p``. A check that is
+    stricter than the install reports a false failure.
+    """
+    target = tmp_path / "does" / "not" / "exist" / "yet"
+    checked = run_install("--check", "--target", str(target), "--package", "engineering")
+    assert checked.returncode == 0, checked.stdout + checked.stderr
+    assert not target.exists(), "--check must not create the target"
+
+    installed = run_install("--target", str(target), "--package", "engineering")
+    assert installed.returncode == 0, installed.stdout + installed.stderr
+    assert (target / "honest-status" / "SKILL.md").is_file()
+
+
+def test_check_refuses_a_target_that_cannot_be_created(tmp_path: Path) -> None:
+    """A target below a FILE cannot be created: the check has to say so."""
+    blocker = tmp_path / "blocker"
+    blocker.write_text("not a directory", encoding="utf-8")
+    result = run_install("--check", "--target", str(blocker / "skills"), "--package", "engineering")
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "cannot be created" in result.stderr

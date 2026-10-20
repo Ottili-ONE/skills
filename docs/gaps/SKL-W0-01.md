@@ -828,3 +828,53 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   be edited by a job; the guard of this job cannot run the slow proofs without recursion.
   Both facts are recorded in `docs/truth/REPAIR_LOG.md`, section "Follow-ups for later trunk
   repair jobs", items 15 and 16.
+
+## G35 (cross-job request, TASK-0008 review, 2026-10-20): the preamble prints check commands whose scripts live in other skills
+
+- **What was measured:** `skills/orchestrator-preamble/orchestrator-preamble/SKILL.md:35`
+  and the generated `references/preamble.md` print
+  `python3 scripts/check_problem_catalogue.py ...`,
+  `python3 scripts/check_rls_migration.py ...`,
+  `python3 scripts/check_outbox.py ...` and
+  `python3 scripts/check_status_evidence.py ...`. Those scripts exist only inside the
+  canonical engineering skills
+  (`skills/engineering/{problem-json-contracts,pg-rls-multitenant,outbox-idempotency,honest-status}/scripts/`).
+  A reader who copies the command into the preamble folder gets
+  `No such file or directory` (exit 1); neither document says in which folder the
+  command has to run.
+- **Why it is not fixed here:** `scripts/gen-preamble.mjs` pins the gate command of the
+  four canonical skills verbatim (it refuses to run when a skill no longer contains the
+  string) and writes them into the preamble. The generator is outside the owned paths of
+  SKL-W0-01 (`scripts/install.sh`, `scripts/validate.py`, `scripts/gen-catalog.mjs`,
+  `scripts/verify-status.mjs`, `scripts/truth/config.json`), and the preamble itself is
+  the subject of the W1 job `SKL-W1-02`. Changing the generated text by hand would be
+  undone by the next `node scripts/gen-preamble.mjs`.
+- **The request:** let the generator print the command with the folder it runs in (for
+  example `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py
+  <migration.sql>`) or print the sentence "run this in the folder of the skill that owns
+  the script". The same change belongs into the human-readable contract
+  `skills/orchestrator-preamble/orchestrator-preamble/SKILL.md`.
+- **The proof that exists today:** `tests/hygiene/test_skill_docs.py` resolves every
+  script a SKILL.md names; it is green because it accepts a script of a sibling skill.
+  It does NOT decide in which folder the command runs — that is the open question of this
+  entry.
+
+## G36 (follow-up, TASK-0008 review, 2026-10-20): the lint step of the truth gate is the build step
+
+- **What was measured:** `scripts/truth/config.json` sets `commands.build` and
+  `commands.lint` to the same command (`python3 -I scripts/validate.py --everywhere`).
+  The trunk gate therefore reports `lint: pass` whenever the build passes; a lint
+  regression cannot be seen by the gate. A real linter is installed on this host —
+  `ruff` 0.16.8 at `/usr/local/bin/ruff` — and it reports 23 findings in `tests/` and 8
+  in `scripts/`. The findings in `tests/` are inside the owned paths of this job, the
+  findings in `scripts/validate_skills.py`, `scripts/build-index.py`,
+  `scripts/check_related_graph.py`, `scripts/install-skill.py` and
+  `scripts/validate_reviewed_by.py` are not.
+- **Why it is not changed here:** the pack-v3 decision fixes the command strings of
+  `scripts/truth/config.json` to the ones that are measured, and a trunk gate that
+  depends on a binary the CI image may not carry would turn the W1 jobs red on a host
+  that has no `ruff`. The change belongs to the operator (the config) together with the
+  job that owns `scripts/**` (the findings).
+- **The request:** decide whether `commands.lint` becomes `ruff check` (and then make
+  the CI image carry `ruff`), or keep the current command and rename the step so that it
+  does not claim to be a lint.

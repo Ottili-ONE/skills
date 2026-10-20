@@ -92,7 +92,7 @@ SELECT ... FROM outbox WHERE sent_at IS NULL LIMIT 50 FOR UPDATE SKIP LOCKED;
 ## Verification
 - Run the offline gate: `python3 scripts/check_outbox.py <sql-file>` — must exit 0.
 - Run the self-test: `python3 scripts/check_outbox_test.py` — must print ok.
-- Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
+- Run the standard validator of the repository (from the repository root, not from this skill folder): `python3 scripts/validate_skills.py` — must report OK.
 - Full procedure, version table, worked examples, and pitfalls: `references/outbox-procedure.md`.
 - Eval prompts with expected behaviour and failure signs: `references/EVALS.md`.
 - Primary sources with URLs and retrieval dates: `references/SOURCES.md`.

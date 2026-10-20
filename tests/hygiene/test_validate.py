@@ -151,3 +151,54 @@ def test_everywhere_mode_detects_a_catalogue_entry_without_a_folder(tmp_path: Pa
     everywhere = run_validator(tree / "scripts" / "validate.py", "--everywhere")
     assert everywhere.returncode == 1, everywhere.stdout + everywhere.stderr
     assert "no SKILL.md on disk" in everywhere.stderr
+
+
+def test_everywhere_mode_reports_a_duplicate_skill_name(tmp_path: Path) -> None:
+    """Two packages that hold the same skill name are a defect, not a shadow.
+
+    The on-disk scan used a dict keyed by the folder name, so the second
+    folder silently replaced the first one: a skill that was missing from the
+    catalogue stayed invisible, and the installer could not tell which of the
+    two folders it was supposed to install.
+    """
+    tree = tmp_path / "tree"
+    (tree / "scripts").mkdir(parents=True)
+    (tree / "skills" / "demo" / "alpha").mkdir(parents=True)
+    (tree / "skills" / "other" / "alpha").mkdir(parents=True)
+
+    (tree / "scripts" / "validate.py").write_text(
+        VALIDATE.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tree / "catalog.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0.0",
+                "repository": "demo",
+                "packages": {
+                    "demo": {"label": "Demo", "description": "d", "path": "skills/demo"},
+                    "other": {"label": "Other", "description": "d", "path": "skills/other"},
+                },
+                "skills": [
+                    {
+                        "id": "alpha",
+                        "name": "alpha",
+                        "title": "Alpha",
+                        "package": "demo",
+                        "path": "skills/demo/alpha",
+                        "description": "d",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    for package in ("demo", "other"):
+        (tree / "skills" / package / "alpha" / "SKILL.md").write_text(
+            SKILL_MD.format(name="alpha"), encoding="utf-8"
+        )
+
+    everywhere = run_validator(tree / "scripts" / "validate.py", "--everywhere")
+    assert everywhere.returncode == 1, everywhere.stdout + everywhere.stderr
+    assert "duplicate skill name 'alpha' on disk" in everywhere.stderr
+    assert "skills/demo/alpha" in everywhere.stderr
+    assert "skills/other/alpha" in everywhere.stderr

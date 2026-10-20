@@ -39,14 +39,36 @@ const IGNORE_FILES = new Set(['.DS_Store', '.gitkeep']);
 const args = process.argv.slice(2);
 let check = false;
 let outPath = DEFAULT_OUT;
+const USAGE = 'Usage: gen-catalog.mjs [--check] [--out <file>]';
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--check') check = true;
   else if (args[i] === '--help' || args[i] === '-h') {
-    console.log('Usage: gen-catalog.mjs [--check] [--out <file>]');
+    console.log(USAGE);
     process.exit(0);
   }
-  else if (args[i] === '--out') outPath = resolve(args[++i]);
-  else if (args[i].startsWith('--out=')) outPath = resolve(args[i].slice(7));
+  else if (args[i] === '--out') {
+    const value = args[i + 1];
+    if (value === undefined || value === '' || value.startsWith('--')) {
+      console.error(`error: --out needs a file path\n${USAGE}`);
+      process.exit(2);
+    }
+    outPath = resolve(value);
+    i++;
+  }
+  else if (args[i].startsWith('--out=')) {
+    const value = args[i].slice(6);
+    if (value === '') {
+      console.error(`error: --out needs a file path\n${USAGE}`);
+      process.exit(2);
+    }
+    outPath = resolve(value);
+  }
+  else {
+    // An unknown option must never be ignored: a typo like "--chek" would
+    // otherwise silently WRITE the catalogue instead of checking it.
+    console.error(`error: unknown option ${args[i]}\n${USAGE}`);
+    process.exit(2);
+  }
 }
 
 // --- minimal block-style YAML frontmatter parser (frontmatter only) ---
