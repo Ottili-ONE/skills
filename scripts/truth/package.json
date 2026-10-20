@@ -1,0 +1,10 @@
+{
+  "name": "@ottili/truth-kit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Executable truth gates for Ottili repositories (zero runtime dependencies except pg for scripts/truth/db.mjs).",
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

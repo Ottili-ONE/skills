@@ -1,0 +1,21 @@
+{
+  "install": "bash scripts/install.sh --check",
+  "commands": {
+    "build": "python3 -I scripts/validate.py --everywhere",
+    "lint": "python3 -I scripts/validate.py --everywhere",
+    "test": "pytest -q {paths}"
+  },
+  "sharedGlobs": [
+    "catalog.json"
+  ],
+  "sql": {
+    "requireRls": false,
+    "requireIdempotent": false
+  },
+  "generatedGlobs": [
+    "catalog.json"
+  ],
+  "integration": "auto",
+  "trunkBranch": "main",
+  "repoCode": "SKL"
+}
