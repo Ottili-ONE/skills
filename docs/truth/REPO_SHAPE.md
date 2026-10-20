@@ -24,7 +24,7 @@ document cannot drift away from the tree again without turning the suite red.
 | Packages that contain skills | 12 | `python3 -c "import json;print(len(json.load(open('catalog.json'))['packages']))"` |
 | `SKILL.md` files in the tree | 40 | `git ls-files '*/SKILL.md' \| wc -l` |
 | Directories under `skills/` | 14 | `ls -d skills/*/ \| wc -l` |
-| Tracked files | 651 | `git ls-files \| wc -l` |
+| Tracked files | 652 | `git ls-files \| wc -l` |
 | Skill directories with a duplicated name | 0 | `git ls-files '*/SKILL.md' \| xargs -n1 dirname \| xargs -n1 basename \| sort \| uniq -d \| wc -l` |
 
 The 40th `SKILL.md` is `templates/skill/SKILL.md`, the starting point for a new
@@ -53,7 +53,7 @@ skills/<package>/<skill-name>/
 
 | What | Value | Command |
 | --- | --- | --- |
-| Tracked files under `tests/` | 32 | `git ls-files 'tests/**' \| wc -l` |
+| Tracked files under `tests/` | 33 | `git ls-files 'tests/**' \| wc -l` |
 | Tracked files under the per-skill `tests/` directories | 112 | `git ls-files 'skills/*/*/tests/**' \| wc -l` |
 
 ## Catalogue generated from folders
@@ -104,9 +104,13 @@ The overlap between `install.sh` and `install-skill.py` is recorded in
 
 - A status diary is `STATUS*.md`, `HANDOFF*.md`, `GAPS*.md`, `R3_PLAN.md` or
   `REVERIFY*.md`. None of them is committed, at the root or anywhere else.
-- The only remaining `EVALS.md` files are **skill content**, not diaries: each of the
-  30 skills ships `references/EVALS.md` with its eval prompts, and
-  `scripts/validate_skills.py` fails a skill that lacks one. They stay.
+- The only remaining `EVALS.md` files are **skill content**, not diaries: 30 of the 39
+  catalogue skills ship `references/EVALS.md` with their eval prompts, and
+  `scripts/validate_skills.py` exits 1 when an engineering skill lacks one. They stay.
+- The nine skills without an eval set — `core/work-untill-i-die`, `curated/cursor-cli`,
+  `orchestrator-preamble` and the six `ref-*` wrappers — have none by design.
+  `scripts/validate_skills.py` only scans `skills/engineering`, so it never asks them for
+  one; see `docs/gaps/SKL-W0-01.md` (G24).
 - A skill's `references/handoff.md` is likewise skill content (the hand-off contract
   of `browser-agent-playwright`, linked from its `SKILL.md`).
 - No `*.log` and no `*.db` is committed. Three `*_state.json` files survive under

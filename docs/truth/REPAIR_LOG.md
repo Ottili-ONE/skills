@@ -936,3 +936,69 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
 - **Proof:** the gate's `language` step → `PASS  language  31 file(s) scanned`; the
   kit's own scanner over every changed file reports nothing outside `catalog.json`,
   which the kit allows by configuration.
+
+## D-037 — `REPO_SHAPE.md` drifted from the tree, and nothing noticed
+
+- **Defect:** the source of truth for the canonical-skills job claimed **649** tracked
+  files and **30** repository-level test files; the tree had **651** and **32**. Two of
+  the document's numbers were wrong the moment it was written.
+- **Cause:** `docs/truth/REPO_SHAPE.md` was written in commit `0bc1a13`, the guard test
+  `tests/hygiene/test_no_status_diaries.py` landed in `d9c14aa`, and nothing compared the
+  document with the tree. A claim without a check is a wish.
+- **Fix:** corrected the numbers, made every label match the command beside it, and added
+  `tests/hygiene/test_repo_shape_numbers.py`. The test parses every
+  `| What | Value | Command |` row of the document, runs that command verbatim and compares
+  the printed number with the claimed one. Twelve rows are checked; the test is generic, so
+  a row added later is checked automatically and a stale row fails.
+- **Proof:**
+  - against the stale document: `AssertionError: REPO_SHAPE.md drifted from the tree:
+    Tracked files: document says 649, command says 651`;
+    Repository-level test files: document says 30, command says 32`.
+  - after the fix: `pytest tests/hygiene/test_repo_shape_numbers.py -q` → 1 passed.
+  - a planted wrong number (`| Tracked files | 999 |`) fails the test again in a throwaway
+    clone of `38c4a77` → the guard bites.
+  - `pytest -q` → 650 passed, 0 skipped.
+
+## D-038 — the tool inventory was incomplete and claimed there was no second installer
+
+- **Defect:** `docs/truth/REPO_SHAPE.md` stated *"No second installer, validator or
+  catalogue generator exists in the tree."* That is false: `scripts/install-skill.py` is a
+  second installer — it resolves a skill by name or id in `catalog.json` and copies it into
+  an agent skills directory, which is the job `scripts/install.sh` does. Four further tools
+  were missing from the inventory: `scripts/validate_reviewed_by.py`,
+  `scripts/check_related_graph.py`, `scripts/list-skills.py` and `scripts/gen-preamble.mjs`.
+- **Cause:** the inventory was written from the tools this job knew, not from `ls scripts/`.
+- **Fix:** rewrote the section as the complete inventory (twelve rows, one per file in
+  `scripts/`) and stated the requirement that can actually be checked — exactly one
+  `scripts/install.sh` and exactly one `scripts/validate.py` — each with its own command.
+- **Proof:** `git ls-files 'scripts/install.sh' | wc -l` → 1;
+  `git ls-files 'scripts/validate.py' | wc -l` → 1; the inventory lists all twelve files of
+  `scripts/`.
+- **Cross-job:** the overlap between the two installers is requested in
+  `docs/gaps/SKL-W0-01.md` (G21); `scripts/**` is not on this job's owned list.
+
+## D-039 — the per-skill `references/EVALS.md` files are a validator input, not diaries
+
+- **Question:** the delete list of this task names `EVALS.md`, but thirty skills ship
+  `references/EVALS.md` with their eval prompts. Are those diaries?
+- **Finding:** no — they are a required input of the skill validator. Verified by experiment
+  in a throwaway clone: with `skills/engineering/honest-status/references/EVALS.md` moved
+  aside, `python3 scripts/validate_skills.py` exits **1** and reports
+  `[honest-status] missing references/EVALS.md`. With the file present it exits 0.
+- **Decision:** keep them. Deleting them would turn the validator red — the symptom, not the
+  cause. The root-level `EVALS.md` diaries of the earlier waves were deleted (D-004).
+- **Proof:** `git ls-files | grep -cE '(HANDOFF|GAPS|R3_PLAN|REVERIFY)'` → 0; the only
+  `EVALS.md` files left are the thirty per-skill ones under `references/`.
+- **Correction found in the VERIFY pass:** the validator does *not* check every skill.
+  `scripts/validate_skills.py` hardcodes `SKILLS_DIR = .../skills/engineering`, so it
+  validates the ten engineering skills although its docstring promises "every skill
+  folder"; the nine catalogue skills without an eval set are never asked for one. It also
+  crashes with `UnboundLocalError` when the first validated skill has no `EVALS.md`, and
+  counts the prompts of the *previous* skill's file for later ones. Two agentic-data
+  skills ship an eval set their `SKILL.md` never links — a defect the wider scan would
+  have caught. Both are recorded in `docs/gaps/SKL-W0-01.md` (G24); neither file is on
+  this job's owned list.
+- **Guard:** `tests/hygiene/test_skill_eval_sets.py` keeps the four facts that are
+  checkable from this job's paths honest — the engineering skills keep their eval set,
+  every link to an eval set resolves, every shipped eval set is in the catalogue, and no
+  eval diary survives outside `skills/`.

@@ -443,3 +443,56 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   `node scripts/gen-catalog.mjs` and `python3 scripts/build-index.py` and commit all three.
 - **Effect while open:** six stale path fragments in prose. No test fails; the deletion of the
   top-level `business-de/` itself is complete and unblocked.
+
+## G23 (cross-job request, TASK-0004 VERIFY, 2026-10-20): committed test output is catalogued as skill content
+
+- **Observed:** ten committed files under `skills/business-de/*/tests/tmp/` are leftovers of
+  test runs: `bank-reconciliation-camt/tests/tmp/{nearmiss,r}.json`,
+  `skr-journal-mapping/tests/tmp/{dbg,empty,j,nearmiss}.json`, `skr-journal-mapping/tests/tmp/j.csv`,
+  `ust-edge-cases/tests/tmp/{inv,nearmiss}.json` and `xrechnung-zugferd/tests/tmp/.gitkeep`.
+  Because the catalogue generator lists every file of a skill directory, all of them appear
+  in `catalog.json` under `paths[]` — the catalogue advertises scratch files as part of a
+  skill.
+- **Impact:** no test fails, but the published catalogue is polluted and the scratch files
+  are diff noise on every run of the business-de tests.
+- **Ownership:** `skills/business-de/**` belongs to `skills-business-de-r3` per
+  `docs/R3_OWNERS.json`; the files are not named by this task's delete list.
+- **Request (cross-job):** delete the nine scratch files, keep `tests/tmp/.gitkeep` so the
+  directory survives, and make the catalogue generator skip `tests/tmp/**` when it collects
+  `paths[]` (`scripts/gen-catalog.mjs` is on this job's owned list, the skill folders are not).
+- **Effect while open:** ten scratch files stay in the catalogue's `paths[]`.
+
+## G24 (cross-job requests, TASK-0004 VERIFY, 2026-10-20): `scripts/validate_skills.py` checks ten of the 39 skills, and two skills ship an unlinked eval set
+
+- **Observed 1 (scope):** `scripts/validate_skills.py` sets
+  `SKILLS_DIR = .../skills/engineering`, so it validates the ten engineering skills while
+  its docstring promises the rules for "every skill folder". The other 29 catalogue
+  skills are never checked by it.
+- **Observed 2 (crash):** the prompt count of `references/EVALS.md` is computed from
+  `ev_text`, which is assigned only inside the `else` branch. If the *first* validated
+  skill has no eval set, the validator dies with
+  `UnboundLocalError: cannot access local variable 'ev_text'` instead of reporting a
+  finding; for a later skill the variable still holds the *previous* skill's text, so the
+  prompt count comes from the wrong file. Reproduced in a throwaway clone:
+  `mv skills/engineering/acceptance-harness/references/EVALS.md /tmp/ev1.md &&
+  python3 scripts/validate_skills.py` → traceback, exit 1.
+- **Observed 3 (unlinked eval sets):** two skills ship `references/EVALS.md` but never
+  link it from their `SKILL.md` — `skills/agentic-data/computer-use-drivers` and
+  `skills/agentic-data/deep-research-method`. The validator's rule "references linked one
+  level deep" would have caught both, if it scanned those skills.
+- **Ownership:** `scripts/validate_skills.py` is not on this job's owned list;
+  `skills/agentic-data/**` belongs to `skills-agentic-data-r3` per `docs/R3_OWNERS.json`.
+  This job changed neither.
+- **Request (cross-job, scripts lane):** in `scripts/validate_skills.py`, derive the skill
+  list from the whole `skills/` tree (every package/skill directory that holds a
+  `SKILL.md`) and read the eval file unconditionally —
+  `ev_text = open(ev, encoding="utf-8").read() if os.path.isfile(ev) else ""` — skipping
+  the prompt count when the file is absent.
+- **Request (cross-job, agentic-data lane):** add a link to `references/EVALS.md` in the
+  `SKILL.md` of `skills/agentic-data/computer-use-drivers` and
+  `skills/agentic-data/deep-research-method`, where the other skills link their
+  `references/EVALS.md`.
+- **Effect while open:** the standard is enforced for ten of the 39 skills, and two eval
+  sets are invisible to a reader of the skill. No test fails today; the facts that are
+  checkable from this job's paths are guarded by
+  `tests/hygiene/test_skill_eval_sets.py`.
