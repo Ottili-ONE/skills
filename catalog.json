@@ -1018,6 +1018,13 @@
         "skills/engineering/pg-rls-multitenant/scripts/check_leak_probe.py",
         "skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py",
         "skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py",
+        "skills/engineering/pg-rls-multitenant/scripts/ottili_rls/__init__.py",
+        "skills/engineering/pg-rls-multitenant/scripts/ottili_rls/convention.py",
+        "skills/engineering/pg-rls-multitenant/scripts/ottili_rls/leak.py",
+        "skills/engineering/pg-rls-multitenant/scripts/ottili_rls/logging.py",
+        "skills/engineering/pg-rls-multitenant/scripts/ottili_rls/models.py",
+        "skills/engineering/pg-rls-multitenant/scripts/ottili_rls/rules.py",
+        "skills/engineering/pg-rls-multitenant/scripts/ottili_rls/scanner.py",
         "skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh"
       ]
     },

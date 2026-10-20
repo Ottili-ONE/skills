@@ -1,10 +1,11 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "measured_at": "2026-10-20",
-  "purpose": "Accepted tenant GUC names for the RLS checker. The checker reads this file instead of hard-coding one name.",
-  "canonical_name": null,
-  "canonical_decision": "OPEN - the owner decides which name every repository uses. This repository does not take that decision; it only records what the product repositories use today.",
-  "census_command": "grep -rlE \"current_setting\\('NAME'\" --include='*.sql' <repo-root>",
+  "purpose": "The tenant convention of every Ottili product repository: one tenant GUC and one tenant column. The RLS checker reads this file instead of hard-coding a name.",
+  "canonical_name": "app.company_id",
+  "canonical_column": "company_id",
+  "canonical_decision": "SET by SKL-W1-01 on 2026-10-20. app.company_id is the single tenant GUC and company_id the single tenant column of every Ottili product repository. The names under rejected_names are the measured legacy spellings; they are findings, because no session of the platform sets them, so a policy keyed on one isolates nobody.",
+  "census_command": "grep -rhoE \"current_setting\\('[^']+'\" --include='*.sql' <repo-root> | sort | uniq -c | sort -rn",
   "census_scope": [
     "hq-v2",
     "console-v2",
@@ -19,7 +20,7 @@
   "accepted_names": [
     {
       "name": "app.company_id",
-      "status": "dominant",
+      "status": "canonical",
       "occurrences": 3027,
       "files_by_repository": {
         "hq-v2": 511,
@@ -31,11 +32,14 @@
         "ld3-v2": 8,
         "skills": 2
       }
-    },
+    }
+  ],
+  "rejected_names": [
     {
       "name": "app.current_company_id",
-      "status": "legacy",
+      "status": "rejected",
       "occurrences": 919,
+      "why": "legacy spelling of ld3-v2 and alran-clients-v2; the session sets app.company_id, so a policy on this name isolates nobody",
       "files_by_repository": {
         "ld3-v2": 218,
         "alran-clients-v2": 23,
@@ -44,8 +48,9 @@
     },
     {
       "name": "ottili.company_id",
-      "status": "apps-and-platform",
+      "status": "rejected",
       "occurrences": 267,
+      "why": "spelling of ottili-apps and ottili-platform; the session sets app.company_id, so a policy on this name isolates nobody",
       "files_by_repository": {
         "ottili-apps": 39,
         "ottili-platform": 34,
@@ -54,12 +59,19 @@
     },
     {
       "name": "app.current_company",
-      "status": "legacy",
+      "status": "rejected",
       "occurrences": 51,
+      "why": "legacy spelling of hq-v2; the session sets app.company_id, so a policy on this name isolates nobody",
       "files_by_repository": {
         "hq-v2": 17,
         "skills": 1
       }
+    },
+    {
+      "name": "app.current_tenant",
+      "status": "rejected",
+      "occurrences": 0,
+      "why": "the tenant column of this platform is company_id; no session of the platform sets app.current_tenant, so a policy on it isolates nobody"
     }
   ],
   "known_non_tenant_names": [
