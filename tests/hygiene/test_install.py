@@ -21,7 +21,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 INSTALL = ROOT / "scripts" / "install.sh"
+MANIFEST_LIB = ROOT / "scripts" / "lib" / "install-manifest.sh"
 SKILLS_DIR = ROOT / "skills"
+
+
+def copy_installer(fixture: Path) -> Path:
+    """Copy the installer and the manifest library into a fixture tree.
+
+    The installer publishes its machine-readable manifest through
+    ``scripts/lib/install-manifest.sh``; a fixture that copies only
+    ``install.sh`` would miss the library and the installer would refuse to
+    run. A fixture of the installer therefore carries both files.
+    """
+    (fixture / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
+    shutil.copy(INSTALL, fixture / "scripts" / "install.sh")
+    shutil.copy(MANIFEST_LIB, fixture / "scripts" / "lib" / "install-manifest.sh")
+    return fixture / "scripts" / "install.sh"
 
 
 def run_install(*args: str) -> subprocess.CompletedProcess[str]:
@@ -220,8 +235,7 @@ def test_check_fails_on_a_skill_folder_without_a_skill_md(tmp_path: Path) -> Non
     so the check is proven to fail without depending on the real tree.
     """
     fixture = tmp_path / "fixture"
-    (fixture / "scripts").mkdir(parents=True)
-    shutil.copy(INSTALL, fixture / "scripts" / "install.sh")
+    copy_installer(fixture)
     skill = fixture / "skills" / "pkg" / "broken"
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text("---\nname: broken\n---\n", encoding="utf-8")
@@ -258,8 +272,7 @@ def test_a_skill_name_that_escapes_the_target_is_refused(tmp_path: Path) -> None
     before it writes anything.
     """
     fixture = tmp_path / "fixture"
-    (fixture / "scripts").mkdir(parents=True)
-    shutil.copy(INSTALL, fixture / "scripts" / "install.sh")
+    copy_installer(fixture)
     skill = fixture / "skills" / "pkg" / "good"
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text("---\nname: good\n---\n", encoding="utf-8")
@@ -318,3 +331,26 @@ def test_check_refuses_a_target_that_cannot_be_created(tmp_path: Path) -> None:
     result = run_install("--check", "--target", str(blocker / "skills"), "--package", "engineering")
     assert result.returncode == 1, result.stdout + result.stderr
     assert "cannot be created" in result.stderr
+
+
+def test_an_installer_without_its_manifest_library_is_refused(tmp_path: Path) -> None:
+    """The installer needs the repository layout and says so when it is missing.
+
+    The manifest of the ``--json`` mode lives in
+    ``scripts/lib/install-manifest.sh``. A copy of ``install.sh`` alone would
+    otherwise fail with an obscure "command not found" in the middle of a
+    run; the installer checks the library up front and stops with exit 2.
+    """
+    fixture = tmp_path / "fixture"
+    (fixture / "scripts").mkdir(parents=True)
+    shutil.copy(INSTALL, fixture / "scripts" / "install.sh")
+    result = subprocess.run(
+        ["bash", str(fixture / "scripts" / "install.sh"), "--check"],
+        cwd=fixture,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "install-manifest.sh" in result.stderr
+    assert "repository layout" in result.stderr

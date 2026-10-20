@@ -9,13 +9,26 @@
 #   ./scripts/install.sh --target /tmp/agents/skills --link shared-tree-git
 #   ./scripts/install.sh --check --target /tmp/agents/skills --package generic
 #   ./scripts/install.sh --check
+#   ./scripts/install.sh --target "$(mktemp -d)" --package engineering --json
 #
 # Safety: never overwrites without --force. --dry-run prints what would happen and
 # exits 0. --check verifies every source and the target without writing anything.
+#
+# Contract: with --json the script prints ONE JSON object and nothing else, the
+# install manifest of contract ottili.skills.install-manifest/v1. Its JSON Schema
+# is scripts/ottili_contracts/schemas/ottili.skills.install-manifest.v1.schema.json,
+# its typed view scripts/ottili_contracts/models.py and its example
+# scripts/ottili_contracts/examples/. In --json mode stdout carries the manifest
+# and stderr stays empty; every message of the human mode is carried by the
+# manifest ("error" for the run, "error" per skill).
+#
+# Exit codes: 0 success, 1 a skill or a package could not be resolved,
+# 2 usage error (missing --target, missing selection, unknown option).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS_DIR="$ROOT/skills"
+MANIFEST_LIB="$ROOT/scripts/lib/install-manifest.sh"
 TARGET=""
 TARGET_GIVEN=0
 DRY_RUN=0
@@ -24,8 +37,25 @@ LINK=0
 CHECK=0
 CHECK_ALL=0
 PACKAGE=""
+JSON=0
 SKILLS=()
 
+# The manifest rows of the current run: name|package|source|destination|action|error
+MANIFEST_ROWS=()
+MANIFEST_MODE="install"
+
+if [[ ! -f "$MANIFEST_LIB" ]]; then
+  echo "error: $MANIFEST_LIB is missing; the installer needs the repository layout" >&2
+  exit 2
+fi
+# shellcheck source=scripts/lib/install-manifest.sh
+source "$MANIFEST_LIB"
+
+# Print the usage text of the installer.
+#
+# Inputs: none.
+# Outputs: the usage text on stdout.
+# Failure modes: none.
 usage() {
   cat <<USAGE
 Usage: $0 --target <codex|claude|cursor|agents|/path> [options] <skill...>
@@ -42,13 +72,52 @@ Options:
   --dry-run              Print actions, write nothing, exit 0.
   --force                Overwrite an existing destination folder.
   --link                 Create a symlink instead of copying.
+  --json                 Print the install manifest (contract
+                         ottili.skills.install-manifest/v1) as one JSON object on
+                         stdout and nothing else.
+  --version              Print the contract id of the manifest and exit 0.
   -h | --help            Show this help.
+
+Exit codes:
+  0  every requested skill was installed, linked, skipped or verified
+  1  a skill or a package could not be resolved
+  2  usage error (missing --target, missing skill/package, unknown option)
 
 Packages are DERIVED from the skills/ folders at install time (never a hand-maintained
 list). A package is any top-level folder under skills/ that contains skill subfolders.
 Virtual package: 'generic' installs every skill of every package. 'meta' is reserved
 and ships no skills unless a skills/meta/ folder exists.
 USAGE
+}
+
+# Print one message of the human mode and, in --json mode, the manifest of a
+# run that could not start.
+#
+# Inputs: the exit code and the message.
+# Outputs: the message on stderr (human mode) or the manifest on stdout
+#   (--json mode).
+# Failure modes: none, the function exits with the given code.
+usage_error() {
+  local code="$1"; shift
+  if [[ $JSON -eq 1 ]]; then
+    manifest_emit "$*"
+  else
+    echo "error: $*" >&2
+    usage
+  fi
+  exit "$code"
+}
+
+# Report one skill that could not be resolved.
+#
+# Inputs: the message and the name of the skill.
+# Outputs: the message on stderr (human mode); the row is recorded in the
+#   manifest in every mode.
+# Failure modes: none.
+report_error() {
+  local message="$1" name="$2"
+  manifest_add "$name" "" "" "" "error" "$message"
+  [[ $JSON -eq 1 ]] || echo "error: $message" >&2
 }
 
 while [[ $# -gt 0 ]]; do
@@ -61,9 +130,11 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=1; shift ;;
     --force) FORCE=1; shift ;;
     --link) LINK=1; shift ;;
+    --json) JSON=1; shift ;;
+    --version) echo "install.sh - contract ottili.skills.install-manifest/v1"; exit 0 ;;
     -h|--help) usage; exit 0 ;;
     --) shift; SKILLS+=("$@"); break ;;
-    -*) echo "error: unknown option $1" >&2; usage; exit 2 ;;
+    -*) usage_error 2 "unknown option $1" ;;
     *) SKILLS+=("$1"); shift ;;
   esac
 done
@@ -73,6 +144,10 @@ done
 # ("../pkg/skill") would let the installer write — and with --force DELETE —
 # outside the target directory. Such a name is refused before anything is
 # written; every skill folder of this tree matches the accepted charset.
+#
+# Inputs: the candidate name.
+# Outputs: 0 when the name is a plain folder name, 1 otherwise.
+# Failure modes: none, the function never writes and never exits.
 valid_skill_name() {
   local name="$1"
   [[ -n "$name" ]] || return 1
@@ -86,8 +161,7 @@ valid_skill_name() {
 if [[ ${#SKILLS[@]} -gt 0 ]]; then
   for name in "${SKILLS[@]}"; do
     if ! valid_skill_name "$name"; then
-      echo "error: invalid skill name '$name': a skill name must be a plain folder name (letters, digits, '.', '_' and '-')" >&2
-      exit 2
+      usage_error 2 "invalid skill name '$name': a skill name must be a plain folder name (letters, digits, '.', '_' and '-')"
     fi
   done
 fi
@@ -106,14 +180,10 @@ if [[ $CHECK -eq 1 && $TARGET_GIVEN -eq 0 ]]; then
 fi
 
 if [[ -z "$TARGET" ]]; then
-  echo "error: --target is required" >&2
-  usage
-  exit 2
+  usage_error 2 "--target is required"
 fi
 if [[ ${#SKILLS[@]} -eq 0 && -z "$PACKAGE" && $CHECK_ALL -eq 0 ]]; then
-  echo "error: at least one skill name or --package is required" >&2
-  usage
-  exit 2
+  usage_error 2 "at least one skill name or --package is required"
 fi
 
 # Resolve target directory. Named agents map to $HOME subdirs; anything else is a path.
@@ -124,9 +194,21 @@ case "$TARGET" in
   agents)  TARGET="$HOME/.agents/skills" ;;
 esac
 
+if [[ $CHECK -eq 1 ]]; then
+  MANIFEST_MODE="check"
+elif [[ $DRY_RUN -eq 1 ]]; then
+  MANIFEST_MODE="dry-run"
+else
+  MANIFEST_MODE="install"
+fi
+
 # --- Derive the package list from the skills/ folders at install time. ---
 # A package is a top-level folder under skills/ that contains at least one
 # subfolder with a SKILL.md. No hand-maintained list, no dependency on catalog.json.
+#
+# Inputs: none.
+# Outputs: the package names, one per line, on stdout.
+# Failure modes: none, an unreadable skills/ tree yields no package.
 derive_packages() {
   local pkg sub
   for pkg in "$SKILLS_DIR"/*/; do
@@ -145,6 +227,10 @@ derive_packages() {
 }
 
 # Print the skill names of one package, one per line.
+#
+# Inputs: the package name.
+# Outputs: the skill names of that package, one per line, on stdout.
+# Failure modes: none, an unknown package yields no name.
 skills_in_package() {
   local pkg="$1" sub
   for sub in "$SKILLS_DIR/$pkg"/*/; do
@@ -154,6 +240,10 @@ skills_in_package() {
 }
 
 # Print every package that contains a folder named $1, one per line.
+#
+# Inputs: the skill name.
+# Outputs: the names of the packages that hold that skill, one per line.
+# Failure modes: none, an unknown skill yields no package.
 packages_holding() {
   local name="$1" pkg
   for pkg in "$SKILLS_DIR"/*/; do
@@ -168,6 +258,10 @@ packages_holding() {
 AUX_FOLDERS=" references scripts tests config "
 
 # Print every package folder of the tree, derived ones or not.
+#
+# Inputs: none.
+# Outputs: the package folder names, one per line, on stdout.
+# Failure modes: none.
 all_packages() {
   local pkg
   for pkg in "$SKILLS_DIR"/*/; do
@@ -181,6 +275,10 @@ all_packages() {
 
 # Print every skill folder of one package, even one without a SKILL.md: such a
 # folder is exactly what --check has to report.
+#
+# Inputs: the package name.
+# Outputs: the folder names of that package, one per line, on stdout.
+# Failure modes: none.
 skill_folders_in_package() {
   local pkg="$1" sub name
   for sub in "$SKILLS_DIR/$pkg"/*/; do
@@ -212,11 +310,9 @@ if [[ -n "$PACKAGE" ]]; then
     done < <(derive_packages)
   elif [[ "$PACKAGE" == "meta" ]]; then
     # Reserved virtual package: no skills/meta/ folder in this tree.
-    echo "note: package 'meta' is reserved and ships no skills in this tree"
+    [[ $JSON -eq 1 ]] || echo "note: package 'meta' is reserved and ships no skills in this tree"
   else
-    echo "error: unknown package '$PACKAGE'" >&2
-    echo "known packages: $(derive_packages | tr '\n' ' ') generic meta" >&2
-    exit 1
+    usage_error 1 "unknown package '$PACKAGE'; known packages: $(derive_packages | tr '\n' ' ') generic meta"
   fi
 fi
 
@@ -242,12 +338,13 @@ SKILLS=("${UNIQ[@]}")
 # --- --check: verify the preconditions, write nothing. ---
 if [[ $CHECK -eq 1 ]]; then
   rc=0
+  RUN_ERROR=""
   if [[ -e "$TARGET" ]]; then
     if [[ ! -d "$TARGET" ]]; then
-      echo "error: target '$TARGET' exists and is not a directory" >&2
+      RUN_ERROR="target '$TARGET' exists and is not a directory"
       rc=1
     elif [[ ! -w "$TARGET" ]]; then
-      echo "error: target '$TARGET' is not writable" >&2
+      RUN_ERROR="target '$TARGET' is not writable"
       rc=1
     fi
   else
@@ -263,44 +360,50 @@ if [[ $CHECK -eq 1 ]]; then
       ancestor="$ancestor_parent"
     done
     if [[ ! -d "$ancestor" ]]; then
-      echo "error: target '$TARGET' cannot be created: '$ancestor' is not a directory" >&2
+      RUN_ERROR="target '$TARGET' cannot be created: '$ancestor' is not a directory"
       rc=1
     elif [[ ! -w "$ancestor" ]]; then
-      echo "error: target parent '$ancestor' is not writable" >&2
+      RUN_ERROR="target parent '$ancestor' is not writable"
       rc=1
     fi
   fi
+  [[ $JSON -eq 1 ]] || [[ -z "$RUN_ERROR" ]] || echo "error: $RUN_ERROR" >&2
 
   for name in "${SKILLS[@]}"; do
     mapfile -t holders < <(packages_holding "$name")
     if [[ ${#holders[@]} -eq 0 ]]; then
-      echo "error: source skill directory missing: $SKILLS_DIR/*/$name" >&2
+      report_error "source skill directory missing: $SKILLS_DIR/*/$name" "$name"
       rc=1
       continue
     fi
     if [[ ${#holders[@]} -gt 1 ]]; then
-      echo "error: skill '$name' is ambiguous, found in packages: ${holders[*]}" >&2
+      report_error "skill '$name' is ambiguous, found in packages: ${holders[*]}" "$name"
       rc=1
       continue
     fi
     src="$SKILLS_DIR/${holders[0]}/$name"
     if [[ ! -f "$src/SKILL.md" ]]; then
-      echo "error: $src has no SKILL.md" >&2
+      report_error "$src has no SKILL.md" "$name"
       rc=1
       continue
     fi
     dest="$TARGET/$name"
     if [[ -e "$dest" || -L "$dest" ]]; then
       if [[ $FORCE -eq 0 ]]; then
-        echo "would skip: $dest already exists (use --force to overwrite)"
+        manifest_add "$name" "${holders[0]}" "$src" "$dest" "would-skip"
+        [[ $JSON -eq 1 ]] || echo "would skip: $dest already exists (use --force to overwrite)"
         continue
       fi
-      echo "would overwrite: $dest"
+      manifest_add "$name" "${holders[0]}" "$src" "$dest" "would-overwrite"
+      [[ $JSON -eq 1 ]] || echo "would overwrite: $dest"
     else
-      echo "ok: $name -> $dest"
+      manifest_add "$name" "${holders[0]}" "$src" "$dest" "verified"
+      [[ $JSON -eq 1 ]] || echo "ok: $name -> $dest"
     fi
   done
-  if [[ $rc -eq 0 ]]; then
+  if [[ $JSON -eq 1 ]]; then
+    manifest_emit "$RUN_ERROR"
+  elif [[ $rc -eq 0 ]]; then
     echo "check: ${#SKILLS[@]} skill(s) verified, nothing written"
   else
     echo "check: FAILED" >&2
@@ -311,7 +414,9 @@ fi
 # --dry-run promises to write nothing at all, so the target directory is only
 # created when something is actually going to be written into it.
 if [[ $DRY_RUN -eq 0 ]]; then
-  mkdir -p "$TARGET"
+  if ! mkdir -p "$TARGET" 2>/dev/null; then
+    usage_error 1 "target '$TARGET' cannot be created"
+  fi
 fi
 
 rc=0
@@ -325,45 +430,57 @@ for name in "${SKILLS[@]}"; do
   # catalog lookup returned nothing the path was also doubled onto $ROOT.
   mapfile -t holders < <(packages_holding "$name")
   if [[ ${#holders[@]} -eq 0 ]]; then
-    echo "error: source skill directory missing: $SKILLS_DIR/*/$name" >&2
+    report_error "source skill directory missing: $SKILLS_DIR/*/$name" "$name"
     rc=1; continue
   fi
   if [[ ${#holders[@]} -gt 1 ]]; then
-    echo "error: skill '$name' is ambiguous, found in packages: ${holders[*]}" >&2
+    report_error "skill '$name' is ambiguous, found in packages: ${holders[*]}" "$name"
     rc=1; continue
   fi
   src="$SKILLS_DIR/${holders[0]}/$name"
   dest="$TARGET/$name"
 
   if [[ ! -d "$src" ]]; then
-    echo "error: source skill directory missing: $src" >&2
+    report_error "source skill directory missing: $src" "$name"
     rc=1; continue
   fi
   if [[ ! -f "$src/SKILL.md" ]]; then
-    echo "error: $src has no SKILL.md" >&2
+    report_error "$src has no SKILL.md" "$name"
     rc=1; continue
   fi
 
   if [[ -e "$dest" || -L "$dest" ]]; then
     if [[ $FORCE -eq 0 ]]; then
-      echo "skip: $dest already exists (use --force to overwrite)"
+      manifest_add "$name" "${holders[0]}" "$src" "$dest" "skipped"
+      [[ $JSON -eq 1 ]] || echo "skip: $dest already exists (use --force to overwrite)"
       continue
     fi
     rm -rf "$dest"
   fi
 
   if [[ $DRY_RUN -eq 1 ]]; then
-    if [[ $LINK -eq 1 ]]; then echo "dry-run: link  $src  ->  $dest"; else echo "dry-run: copy  $src  ->  $dest"; fi
+    if [[ $LINK -eq 1 ]]; then
+      manifest_add "$name" "${holders[0]}" "$src" "$dest" "would-link"
+      [[ $JSON -eq 1 ]] || echo "dry-run: link  $src  ->  $dest"
+    else
+      manifest_add "$name" "${holders[0]}" "$src" "$dest" "would-copy"
+      [[ $JSON -eq 1 ]] || echo "dry-run: copy  $src  ->  $dest"
+    fi
     continue
   fi
 
   if [[ $LINK -eq 1 ]]; then
     ln -s "$src" "$dest"
-    echo "linked:  $dest -> $src"
+    manifest_add "$name" "${holders[0]}" "$src" "$dest" "linked"
+    [[ $JSON -eq 1 ]] || echo "linked:  $dest -> $src"
   else
     cp -r "$src" "$dest"
-    echo "copied: $dest"
+    manifest_add "$name" "${holders[0]}" "$src" "$dest" "copied"
+    [[ $JSON -eq 1 ]] || echo "copied: $dest"
   fi
 done
 
+if [[ $JSON -eq 1 ]]; then
+  manifest_emit
+fi
 exit $rc

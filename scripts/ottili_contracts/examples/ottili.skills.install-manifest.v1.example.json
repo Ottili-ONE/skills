@@ -1,0 +1,26 @@
+{
+  "contract": "ottili.skills.install-manifest/v1",
+  "mode": "install",
+  "target": "/home/user/.codex/skills",
+  "link": false,
+  "ok": true,
+  "skills": [
+    {
+      "name": "honest-status",
+      "package": "engineering",
+      "source": "/srv/ottili/repo/skills/skills/engineering/honest-status",
+      "destination": "/home/user/.codex/skills/honest-status",
+      "action": "copied",
+      "error": null
+    },
+    {
+      "name": "pg-rls-multitenant",
+      "package": "engineering",
+      "source": "/srv/ottili/repo/skills/skills/engineering/pg-rls-multitenant",
+      "destination": "/home/user/.codex/skills/pg-rls-multitenant",
+      "action": "copied",
+      "error": null
+    }
+  ],
+  "error": null
+}
