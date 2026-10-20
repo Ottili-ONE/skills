@@ -209,7 +209,11 @@ if [[ $CHECK -eq 1 ]]; then
   exit $rc
 fi
 
-mkdir -p "$TARGET"
+# --dry-run promises to write nothing at all, so the target directory is only
+# created when something is actually going to be written into it.
+if [[ $DRY_RUN -eq 0 ]]; then
+  mkdir -p "$TARGET"
+fi
 
 rc=0
 for name in "${SKILLS[@]}"; do

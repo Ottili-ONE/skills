@@ -171,3 +171,22 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   the same failure otherwise.
 - **Also relevant:** `tests/hygiene/clean-tree.test.mjs` is red for the same reason (an
   untracked directory at the root). It goes green as soon as `.germo/` is ignored.
+
+## G10 (tooling defect, TASK-0002, 2026-10-20): git 2.53.0 hides untracked files from `safe-commit`
+
+- **Observed:** `scripts/truth/safe-commit.mjs` enumerates the working tree with
+  `git status --porcelain=v1 -z --untracked-files=all`. On this host (git 2.53.0) that command
+  prints **nothing** — reproducible in an empty scratch repository, with and without `-z`, with
+  `--porcelain=v1` and with `--porcelain=v2`. `--untracked-files=normal` and
+  `git ls-files --others --exclude-standard` (which `scripts/truth/gate.mjs` uses) are unaffected.
+- **Impact:** `safe-commit` cannot see a NEW file, so a job that creates a file can commit it
+  only if the file is staged first. In this pass the first `safe-commit` run committed 6 of 9
+  owned paths and left the three new test files untracked; they landed in a second commit after
+  an explicit `git add -- <paths>` (which AGENTS.md permits).
+- **Ownership:** `scripts/truth/**` is operator-owned and on this job's EXCLUDE list.
+- **Request (cross-job):** in `scripts/truth/safe-commit.mjs`, enumerate the working tree with
+  `git status --porcelain=v1 -z` (default untracked mode) plus
+  `git ls-files --others --exclude-standard -z` for untracked files, instead of
+  `--untracked-files=all`. One line, no behaviour change on unaffected git versions.
+- **Workaround used in this pass:** stage new files with an explicit `git add -- <paths>` before
+  calling `safe-commit`.

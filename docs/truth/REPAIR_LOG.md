@@ -371,7 +371,7 @@ state) and is recorded here so the next pass does not mistake it for a regressio
 ## What the task card claimed vs. what the tree actually showed
 
 The card was written against an older trunk. Reproduction
-(`.truth/SKL-W0-01/before.txt`, trunk `2119edb`, 2026-10-20) measured this:
+(`.truth/SKL-W0-01/before.txt`, trunk `2119edb`, 2026-10-20) measured:
 
 | Claim in the card | Measured on trunk | Verdict |
 |---|---|---|
@@ -387,17 +387,15 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
 
 ## D-007 — the catalogue carried a wall-clock stamp: `--check` could never pass again
 
-- **Defect:** `node scripts/gen-catalog.mjs --check` exited 1 (`catalog would
-  change`). The CI step "Catalogue must be GENERATED from the skills/ folders"
-  was red; the clean clone was not green.
+- **Defect:** `node scripts/gen-catalog.mjs --check` exited 1 (`catalog would change`).
+  The CI step "Catalogue must be GENERATED from the skills/ folders" was red; the
+  clean clone was not green.
 - **Cause (two independent defects, both had to go):**
-  1. the generator wrote `updated_at: new Date().toISOString().slice(0, 10)`.
-     The check compares byte for byte, so the timestamp alone made every later
-     day fail — the check could never pass again after the generation day;
-  2. the committed catalogue was genuinely stale: three engineering skills had
-     gained files that were missing from their `paths` lists
-     (`foundation-v2-conformance` 3, `outbox-idempotency` 4) and the
-     description of `pg-rls-multitenant` had changed.
+  1. the generator wrote `updated_at: new Date().toISOString().slice(0, 10)`. The
+     check compares byte for byte, so the timestamp alone made every later day fail;
+  2. the committed catalogue was genuinely stale: three engineering skills had gained
+     files that were missing from their `paths` lists (`foundation-v2-conformance` 3,
+     `outbox-idempotency` 4) and `pg-rls-multitenant`'s description had changed.
 - **Fix:** the generator is now a **pure function of the `skills/` tree**. The
   wall-clock stamp is gone — `schema/catalog.schema.json` does not require
   `updated_at` and nothing in the repository reads it — and the generator
@@ -405,9 +403,9 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   name (that would make path, id and install target ambiguous). `--check` now
   reports **what** drifted (added / removed / changed skills) instead of only
   that something did. `catalog.json` was regenerated and committed.
-- **Where the `package` field comes from:** the name of the folder that contains
-  the skill folder — for `skills/<package>/<skill-name>/SKILL.md` the package is
-  `<package>`. Stated in the generator header and asserted by
+  The `package` field comes from the name of the folder that contains the skill
+  folder (`skills/<package>/<skill-name>/SKILL.md` → `<package>`); this is stated
+  in the generator header and asserted by
   `tests/hygiene/test_catalog.py::test_package_field_comes_from_the_skill_folder`.
 - **Proof:** `gen-catalog.mjs` → `ok: wrote … 39 skills, 12 packages`;
   `--check` → `ok: catalog unchanged (39 skills, 12 packages)`, exit 0; two
@@ -417,9 +415,9 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
 
 ## D-008 — `scripts/install.sh` had no `--check` mode, so the kit's install command exited 2
 
-- **Defect:** `bash scripts/install.sh --check` printed `error: unknown option
-  --check` and exited 2. That command was the `install` command of
-  `scripts/truth/config.json`, so the gate's install step was red.
+- **Defect:** `bash scripts/install.sh --check` printed `error: unknown option --check`
+  and exited 2. That command was the `install` command of `scripts/truth/config.json`,
+  so the gate's install step was red.
 - **Cause:** the installer knew `--dry-run` (it prints the planned actions) but
   had no mode that verifies the *preconditions* of an installation — every
   requested skill resolves to a folder containing a `SKILL.md`, no skill name is
@@ -428,10 +426,13 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   does not even create the target directory) and exits 1 with a readable message
   per problem. The kit's install command is now `bash scripts/install.sh --check
   --target "${TMPDIR:-/tmp}/skl-w0-01-install-check" --package generic`.
+  Writing the new tests exposed a second defect in the same area: `--dry-run`
+  promised "print actions, write nothing" but still ran `mkdir -p "$TARGET"`.
+  The target is now created only when something is really written into it.
 - **Proof:** `--check --package generic` → `check: 39 skill(s) verified, nothing
   written`, exit 0, target directory **not** created; `--check … no-such-skill-xyz`
-  → exit 1 with `error: source skill directory missing`; `pytest
-  tests/hygiene/test_install.py -q` → 9 passed.
+  → exit 1 with `error: source skill directory missing`; `--dry-run` creates no
+  directory either; `pytest tests/hygiene/test_install.py -q` → 12 passed.
 
 ## D-009 — `--package ref-*` installed nothing although those packages exist on disk
 
@@ -439,11 +440,9 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   'ref-webhooks-safe' resolves to no skills (reserved / on-demand)` and
   installed 0 skills — although `skills/ref-webhooks-safe/<skill>/SKILL.md`
   exists. The same for the other five `ref-*` packages.
-- **Cause:** the case statement treated every name matching `meta|ref-*` as a
-  reserved virtual package **before** the derived package list was consulted,
-  so the real packages were never reached. The on-demand reference packages had
-  been given real folders with real skills in the meantime and the reserved
-  branch silently swallowed them.
+- **Cause:** the case statement treated every name matching `meta|ref-*` as a reserved
+  virtual package **before** the derived package list was consulted, so the real
+  packages were never reached — the reserved branch silently swallowed them.
 - **Fix:** the derived package list is consulted **first**. A package that
   exists on disk always wins; only `generic` (every skill of every package) and
   `meta` (reserved, ships nothing while there is no `skills/meta/`) are virtual.
@@ -486,3 +485,20 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   `docs/gaps/SKL-W0-01.md` (G9).
 - **Proof:** `git status --porcelain` lists only this job's paths; the gate's
   `ownership` step passes.
+
+## D-012 — `safe-commit` could not see new files: git 2.53.0 returns nothing for `--untracked-files=all`
+
+- **Defect:** the first `safe-commit` run committed only 6 of the 9 owned paths: the three
+  new test files stayed untracked, although the gate had counted them.
+- **Cause:** `scripts/truth/safe-commit.mjs` enumerates the working tree with
+  `git status --porcelain=v1 -z --untracked-files=all`. In git 2.53.0 (the git on this host)
+  `--untracked-files=all` produces **no output at all** — reproducible in an empty scratch
+  repository, with and without `-z` and with `--porcelain=v2`. `--untracked-files=normal` and
+  `git ls-files --others --exclude-standard` (what the gate uses) still work. The kit and the
+  gate therefore disagree about which files exist.
+- **Fix (workaround, no kit file touched):** the new files were staged explicitly
+  (`git add -- <my own paths>`, which AGENTS.md allows); staged files are listed by every git
+  status mode, so `safe-commit` then committed them. The defect is in the kit's file
+  enumeration, not in this job's code.
+- **Proof:** the same command is empty in a scratch repo while `--untracked-files=normal`
+  lists the files; after the explicit `git add` it lists them as `A ` (recorded as G10).

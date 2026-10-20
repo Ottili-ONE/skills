@@ -132,3 +132,29 @@ def test_existing_destination_is_not_overwritten_without_force(tmp_path: Path) -
     assert result.returncode == 0
     assert "skip" in result.stdout
     assert (target / "honest-status" / "MARKER").is_file()
+
+
+def test_dry_run_writes_nothing(tmp_path: Path) -> None:
+    """--dry-run prints the planned actions and creates nothing."""
+    target = tmp_path / "dry"
+    result = run_install("--dry-run", "--target", str(target), "--package", "engineering")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "dry-run: copy" in result.stdout
+    assert not target.exists(), "--dry-run must not write anything"
+
+
+def test_link_mode_creates_a_symlink(tmp_path: Path) -> None:
+    """--link points the destination at the source folder instead of copying it."""
+    target = tmp_path / "linked"
+    result = run_install("--link", "--target", str(target), "honest-status")
+    assert result.returncode == 0, result.stdout + result.stderr
+    dest = target / "honest-status"
+    assert dest.is_symlink(), f"{dest} is not a symlink"
+    assert dest.resolve() == (ROOT / "skills" / "engineering" / "honest-status").resolve()
+
+
+def test_missing_target_argument_is_refused(tmp_path: Path) -> None:
+    """Without --target the installer refuses to run instead of guessing."""
+    result = run_install("honest-status")
+    assert result.returncode == 2
+    assert "--target is required" in result.stderr
