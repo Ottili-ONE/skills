@@ -326,6 +326,31 @@ that fails without the fix (measured by reverting the fix and watching the test 
   the tree cross-check into the guarded block. Guard:
   `::test_a_catalogue_entry_without_a_name_is_a_usage_error`.
 
+## G-016 — the kit's own dependencies made the gate fail for every pass — FOUND AND FIXED 2026-10-20
+
+- **What happened.** `node scripts/truth/db.mjs create --job SKL-W1-01 --fresh` needs the
+  kit's dependencies, and the kit asks for `npm install --prefix scripts/truth`. That
+  creates `scripts/truth/node_modules/` and `scripts/truth/package-lock.json`. Both are
+  UNTRACKED, and the gate's **ownership** step counts every untracked file
+  (`scripts/truth/gate.mjs` → `changedFiles` → `git ls-files --others
+  --exclude-standard`). The gate therefore failed with "changed file(s) outside the owned
+  paths" for files that NO job may ever commit. The `--exclude` list does not help: it
+  only removes paths from the OWNED set, and these paths were never in it.
+- **Why it is a kit problem, not a job problem.** The kit itself treats these files as
+  artefacts it does not own: `scripts/truth/manifest.mjs` skips `node_modules` and
+  `package-lock.json` in its integrity manifest, and
+  `scripts/truth/lib/common.mjs` → `generatedGlobs` lists `**/node_modules/**` and
+  `**/package-lock.json`. The repository's `.gitignore` simply did not say so.
+- **Fix.** `.gitignore` (owned by this job) now carries `node_modules/` and
+  `package-lock.json`. No tracked file is affected (`git ls-files` shows no tracked
+  `node_modules` or `package-lock.json`), the kit's integrity check still passes
+  ("kit matches MANIFEST.sha256 (15 files)"), and the gate passes with the kit
+  dependencies installed. Measured: the gate failed with 134 untracked files before the
+  change and passed after it.
+- **Requested from the operator (optional):** the kit could also make
+  `changedFiles()` skip the paths of `cfg.generatedGlobs`, so that a repository whose
+  `.gitignore` does not cover them does not fail the ownership step.
+
 ## G-015 — `docs/truth/REPO_SHAPE.md` does not list the contract registry — FOUND 2026-10-20
 
 - **What is missing.** This pass added `scripts/lib/` (the manifest library) and
