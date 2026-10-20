@@ -678,3 +678,35 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **What is proven now:** the finding is on exactly one file of the 1389
   migrations of the census (G28) and it is the **only** remaining finding
   that is not a real hole.
+
+## G31 (decision deviation, TASK-0006, 2026-10-20): two commands of the pack-v3 decision do not run in this repository
+
+- **What the decision asks:** the config of the truth kit carries
+  `install "bash scripts/install.sh --check"`, `build` and `lint`
+  `"python3 -I scripts/validate.py --everywhere"` and `test "pytest -q {paths}"`.
+- **What was found:** two of those command strings fail in this repository,
+  measured before anything was written:
+  ```
+  bash scripts/install.sh --check
+  error: --target is required                    # exit 2
+  pytest -q tests/orchestrator/test_gen_preamble.test.mjs
+  ERROR: not found: …/tests/orchestrator/test_gen_preamble.test.mjs
+  (no match in any of [<Package orchestrator>])  # exit 4
+  ```
+  `install.sh` requires `--target`, and pytest cannot collect the
+  `*.test.mjs` files of `tests/orchestrator/` that the gate puts into
+  `{paths}`.
+- **What this job did:** the config keeps the commands that work —
+  `install` with `--target` and the virtual package `generic` (exit 0),
+  `test` with the filter for the `test_*.py` paths and the fallback to
+  `pytest -q tests` (exit 0). `build` additionally runs
+  `node scripts/gen-catalog.mjs --check`, because the catalogue of this
+  repository is generated from the `skills/` folders and the gate's job path
+  does not run the build step at all — the catalogue guard would then only
+  live in a test file that the gate does not always execute. `lint` is the
+  decision's string unchanged. `commands.migrate` was removed, as the
+  decision asks: this job owns no migrations, and the gate reports the
+  migration step as `skip`.
+- **What is proven now:** the exact commands and their exit codes are in
+  `docs/truth/REPAIR_LOG.md` (D-048, D-049); the gate run of this pass is
+  `PASS` on every step that applies.

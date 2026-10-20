@@ -1340,3 +1340,98 @@ reason next to it. No other file of this repository was exempted.
   The eight files that remain are one deliberate global table in `console-v2`
   (see G30) and **seven real holes in `hq-v2` and `ottili-apps`** that the
   blind scanner had never reported (see G28).
+
+## D-047 — the repository invariants were node:test files that no runner executed
+
+- **Defect:** the hygiene decisions of this job (no tracked symlink with an
+  absolute target, a self-loop or a dangling target; no tracked database or
+  journal file; no scratch directory or debug script at the repository root;
+  no tracked file above 5 MiB without an allow-listed reason; unique
+  workspace project names; the workspace protocol for internal dependencies;
+  the private registry for the `@ottili` scope) were implemented in seven
+  `tests/hygiene/*.test.mjs` files that ran under `node --test`. The gate
+  runs its test step with `pytest -q {paths}` and never collected a
+  `.test.mjs` file, so none of the seven invariants was executed by the
+  gate, by CI or by `pytest` — a rule that no runner executes is a comment.
+- **Cause:** the invariants were written for the node test runner while the
+  test command of this repository is pytest.
+- **Fix:** the invariants are pytest modules under `tests/hygiene/`
+  (`test_no_bad_symlinks.py`, `test_no_database_files.py`,
+  `test_root_allowlist.py`, `test_no_large_files.py`,
+  `test_workspace_projects.py`, `test_npmrc_scope.py`) on top of the shared
+  helper `tests/hygiene/repo_guard.py`. The seven `.test.mjs` files and their
+  helper `_fixture.mjs` were deleted (with `--allow-delete` and a reason in
+  the commit): they are the same rules in a second runner, and the truth kit
+  config — which the old helper carried as a fallback list — is the single
+  source of truth for the allow-lists now. Every invariant is proven twice:
+  against the real repository it must hold, and against a deliberately broken
+  fixture — a throwaway git repository that the test builds itself — it must
+  be reported.
+- **Proof:**
+  - `python3 -m pytest -q tests/hygiene/test_no_bad_symlinks.py tests/hygiene/test_no_database_files.py tests/hygiene/test_root_allowlist.py tests/hygiene/test_no_large_files.py tests/hygiene/test_workspace_projects.py tests/hygiene/test_npmrc_scope.py` → **38 passed**;
+  - `python3 -m pytest -q tests` → **121 passed** (83 before this pass, 38 new);
+  - the broken fixtures are built inside the tests and each one asserts that
+    the checker reports it: an absolute link, a self-loop, a dangling link, a
+    `*.db`, a `*.db-wal`, a `*.db-shm`, a `*.sqlite`, a `*.journal`, a scratch
+    directory, a debug script, a 6 MiB blob, a duplicated workspace name, a
+    registry-pinned internal dependency, an `@ottili` scope that points at
+    npmjs.org, a second scope mapping and an empty scope mapping. Each module
+    also carries a healthy fixture that must be accepted, so the checkers are
+    not merely noisy.
+  - the node runner still agrees: `for t in tests/orchestrator/*.test.mjs; do node "$t"; done` → all pass.
+
+## D-048 — the truth kit config still carried the template's migration command and had no large-file allow-list
+
+- **Defect:** `scripts/truth/config.json` still configured `commands.migrate`
+  (the template key for a repository that owns migrations) although this job
+  owns none — the job card lists its migration stamp block as "none" — and it
+  had no `largeFileAllowlist`, so the 5 MiB rule had nowhere to read an
+  exception (and its reason) from.
+- **Cause:** the template config was adopted as it was; the pack-v3 decision
+  (2026-10-19) asks for the keys that apply to this repository only.
+- **Fix:** `commands.migrate` was removed and `largeFileAllowlist` was added
+  as an empty list of `{path, reason}` entries. The `rootAllowlist` was
+  checked against the tree and is correct: the 15 entries are exactly the
+  entries `git ls-tree --name-only HEAD` shows. The other keys were left
+  alone — `boot`, `smokeTests`, `registryCheck`, `e2e` and `typecheck` are
+  not configured, so their gate steps report `skip`.
+- **Proof:**
+  - the gate reports the migration step as skipped, before and after the
+    change: `skip  migrate  job has no migrations and --db was not given`;
+  - `node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "…" --exclude "…" --skip registry,e2e` → **GATE PASSED**;
+  - the root allow-list is now an executable invariant:
+    `tests/hygiene/test_root_allowlist.py` fails on a fixture that carries a
+    scratch directory or a debug script at the root and passes on the real
+    repository.
+
+## D-049 — two commands of the pack-v3 decision do not run in this repository
+
+- **Defect:** the decision of 2026-10-19 names the commands of the config as
+  `install "bash scripts/install.sh --check"` and `test "pytest -q {paths}"`.
+  Both fail here, so they were not written into the config verbatim.
+- **Cause:** the decision was written for the template of the kit, not
+  measured against this repository.
+- **Fix:** the config keeps the commands that work and the deviations are
+  recorded here and in `docs/gaps/SKL-W0-01.md` (G31).
+  - `install` keeps the required `--target` and the virtual package
+    `generic`:
+    `bash scripts/install.sh --check --target "${TMPDIR:-/tmp}/skl-w0-01-install-check" --package generic`
+    → **exit 0**, `check: 39 skill(s) verified, nothing written`.
+    The literal command of the decision exits **2**:
+    ```
+    bash scripts/install.sh --check
+    error: --target is required
+    ```
+  - `test` keeps the filter for the Python test paths, because the live test
+    set of this job contains `*.test.mjs` files (the node tests of
+    `tests/orchestrator/`) and pytest cannot collect them. The literal
+    command of the decision exits **4**:
+    ```
+    pytest -q tests/orchestrator/test_gen_preamble.test.mjs
+    ERROR: not found: …/tests/orchestrator/test_gen_preamble.test.mjs
+    (no match in any of [<Package orchestrator>])
+    ```
+    The config runs `pytest -q` on the `test_*.py` paths of the change and
+    falls back to `pytest -q tests` when the change contains none.
+- **Proof:** the gate test step with the config command → **6 test path(s)
+  passed**, exit 0; the full suite → **121 passed**.
