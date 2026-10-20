@@ -1,49 +1,61 @@
 # `scripts/validate.py` — interface contract
 
 Job SKL-W1-01 (TASK-0003). Owner: `skills-engineering-r3` (`docs/R3_OWNERS.json`).
-Written: 2026-10-16. Everything here is measured, not asserted.
+Written: 2026-10-16. Rewritten: 2026-10-20 against the measured behaviour.
+
+Everything in this document was executed in this repository. The commands and
+their output are quoted verbatim; nothing here is a claim about a tool that was
+not run.
 
 ## Purpose
 
-`validate.py` is the aggregate repository validator. It cross-checks the generated
-`catalog.json` against the `skills/` folders on disk and reports structural drift:
-unknown packages, skills whose `SKILL.md` frontmatter does not match their catalog
-entry, missing directories, missing descriptions, duplicate ids or names.
+`validate.py` is the aggregate repository validator. It cross-checks the
+generated `catalog.json` against the `skills/` folders on disk and reports
+structural drift: unknown packages, skills whose `SKILL.md` frontmatter does not
+match their catalogue entry, missing directories, missing descriptions,
+duplicate ids or names.
 
 It is the ONLY aggregate validator in the repository
 (`docs/truth/REPO_SHAPE.md`, "Tools — exactly one each"). `validate_skill.py` and
-`validate_skills.py` are the per-skill validators and are out of scope for this contract.
+`validate_skills.py` are the per-skill validators and are out of scope for this
+contract.
 
 ## Invocation
 
 ```sh
-python3 scripts/validate.py                       # default scope: catalog only
+python3 scripts/validate.py                       # default scope: catalogue only
 python3 scripts/validate.py --json                 # machine-readable report
-python3 scripts/validate.py --everywhere           # catalog + whole skills/ tree
+python3 scripts/validate.py --jsonl                # machine-readable report as JSON Lines
+python3 scripts/validate.py --everywhere           # catalogue + whole skills/ tree
 python3 scripts/validate.py --everywhere --json    # machine-readable, whole tree
+python3 scripts/validate.py --everywhere --jsonl   # JSON Lines, whole tree
+python3 scripts/validate.py --version              # the contract id, exit 0
 python3 scripts/validate.py --help                 # usage text, exit 0
 ```
+
+The tool is **standard library only** (`python3 -I` works, no package is
+installed). It therefore runs on the CI runner before anything is installed,
+and the contract tests can copy it into a throwaway fixture tree.
 
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
 | 0 | No findings. |
-| 1 | At least one finding (printed to stderr in human form, or in the JSON `errors` array). |
-| 2 | Usage error (unknown flag, missing catalog file). |
+| 1 | At least one finding (printed to stderr in human form, or in the report). |
+| 2 | Usage error, or the catalogue is missing or unreadable. |
 
-`--help` exits 0 and prints the usage text; it never exits 2.
+`--help` and `--version` exit 0 and print their text; they never exit 2.
 
 ## Default scope vs `--everywhere`
 
-- **Default** (no flag): validates the generated `catalog.json` against itself. This is
-  the CI contract — it proves the committed catalog is internally consistent.
+- **Default** (no flag): validates the generated `catalog.json` against itself.
+  This is the CI contract — it proves the committed catalogue is internally
+  consistent.
 - **`--everywhere`**: additionally scans the WHOLE `skills/` tree on disk and
-  cross-checks it against the catalog. It reports a skill that exists on disk but is
-  missing from the catalog, and a catalog entry whose `SKILL.md` does not exist on disk.
-  This is the "is the catalogue in sync with the tree" check; it is NOT run by CI
-  (the catalogue is generated, so the two cannot drift in CI) but is the human-facing
-  contract a maintainer runs by hand.
+  cross-checks it against the catalogue. It reports a skill that exists on disk
+  but is missing from the catalogue, and a catalogue entry whose `SKILL.md` does
+  not exist on disk. This is the "is the catalogue in sync with the tree" check.
 
 Both scopes exit 0 when there are no findings.
 
@@ -61,24 +73,66 @@ On failure, a header on stderr followed by one indented finding per line:
 
 ```
 validation failed:
-  - on-disk skill 'pg-rls-multitenant' (skills/engineering/pg-rls-multitenant) is missing from the catalog
+  - on-disk skill 'beta' (skills/demo/beta) is missing from the catalog
 ```
 
 ### JSON (`--json`)
 
-A single JSON object on stdout, exit code reflecting findings:
+One JSON object on stdout; the exit code reflects the findings.
 
 ```json
 {
-  "skills": 39,
-  "errors": [],
-  "ok": true
+  "contract": "ottili.skills.validate-report/v1",
+  "scope": "everywhere",
+  "skills": 1,
+  "errors": [
+    "on-disk skill 'beta' (skills/demo/beta) is missing from the catalog"
+  ],
+  "ok": false
 }
 ```
 
-`errors` is an array of strings, empty when `ok` is true. `skills` is the number of
-catalog entries. The JSON report is IDENTICAL between the default and `--everywhere`
-scopes when the tree is in sync; the only difference is what `errors` may contain.
+### JSON Lines (`--jsonl`)
+
+One JSON object per line: a summary line, then one line per finding. A consumer
+can read the stream without knowing the number of findings in advance.
+
+```jsonl
+{"contract": "ottili.skills.validate-report/v1", "kind": "summary", "scope": "everywhere", "skills": 1, "findings": 1, "ok": false}
+{"contract": "ottili.skills.validate-report/v1", "kind": "finding", "scope": "everywhere", "message": "on-disk skill 'beta' (skills/demo/beta) is missing from the catalog"}
+```
+
+**CSV and parquet are not applicable.** The payload of this contract is a list
+of free-text findings, not a table: a CSV export would have to invent columns
+that the contract does not define, and a parquet export would have to invent a
+schema. The two machine formats that ARE defined — one JSON object and JSON
+Lines — cover the two real use cases (a single report and a stream).
+
+## The contract
+
+| | |
+| --- | --- |
+| Contract id | `ottili.skills.validate-report/v1` |
+| JSON Schema | `scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json` |
+| Typed view (pydantic) | `scripts/ottili_contracts/models.py` → `ValidateReport` |
+| Worked example | `scripts/ottili_contracts/examples/ottili.skills.validate-report.v1.example.json` |
+| Registry | `scripts/ottili_contracts/__init__.py` → `CONTRACTS` |
+
+The JSON Schema is the normative artefact; the pydantic model is the typed view
+of the same payload. The schema is **generated** from the model:
+
+```sh
+python3 scripts/ottili_contracts/generate.py
+```
+
+The contract test `tests/interfaces/test_validate_interface.py` asserts that the
+committed schema is byte-identical with what the generator produces, so the two
+cannot drift apart.
+
+A change of the payload shape needs a new version, a new schema file and a new
+entry in `CONTRACTS` — never an edit of a published schema. Within a version a
+field may be added, a field may not change its meaning, and a field may not
+disappear.
 
 ## Findings (machine-stable strings)
 
@@ -97,15 +151,43 @@ scopes when the tree is in sync; the only difference is what `errors` may contai
 
 ## Failure modes
 
-- `catalog.json` absent -> stderr `error: catalog not found at <path>`, exit 2.
-- Unknown flag -> argparse usage error on stderr, exit 2.
-- A skill directory exists but has no `SKILL.md` -> that skill is skipped with a finding.
-- A `SKILL.md` exists but has no YAML frontmatter -> finding, that skill is skipped.
-- The catalog is empty or malformed JSON -> `json.load` raises, non-zero exit.
+- `catalog.json` absent → stderr `error: catalog not found at <path>`, exit 2.
+- `catalog.json` not valid JSON → stderr `error: catalog is not readable: <path>: <reason>`,
+  exit 2. No traceback: the tool reports, it does not raise.
+- `catalog.json` is not a JSON object → same message, exit 2.
+- A catalogue entry without a required field → stderr `error: catalog entry is
+  missing a required field: <field>`, exit 2.
+- Unknown flag → argparse usage error on stderr, exit 2.
+- A skill directory exists but has no `SKILL.md` → that skill is skipped with a
+  finding (exit 1).
+- A `SKILL.md` exists but has no YAML frontmatter → finding, that skill is
+  skipped (exit 1).
 
 ## Round-trip
 
-The JSON report round-trips: `python3 scripts/validate.py --json` on a clean tree
-produces `{"skills": N, "errors": [], "ok": true}` and re-running it on the same tree
-produces byte-identical output (the validator is deterministic; it reads no clock,
-network or environment state).
+- The JSON report round-trips through the typed view: `ValidateReport.model_validate(report)`
+  succeeds and `model_dump()` returns the same mapping.
+- The JSON Lines export round-trips into the JSON report: the finding lines
+  carry the findings of the report in the same order, the summary line carries
+  their number and the verdict.
+- The report is deterministic: two runs on the same tree produce byte-identical
+  output (the validator reads no clock, no network and no environment state).
+
+## From a clean checkout
+
+```sh
+git clone <this repository> skills && cd skills
+python3 scripts/validate.py --everywhere            # ok: 39 skills validated
+python3 scripts/validate.py --everywhere --json     # the report of contract v1
+python3 scripts/validate.py --everywhere --jsonl    # the same report as JSON Lines
+python3 scripts/validate.py --help                  # the full usage text
+```
+
+Measured in this repository on 2026-10-20:
+
+```
+$ python3 scripts/validate.py --everywhere
+ok: 39 skills validated
+$ echo $?
+0
+```

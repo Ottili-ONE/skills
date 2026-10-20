@@ -38,9 +38,11 @@ skills/
 ├── orchestrator-preamble/ # the generated orchestrator preamble (1 skill)
 └── ref-<subject>/         # 6 reference skills, one per business-de subject
 scripts/                   # install, validate, generate, index
+├── lib/                   #   install-manifest.sh: the JSON manifest of an install run
+└── ottili_contracts/      #   the versioned contracts: schemas, typed view, examples
 schema/catalog.schema.json # JSON Schema for catalog.json
 templates/skill/SKILL.md   # starting point for a new skill
-catalog.json               # GENERATED catalogue of every skill (39 entries)
+catalog.json               # GENERATED catalogue of every skill
 index/                     # GENERATED index/INDEX.md and index/skills.json
 docs/                      # interfaces/, truth/, gaps/, reviews/, R3_OWNERS.json
 tests/                     # repository-level test suites (hygiene, orchestrator, reviews)
@@ -56,7 +58,8 @@ hand-maintained package or skill list anywhere in the tooling.
 - `python3` (CI runs 3.12)
 - `node` (the generators and the Node test suites)
 - optional: `pip install pyyaml` (required by the problem+json catalogue checker),
-  `pip install pytest` for the pytest-style suites
+  `pip install pytest` for the pytest-style suites, `pip install pydantic jsonschema` for
+  the contract tests of the published CLI contracts
 
 ## Install the repository
 
@@ -98,9 +101,12 @@ the agent.
 | --- | --- |
 | `--target <name\|path>` | Required. Named agent, or a literal directory path. |
 | `--package <name>` | Install every skill in a package. |
+| `--check` | Verify every source and the target without writing anything. |
 | `--dry-run` | Print the actions, write nothing, exit 0. |
 | `--force` | Remove and re-copy an existing destination folder. |
 | `--link` | Create a symlink instead of copying. |
+| `--json` | Print the install manifest as one JSON object (contract `ottili.skills.install-manifest/v1`). |
+| `--version` | Print the contract id of the manifest, exit 0. |
 | `-h`, `--help` | Print help, exit 0. |
 
 | `--target` | Destination |
@@ -118,12 +124,14 @@ Behaviour:
 - **Source resolution** — a skill is located by its folder name alone, searched in the
   `skills/` tree next to the script; no catalogue lookup is involved.
 - **Packages** — derived at install time from the folders. `generic` installs every skill
-  in the repository (39); `meta` and any package name starting with `ref-` are reserved
-  on-demand names that resolve to no skills, so the six `ref-*` skills have to be
-  installed by name.
-- **Exit codes** — `0` all requested skills installed or skipped, `1` a skill or package
-  could not be resolved, `2` usage error (missing `--target`, missing skill/package,
-  unknown option).
+  in the repository; `meta` is reserved and ships nothing. The `ref-*` folders are real
+  packages: `--package ref-datev-extf` installs that skill.
+- **Machine-readable** — `--json` prints exactly one JSON object, the install manifest of
+  contract `ottili.skills.install-manifest/v1`; stdout carries the manifest and stderr
+  stays empty.
+- **Exit codes** — `0` all requested skills installed, linked, skipped or verified, `1` a
+  skill or package could not be resolved (or the target could not be created), `2` usage
+  error (missing `--target`, missing skill/package, unknown option).
 
 The full contract lives in [`docs/interfaces/install.md`](docs/interfaces/install.md).
 
@@ -190,11 +198,17 @@ python3 scripts/build-index.py
 ```sh
 python3 scripts/validate.py                       # catalogue vs. tree (exit 0 = clean)
 python3 scripts/validate.py --json                # machine-readable report
+python3 scripts/validate.py --jsonl               # the same report as JSON Lines
 python3 scripts/validate.py --everywhere          # also scan the whole skills/ tree
+python3 scripts/validate.py --version             # the contract id of the report
 python3 scripts/validate_skill.py --all           # the ten engineering skills
 python3 scripts/validate_skill.py --everywhere     # every skill in the repository
 python3 scripts/validate_skill.py <skill-dir>...   # explicit paths
 ```
+
+`validate.py` exits `0` without findings, `1` with at least one finding and `2` when it
+cannot run (usage error, missing or unreadable catalogue). It is standard library only, so
+it runs before anything is installed.
 
 `validate_skill.py` needs one of `--all` (the engineering tree), `--everywhere` (the
 whole repository) or explicit paths; called with no arguments it prints its usage and
@@ -206,6 +220,27 @@ the body resolving to an existing file (anchors included).
 The validator contracts are documented in
 [`docs/interfaces/validate.md`](docs/interfaces/validate.md) and
 [`docs/interfaces/install.md`](docs/interfaces/install.md).
+
+## Contracts
+
+The two command line interfaces publish a **versioned** machine-readable result. The
+JSON Schema is the normative artefact; a typed (pydantic) view and a worked example ship
+next to it.
+
+| Contract id | Published by | JSON Schema | Typed view |
+| --- | --- | --- | --- |
+| `ottili.skills.validate-report/v1` | `scripts/validate.py --json` / `--jsonl` | [`scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json`](scripts/ottili_contracts/schemas/ottili.skills.validate-report.v1.schema.json) | `scripts/ottili_contracts/models.py` |
+| `ottili.skills.install-manifest/v1` | `scripts/install.sh --json` | [`scripts/ottili_contracts/schemas/ottili.skills.install-manifest.v1.schema.json`](scripts/ottili_contracts/schemas/ottili.skills.install-manifest.v1.schema.json) | `scripts/ottili_contracts/models.py` |
+
+The schemas are generated from the typed view, and a contract test asserts that the
+committed file and the model are the same thing:
+
+```sh
+python3 scripts/ottili_contracts/generate.py   # rewrite the schema files
+python3 -m pytest -q tests/interfaces          # prove the contracts still hold
+```
+
+A consumer in another repository reads the schema file; it never copies the contract.
 
 ## Run the tests
 

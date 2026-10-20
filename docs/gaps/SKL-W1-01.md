@@ -2,8 +2,8 @@
 
 Job: SKL-W1-01 — Canonical skills: rewritten to the real Ottili conventions.
 Owner of the paths this job writes: `skills-engineering-r3` (`docs/R3_OWNERS.json`).
-Written: 2026-10-16. Last updated: 2026-10-20 (TASK-0002, the tenant convention, and the
-verification pass over it).
+Written: 2026-10-16. Last updated: 2026-10-20 (TASK-0003, the command line interfaces and
+their versioned contracts).
 Everything here is measured, not asserted.
 
 ## G-001 — the truth harness does not exist in this repo — RESOLVED 2026-10-20
@@ -172,6 +172,84 @@ Everything here is measured, not asserted.
   product migrations. It is applied twice on a real PostgreSQL by
   `tests/hygiene/test_leak_probe.py::test_the_canonical_example_can_be_applied_twice`, and
   the leak probe still measures `1`, `0`, `0`, `0` after the second application.
+
+## G-010 — the job card's owned paths do not cover the interfaces of this task — FOUND 2026-10-20
+
+- **What the card asks for.** TASK-0003 asks for two interfaces,
+  `./scripts/validate.py --everywhere` and `./scripts/install.sh --target $(mktemp -d)
+  --package engineering`. Both live in `scripts/`, and the card's owned paths are
+  `skills/{evidence-based-status,tenant-rls-postgres,outbox-events,problem-details,
+  foundation-ui-usage,e2e-a11y-playwright}/**` plus `tests/**` — the same mismatch as G-002.
+- **What the ownership says.** `docs/R3_OWNERS.json` gives `scripts/**` to
+  `skills-engineering-r3`, which is this job, and the `AGENTS.md` of this worktree lists
+  `scripts/**` under "This job owns". The interfaces of this task are therefore inside the
+  ownership of this job and outside the *card*.
+- **Consequence, measured.** `scripts/truth/gate.mjs` reports every changed file outside
+  the owned globs as "other jobs own them" and fails; `scripts/truth/safe-commit.mjs`
+  refuses to commit a tracked file outside the owned paths. The gate and the commit of this
+  pass were therefore run with the card's globs **plus** the four script globs this pass
+  touches, identically in both (the kit refuses a commit whose gate ran with other globs):
+  ```
+  --owned "skills/engineering/honest-status/**,skills/engineering/pg-rls-multitenant/**,\
+  skills/engineering/outbox-idempotency/**,skills/engineering/problem-json-contracts/**,\
+  skills/engineering/foundation-v2-conformance/**,skills/engineering/playwright-a11y-e2e/**,\
+  tests/**,scripts/validate.py,scripts/install.sh,scripts/lib/**,scripts/ottili_contracts/**,\
+  README.md,docs/interfaces/**"
+  ```
+  The same pass adds `README.md` (owned by `skills-engineering-r3` in `docs/R3_OWNERS.json`)
+  and `docs/interfaces/**` (the directory the interface contracts live in; the card asks for
+  the contract to be documented in `docs/`).
+- **Requested from the operator:** re-issue the card with those globs, so that the card's
+  own gate command is the command that works.
+
+## G-011 — the README claimed that the `ref-*` packages resolve to no skills — FOUND AND FIXED 2026-10-20
+
+- **What was claimed.** `README.md` and `docs/interfaces/install.md` said: "`meta` and any
+  package name starting with `ref-` are reserved on-demand names that resolve to no skills,
+  so the six `ref-*` skills have to be installed by name." That is false. The packages are
+  derived from the folders at install time, and the tree has six real `ref-*` packages.
+- **Measured.** `bash scripts/install.sh --check --target /tmp/refcheck --package
+  ref-datev-extf` → `ok: ref-datev-extf -> /tmp/refcheck/ref-datev-extf`, exit 0. The
+  installer has always installed them; only the documents were wrong. A consumer that read
+  the README would have believed that six skills cannot be installed as a package.
+- **Fix.** The README and the contract document now say that the `ref-*` folders are real
+  packages, that `meta` alone is reserved, and that a package name is matched literally
+  (`--package engineering+` is refused). `tests/hygiene/test_install.py::
+  test_on_demand_reference_packages_install_their_skill` holds the behaviour.
+
+## G-012 — the test dependencies of the contract tests are not declared anywhere — FOUND 2026-10-20
+
+- **What the new contract tests need.** `tests/interfaces/` validates the published
+  payloads against the JSON Schema (`jsonschema`) and against the typed view (`pydantic`).
+  Both are installed in this environment (`pydantic 2.13.5`, `jsonschema 4.26.0`), and the
+  CI workflow already installs `jsonschema` for the problem-catalogue checker.
+- **Why that is not enough.** The repository has **no dependency manifest at all** (no
+  `pyproject.toml`, no `requirements.txt`), and the root allow-list of the truth kit
+  (`scripts/truth/config.json` → `rootAllowlist`) forbids a new entry at the root of the
+  repository, so this job cannot add one. The dependency of a test is therefore invisible
+  to a consumer and to CI.
+- **Requested from the operator:** either add a dependency file to the root allow-list
+  (`requirements-dev.txt` with `pydantic` and `jsonschema`) or publish the test
+  dependencies in `scripts/truth/config.json`. Until then the README states the optional
+  installation (`pip install pydantic jsonschema`).
+
+## G-013 — the `$id` of the two published schemas points at a host this job cannot verify — FOUND 2026-10-20
+
+- **What was published.** `scripts/ottili_contracts/schemas/*.schema.json` carry
+  `$id: https://contracts.ottili.one/skills/<name>/v1.schema.json`. The host follows the
+  convention of the problem-details skill (`contracts.ottili.one/problems/<code>`), which
+  the plan of this job uses for the RFC 9457 `type` URIs.
+- **Why it is a claim.** The platform repository is **not** on this host (F-001), so this
+  job cannot confirm that `contracts.ottili.one` is the host the platform publishes, nor
+  that these two paths are reserved there. The **schema files are the truth** (they are
+  committed, they are generated from the typed view and a test holds them); the `$id` is
+  the identity a consumer will use to look the schema up.
+- **Requested from the Platform lane:** reserve
+  `https://contracts.ottili.one/skills/validate-report/v1.schema.json` and
+  `https://contracts.ottili.one/skills/install-manifest/v1.schema.json`, or publish the host
+  the platform really uses. The `$id` of the two files follows that answer in one commit
+  (the schemas are generated, so it is `python3 scripts/ottili_contracts/generate.py` and
+  the contract test).
 
 ## What this pass did NOT do (and why)
 
