@@ -120,7 +120,10 @@ packages_holding() {
 
 # Expand --package into individual skill names.
 if [[ -n "$PACKAGE" ]]; then
-  if grep -qx "$PACKAGE" <(derive_packages); then
+  # -F: the package name is matched literally. Without it a name that happens
+  # to be a valid regex ("engineering+") would match a package it does not
+  # exist and install the wrong skills.
+  if grep -qxF "$PACKAGE" <(derive_packages); then
     # Real package (derived from the folders): install every skill it contains.
     while IFS= read -r name; do
       SKILLS+=("$name")

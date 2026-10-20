@@ -122,6 +122,31 @@ def test_unknown_package_is_rejected(tmp_path: Path) -> None:
     assert "engineering" in result.stderr
 
 
+def test_package_names_are_matched_literally(tmp_path: Path) -> None:
+    """A package name is matched literally, not as a regular expression.
+
+    The package lookup used ``grep -qx``, so a name that happens to be a valid
+    regex matched a package that does not exist: ``--package engineering+``
+    installed the engineering skills. The lookup now uses ``grep -qxF``.
+    """
+    packages = list(skill_folders())
+    assert packages, "the tree has no packages"
+    for name in ("engineering+", ".*", "engineering?", "engineering.*"):
+        result = run_install("--target", str(tmp_path / "t"), "--package", name)
+        assert result.returncode == 1, (
+            f"--package {name!r} must be refused as unknown, it matched a real package: "
+            f"{result.stdout}{result.stderr}"
+        )
+        assert "unknown package" in result.stderr
+
+
+def test_every_derived_package_is_accepted_by_name(tmp_path: Path) -> None:
+    """Every package folder on disk is accepted by its exact name."""
+    for package in skill_folders():
+        result = run_install("--check", "--target", str(tmp_path / "t"), "--package", package)
+        assert result.returncode == 0, f"{package}: {result.stdout}{result.stderr}"
+
+
 def test_existing_destination_is_not_overwritten_without_force(tmp_path: Path) -> None:
     """Safety: an existing skill folder is never replaced silently."""
     target = tmp_path / "t"

@@ -190,3 +190,65 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   `--untracked-files=all`. One line, no behaviour change on unaffected git versions.
 - **Workaround used in this pass:** stage new files with an explicit `git add -- <paths>` before
   calling `safe-commit`.
+
+## G11 (cross-job request, TASK-0002 VERIFY, 2026-10-20): `README.md` heading does not match the orchestrator contract test
+
+- **Observed:** `node tests/orchestrator/test_preamble_contracts.test.mjs` fails with
+  `README has no preamble section`. The test (in this job's owned paths) asserts
+  `readme.includes('## Orchestrator preamble (generated)')`; `README.md` line 268 says
+  `## Orchestrator preamble`. The second assertion of the same test
+  (`node scripts/gen-preamble.mjs --check`) does pass.
+- **Ownership:** `README.md` belongs to `skills-engineering-r3` per `docs/R3_OWNERS.json`
+  and is **not** on this job's owned list, so this job did not edit it. The test file is
+  owned by this job, but relaxing the assertion would only hide the drift, so the test was
+  left strict on purpose.
+- **Request (cross-job):** in `README.md`, change the heading on line 268 from
+  `## Orchestrator preamble` to `## Orchestrator preamble (generated)` so it names the
+  generated artefact the same way the golden body names it
+  (`# Orchestrator Preamble (generated)`).
+- **Effect while open:** the GitHub workflow step "Run orchestrator contract tests"
+  stays red. The truth-kit gate is unaffected — its test command is `pytest -q {paths}`,
+  and the whole pytest suite is green (44 passed).
+
+## G12 (cross-job request, TASK-0002 VERIFY, 2026-10-20): engineering self-tests hard-code `/srv/ottili` paths and write into the repository root
+
+- **Observed (CI step "Run engineering skill self-tests"):** 2 of 14 self-tests fail on this
+  host, both because they point at paths that only exist on a developer machine:
+  - `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py` expects
+    `/srv/ottili/repo/hq-v2/modules/procure-to-stock/migrations/20261010000000_hq_procure_to_stock_r3_04_audit.sql`
+    (`file not found`).
+  - `skills/engineering/module-contract-first/scripts/check_contract_drift_test.py` expects
+    `/srv/ottili/repo/skills/skills/engineering/module-contract-first`.
+- **Second effect:** `skills/engineering/long-test-discipline/scripts/run_long_test_test.sh`
+  passes, but it leaves `long-test.log` and `long-test.log.out` in the **repository root**,
+  which makes `tests/hygiene/clean-tree.test.mjs` red on every CI run.
+- **Ownership:** `skills/engineering/**` belongs to `skills-engineering-r3` per
+  `docs/R3_OWNERS.json`; this job did not touch those files. The two stray log files were
+  produced by running the self-test in this pass and were removed again, so the worktree is
+  clean.
+- **Request (cross-job):**
+  1. Make the two self-tests resolve their fixtures relative to the repository
+     (`Path(__file__).resolve().parents[...]` / a fixture inside the skill folder) instead of
+     `/srv/ottili/repo/...`, or skip the assertion when the external repo is absent.
+  2. In `run_long_test_test.sh`, export `OTTLI_TEST_LOG` to a path inside a temporary
+     directory. `skills/engineering/long-test-discipline/scripts/run_long_test.sh` already
+     honours `OTTLI_TEST_LOG="${OTTLI_TEST_LOG:-long-test.log}"`, so no change to the
+     script itself is needed.
+
+## G13 (open, TASK-0002 VERIFY, 2026-10-20): `scripts/verify-status.mjs` is fixed but still unproven against a real product `STATUS.md`
+
+- **Fixed in this pass (both were in this job's owned paths):**
+  - `raw.rstrip()` — a Python method — crashed the checker on the first table row
+    (`TypeError: raw.rstrip is not a function`).
+  - `require("node:fs")` inside an ES module threw a `ReferenceError` that a bare `catch`
+    swallowed, so the evidence file was never checked and **every** row was reported as
+    `log path not found`: a checker that could never pass.
+  - Both are covered by `tests/hygiene/test_verify_status.py`; with the old file restored
+    4 of its 5 tests fail, with the fix all 5 pass.
+- **Still open:** the repository has **no root `STATUS.md`** (only `skills/*/STATUS.md`,
+  which belong to other jobs), so the checker has never been run against a product-repo
+  claim table. The row format it expects is
+  `| <claim> | <command> | <exit code> <log path> |`.
+- **To close:** create the root `STATUS.md` (TASK-0008 owns it) with claim rows that point
+  at log files that exist in the tree, then run
+  `node scripts/verify-status.mjs STATUS.md --root .` and expect exit 0.

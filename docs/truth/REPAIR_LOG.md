@@ -502,3 +502,74 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   enumeration, not in this job's code.
 - **Proof:** the same command is empty in a scratch repo while `--untracked-files=normal`
   lists the files; after the explicit `git add` it lists them as `A ` (recorded as G10).
+
+# TASK-0002 VERIFY pass (2026-10-20) — independent re-verification of the installer and the catalogue
+
+The previous pass claimed the installer path bug and the package catalogue were done. This pass
+re-ran every claim from scratch (installer, catalogue generator, validator, the whole CI
+sequence, and a clean clone) instead of trusting the claim. The TASK-0002 deliverables are
+**confirmed**; three further defects were found and fixed on the way.
+
+## What was re-verified (all green)
+
+| claim | command | observed |
+|---|---|---|
+| every skill folder resolves | `./scripts/install.sh --target <tmp> <name>` for all 39 folders | 39/39 installed, 0 unresolved |
+| every real package installs all of its skills | `--package` for the 12 derived packages | expected == installed for every package |
+| `generic` installs everything | `--package generic` | 39 of 39 |
+| `meta` is accepted and empty | `--package meta` | rc 0, 0 skills, note printed |
+| an unknown package is refused | `--package no-such-pkg` | rc 1, `unknown package` + the known list |
+| `--check` writes nothing | `--check --target <tmp> --package engineering` | rc 0, 0 files written |
+| `--dry-run` writes nothing | `--dry-run --target <tmp> --package engineering` | rc 0, 0 files written |
+| the catalogue is generated | `node scripts/gen-catalog.mjs --check` | `ok: catalog unchanged (39 skills, 12 packages)` |
+| the catalogue is reproducible | regenerate into a temp file, `diff` | byte-identical |
+| the catalogue matches the folders | compare 39 entries with the folders | 0 mismatches |
+| the catalogue is not hand-edited | `pytest tests/hygiene/test_catalog.py` | 5 passed (fails on a tampered `catalog.json`) |
+| the validator sees every skill | `python3 -I scripts/validate.py --everywhere` | `ok: 39 skills validated` |
+| the whole suite is green | `python3 -m pytest tests/ -q` | 44 passed |
+| a clean clone works | `git clone` + the CI sequence | catalogue byte-identical, installs 10/39 skills |
+
+## D-013 — `scripts/install.sh` matched a package name as a regular expression
+
+- **Defect:** the package lookup used `grep -qx "$PACKAGE"`, so the name was a regex.
+  `--package ".*"` matched *every* derived package and installed the whole tree;
+  `--package "engineering+"` matched the `engineering` package. A package that does not
+  exist was accepted.
+- **Fix:** `grep -qxF "$PACKAGE"` — the name is matched literally.
+- **Proof:** `tests/hygiene/test_install.py::test_package_names_are_matched_literally`
+  refuses `engineering+`, `.*`, `engineering?` and `engineering.*`. With the old line
+  restored the test fails (`--package .*` returned 0 and installed everything); with the
+  fix it passes.
+
+## D-014 — `scripts/verify-status.mjs` crashed on every claim table
+
+- **Defect:** `const line = raw.rstrip();` — `rstrip()` is a *Python* method, a JavaScript
+  string has none. The checker died with `TypeError: raw.rstrip is not a function` on the
+  first table row, so it could never check anything.
+- **Fix:** `const line = raw.replace(/\s+$/, "");`.
+- **Proof:** `tests/hygiene/test_verify_status.py`; with the old file restored 4 of its 5
+  tests fail, with the fix all 5 pass.
+
+## D-015 — `scripts/verify-status.mjs` never checked the evidence file (a swallowed error)
+
+- **Defect:** `try { ok = require("node:fs").existsSync(p); } catch { ok = false; }`.
+  `scripts/verify-status.mjs` is an ES module (`.mjs`, `import` at the top), and `require`
+  does not exist there — the `ReferenceError` was swallowed by the bare `catch`, so `ok`
+  stayed `false` for every row. Every claim row was reported as `log path not found`,
+  including rows whose evidence file existed: a checker that can never pass.
+- **Fix:** import `existsSync` from `node:fs` next to `readFileSync` and call it directly;
+  the `try`/`catch` is gone (it only existed to hide the `require`).
+- **Proof:** `test_a_claim_with_an_existing_log_passes` expects exit 0 and the message
+  `all 1 claim rows verified`; with the old file it failed with the `TypeError` above.
+
+## D-016 — the orchestrator contract test asserted two mutually exclusive things
+
+- **Defect:** `tests/orchestrator/test_gen_preamble_failure.py` asserted
+  `text.startswith("# Orchestrator Preamble (generated)")` **and**, for every rule number,
+  `text.startswith(f"{i}. ")`. A document cannot start with the header *and* with `1. `, so
+  the test was permanently red and validated nothing. It was red before this job's first
+  commit (`2119edb`) and stayed red through TASK-0002.
+- **Fix:** the header is asserted on the first line, the four rules are located as numbered
+  list items, and the test asserts that there are **exactly** four of them, numbered `1..4`
+  in order — strictly more than the old assertion, which could never hold.
+- **Proof:** `python3 -m pytest tests/ -q` → 44 passed, 0 failed (was 36 passed, 1 failed).

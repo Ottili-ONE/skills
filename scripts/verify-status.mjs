@@ -13,7 +13,7 @@
  * Usage: node scripts/verify-status.mjs <STATUS.md> [--root <dir>] [--json]
  * Exit 0 = every claim row verified; 1 = unverified rows; 2 = usage error.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROW_RE = /^\s*\|(.+)\|\s*$/;
@@ -25,7 +25,10 @@ const PATH_TOKEN_RE = /`?([A-Za-z0-9_\-./]+\.(?:log|json|txt|md|mp4|png|jpg|jpeg
 // A command token: a backtick-wrapped string that looks like a shell invocation.
 const CMD_RE = /`([^`]+)`/g;
 // An exit-code-ish token: a bare number, EXIT=<n>, or a status word.
-const EXIT_RE = /\b(?:EXIT\s*=\s*)?(\d{1,3})\b|\b(?:green|ok|passed|gr[uü]n|PASS(?:ED)?)\b/i;
+// The German spelling of "green" is written as a Unicode escape: the source
+// stays ASCII (the truth kit's language check rejects literal umlauts in
+// code) while the pattern still matches the German word as well.
+const EXIT_RE = /\b(?:EXIT\s*=\s*)?(\d{1,3})\b|\b(?:green|ok|passed|gr[u\u00fc]n|PASS(?:ED)?)\b/i;
 
 function splitRow(line) {
   const m = line.match(ROW_RE);
@@ -39,7 +42,10 @@ function parseStatus(text) {
   let lineno = 0;
   for (const raw of text.split("\n")) {
     lineno += 1;
-    const line = raw.rstrip();
+    // `rstrip()` is a Python method; a JS string has no such method, so the
+    // whole checker used to die with "raw.rstrip is not a function" on the
+    // first table row it saw.
+    const line = raw.replace(/\s+$/, "");
     if (!line.trim()) continue;
     if (SEP_RE.test(line)) continue; // separator row
     const cells = splitRow(line);
@@ -85,8 +91,10 @@ function main(argv) {
     if (!path) problems.push("no log path");
     else {
       const p = resolve(rootDir, path);
-      let ok = false;
-      try { ok = require("node:fs").existsSync(p); } catch { ok = false; }
+      // `require` does not exist in an ES module. The old code called it inside
+      // a bare `catch`, so the ReferenceError was swallowed and every row was
+      // reported as "log path not found" even when the file was there.
+      const ok = existsSync(p);
       if (!ok) problems.push(`log path not found: ${path}`);
     }
     if (problems.length) {
