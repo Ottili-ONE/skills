@@ -781,8 +781,12 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   a section "Follow-ups for later trunk repair jobs" with the 14 items that were measured
   but could not be fixed from this job. `tests/hygiene/test_repair_log.py` is the guard: it
   fails when a defect id is not in the index, when an id names two defects, when an index
-  entry lacks one of the six fields, when a proof command is missing from the proof block or
-  when a proof command marked `# auto` no longer exits 0.
+  entry lacks one of the six fields, when a proof command is missing from the proof block, when
+  the command an index entry writes down is not the command the proof block of that label runs,
+  when the narrative of a defect and its index entry disagree about the proof label or the
+  date, when a follow-up item names no symptom, or when a proof command marked `# auto` no
+  longer exits 0. The VERIFY pass of TASK-0007 found four defects in that guard itself
+  (D-055, D-056, D-057, D-058), all of them fixed in the owned paths of this job.
 - **The open items, by owner** (path and exact symptom in
   `docs/truth/REPAIR_LOG.md`, section "Follow-ups for later trunk repair jobs"):
   - `skills-engineering-r3`: `.github/workflows/validate.yml:42` (the `*.test.mjs` glob ends in
@@ -801,3 +805,26 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   - operator: `scripts/truth/safe-commit.mjs` (git 2.53.0 returns nothing for
     `--untracked-files=all`, so new files stay untracked), `docs/requests/` does not exist
     although `AGENTS.md` points at it, the Docker daemon is not reachable on this host.
+
+## G34 (follow-up, TASK-0007 VERIFY, 2026-10-20): 18 of the 33 proof commands are not re-run by the guard, and the gate diffs against the merge base
+
+- **What was measured:** all 33 proof commands of `docs/truth/REPAIR_LOG.md` and the job gate
+  were re-run on the trunk of this pass; every one of them exited 0. The transcript is
+  `.truth/SKL-W0-01/after.txt`.
+- **The gap:** only the 15 proof commands marked `# auto` are re-executed by
+  `tests/hygiene/test_repair_log.py`. The other 18 are the slow ones (whole pytest suites, the
+  job gate) and the gate runs `pytest -q {paths}` over the *changed* test files only, so a slow
+  proof command can rot without any suite noticing. Running them inside the guard is not
+  possible without recursion, because P31 runs `python3 -m pytest tests/hygiene/ -q`, which is
+  the guard itself. The right place is a runner that executes the slow proofs once per trunk,
+  outside the suite.
+- **The second half:** `scripts/truth/gate.mjs` computes its diff against
+  `git merge-base HEAD main`. After a commit of this job is integrated that base is the commit
+  itself, so the next gate run reports `no changes inside the owned paths: nothing was built`
+  and `no test file (*.test.mjs / *.test.ts / test_*.py ...) was added or changed inside the
+  owned paths: a job without tests is not done`, and fails, even when the tree is correct. A job
+  that only documents something therefore has to change a test file to get a green gate.
+- **Why it is not done here:** the kit (`scripts/truth/**`) belongs to the operator and may not
+  be edited by a job; the guard of this job cannot run the slow proofs without recursion.
+  Both facts are recorded in `docs/truth/REPAIR_LOG.md`, section "Follow-ups for later trunk
+  repair jobs", items 15 and 16.
