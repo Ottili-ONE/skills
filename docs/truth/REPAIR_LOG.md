@@ -1864,6 +1864,33 @@ reason next to it. No other file of this repository was exempted.
 - **Date:** 2026-10-20
 
 
+## D-067 — the recipe for the next job was written down before it was executed
+
+- **Defect:** `docs/gaps/SKL-W0-01.md` (G37) told the job that comes next what a
+  new engineering skill has to ship. The recipe was written from the *first* reading
+  of the failing output and it was **wrong**: it named the trigger phrase and the
+  missing files, but not that the body has to *link* `references/EVALS.md` and
+  `references/SOURCES.md`, and not that the eval set needs at least five prompts.
+  A recipe that is written down but does not work is a claim, not a contract — and
+  the next job is not allowed to change the validator that checks it.
+- **Reproduction:** a clean clone, the demo skill of the first recipe, then
+  `python3 scripts/validate_skills.py` — exit 1 with "SKILL.md does not link
+  references/EVALS.md", "SKILL.md does not link references/SOURCES.md" and
+  "EVALS.md has 0 prompts, need >=5".
+- **Cause:** the recipe was derived from the summary of a failure instead of from
+  the rules the validator applies (`scripts/validate_skills.py`).
+- **Fix:** `tests/hygiene/test_skill_recipe.py` (new) — the recipe is built in a
+  throwaway checkout, the validator is run over it (exit 0), a part of the recipe is
+  removed to prove that the validator still complains (exit 1) and the catalogue is
+  regenerated with the new skill in it; `docs/gaps/SKL-W0-01.md` — G37 carries the
+  seven rules the validator really applies.
+- **Proof:** `python3 -m pytest tests/hygiene/test_skill_recipe.py -q` — the test
+  fails when the recipe of the gaps file is wrong, because the validator of the
+  repository rejects the skill the recipe describes (measured).
+- **Index proof:** `P42`
+- **Date:** 2026-10-20
+
+
 # SKL-W0-01 — TASK-0007 (2026-10-20) — repair log entry
 
 This section is the **index of the trunk repairs of job SKL-W0-01**. One entry
@@ -2497,6 +2524,16 @@ one of them exited 0; the transcript is in `.truth/SKL-W0-01/after.txt`.
 - **Date:** 2026-10-20
 
 
+#### D-067 — the recipe for the next job was written down before it was executed
+
+- **Symptom:** the recipe of `docs/gaps/SKL-W0-01.md` (G37) named the trigger phrase and the two missing files of a new engineering skill, but not that the body has to link `references/EVALS.md` and `references/SOURCES.md` and not that the eval set needs at least five prompts; a skill built after that recipe was rejected by the validator of the repository.
+- **Reproduction:** a clean clone, the demo skill of the first recipe, then `python3 scripts/validate_skills.py` — exit 1 with "SKILL.md does not link references/EVALS.md", "SKILL.md does not link references/SOURCES.md" and "EVALS.md has 0 prompts, need >=5".
+- **Root cause:** the recipe was derived from the summary of a failure instead of from the rules the validator applies in `scripts/validate_skills.py`.
+- **Fix (files):** `tests/hygiene/test_skill_recipe.py` (new) — the recipe is built in a throwaway checkout, the validator is run over it (exit 0), a part of the recipe is removed to prove that the validator still complains (exit 1) and the catalogue is regenerated with the new skill in it; `docs/gaps/SKL-W0-01.md` — G37 carries the seven rules the validator really applies.
+- **Proof:** `P42` — `python3 -m pytest tests/hygiene/test_skill_recipe.py -q`
+- **Date:** 2026-10-20
+
+
 ## Proof commands executed on 2026-10-20
 
 Every proof command of the index was re-run on the trunk of this pass. The
@@ -2842,6 +2879,15 @@ exit=0
 $ python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q -k growth   # auto
 .                                                                        [100%]
 1 passed, 4 deselected in 1.87s
+exit=0
+```
+
+### P42 — the recipe for the next job executes
+
+```
+$ python3 -m pytest tests/hygiene/test_skill_recipe.py -q   # auto
+...                                                                       [100%]
+3 passed in 0.81s
 exit=0
 ```
 

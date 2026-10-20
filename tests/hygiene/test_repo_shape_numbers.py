@@ -33,6 +33,8 @@ import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
+from .worktree import temporary_worktree
+
 ROOT = Path(__file__).resolve().parents[2]
 REPO_SHAPE = ROOT / "docs" / "truth" / "REPO_SHAPE.md"
 TRUTH_CONFIG = ROOT / "scripts" / "truth" / "config.json"
@@ -185,38 +187,6 @@ def snapshot_checkouts(commits: list[str]):
                 text=True,
                 check=False,
             )
-        subprocess.run(
-            ["git", "worktree", "prune"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        shutil.rmtree(holder, ignore_errors=True)
-
-
-@contextlib.contextmanager
-def temporary_worktree(revision: str):
-    """Yield a throwaway checkout of a revision of this repository."""
-    holder = Path(tempfile.mkdtemp(prefix="repo-shape-"))
-    target = holder / "tree"
-    subprocess.run(
-        ["git", "worktree", "add", "--detach", "--quiet", str(target), revision],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    try:
-        yield target
-    finally:
-        subprocess.run(
-            ["git", "worktree", "remove", "--force", str(target)],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
         subprocess.run(
             ["git", "worktree", "prune"],
             cwd=ROOT,

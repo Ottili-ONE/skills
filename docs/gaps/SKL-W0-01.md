@@ -886,24 +886,37 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   canonical-skills job starts from — and then the whole suite. **Five** tests went
   red. One of them was the shape guard of `docs/truth/REPO_SHAPE.md` ("Skills in the
   catalogue: document says 39, command says 40"), a failure the next job cannot fix
-  because it does not own `docs/truth/`; that one is closed by D-066 of this pass. The
-  other four are the next job's own obligations and are listed here so that it does
-  not have to discover them one at a time:
-  1. `tests/hygiene/test_skill_eval_sets.py` — an engineering skill must ship
-     `references/EVALS.md` (the eval set of the skill).
-  2. `tests/hygiene/test_skill_docs.py` — `scripts/validate_skills.py` exits 1 and
-     reports four findings for the new skill: the description lacks a
-     "when to use" trigger, the frontmatter carries the non-portable field
-     `version`, `references/EVALS.md` is missing, `references/SOURCES.md` is
-     missing. The two of the four that the documentation of the skill does not
-     mention are the sources of the skill.
+  because it does not own `docs/truth/`; that one is closed by D-066 of this pass.
+  The other four are the next job's own obligations, listed here so that it does not
+  have to discover them one at a time:
+  1. `tests/hygiene/test_skill_docs.py` — `scripts/validate_skills.py` exits 1 and
+     reports its findings for the new skill.
+  2. `tests/hygiene/test_skill_eval_sets.py` — an engineering skill must ship
+     `references/EVALS.md`.
   3. and 4. `tests/hygiene/test_repair_log.py` — the proof commands P38 and P40 of
      the repair log re-run the two suites above, so they turn red with them.
-- **The recipe, measured:** add the skill folder, write a description that says
-  *when to use* it, keep the frontmatter to the portable fields (no `version`), ship
-  `references/EVALS.md` and `references/SOURCES.md`, regenerate the catalogue with
-  `node scripts/gen-catalog.mjs` and commit `catalog.json` with the skill. After
-  that the suite of the job is green — the shape guard included.
+- **The recipe, measured and executed by `tests/hygiene/test_skill_recipe.py`:**
+  a new engineering skill `skills/engineering/<name>/` with
+  1. a folder name and a frontmatter `name` that are the same and lowercase-hyphenated;
+  2. a frontmatter that carries **only** portable fields — `name`, `description`,
+     `license`, `compatibility`, `metadata`, `allowed-tools`; a field such as
+     `version` is reported as "non-portable front-matter field";
+  3. a `description` that says **when to use** the skill — the validator looks for
+     `use when`, `fires`, `when to use` or `trigger`;
+  4. a body that **links** `references/EVALS.md` and `references/SOURCES.md` (the
+     text of the file must contain the path of the file);
+  5. `references/EVALS.md` with **at least five** prompts (a numbered list `1. …`
+     or headings `## A1` / `## 1`);
+  6. `references/SOURCES.md` present;
+  7. the catalogue regenerated: `node scripts/gen-catalog.mjs`, and `catalog.json`
+     committed with the skill.
+- **The proof of the recipe:** `python3 -m pytest tests/hygiene/test_skill_recipe.py -q`
+  builds the skill of the recipe in a throwaway checkout, runs
+  `scripts/validate_skills.py` over it (exit 0), removes one part of the recipe and
+  asserts that the validator complains again (exit 1, "missing
+  references/SOURCES.md"), and regenerates the catalogue with the new skill in it.
+  Measured on the trunk of this pass: a clean clone, the demo skill of the recipe
+  added and the catalogue regenerated — **219 passed**, the suite green.
 - **What the next job does NOT have to do:** the counts of `docs/truth/REPO_SHAPE.md`
   are a **snapshot** at commit `9390db6` since D-066, and the live rows of that
   document (one installer, one validator, no duplicate skill name, no status diary,
