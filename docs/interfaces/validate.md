@@ -42,6 +42,9 @@ The tool is **standard library only** (`python3 -I` works, no package is
 installed). It therefore runs on the CI runner before anything is installed,
 and the contract tests can copy it into a throwaway fixture tree.
 
+`--help` names the schema of each machine format, so a consumer that reads
+only the usage text knows which file to validate against.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -196,7 +199,8 @@ disappear.
   succeeds and `model_dump()` returns the same mapping.
 - The JSON Lines export round-trips into the JSON report: the finding lines
   carry the findings of the report in the same order, the summary line carries
-  their number and the verdict.
+  their number and the verdict. The reconstruction is tested against a fixture
+  tree that really has a finding, so the round trip is not vacuous.
 - Every line of the JSON Lines export validates against the lines schema and
   round-trips through the `ValidateLine` model unchanged.
 - The report is deterministic: two runs on the same tree produce byte-identical

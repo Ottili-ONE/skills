@@ -198,6 +198,42 @@ def test_the_jsonl_export_round_trips_into_the_json_report() -> None:
     assert all(line["kind"] == "finding" for line in findings)
 
 
+def test_the_jsonl_export_rebuilds_the_json_report(tmp_path: Path) -> None:
+    """The JSON Lines export is a rendering of the report, not a summary of it.
+
+    A consumer that reads only the stream has to be able to reconstruct the
+    report it carries — that is what makes the round trip a round trip. The
+    fixture tree has a finding, so the stream really carries findings and the
+    reconstruction is not vacuous.
+    """
+    tree = make_fixture_tree(tmp_path)
+    fixture = tree / "scripts" / "validate.py"
+    report = json.loads(run_validator("--everywhere", "--json", cwd=tree, script=fixture).stdout)
+    assert report["errors"], "the fixture must have a finding"
+    lines = [
+        json.loads(line)
+        for line in run_validator(
+            "--everywhere", "--jsonl", cwd=tree, script=fixture
+        ).stdout.splitlines()
+        if line.strip()
+    ]
+    summary, findings = lines[0], lines[1:]
+    rebuilt = {
+        "contract": summary["contract"],
+        "scope": summary["scope"],
+        "skills": summary["skills"],
+        "errors": [line["message"] for line in findings],
+        "ok": summary["ok"],
+    }
+    assert rebuilt == report
+    jsonschema.validate(rebuilt, load_schema(CONTRACT_VALIDATE_REPORT))
+    # The summary counts the findings the stream carries, and every line
+    # belongs to the scope and the contract of the report.
+    assert summary["findings"] == len(findings)
+    assert all(line["scope"] == report["scope"] for line in lines)
+    assert all(line["contract"] == report["contract"] for line in lines)
+
+
 def test_the_report_is_deterministic() -> None:
     """Two runs of the same tree produce the same bytes."""
     first = run_validator("--everywhere", "--json")
