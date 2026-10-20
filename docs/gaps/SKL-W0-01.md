@@ -496,3 +496,51 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
   sets are invisible to a reader of the skill. No test fails today; the facts that are
   checkable from this job's paths are guarded by
   `tests/hygiene/test_skill_eval_sets.py`.
+
+## G25 (cross-job request, hq-v2 lane, 2026-10-20): two tenant tables are created without row-level security
+
+- **Observed:** the RLS checker of this repository (read-only run against the
+  product repositories, no write into `hq-v2`) reports exactly one failing file
+  in a census of 120 real migrations:
+  `hq-v2/modules/my-work-home/migrations/20261014150000_hq_my_work_home_r3_11_quickcreate.sql`
+  creates `my_work_home_quick_create` and `my_work_home_recent` with a tenant
+  policy on `company_id` but **without** `ALTER TABLE … ENABLE ROW LEVEL SECURITY`
+  and **without** `ALTER TABLE … FORCE ROW LEVEL SECURITY`. The two follow-up
+  migrations `20261015000000_hq_my_work_home_r3_12_quickcreate_state.sql` and
+  `20261015010000_hq_my_work_home_r3_13_quickcreate_recent_lifecycle.sql` keep
+  the same tables unprotected.
+- **Why it matters:** without `ENABLE` the policies are not evaluated at all;
+  without `FORCE` the table owner (the migration role) still bypasses RLS. Both
+  tables are tenant-scoped (`company_id` + tenant policy), so this is a tenant
+  isolation hole in the product, not a style question.
+- **Request (patch, exact):** in the three files above, after the
+  `CREATE POLICY` statement of each table, add
+  `ALTER TABLE my_work_home_quick_create ENABLE ROW LEVEL SECURITY;` /
+  `ALTER TABLE my_work_home_quick_create FORCE ROW LEVEL SECURITY;` and the same
+  two lines for `my_work_home_recent`. The pattern is proven by
+  `hq-v2/modules/reports-intelligence/migrations/20261002091600_reports_intelligence_saved_report.sql`
+  (ENABLE + FORCE + policy + scoped grant).
+- **Proof of the finding (this job):** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py <file>` → exit 1 with
+  `my_work_home_quick_create: missing ENABLE ROW LEVEL SECURITY` and
+  `my_work_home_quick_create: missing FORCE ROW LEVEL SECURITY (owner would bypass RLS)`.
+- **Ownership:** `hq-v2` belongs to the hq lanes, not to `skills-engineering-r3`.
+  This job changed nothing in that repository.
+
+## G26 (environment fact, 2026-10-20): `/srv/ottili/repo/<product>` is empty on this host
+
+- **Observed:** the job card names `/srv/ottili/repo/hq-v2/docs/STATUS.md` and
+  the skill self-test used `/srv/ottili/repo/hq-v2` as the corpus path. On this
+  host `/srv/ottili/repo/<product>` contains **only** `.germo/` (the scheduler
+  state) — no product code, no `docs/`, no migrations. The real product
+  repositories are on the NVMe mount: `/mnt/ottili-nvme/ottili/v2/repo/<product>`
+  (hq-v2, console-v2, ld3-v2, ottili-platform, ottili-apps, alran-core-v2,
+  alran-clients-v2).
+- **Effect:** every proof in this pass was taken against the NVMe path
+  (`hq-v2` at commit `fe9a1cbbb5dff2ebee2c1e33a6844bbb818dfaff`). The committed
+  tests do not read a sibling repository at all: the real excerpts were copied
+  into `tests/fixtures/` with their provenance (`tests/fixtures/PROVENANCE.md`),
+  and the reading of the real files stays a manual proof under `.truth/`.
+- **Request (cross-job, scripts lane):** whoever owns the self-tests of the
+  installed skills should stop defaulting a corpus path to `/srv/ottili/repo`
+  (the file was rewritten in this pass for `pg-rls-multitenant`; other skills
+  may still carry the same default).

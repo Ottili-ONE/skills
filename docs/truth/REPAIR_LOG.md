@@ -1002,3 +1002,97 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   checkable from this job's paths honest — the engineering skills keep their eval set,
   every link to an eval set resolves, every shipped eval set is in the catalogue, and no
   eval diary survives outside `skills/`.
+
+## D-040 — the RLS checker rejected the real corpus and trusted one hard-coded name
+
+- **Defect:** `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py`
+  answered "FAIL" for **74 of 120** real migrations that have nothing wrong with
+  them, and it decided that the tenant setting name is `app.company_id` — a
+  constant of the script, not a fact about the repositories. Three real
+  migrations were rejected for reasons that are checker bugs, not migration bugs:
+  - `hq-v2/modules/operations/migrations/20261008150000_hq_operations_r3_04_task_team_assignment.sql`
+    — `ALTER TABLE IF EXISTS … ENABLE ROW LEVEL SECURITY`: the `ENABLE`/`FORCE`
+    patterns did not allow the optional `IF EXISTS` / `ONLY` clauses, so the
+    checker reported "missing ENABLE ROW LEVEL SECURITY" on a table that has it;
+  - `hq-v2/modules/operations/migrations/20261003045054_operations_file_link.sql`
+    — the policy is keyed on `current_setting('ottili.company_id', true)`; the
+    checker only knew `app.company_id` and called a correct policy wrong;
+  - 70 further files — migrations that only touch an existing table (`ALTER TABLE
+    … ADD COLUMN`, `CREATE INDEX`) were rejected with "no CREATE TABLE statement
+    found; is this a tenant migration?". The checker asked a question about the
+    *file* when the rule is about the *table*.
+- **Cause:**
+  1. `TENANT_GUC = "app.company_id"` was a constant of the script. The plan's
+    census of the name was never written down, so the script could not be
+    corrected when a repository used a different (also correct) name.
+  2. The `CREATE TABLE` regex had to be present in the file, so a migration
+    without a `CREATE TABLE` was a finding instead of "this file creates no
+    tenant table".
+  3. `ENABLE`/`FORCE` were matched without the `IF EXISTS` / `ONLY` variants
+    that the product migrations actually use.
+  4. A policy inside a `DO $$ … $$` block was invisible: the statement splitter
+    had no notion of dollar-quoted bodies.
+- **Fix:** the checker now
+  - reads the accepted tenant GUC names from `guc-names.json` next to the script
+    (`--guc-names` overrides it); a missing or broken configuration is a usage
+    error (exit 2), never a guess;
+  - splits SQL into statements while respecting comments, string literals and
+    dollar-quoted bodies, and scans a `DO` block for the policy it creates;
+  - decides **per table**: a table this file *creates* must carry `company_id`,
+    `ENABLE` + `FORCE ROW LEVEL SECURITY` and a tenant policy keyed on an
+    accepted name; a table that already exists is held to what this file
+    touches (its policy), because the file that created it is the one that had
+    to switch RLS on;
+  - accepts `ALTER TABLE [IF EXISTS] [ONLY] …`.
+- **Proof:**
+  - the three hostile files still fail: `hostile_1_no_force.sql` (missing
+    FORCE), `hostile_2_no_company_id.sql` (no discriminator, unknown setting),
+    `hostile_3_grant_all.sql` (GRANT ALL) → exit 1 each;
+  - the three real hq migrations (copied into `tests/fixtures/hq-migrations/`,
+    provenance in `tests/fixtures/PROVENANCE.md`) pass → exit 0;
+  - census over 120 real migrations of hq-v2, console-v2 and ottili-apps:
+    **74 failures before → 1 failure after**, and that one failure is a real
+    defect in hq-v2 (see D-041);
+  - `python3 -m pytest tests/hygiene/test_rls_checker.py -q` → 9 passed.
+- **Guard:** `tests/hygiene/test_rls_checker.py` proves that every name in
+  `guc-names.json` is accepted, that a name nobody sets is rejected, and that
+  the configuration — not the script — decides (a `--guc-names` file with one
+  name makes the other migrations fail).
+
+## D-041 — the tenant GUC inventory, and one open owner decision
+
+- **Question:** which tenant setting name does a policy have to use? The plan
+  calls `app.company_id` dominant and `ottili.company_id` in the apps
+  "UNVERIFIED". The blueprint does not decide it, and this job does not decide
+  it either: choosing one name for all repositories is an owner decision.
+- **Finding (measured 2026-10-20, `grep -rlE "current_setting\('NAME'" --include='*.sql'`):**
+
+  | GUC name | hq-v2 | console-v2 | ld3-v2 | ottili-platform | ottili-apps | alran-core-v2 | alran-clients-v2 | ottilionev1 | skills | files | occurrences |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | `app.company_id` | 511 | 121 | 8 | 47 | 19 | 340 | 47 | 0 | 2 | 1095 | 3027 |
+  | `app.current_company_id` | 0 | 0 | 218 | 0 | 0 | 0 | 23 | 18 | 0 | 259 | 919 |
+  | `ottili.company_id` | 3 | 0 | 0 | 34 | 39 | 0 | 0 | 0 | 0 | 76 | 267 |
+  | `app.current_company` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 18 | 51 |
+
+  `app.company_id` is the dominant name in seven of the nine repositories;
+  `ld3-v2` uses `app.current_company_id`, the apps and the platform use
+  `ottili.company_id`, and 17 hq-v2 files still use the older
+  `app.current_company`. Names that exist but are **not** tenant discriminators:
+  `ottili.actor_ref` (the acting subject), `app.current_tenant_key` (legacy
+  `ottilionev1` tables keyed on `tenant_key`), `app.is_superadmin` (a role flag).
+- **Decision:** none taken here. All four names are written to
+  `skills/engineering/pg-rls-multitenant/guc-names.json` as *accepted*, each with
+  its measured inventory, and the file states that `canonical_name` is `null`
+  and the decision is open. The checker accepts every name in the file and
+  rejects a name that is not in it — a policy keyed on a setting nobody sets
+  isolates nobody.
+- **Proof:** `python3 -c "import json;print([n['name'] for n in json.load(open('skills/engineering/pg-rls-multitenant/guc-names.json'))['accepted_names']])"` →
+  `['app.company_id', 'app.current_company_id', 'ottili.company_id', 'app.current_company']`.
+- **Real defect found on the way (not fixed here — another repository):**
+  `hq-v2/modules/my-work-home/migrations/20261014150000_hq_my_work_home_r3_11_quickcreate.sql`
+  creates `my_work_home_quick_create` and `my_work_home_recent` with tenant
+  policies but **without** `ENABLE`/`FORCE ROW LEVEL SECURITY`; the same hole
+  appears in the two follow-up migrations `…_r3_12_quickcreate_state.sql` and
+  `…_r3_13_quickcreate_recent_lifecycle.sql`. The tables are unprotected for
+  the table owner. Recorded as a cross-job request in
+  `docs/gaps/SKL-W0-01.md` (G25); this job does not write into `hq-v2`.

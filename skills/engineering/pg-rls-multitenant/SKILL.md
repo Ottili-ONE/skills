@@ -107,6 +107,9 @@ ALTER TABLE orders ADD COLUMN company_id uuid NOT NULL;
 
 ## Verification
 - Run the offline gate: `python3 scripts/check_rls_migration.py <migration.sql>` — must exit 0.
+  The accepted tenant setting names are **configuration**, not a constant of the
+  checker: `guc-names.json` (next to the script) lists the names the product
+  repositories use. A migration that keys on a name nobody sets isolates nobody.
 - Run the Docker harness: `scripts/pg-rls-leak-test.sh <migration.sql> [table]` — must print PASS.
 - Run the standard validator: `python3 scripts/validate_skills.py` — must report OK.
 - Full procedure, version table, worked examples, and pitfalls: `references/pg-rls-procedure.md`.

@@ -1004,6 +1004,7 @@
       "description": "Enforces Postgres row-level security for multi-tenant Ottili workloads: tenant-key-first design, FORCE RLS, expand/contract migrations, and automated leak tests that fail on policy gaps. Use when adding a tenant-isolated table or view, reviewing company_id/organization_id/namespace columns for missing RLS, or investigating 'user X saw user Y's data' incidents.",
       "paths": [
         "skills/engineering/pg-rls-multitenant/SKILL.md",
+        "skills/engineering/pg-rls-multitenant/guc-names.json",
         "skills/engineering/pg-rls-multitenant/references/DESIGN.md",
         "skills/engineering/pg-rls-multitenant/references/EVALS.md",
         "skills/engineering/pg-rls-multitenant/references/SOURCES.md",
