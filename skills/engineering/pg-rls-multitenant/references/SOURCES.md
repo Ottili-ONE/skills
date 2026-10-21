@@ -53,3 +53,48 @@ The following URLs from earlier passes no longer resolve and must not be linked:
 - Supabase key model changed in 2025: JWT `service_role` key is legacy, a "secret key" is
   preferred. The `service_role` Postgres role still has `bypassrls`. Supabase-specific fact;
   do not state it as Postgres behaviour.
+
+## The tenant convention of the platform (measured 2026-10-20, SKL-W1-01)
+
+The convention is not a guess and not a preference: it is the census of the
+product repositories, recorded in `guc-names.json` next to the skill.
+
+| Setting name | Occurrences | Verdict |
+|--------------|-------------|---------|
+| `app.company_id` | 3027 | the canonical tenant GUC |
+| `app.current_company_id` | 919 | legacy — a finding |
+| `ottili.company_id` | 267 | legacy — a finding |
+| `app.current_company` | 51 | legacy — a finding |
+
+The census command is in `guc-names.json` (`census_command`) and its scope
+(`census_scope`) names the eight repositories it was taken from: `hq-v2`,
+`console-v2`, `ld3-v2`, `ottili-platform`, `ottili-apps`, `alran-core-v2`,
+`alran-clients-v2`, `ottilionev1` and `skills`. The measurement was taken on
+2026-10-20 from the repositories as they stood; it is the evidence behind the
+decision, and the decision is one name: `app.company_id`.
+
+The platform repository is **not** checked out on the host that runs this
+skill (only `.germo/` is there), so the count above is the last measurement
+taken of the real trees (2026-10-20) and not a live reading. The re-census
+command is in `guc-names.json` and has to be re-run when the platform lands
+here; the *checker* does not depend on the count, only on the name.
+
+## The leak probe, proven on a real PostgreSQL (2026-10-20)
+
+- PostgreSQL **18.6** on the shared host (`127.0.0.1:15432`), the database
+  of this job, created by `scripts/truth/db.mjs` with a **non-superuser**
+  application role (`truth_app`) that is not the owner of the table.
+- Positive case: a migration with `ENABLE` + `FORCE ROW LEVEL SECURITY` and a
+  policy on `current_setting('app.company_id', true)` measures `a_sees_own 1`,
+  `a_sees_b 0`, `unset_sees_rows 0`, `write_leaks 0` — PASS.
+- Negative case: the same table without a policy measures `a_sees_own 2`,
+  `a_sees_b 1`, `unset_sees_rows 2`, `write_leaks 0` — FAIL, with the findings
+  "cross-tenant leak" and "rows visible without a tenant".
+- Write-path case (2026-10-20): a migration whose policy has the product
+  standard in its `USING` clause and `WITH CHECK (true)` measures
+  `a_sees_own 1`, `a_sees_b 0`, `unset_sees_rows 0` and `write_leaks 1` —
+  FAIL, with the finding "write leak". The read path of that migration is
+  closed and the write path is not, which is why the probe measures both.
+- The container mode of the harness (Docker `postgres:18-alpine`) could not be
+  run on this host: there is no Docker daemon. The server mode is the one that
+  counts, and it is the one the committed tests drive.

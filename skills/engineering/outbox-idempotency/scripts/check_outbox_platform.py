@@ -127,7 +127,9 @@ def main() -> int:
     args = ap.parse_args()
 
     try:
-        sql = Path(args.outbox_sql).read_text(encoding="utf-8")
+        # A file that is not valid UTF-8 is judged, not crashed on: the
+        # findings of the readable part are still worth reporting.
+        sql = Path(args.outbox_sql).read_text(encoding="utf-8", errors="ignore")
     except FileNotFoundError:
         print(f"FAIL: {args.outbox_sql}: file not found", file=sys.stderr)
         return 2

@@ -44,6 +44,27 @@ ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
 ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
 """
 
+# The write path of a policy is guarded by its WITH CHECK clause, not by its
+# USING clause: USING decides which existing rows the policy applies to,
+# WITH CHECK decides which new row may be written. A policy whose USING
+# clause is correct and whose WITH CHECK clause is wide open is a migration
+# that the real database lets a company cross.
+WIDE_CHECK_TEMPLATE = """\
+CREATE TABLE {table} (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id text        NOT NULL,
+    body       text        NOT NULL
+);
+
+CREATE POLICY {table}_tenant ON {table}
+    AS PERMISSIVE FOR ALL TO web_app
+    USING (company_id = current_setting('app.company_id', true))
+    WITH CHECK (true);
+
+ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
+ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
+"""
+
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -170,17 +191,21 @@ def test_a_do_block_migration_passes() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_a_policy_created_with_execute_passes() -> None:
-    """A real ottili-apps migration that creates its policy with ``EXECUTE``.
+def test_the_legacy_apps_shape_is_read_and_rejected() -> None:
+    """A real ottili-apps migration: the ``EXECUTE`` spelling is read, and the
+    legacy GUC it uses is a finding.
 
     The policy is a string literal, so the setting name is written with
     doubled quotes (``current_setting(''ottili.company_id'', true)``). The
-    checker has to read that spelling, otherwise it rejects a policy that
-    keys on an accepted tenant setting.
+    checker has to read that spelling, otherwise it cannot name the setting
+    in its finding - and ``app.company_id`` is the only tenant GUC of the
+    platform, so ``ottili.company_id`` isolates nobody.
     """
     path = SHAPES / "ottili-apps-github-issue-link.sql"
     result = run(str(path))
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "not keyed on an accepted tenant GUC" in result.stderr, result.stderr
+    assert "ottili.company_id" in result.stderr, result.stderr
 
 
 def test_a_do_block_without_force_is_rejected(tmp_path: Path) -> None:
@@ -238,3 +263,158 @@ $$;
     result = run(str(path))
     assert result.returncode == 1, result.stdout + result.stderr
     assert "not keyed on an accepted tenant GUC" in result.stderr, result.stderr
+
+
+# ---------------------------------------------------------------------------
+# The tenant convention of the platform (SKL-W1-01): one GUC, one column.
+# ---------------------------------------------------------------------------
+
+
+def test_the_convention_names_exactly_one_tenant_guc() -> None:
+    """``app.company_id`` is the one tenant GUC, ``company_id`` the column."""
+    config = json.loads(GUC_FILE.read_text(encoding="utf-8"))
+    accepted = [entry["name"] for entry in config["accepted_names"]]
+    assert accepted == ["app.company_id"], accepted
+    assert config["canonical_name"] == "app.company_id", config["canonical_name"]
+    assert config["canonical_column"] == "company_id", config["canonical_column"]
+    rejected = {entry["name"] for entry in config["rejected_names"]}
+    for name in ("app.current_company_id", "ottili.company_id", "app.current_tenant"):
+        assert name in rejected, rejected
+
+
+def test_a_policy_created_with_execute_on_the_canonical_guc_passes(
+    tmp_path: Path,
+) -> None:
+    """The doubled-quote spelling of the canonical GUC must be read, too."""
+    sql = """\
+CREATE TABLE execute_canonical (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id text NOT NULL,
+    body       text NOT NULL
+);
+
+ALTER TABLE execute_canonical ENABLE ROW LEVEL SECURITY;
+ALTER TABLE execute_canonical FORCE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'execute_canonical') THEN
+    EXECUTE
+      'CREATE POLICY execute_canonical_tenant ON execute_canonical AS PERMISSIVE FOR ALL
+         USING (company_id = current_setting(''app.company_id'', true))';
+  END IF;
+END
+$$;
+"""
+    path = write(tmp_path, "execute_canonical.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_every_rejected_tenant_guc_is_a_finding(tmp_path: Path) -> None:
+    """A policy on a name no session sets isolates nobody."""
+    for name in ("app.current_company_id", "ottili.company_id", "app.current_tenant"):
+        sql = TEMPLATE.format(table=f"tenant_{name.replace('.', '_')}", guc=name)
+        path = write(tmp_path, f"{name}.sql", sql)
+        result = run(str(path))
+        assert result.returncode == 1, f"{name}: {result.stdout}{result.stderr}"
+        assert "not keyed on an accepted tenant GUC" in result.stderr, result.stderr
+        assert name in result.stderr, result.stderr
+
+
+def test_a_nullable_company_id_is_rejected(tmp_path: Path) -> None:
+    """A tenant column that may be NULL is not a tenant discriminator."""
+    sql = TEMPLATE.format(table="nullable_company", guc="app.company_id")
+    sql = sql.replace("    company_id text        NOT NULL,\n", "    company_id text,\n")
+    path = write(tmp_path, "nullable_company.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "company_id tenant discriminator column is nullable" in result.stderr, (
+        result.stderr
+    )
+
+
+def test_a_configuration_with_two_tenant_gucs_is_a_usage_error(tmp_path: Path) -> None:
+    """A configuration that is not one convention must not be half applied."""
+    config = tmp_path / "guc-names.json"
+    config.write_text(
+        json.dumps(
+            {
+                "canonical_name": "app.company_id",
+                "accepted_names": [
+                    {"name": "app.company_id"},
+                    {"name": "ottili.company_id"},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    sql = TEMPLATE.format(table="tenant_notes", guc="app.company_id")
+    path = write(tmp_path, "ok.sql", sql)
+    result = run(str(path), "--guc-names", str(config))
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "cannot read the accepted tenant GUC names" in result.stderr, result.stderr
+
+
+def test_a_wide_with_check_clause_is_rejected(tmp_path: Path) -> None:
+    """A policy that reads correctly but writes everything is a leak.
+
+    The USING clause of this migration is the product standard, so every
+    rule that only asks "does the policy read the tenant setting?" is
+    satisfied. The WITH CHECK clause is ``true``, so the database accepts a
+    row of any company. The gate has to see that.
+    """
+    sql = WIDE_CHECK_TEMPLATE.format(table="wide_check_notes")
+    path = write(tmp_path, "wide_check.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "write path of the policy is not constrained" in result.stderr, result.stderr
+
+
+def test_a_write_policy_that_checks_nothing_is_rejected(tmp_path: Path) -> None:
+    """A second policy that guards the write path with nothing is a hole."""
+    sql = WIDE_CHECK_TEMPLATE.format(table="wide_check_notes")
+    sql = sql.replace(
+        "CREATE POLICY wide_check_notes_tenant ON wide_check_notes\n"
+        "    AS PERMISSIVE FOR ALL TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true))\n"
+        "    WITH CHECK (true);",
+        "CREATE POLICY wide_check_notes_read ON wide_check_notes\n"
+        "    FOR SELECT TO web_app\n"
+        "    USING (company_id = current_setting('app.company_id', true));\n"
+        "CREATE POLICY wide_check_notes_write ON wide_check_notes\n"
+        "    FOR INSERT TO web_app\n"
+        "    WITH CHECK (true);",
+    )
+    path = write(tmp_path, "wide_write_policy.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "write path of the policy is not constrained" in result.stderr, result.stderr
+
+
+def test_a_read_guard_without_the_tenant_column_is_rejected(tmp_path: Path) -> None:
+    """A USING clause that reads the setting but not the column is a leak."""
+    sql = TEMPLATE.format(table="no_column_guard", guc="app.company_id")
+    sql = sql.replace(
+        "USING (company_id = current_setting('app.company_id', true))",
+        "USING (current_setting('app.company_id', true) IS NOT NULL)",
+    )
+    path = write(tmp_path, "no_column_guard.sql", sql)
+    result = run(str(path))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "does not name the tenant column" in result.stderr, result.stderr
+
+
+def test_the_real_migrations_of_the_product_are_not_rejected_by_the_new_rules() -> None:
+    """The new rules must not turn a real migration of the platform into a
+    finding: the three hq migrations and the DO-block shape are the corpus
+    the platform actually writes."""
+    corpus = sorted(FIXTURES.glob("*.sql")) + sorted(SHAPES.glob("*.sql"))
+    assert len(corpus) >= 4, corpus
+    for path in corpus:
+        if path.name == "ottili-apps-github-issue-link.sql":
+            # This one keys its policy on a legacy GUC; it is the known gap
+            # G-003 of the job and it is rejected for that reason.
+            continue
+        result = run(str(path))
+        assert result.returncode == 0, f"{path.name}: {result.stdout}{result.stderr}"

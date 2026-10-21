@@ -107,7 +107,10 @@ Bad (DONE and IN_PROGRESS merged — hides what is actually shippable):
 - [ ] FALSE_DONE claims are explicitly flagged and downgraded.
 - [ ] BLOCKED entries name an owner and a concrete next question.
 - [ ] Handoff notes tell the next agent what to retry first.
-- [ ] `python3 scripts/check_status_evidence.py STATUS.md --root .` exits 0.
+- [ ] `python3 scripts/check_status_evidence.py STATUS.md --root .` exits 0 (`STATUS.md` is the
+      status file of the repository you are working on, not a file of this skill).
+- [ ] `python3 scripts/check_status_evidence_test.py` exits 0 (the self-test of the checker,
+      it runs against the fixtures of this skill).
 
 ## Scripts
 - `scripts/check_status_evidence.py` — offline, deterministic gate. It reads **both**

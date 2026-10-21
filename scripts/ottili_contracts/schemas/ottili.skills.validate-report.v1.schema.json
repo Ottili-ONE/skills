@@ -1,0 +1,46 @@
+{
+  "$id": "https://contracts.ottili.one/skills/validate-report/v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The report ``scripts/validate.py --json`` publishes.\n\nInputs:\n    contract: the contract id, always ``ottili.skills.validate-report/v1``.\n    scope: ``catalog`` (the committed catalogue) or ``everywhere`` (the\n    catalogue plus the whole ``skills/`` tree).\n    skills: the number of catalogue entries the report covers.\n    errors: the findings, in the order they were found.\n    ok: true when there is no finding at all.\nOutputs:\n    the mapping that is printed as the JSON report. Unknown keys are\n    rejected, so a producer that grows a field fails the contract test\n    instead of silently changing the contract.\nFailure modes:\n    ValidationError when a value does not match the contract (a wrong\n    scope, a negative skill count, an unknown key).",
+  "properties": {
+    "contract": {
+      "const": "ottili.skills.validate-report/v1",
+      "title": "Contract",
+      "type": "string"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "scope": {
+      "enum": [
+        "catalog",
+        "everywhere"
+      ],
+      "title": "Scope",
+      "type": "string"
+    },
+    "skills": {
+      "minimum": 0,
+      "title": "Skills",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "contract",
+    "scope",
+    "skills",
+    "errors",
+    "ok"
+  ],
+  "title": "ottili.skills.validate-report/v1",
+  "type": "object"
+}

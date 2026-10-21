@@ -772,3 +772,153 @@ Repository invariants turned into executable tests under `tests/hygiene/`:
 - **Why it is not done here:** `README.md` and `.github/**` are not in the owned paths of the job
   card of SKL-W0-01, and the gate's ownership step fails a commit that touches a path outside
   them. The request is recorded here and in `docs/truth/REPAIR_LOG.md`.
+
+## G33 (cross-job request, TASK-0007, 2026-10-20): the repair log records the defects that are still open outside the owned paths
+
+- **What was done:** the repair log of this job (`docs/truth/REPAIR_LOG.md`) now carries an
+  index of every defect of SKL-W0-01 — symptom, reproduction command, root cause, the files
+  that carry the fix, a proof command that passes on the current trunk and the date — plus
+  a section "Follow-ups for later trunk repair jobs" with the 14 items that were measured
+  but could not be fixed from this job. `tests/hygiene/test_repair_log.py` is the guard: it
+  fails when a defect id is not in the index, when an id names two defects, when an index
+  entry lacks one of the six fields, when a proof command is missing from the proof block, when
+  the command an index entry writes down is not the command the proof block of that label runs,
+  when the narrative of a defect and its index entry disagree about the proof label or the
+  date, when a follow-up item names no symptom, or when a proof command marked `# auto` no
+  longer exits 0. The VERIFY pass of TASK-0007 found four defects in that guard itself
+  (D-055, D-056, D-057, D-058), all of them fixed in the owned paths of this job.
+- **The open items, by owner** (path and exact symptom in
+  `docs/truth/REPAIR_LOG.md`, section "Follow-ups for later trunk repair jobs"):
+  - `skills-engineering-r3`: `.github/workflows/validate.yml:42` (the `*.test.mjs` glob ends in
+    `Cannot find module`/exit 1), `.github/workflows/validate.yml:69` (a bash script run with
+    `python3` → `SyntaxError`), `README.md:221,228,229` (the deleted `*.test.mjs` commands),
+    `index/skills.json` (5 lines drift, no `--check` mode), `scripts/validate_skills.py`
+    (10 of 39 skills validated, `UnboundLocalError`, the prompt regex counted twice),
+    `.gitignore` (no `.pytest_cache/`).
+  - `skills-business-de-r3`: 9 committed scratch files under `skills/business-de/*/tests/tmp/`,
+    `docs/gaps/SKL-W1-02.md:106` (points at the deleted status diaries).
+  - `skills-agentic-data-r3`: two skills ship a `references/EVALS.md` their `SKILL.md` never
+    links.
+  - unassigned: `skills/ref-*/**` (six descriptions still carry the deleted `business-de/`
+    path fragment — the tree is in no entry of `docs/R3_OWNERS.json`),
+    `docs/truth/REPO_PROBE.txt` (tracked, 0 bytes).
+  - operator: `scripts/truth/safe-commit.mjs` (git 2.53.0 returns nothing for
+    `--untracked-files=all`, so new files stay untracked), `docs/requests/` does not exist
+    although `AGENTS.md` points at it, the Docker daemon is not reachable on this host.
+
+## G34 (follow-up, TASK-0007 VERIFY, 2026-10-20): 18 of the 33 proof commands are not re-run by the guard, and the gate diffs against the merge base
+
+- **What was measured:** all 33 proof commands of `docs/truth/REPAIR_LOG.md` and the job gate
+  were re-run on the trunk of this pass; every one of them exited 0. The transcript is
+  `.truth/SKL-W0-01/after.txt`.
+- **The gap:** only the 15 proof commands marked `# auto` are re-executed by
+  `tests/hygiene/test_repair_log.py`. The other 18 are the slow ones (whole pytest suites, the
+  job gate) and the gate runs `pytest -q {paths}` over the *changed* test files only, so a slow
+  proof command can rot without any suite noticing. Running them inside the guard is not
+  possible without recursion, because P31 runs `python3 -m pytest tests/hygiene/ -q`, which is
+  the guard itself. The right place is a runner that executes the slow proofs once per trunk,
+  outside the suite.
+- **The second half:** `scripts/truth/gate.mjs` computes its diff against
+  `git merge-base HEAD main`. After a commit of this job is integrated that base is the commit
+  itself, so the next gate run reports `no changes inside the owned paths: nothing was built`
+  and `no test file (*.test.mjs / *.test.ts / test_*.py ...) was added or changed inside the
+  owned paths: a job without tests is not done`, and fails, even when the tree is correct. A job
+  that only documents something therefore has to change a test file to get a green gate.
+- **Why it is not done here:** the kit (`scripts/truth/**`) belongs to the operator and may not
+  be edited by a job; the guard of this job cannot run the slow proofs without recursion.
+  Both facts are recorded in `docs/truth/REPAIR_LOG.md`, section "Follow-ups for later trunk
+  repair jobs", items 15 and 16.
+
+## G35 (cross-job request, TASK-0008 review, 2026-10-20): the preamble prints check commands whose scripts live in other skills
+
+- **What was measured:** `skills/orchestrator-preamble/orchestrator-preamble/SKILL.md:35`
+  and the generated `references/preamble.md` print
+  `python3 scripts/check_problem_catalogue.py ...`,
+  `python3 scripts/check_rls_migration.py ...`,
+  `python3 scripts/check_outbox.py ...` and
+  `python3 scripts/check_status_evidence.py ...`. Those scripts exist only inside the
+  canonical engineering skills
+  (`skills/engineering/{problem-json-contracts,pg-rls-multitenant,outbox-idempotency,honest-status}/scripts/`).
+  A reader who copies the command into the preamble folder gets
+  `No such file or directory` (exit 1); neither document says in which folder the
+  command has to run.
+- **Why it is not fixed here:** `scripts/gen-preamble.mjs` pins the gate command of the
+  four canonical skills verbatim (it refuses to run when a skill no longer contains the
+  string) and writes them into the preamble. The generator is outside the owned paths of
+  SKL-W0-01 (`scripts/install.sh`, `scripts/validate.py`, `scripts/gen-catalog.mjs`,
+  `scripts/verify-status.mjs`, `scripts/truth/config.json`), and the preamble itself is
+  the subject of the W1 job `SKL-W1-02`. Changing the generated text by hand would be
+  undone by the next `node scripts/gen-preamble.mjs`.
+- **The request:** let the generator print the command with the folder it runs in (for
+  example `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py
+  <migration.sql>`) or print the sentence "run this in the folder of the skill that owns
+  the script". The same change belongs into the human-readable contract
+  `skills/orchestrator-preamble/orchestrator-preamble/SKILL.md`.
+- **The proof that exists today:** `tests/hygiene/test_skill_docs.py` resolves every
+  script a SKILL.md names; it is green because it accepts a script of a sibling skill.
+  It does NOT decide in which folder the command runs — that is the open question of this
+  entry.
+
+## G36 (follow-up, TASK-0008 review, 2026-10-20): the lint step of the truth gate is the build step
+
+- **What was measured:** `scripts/truth/config.json` sets `commands.build` and
+  `commands.lint` to the same command (`python3 -I scripts/validate.py --everywhere`).
+  The trunk gate therefore reports `lint: pass` whenever the build passes; a lint
+  regression cannot be seen by the gate. A real linter is installed on this host —
+  `ruff` 0.16.8 at `/usr/local/bin/ruff` — and it reports 23 findings in `tests/` and 8
+  in `scripts/`. The findings in `tests/` are inside the owned paths of this job, the
+  findings in `scripts/validate_skills.py`, `scripts/build-index.py`,
+  `scripts/check_related_graph.py`, `scripts/install-skill.py` and
+  `scripts/validate_reviewed_by.py` are not.
+- **Why it is not changed here:** the pack-v3 decision fixes the command strings of
+  `scripts/truth/config.json` to the ones that are measured, and a trunk gate that
+  depends on a binary the CI image may not carry would turn the W1 jobs red on a host
+  that has no `ruff`. The change belongs to the operator (the config) together with the
+  job that owns `scripts/**` (the findings).
+- **The request:** decide whether `commands.lint` becomes `ruff check` (and then make
+  the CI image carry `ruff`), or keep the current command and rename the step so that it
+  does not claim to be a lint.
+
+## G37 (cross-job notice, TASK-0008 second pass, 2026-10-20): what the next job has to do when it adds a skill
+
+- **What was measured:** a clean clone of the trunk, one skill folder added under
+  `skills/engineering/`, `node scripts/gen-catalog.mjs` — the state the W1
+  canonical-skills job starts from — and then the whole suite. **Five** tests went
+  red. One of them was the shape guard of `docs/truth/REPO_SHAPE.md` ("Skills in the
+  catalogue: document says 39, command says 40"), a failure the next job cannot fix
+  because it does not own `docs/truth/`; that one is closed by D-066 of this pass.
+  The other four are the next job's own obligations, listed here so that it does not
+  have to discover them one at a time:
+  1. `tests/hygiene/test_skill_docs.py` — `scripts/validate_skills.py` exits 1 and
+     reports its findings for the new skill.
+  2. `tests/hygiene/test_skill_eval_sets.py` — an engineering skill must ship
+     `references/EVALS.md`.
+  3. and 4. `tests/hygiene/test_repair_log.py` — the proof commands P38 and P40 of
+     the repair log re-run the two suites above, so they turn red with them.
+- **The recipe, measured and executed by `tests/hygiene/test_skill_recipe.py`:**
+  a new engineering skill `skills/engineering/<name>/` with
+  1. a folder name and a frontmatter `name` that are the same and lowercase-hyphenated;
+  2. a frontmatter that carries **only** portable fields — `name`, `description`,
+     `license`, `compatibility`, `metadata`, `allowed-tools`; a field such as
+     `version` is reported as "non-portable front-matter field";
+  3. a `description` that says **when to use** the skill — the validator looks for
+     `use when`, `fires`, `when to use` or `trigger`;
+  4. a body that **links** `references/EVALS.md` and `references/SOURCES.md` (the
+     text of the file must contain the path of the file);
+  5. `references/EVALS.md` with **at least five** prompts (a numbered list `1. …`
+     or headings `## A1` / `## 1`);
+  6. `references/SOURCES.md` present;
+  7. the catalogue regenerated: `node scripts/gen-catalog.mjs`, and `catalog.json`
+     committed with the skill.
+- **The proof of the recipe:** `python3 -m pytest tests/hygiene/test_skill_recipe.py -q`
+  builds the skill of the recipe in a throwaway checkout, runs
+  `scripts/validate_skills.py` over it (exit 0), removes one part of the recipe and
+  asserts that the validator complains again (exit 1, "missing
+  references/SOURCES.md"), and regenerates the catalogue with the new skill in it.
+  Measured on the trunk of this pass: a clean clone, the demo skill of the recipe
+  added and the catalogue regenerated — **219 passed**, the suite green.
+- **What the next job does NOT have to do:** the counts of `docs/truth/REPO_SHAPE.md`
+  are a **snapshot** at commit `9390db6` since D-066, and the live rows of that
+  document (one installer, one validator, no duplicate skill name, no status diary,
+  no root entry outside the allowlist, no skill missing from the catalogue) hold in
+  every healthy checkout. The document no longer needs an update for a new skill.

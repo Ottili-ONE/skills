@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 SEED_NAME = ".hygiene-seed"
 
@@ -32,6 +32,7 @@ def git_status_porcelain(root: Path) -> str:
         ["git", "-C", str(root), "status", "--porcelain"],
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         raise RuntimeError(f"git status failed in {root}: {result.stderr.strip()}")

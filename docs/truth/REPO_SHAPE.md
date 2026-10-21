@@ -8,6 +8,30 @@ row — re-run them and the document is either true or wrong, never merely plaus
 this document and fails when the printed number differs from the claimed one. The
 document cannot drift away from the tree again without turning the suite red.
 
+## How to read the scopes
+
+Every row of the tables carries a **scope**, because the document holds two kinds
+of claims and the next job is allowed to change one of them:
+
+| Scope | Meaning | Checked against |
+| --- | --- | --- |
+| `live` | An invariant of the tree. It holds in every healthy checkout, before and after the next job adds a skill. | the checkout under test |
+| `snapshot@<commit>` | The size of the tree at a named commit. It describes what the tree looked like then. | a checkout of that commit |
+
+The counts (skills, packages, files) are **snapshot** rows: they grow whenever the
+next job does its job, and `docs/truth/` is not owned by that job — a job that
+cannot edit this document must not be blocked by it. The invariants (one installer,
+one validator, no duplicate skill name, no status diary, a root the kit allows) are
+**live** rows: they must hold in every checkout, and they are what the guard
+enforces in the tree that is being tested.
+
+To check a snapshot row by hand, look at the tree it names:
+
+```
+git worktree add --detach /tmp/shape 9390db6
+cd /tmp/shape && git ls-files | wc -l
+```
+
 ## One tree, no duplicates
 
 - Every skill lives under **exactly one** directory: `skills/<package>/<skill-name>/`.
@@ -18,14 +42,15 @@ document cannot drift away from the tree again without turning the suite red.
   → **empty**. The worktree proof only holds while no scratch copy of the tree lives
   inside the repository; `.truth/` is git-ignored working data and must not hold one.
 
-| What | Value | Command |
-| --- | --- | --- |
-| Skills in the catalogue | 39 | `python3 -c "import json;print(len(json.load(open('catalog.json'))['skills']))"` |
-| Packages that contain skills | 12 | `python3 -c "import json;print(len(json.load(open('catalog.json'))['packages']))"` |
-| `SKILL.md` files in the tree | 40 | `git ls-files '*/SKILL.md' \| wc -l` |
-| Directories under `skills/` | 14 | `ls -d skills/*/ \| wc -l` |
-| Tracked files | 664 | `git ls-files \| wc -l` |
-| Skill directories with a duplicated name | 0 | `git ls-files '*/SKILL.md' \| xargs -n1 dirname \| xargs -n1 basename \| sort \| uniq -d \| wc -l` |
+| What | Value | Command | Scope |
+| --- | --- | --- | --- |
+| Skills in the catalogue | 39 | `python3 -c "import json;print(len(json.load(open('catalog.json'))['skills']))"` | `snapshot@9390db6` |
+| Packages that contain skills | 12 | `python3 -c "import json;print(len(json.load(open('catalog.json'))['packages']))"` | `snapshot@9390db6` |
+| `SKILL.md` files in the tree | 40 | `git ls-files '*/SKILL.md' \| wc -l` | `snapshot@9390db6` |
+| Directories under `skills/` | 14 | `ls -d skills/*/ \| wc -l` | `snapshot@9390db6` |
+| Tracked files | 667 | `git ls-files \| wc -l` | `snapshot@9390db6` |
+| Skill directories with a duplicated name | 0 | `git ls-files '*/SKILL.md' \| xargs -n1 dirname \| xargs -n1 basename \| sort \| uniq -d \| wc -l` | `live` |
+| Skills in the tree that the catalogue does not list | 0 | `python3 -c "import json,pathlib;cat={e['name'] for e in json.load(open('catalog.json'))['skills']};disk={p.parent.name for p in pathlib.Path('skills').rglob('SKILL.md')};print(len(disk-cat))"` | `live` |
 
 The 40th `SKILL.md` is `templates/skill/SKILL.md`, the starting point for a new
 skill — it is a template, not a skill, so the catalogue holds 39.
@@ -51,10 +76,10 @@ skills/<package>/<skill-name>/
 - Per-skill tests live under `skills/<package>/<skill-name>/tests/`.
 - No test file is collected twice.
 
-| What | Value | Command |
-| --- | --- | --- |
-| Tracked files under `tests/` | 42 | `git ls-files 'tests/**' \| wc -l` |
-| Tracked files under the per-skill `tests/` directories | 112 | `git ls-files 'skills/*/*/tests/**' \| wc -l` |
+| What | Value | Command | Scope |
+| --- | --- | --- | --- |
+| Tracked files under `tests/` | 44 | `git ls-files 'tests/**' \| wc -l` | `snapshot@9390db6` |
+| Tracked files under the per-skill `tests/` directories | 112 | `git ls-files 'skills/*/*/tests/**' \| wc -l` | `snapshot@9390db6` |
 
 ## Catalogue generated from folders
 
@@ -65,25 +90,27 @@ skills/<package>/<skill-name>/
 - Packages are derived from the `skills/` folders at generation time.
 - `index/INDEX.md` and `index/skills.json` are built by `scripts/build-index.py`.
 - CI runs `node scripts/gen-catalog.mjs --check`, so the committed catalogue cannot drift.
+- A skill that is added to the tree must be in the catalogue: regenerate it with
+  `node scripts/gen-catalog.mjs` and commit the result. The row *Skills in the tree
+  that the catalogue does not list* is the live check for that.
 
 ## Tools — exactly one each
 
 The task requires exactly one `scripts/validate.py` and exactly one
 `scripts/install.sh`. Both exist, once each:
 
-| What | Value | Command |
-| --- | --- | --- |
-| `scripts/install.sh` in the tree | 1 | `git ls-files 'scripts/install.sh' \| wc -l` |
-| `scripts/validate.py` in the tree | 1 | `git ls-files 'scripts/validate.py' \| wc -l` |
+| What | Value | Command | Scope |
+| --- | --- | --- | --- |
+| `scripts/install.sh` in the tree | 1 | `git ls-files 'scripts/install.sh' \| wc -l` | `live` |
+| `scripts/validate.py` in the tree | 1 | `git ls-files 'scripts/validate.py' \| wc -l` | `live` |
 
 The complete tool inventory of `scripts/` — one line per tool, no tool twice:
 
 | Tool | Path | Purpose |
 | --- | --- | --- |
 | Installer | `scripts/install.sh` | copy or link selected skills into an agent skills directory (`--check`, `--dry-run`, `--package`, `--link`, `--force`) |
-| Installer (catalogue-driven, overlapping) | `scripts/install-skill.py` | resolves a skill by name or id in `catalog.json` and copies it into an agent directory — a second way to do what `install.sh` does |
-| Validator (aggregate) | `scripts/validate.py` | repository structure and catalogue consistency |
-| Per-skill validator | `scripts/validate_skill.py` | one or more skill folders against the agentskills.io standard |
+| Installer (catalogue-driven, overlapping) | `scripts/install-skill.py` | resolves one skill through the catalogue |
+| Single-skill validator | `scripts/validate_skill.py` | one or more skill folders against the agentskills.io standard |
 | Multi-skill validator | `scripts/validate_skills.py` | the same standard, offline and deterministic, for every skill folder |
 | Sign-off validator | `scripts/validate_reviewed_by.py` | enforces the adviser sign-off gate (`reviewed_by:`) |
 | Catalogue generator | `scripts/gen-catalog.mjs` | writes `catalog.json` from the `skills/` folders |
@@ -98,9 +125,9 @@ The overlap between `install.sh` and `install-skill.py` is recorded in
 
 ## Status / handoff docs: none
 
-| What | Value | Command |
-| --- | --- | --- |
-| Tracked status diaries anywhere in the tree | 0 | `git ls-files \| grep -E '(^\|/)(STATUS[^/]*\.md\|HANDOFF[^/]*\.md\|GAPS[^/]*\.md\|R3_PLAN\.md\|REVERIFY[^/]*\.md)$' \| wc -l` |
+| What | Value | Command | Scope |
+| --- | --- | --- | --- |
+| Tracked status diaries anywhere in the tree | 0 | `git ls-files \| grep -E '(^\|/)(STATUS[^/]*\.md\|HANDOFF[^/]*\.md\|GAPS[^/]*\.md\|R3_PLAN\.md\|REVERIFY[^/]*\.md)$' \| wc -l` | `live` |
 
 - A status diary is `STATUS*.md`, `HANDOFF*.md`, `GAPS*.md`, `R3_PLAN.md` or
   `REVERIFY*.md`. None of them is committed, at the root or anywhere else.
@@ -123,6 +150,7 @@ The overlap between `install.sh` and `install-skill.py` is recorded in
 ```
 .github/         # CI workflows
 .gitignore
+.npmrc          # registry scope, never a public registry
 AGENTS.md        # live directives + ownership
 CONTRIBUTING.md
 LICENSE
@@ -140,15 +168,23 @@ tests/           # repository-level test suites
 Root `*.md` files: AGENTS.md CONTRIBUTING.md README.md
 No stray `.md`, `.log`, `.out`, `state.json` or `*.db` beyond that list.
 
+The root is the one place where a job cannot simply add a file: the allowlist of
+`scripts/truth/config.json` names the entries that may live there, and the gate
+refuses a root entry it does not know.
+
+| What | Value | Command | Scope |
+| --- | --- | --- | --- |
+| Tracked root entries the allowlist does not permit | 0 | `python3 -c "import json,subprocess;s=set(json.load(open('scripts/truth/config.json'))['rootAllowlist']);print(len({l.split('/')[0] for l in subprocess.run(['git','ls-files'],capture_output=True,text=True).stdout.split()}-s))"` | `live` |
+
 ## Follow-up (not deleted here)
 
 Package-level documents that are neither status diaries nor named by the delete list
 of this task stay for the canonical-skills job to judge: they are pass records,
 research notes and package readmes. The list is generated by one command:
 
-| What | Value | Command |
-| --- | --- | --- |
-| Package-level documents left for the canonical-skills job | 15 | `git ls-files 'skills/**/*.md' \| grep -vE '/SKILL\.md$' \| grep -vE '^skills/[^/]+/[^/]+/references/' \| grep -vE '^skills/[^/]+/[^/]+/tests/' \| wc -l` |
+| What | Value | Command | Scope |
+| --- | --- | --- | --- |
+| Package-level documents left for the canonical-skills job | 15 | `git ls-files 'skills/**/*.md' \| grep -vE '/SKILL\.md$' \| grep -vE '^skills/[^/]+/[^/]+/references/' \| grep -vE '^skills/[^/]+/[^/]+/tests/' \| wc -l` | `snapshot@9390db6` |
 
 ```
 skills/agentic-data/AUDIT.md

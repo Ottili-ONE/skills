@@ -29,14 +29,14 @@ GATES = [
 NODE = shutil.which("node") or sys.executable
 
 
-def run(args, check=True):
+def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [NODE, str(GEN), *args],
         cwd=REPO, capture_output=True, text=True, check=check,
     )
 
 
-def generated_body():
+def generated_body() -> str:
     """Generate to a temp file and read it back (never touch the committed body)."""
     tmp = REPO / ".truth" / "SKL-W1-02" / "preamble_prop.tmp.md"
     tmp.parent.mkdir(parents=True, exist_ok=True)
@@ -51,14 +51,14 @@ def generated_body():
             OUT.write_text(backup)
 
 
-def test_property_determinism():
+def test_property_determinism() -> None:
     """Same input on disk always produces the same bytes."""
     a = run([]).stdout
     b = run([]).stdout
     assert a == b
 
 
-def test_property_body_shape():
+def test_property_body_shape() -> None:
     """Every generated body starts with the header, is <= 60 lines, names all four gates."""
     body = generated_body()
     lines = body.splitlines()
@@ -68,14 +68,14 @@ def test_property_body_shape():
         assert gate in body, f"gate command missing: {gate}"
 
 
-def test_property_check_passes_on_committed_body():
+def test_property_check_passes_on_committed_body() -> None:
     """--check exits 0 against the committed body."""
     r = run(["--check"])
     assert r.returncode == 0
     assert "up to date" in r.stdout
 
 
-def test_property_check_fails_when_body_is_stale():
+def test_property_check_fails_when_body_is_stale() -> None:
     """A mutated body must make --check exit non-zero (regression)."""
     backup = OUT.read_text()
     OUT.write_text(backup + "\n<!-- stale marker 12345 -->\n")
@@ -87,7 +87,7 @@ def test_property_check_fails_when_body_is_stale():
         OUT.write_text(backup)
 
 
-def test_property_check_fails_when_body_is_missing():
+def test_property_check_fails_when_body_is_missing() -> None:
     """A missing body must make --check exit non-zero (regression)."""
     backup = OUT.read_text()
     os.replace(OUT, OUT.with_suffix(".missing-stash"))
@@ -100,12 +100,12 @@ def test_property_check_fails_when_body_is_missing():
         OUT.write_text(backup)
 
 
-def test_property_golden_matches_committed_body():
+def test_property_golden_matches_committed_body() -> None:
     """The committed body is byte-identical to the golden copy (never auto-updated)."""
     assert OUT.read_text() == GOLDEN.read_text()
 
 
-def test_property_help_is_complete():
+def test_property_help_is_complete() -> None:
     """--help prints usage and exits 0."""
     r = run(["--help"])
     assert r.returncode == 0

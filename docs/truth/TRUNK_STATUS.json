@@ -1,0 +1,49 @@
+{
+  "overall": "pass",
+  "commit": "084e1cf802284eaaa6ec1788d841a49558535417",
+  "generatedAt": "2026-10-20T15:09:08.841Z",
+  "kitVersion": "1.1.0",
+  "repo": "skills",
+  "steps": [
+    {
+      "id": "install",
+      "status": "pass"
+    },
+    {
+      "id": "build",
+      "status": "pass"
+    },
+    {
+      "id": "typecheck",
+      "status": "skip"
+    },
+    {
+      "id": "lint",
+      "status": "pass"
+    },
+    {
+      "id": "registry",
+      "status": "skip"
+    },
+    {
+      "id": "migrate",
+      "status": "skip"
+    },
+    {
+      "id": "boot",
+      "status": "skip"
+    },
+    {
+      "id": "smoke",
+      "status": "skip"
+    },
+    {
+      "id": "hygiene",
+      "status": "pass"
+    },
+    {
+      "id": "scan-full",
+      "status": "warn"
+    }
+  ]
+}

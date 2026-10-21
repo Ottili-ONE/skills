@@ -7,3 +7,18 @@ venv/
 
 # GERMO working notes and gate logs (never committed)
 .truth/
+
+# Dependencies of the truth kit (scripts/truth/package.json). The kit skips
+# them in its own integrity manifest and treats them as generated artefacts
+# (scripts/truth/lib/common.mjs -> generatedGlobs), but the gate's ownership
+# step counts every UNTRACKED file: without these two lines a pass that runs
+# `npm install --prefix scripts/truth` (the kit asks for it) fails the gate
+# with "changed file(s) outside the owned paths" for files nobody may commit.
+node_modules/
+package-lock.json
+
+# Coverage data of a test run. The report belongs in .truth/ (the notes of
+# the job), the data file belongs nowhere: an untracked .coverage file would
+# make the gate fail its ownership step for a file no job may commit.
+.coverage
+htmlcov/

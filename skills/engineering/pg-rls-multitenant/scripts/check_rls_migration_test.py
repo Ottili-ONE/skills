@@ -217,11 +217,48 @@ def test_a_do_block_and_an_executed_policy() -> None:
     print("ok: a DO block and an EXECUTE-created policy are read")
 
 
+def test_every_rejected_tenant_guc_is_a_finding() -> None:
+    """A policy on a name no session sets isolates nobody.
+
+    The three names are the measured legacy spellings of the product
+    repositories. The convention rejects them, so a migration that keys its
+    policy on one has to be a finding.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        for name in ("app.current_company_id", "ottili.company_id", "app.current_tenant"):
+            table = f"tenant_{name.replace('.', '_')}"
+            sql = (
+                f"CREATE TABLE {table} (id uuid PRIMARY KEY, company_id text NOT NULL);\n"
+                f"CREATE POLICY {table}_tenant ON {table} USING "
+                f"(company_id = current_setting('{name}', true));\n"
+                f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;\n"
+                f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY;\n"
+            )
+            path = t / f"{name}.sql"
+            path.write_text(sql, encoding="utf-8")
+            rc, out = run(str(path))
+            assert rc == 1, f"{name} must be rejected, got {rc}: {out}"
+            assert name in out, out
+    print("ok: every rejected tenant GUC is a finding")
+
+
+def test_the_convention_holds_one_tenant_guc() -> None:
+    """The convention file names one tenant GUC, and that is app.company_id."""
+    config = json.loads((ROOT / "guc-names.json").read_text(encoding="utf-8"))
+    accepted = [entry["name"] for entry in config["accepted_names"]]
+    assert accepted == ["app.company_id"], f"the convention must hold one name: {accepted}"
+    assert config["canonical_column"] == "company_id", config["canonical_column"]
+    print("ok: the convention holds exactly one tenant GUC")
+
+
 EDGE_TESTS = [
     ("json output", test_json_output),
     ("usage error", test_usage_error),
     ("configured GUC names", test_every_configured_guc_name_passes),
     ("do block and executed policy", test_a_do_block_and_an_executed_policy),
+    ("rejected GUC names", test_every_rejected_tenant_guc_is_a_finding),
+    ("one tenant GUC", test_the_convention_holds_one_tenant_guc),
 ]
 
 

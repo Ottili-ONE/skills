@@ -20,7 +20,7 @@ REVIEW = REPO / "docs" / "reviews" / "ref-ust-edge-cases.md"
 def test_ref_ust_edge_cases_is_marked_reviewed_by_unverified() -> None:
     """ref-ust-edge-cases is marked reviewed_by: UNVERIFIED."""
     text = SKILL.read_text(encoding="utf-8")
-    assert re.search(r"^reviewed_by: UNVERIFIED$", text, flags=re.M)
+    assert re.search(r"^reviewed_by: UNVERIFIED$", text, flags=re.MULTILINE)
     assert "Status: UNVERIFIED" in text
 
 

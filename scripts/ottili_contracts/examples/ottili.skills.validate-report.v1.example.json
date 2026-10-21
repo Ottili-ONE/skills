@@ -1,0 +1,9 @@
+{
+  "contract": "ottili.skills.validate-report/v1",
+  "scope": "everywhere",
+  "skills": 1,
+  "errors": [
+    "on-disk skill 'beta' (skills/demo/beta) is missing from the catalog"
+  ],
+  "ok": false
+}

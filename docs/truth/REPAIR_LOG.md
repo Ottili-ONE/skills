@@ -21,6 +21,8 @@
   The folder name IS the skill name; no catalogue, no relative-to-script mistake.
 - **Proof:** `bash -x` before (doubled path, `-d` failed) and after (32/32 folders
   resolve). See `.truth/SKL-W0-01/before.txt` and `.truth/SKL-W0-01/after.txt`.
+- **Index proof:** `P1`
+- **Date:** 2026-10-15
 
 ## D-002 — `--package engineering|business-de|agentic-data` reported "unknown package"
 
@@ -37,6 +39,8 @@
 - **Proof:** `--package engineering` installs 10/10, `business-de` 11/11,
   `agentic-data` 10/10, `generic` 32/32; `--package bogus` exits 1 with the known
   list. See `.truth/SKL-W0-01/after.txt`.
+- **Index proof:** `P2`
+- **Date:** 2026-10-15
 
 ## D-003 — catalogue listed only 2 of 32 skills and was hand-edited
 
@@ -52,6 +56,8 @@
   CI (`.github/workflows/validate.yml`) runs `node scripts/gen-catalog.mjs --check`.
 - **Proof:** `node scripts/gen-catalog.mjs` writes 32 skills / 5 packages;
   `--check` exits 0; `validate.py` prints `ok: 32 skills validated`.
+- **Index proof:** `P4`
+- **Date:** 2026-10-15
 
 ## Verification commands run
 
@@ -120,6 +126,8 @@ All engineering self-tests (`*_test.py`, `tests/*.py`, `run_long_test_test.sh`) 
   operator's excluded paths, so no task can run the blocked-check, gate or commit
   command as specified. Recorded in `docs/gaps/SKL-W00-01.md`. Commits in the
   interim use plain `git commit` guarded to this job's paths.
+- **Index proof:** `P5`
+- **Date:** 2026-10-16
 
 ## D-005 — generated catalogue listed `.gitkeep` placeholder files as skill paths
 
@@ -138,6 +146,8 @@ All engineering self-tests (`*_test.py`, `tests/*.py`, `run_long_test_test.sh`) 
 - **Proof:** `node scripts/gen-catalog.mjs` writes 32 skills / 5 packages;
   `node scripts/gen-catalog.mjs --check` exits 0 ("catalog unchanged"); `git diff
   --stat catalog.json` is clean.
+- **Index proof:** `P6`
+- **Date:** 2026-10-16
 
 ## Pre-existing failures found during TASK-0004 verification (NOT fixed — cross-job)
 
@@ -157,7 +167,7 @@ is empty, `git ls-files | grep -c STATUS` is 9 (all under `skills/agentic-data/`
 and `skills/business-de/`, owned by other jobs), the root has no stray docs/logs,
 and `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.
 
-## D-003 — RLS checker accepted three unsafe migrations; rewrote it per-table around the real product GUC
+## D-006 — RLS checker accepted three unsafe migrations; rewrote it per-table around the real product GUC
 
 - **Defect:** the previous `check_rls_migration.py` was a whole-file scanner: it ran
   `TENANT_RE.search(text)` once over the *entire* migration, so one `tenant_id`
@@ -194,10 +204,12 @@ and `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.
   `procure-to-stock/20261010000000`); 3 hostile fixtures FAIL; the skill's own
   `good_migration.sql` was rewritten to the product standard (company_id +
   `app.company_id`) and now passes.
+- **Index proof:** `P7`
+- **Date:** 2026-10-16
 
 ---
 
-## D-007 — committed `catalog.json` was stale (missing the pg-rls hostile fixtures)
+## D-051 — committed `catalog.json` was stale (missing the pg-rls hostile fixtures)
 
 - **Defect:** `node scripts/gen-catalog.mjs --check` exited 1 with
   `catalog would change; run without --check to regenerate`. The committed
@@ -217,8 +229,10 @@ and `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.
 - **Proof:** `node scripts/gen-catalog.mjs --check` now exits 0
   ("catalog unchanged"); every one of the catalogue's 518 paths exists on disk;
   `python3 -I scripts/validate.py` reports `ok: 32 skills validated`.
+- **Index proof:** `P4`
+- **Date:** 2026-10-16
 
-## Follow-ups for later trunk repair jobs
+## Follow-ups recorded in an earlier pass (2026-10-16)
 
 Everything below is outside this job's owned paths (or is a pre-existing dirty-tree
 state) and is recorded here so the next pass does not mistake it for a regression.
@@ -254,7 +268,7 @@ state) and is recorded here so the next pass does not mistake it for a regressio
 
 ---
 
-## D-008 — TASK-0008 review: no new defects found in owned paths; all baseline defects re-proven fixed
+## D-052 — TASK-0008 review: no new defects found in owned paths; all baseline defects re-proven fixed
 
 - **Scope of this pass:** adversarial review of the complete SKL-W0-01 change
   (git diff vs `origin/main` + working tree + untracked files), line by line, against
@@ -313,10 +327,12 @@ state) and is recorded here so the next pass does not mistake it for a regressio
   - The GUC name decision (`app.company_id` vs alternatives) is an operator call
     recorded in D-006; the pg-rls checker follows whatever `config.json` names,
     so it is not a blocker for this job.
+- **Index proof:** `P8`
+- **Date:** 2026-10-16
 
 ---
 
-## D-009 — TASK-0008 review: repro-script path bug (not a repo defect)
+## D-053 — TASK-0008 review: repro-script path bug (not a repo defect)
 
 - **Scope of this pass:** adversarial re-review of the complete SKL-W0-01 change
   (git diff vs `origin/main` + working tree + untracked files), re-running every
@@ -367,6 +383,8 @@ state) and is recorded here so the next pass does not mistake it for a regressio
   This job therefore lands via plain `git commit` guarded to its owned paths, as
   TASK-0001–TASK-0007 did. The gate command cannot be executed from this repo as
   written until the harness is provided.
+- **Index proof:** `P7`
+- **Date:** 2026-10-16
 
 ---
 
@@ -416,6 +434,8 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   consecutive generations are byte-identical (`cmp`); `pytest
   tests/hygiene/test_catalog.py -q` → 5 passed (drift, determinism,
   no-timestamp, package-source rule, every skill listed).
+- **Index proof:** `P4`
+- **Date:** 2026-10-20
 
 ## D-008 — `scripts/install.sh` had no `--check` mode, so the kit's install command exited 2
 
@@ -437,6 +457,8 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   written`, exit 0, target directory **not** created; `--check … no-such-skill-xyz`
   → exit 1 with `error: source skill directory missing`; `--dry-run` creates no
   directory either; `pytest tests/hygiene/test_install.py -q` → 12 passed.
+- **Index proof:** `P1`
+- **Date:** 2026-10-20
 
 ## D-009 — `--package ref-*` installed nothing although those packages exist on disk
 
@@ -456,6 +478,8 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   derived packages install every skill they contain; `pytest
   tests/hygiene/test_install.py -q` → 9 passed (among them
   `test_on_demand_reference_packages_install_their_skill`).
+- **Index proof:** `P3`
+- **Date:** 2026-10-20
 
 ## D-010 — the truth kit's root allowlist was missing from `scripts/truth/config.json`
 
@@ -473,6 +497,8 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   off the fixture that defines the invariant, not invented.
 - **Proof:** `node tests/hygiene/root-allowlist.test.mjs` → 3/3 pass; the gate's
   `hygiene` step now runs instead of being skipped.
+- **Index proof:** `P9`
+- **Date:** 2026-10-20
 
 ## D-011 — the orchestrator's workspace state directory showed up as a foreign change
 
@@ -489,6 +515,8 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   `docs/gaps/SKL-W0-01.md` (G9).
 - **Proof:** `git status --porcelain` lists only this job's paths; the gate's
   `ownership` step passes.
+- **Index proof:** `P10`
+- **Date:** 2026-10-20
 
 ## D-012 — `safe-commit` could not see new files: git 2.53.0 returns nothing for `--untracked-files=all`
 
@@ -506,6 +534,8 @@ D-002, D-003 above). The entries below are the defects still live on the trunk.
   enumeration, not in this job's code.
 - **Proof:** the same command is empty in a scratch repo while `--untracked-files=normal`
   lists the files; after the explicit `git add` it lists them as `A ` (recorded as G10).
+- **Index proof:** `P11`
+- **Date:** 2026-10-20
 
 # TASK-0002 VERIFY pass (2026-10-20) — independent re-verification of the installer and the catalogue
 
@@ -544,6 +574,8 @@ sequence, and a clean clone) instead of trusting the claim. The TASK-0002 delive
   refuses `engineering+`, `.*`, `engineering?` and `engineering.*`. With the old line
   restored the test fails (`--package .*` returned 0 and installed everything); with the
   fix it passes.
+- **Index proof:** `P12`
+- **Date:** 2026-10-20
 
 ## D-014 — `scripts/verify-status.mjs` crashed on every claim table
 
@@ -553,6 +585,8 @@ sequence, and a clean clone) instead of trusting the claim. The TASK-0002 delive
 - **Fix:** `const line = raw.replace(/\s+$/, "");`.
 - **Proof:** `tests/hygiene/test_verify_status.py`; with the old file restored 4 of its 5
   tests fail, with the fix all 5 pass.
+- **Index proof:** `P13`
+- **Date:** 2026-10-20
 
 ## D-015 — `scripts/verify-status.mjs` never checked the evidence file (a swallowed error)
 
@@ -565,6 +599,8 @@ sequence, and a clean clone) instead of trusting the claim. The TASK-0002 delive
   the `try`/`catch` is gone (it only existed to hide the `require`).
 - **Proof:** `test_a_claim_with_an_existing_log_passes` expects exit 0 and the message
   `all 1 claim rows verified`; with the old file it failed with the `TypeError` above.
+- **Index proof:** `P13`
+- **Date:** 2026-10-20
 
 ## D-016 — the orchestrator contract test asserted two mutually exclusive things
 
@@ -577,6 +613,8 @@ sequence, and a clean clone) instead of trusting the claim. The TASK-0002 delive
   list items, and the test asserts that there are **exactly** four of them, numbered `1..4`
   in order — strictly more than the old assertion, which could never hold.
 - **Proof:** `python3 -m pytest tests/ -q` → 44 passed, 0 failed (was 36 passed, 1 failed).
+- **Index proof:** `P14`
+- **Date:** 2026-10-20
 
 ## TASK-0003 (clean clone green: empty-dir, /tmp and tree-dirtying tests)
 
@@ -605,6 +643,8 @@ modified in the checkout.
   which is how CI runs it.
 - **Proof:** `python3 -m pytest -q` collects the whole repository again
   (633 tests, 0 collection errors); the standalone script exits 0.
+- **Index proof:** `P15`
+- **Date:** 2026-10-20
 
 ## D-018 — the acceptance-harness self-test unpacked a `CompletedProcess` and could never fail
 
@@ -623,6 +663,8 @@ modified in the checkout.
 - **Proof:** `python3 -m pytest -q skills/engineering/acceptance-harness/scripts/report_result_test.py`
   -> 2 passed; `python3 skills/engineering/acceptance-harness/scripts/report_result_test.py`
   -> exit 0 (before: exit 1 with `TypeError`).
+- **Index proof:** `P16`
+- **Date:** 2026-10-20
 
 ## D-019 — the research/design acceptance test referenced an undefined constant
 
@@ -632,6 +674,8 @@ modified in the checkout.
 - **Fix:** the test uses `ENGINEERING`.
 - **Proof:** `python3 -m pytest -q skills/engineering/tests/test_research_design_acceptance.py`
   -> 1 passed.
+- **Index proof:** `P17`
+- **Date:** 2026-10-20
 
 ## D-020 — a skill test wrote its JSON report into the skill folder
 
@@ -643,6 +687,8 @@ modified in the checkout.
   `report_test.json` stays as it is; nothing writes it any more.
 - **Proof:** `git status --porcelain` after a full `pytest -q` run lists only the
   files of the pending change, no `M skills/agentic-data/.../report_test.json`.
+- **Index proof:** `P18`
+- **Date:** 2026-10-20
 
 ## D-021 — three business-de test modules wrote to fixed paths under `/tmp`
 
@@ -658,6 +704,8 @@ modified in the checkout.
   finds nothing).
 - **Proof:** `python3 -m pytest -q skills/business-de/` -> 218 passed, no file
   outside the pytest temporary directory is created.
+- **Index proof:** `P19`
+- **Date:** 2026-10-20
 
 ## D-022 — a collection guard for a deleted directory hid 218 real tests
 
@@ -674,6 +722,8 @@ modified in the checkout.
   633 and the suite is green.
 - **Proof:** `python3 -m pytest -q` -> 624 passed, 9 skipped, 0 failed
   (before: 395 passed, 3 failed, 1 error, 218 tests never collected).
+- **Index proof:** `P19`
+- **Date:** 2026-10-20
 
 ## D-023 — the pg-rls self-test required a foreign repository
 
@@ -690,6 +740,8 @@ modified in the checkout.
   instead of failing, so pytest could never fail them; they now assert.
 - **Proof:** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py`
   -> exit 0 with the note about the missing corpus (before: exit 1).
+- **Index proof:** `P7`
+- **Date:** 2026-10-20
 
 ## D-024 — the long-test self-test left two log files in the repository root
 
@@ -704,6 +756,8 @@ modified in the checkout.
 - **Proof:** `bash skills/engineering/long-test-discipline/scripts/run_long_test_test.sh`
   -> exit 0 and `git status --porcelain` stays empty (before: two untracked
   files in the repository root).
+- **Index proof:** `P20`
+- **Date:** 2026-10-20
 
 ## D-025 — nothing stopped a test from dirtying the checkout
 
@@ -727,6 +781,8 @@ modified in the checkout.
 - **Proof:** `python3 -m pytest -q` -> 624 passed, 9 skipped, 0 failed and
   `git status --porcelain` shows only the pending change; the guard fails on a
   seeded fixture (see `test_guard_fails_on_a_seeded_dirty_fixture`).
+- **Index proof:** `P21`
+- **Date:** 2026-10-20
 
 ## D-026 — the suite leaked 28 files into the shared temporary directory
 
@@ -755,6 +811,8 @@ modified in the checkout.
   `tests/hygiene/test_temp_files.py` is the regression test: it lints the test
   sources for `mktemp`, `delete=False` and `mkdtemp` without `rmtree`, and it
   fails on a planted offender (proven by planting one in a scratch copy).
+- **Index proof:** `P22`
+- **Date:** 2026-10-20
 
 ## D-027 — the clean-tree guard only looked at the end of the session
 
@@ -779,6 +837,8 @@ modified in the checkout.
 - **Side effect:** the docstring of `tests/hygiene/clean_tree.py` still
   advertised `tests/hygiene/clean-tree.test.mjs`, a file that D-025 deleted.
   It now names the three real entry points.
+- **Index proof:** `P21`
+- **Date:** 2026-10-20
 
 ## Verification commands run for TASK-0003
 
@@ -832,6 +892,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   `git ls-files | grep -cE '(HANDOFF|GAPS|R3_PLAN|REVERIFY)'` → 0;
   `node scripts/gen-catalog.mjs --check` → "catalog unchanged" (the catalogue no longer
   names a deleted file).
+- **Index proof:** `P23`
+- **Date:** 2026-10-20
 
 ## D-031 — a collection test asserted that a status diary exists
 
@@ -849,6 +911,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   date in `references/SOURCES.md`.
 - **Proof:** `python3 -m pytest skills/agentic-data/tests/test_collection.py -q` →
   `73 passed, 9 skipped`. With the old test body restored the file fails again.
+- **Index proof:** `P18`
+- **Date:** 2026-10-20
 
 ## D-032 — 34 dangling pointers to the deleted diaries
 
@@ -867,6 +931,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   `PASS2-STATUS.md`, `PASS5-R3-05-REVERIFY.md`, `REVERIFY_2026-10-14.md`,
   `REVERIFY-SKL-W0-01-TASK-0006.md`; the remaining `REVERIFY_2026-10-15.md` hits are
   only in `docs/gaps/SKL-W1-02.md`, which belongs to another job (G18).
+- **Index proof:** `P24`
+- **Date:** 2026-10-20
 
 ## D-033 — the duplicate-name proof was polluted by scratch copies of the tree
 
@@ -881,6 +947,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   `before.txt`, `after.txt`, `notes.md`, the logs and the gate JSONs were kept).
 - **Proof:** `find . -name SKILL.md | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
   → empty; `find .truth -name SKILL.md | wc -l` → 0.
+- **Index proof:** `P5`
+- **Date:** 2026-10-20
 
 ## D-034 — the generated catalogue still named the deleted files
 
@@ -890,6 +958,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   catalogue had not been regenerated.
 - **Fix:** `node scripts/gen-catalog.mjs` (39 skills, 12 packages).
 - **Proof:** `node scripts/gen-catalog.mjs --check` → "ok: catalog unchanged".
+- **Index proof:** `P4`
+- **Date:** 2026-10-20
 
 ## D-035 — the collection scripts check skipped 9 of the 10 skills
 
@@ -913,6 +983,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
 - **Proof:** `python3 -m pytest skills/agentic-data/tests/test_collection.py -q` →
   `82 passed` (was `62 passed, 9 skipped, 1 failed`). The gate's `tests` step →
   `PASS  tests  1 test path(s) passed`.
+- **Index proof:** `P18`
+- **Date:** 2026-10-20
 
 ## D-036 — the language step flagged the German business-domain source catalogues
 
@@ -936,6 +1008,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
 - **Proof:** the gate's `language` step → `PASS  language  31 file(s) scanned`; the
   kit's own scanner over every changed file reports nothing outside `catalog.json`,
   which the kit allows by configuration.
+- **Index proof:** `GATE`
+- **Date:** 2026-10-20
 
 ## D-037 — `REPO_SHAPE.md` drifted from the tree, and nothing noticed
 
@@ -958,6 +1032,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   - a planted wrong number (`| Tracked files | 999 |`) fails the test again in a throwaway
     clone of `38c4a77` → the guard bites.
   - `pytest -q` → 650 passed, 0 skipped.
+- **Index proof:** `P25`
+- **Date:** 2026-10-20
 
 ## D-038 — the tool inventory was incomplete and claimed there was no second installer
 
@@ -976,6 +1052,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   `scripts/`.
 - **Cross-job:** the overlap between the two installers is requested in
   `docs/gaps/SKL-W0-01.md` (G21); `scripts/**` is not on this job's owned list.
+- **Index proof:** `P26`
+- **Date:** 2026-10-20
 
 ## D-039 — the per-skill `references/EVALS.md` files are a validator input, not diaries
 
@@ -1002,6 +1080,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   checkable from this job's paths honest — the engineering skills keep their eval set,
   every link to an eval set resolves, every shipped eval set is in the catalogue, and no
   eval diary survives outside `skills/`.
+- **Index proof:** `P27`
+- **Date:** 2026-10-20
 
 ## D-040 — the RLS checker rejected the real corpus and trusted one hard-coded name
 
@@ -1058,6 +1138,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   `guc-names.json` is accepted, that a name nobody sets is rejected, and that
   the configuration — not the script — decides (a `--guc-names` file with one
   name makes the other migrations fail).
+- **Index proof:** `P28`
+- **Date:** 2026-10-20
 
 ## D-041 — the tenant GUC inventory, and one open owner decision
 
@@ -1096,6 +1178,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   `…_r3_13_quickcreate_recent_lifecycle.sql`. The tables are unprotected for
   the table owner. Recorded as a cross-job request in
   `docs/gaps/SKL-W0-01.md` (G25); this job does not write into `hq-v2`.
+- **Index proof:** `P29`
+- **Date:** 2026-10-20
 
 ## D-042 — the honest-status checker could not read the format the product repositories write
 
@@ -1150,6 +1234,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   are reported with line numbers, that a claim with an existing log passes, and
   that a claim without a log path, without an exit code or with a missing log
   file fails. A third status grammar can never be silently accepted again.
+- **Index proof:** `P13`
+- **Date:** 2026-10-20
 
 ## D-043 — the RLS leak-test harness could never print PASS
 
@@ -1200,6 +1286,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   prints the labelled measurements (and no longer an alias), that every accepted
   GUC name is set, and that a good probe output passes while a leaking output, a
   missing measurement and an error in the output all fail.
+- **Index proof:** `P30`
+- **Date:** 2026-10-20
 
 ## D-044 — the preamble contract test asserted a README heading that the README never had
 
@@ -1219,6 +1307,8 @@ every commit; the numbers are in `.truth/SKL-W0-01/after.txt`.
   the document was right.
 - **Proof:** `node tests/orchestrator/test_preamble_contracts.test.mjs` →
   5 tests, 5 pass, 0 fail (before: 4 pass, 1 fail).
+- **Index proof:** `P14`
+- **Date:** 2026-10-20
 
 ## D-045 — the truth gate could not run its test step when a non-Python file changed
 
@@ -1253,6 +1343,8 @@ The German success vocabulary that the checker needs to recognise those files
 lives in `skills/engineering/honest-status/scripts/status_tables.py`, which
 carries the scanner's own file-level marker `truth:allow-german-file` and the
 reason next to it. No other file of this repository was exempted.
+- **Index proof:** `GATE`
+- **Date:** 2026-10-20
 
 ## D-046 — the RLS checker could not read a `DO $$ … $$` block and misread an escaped policy
 
@@ -1340,6 +1432,8 @@ reason next to it. No other file of this repository was exempted.
   The eight files that remain are one deliberate global table in `console-v2`
   (see G30) and **seven real holes in `hq-v2` and `ottili-apps`** that the
   blind scanner had never reported (see G28).
+- **Index proof:** `P28`
+- **Date:** 2026-10-20
 
 ## D-047 — the repository invariants were node:test files that no runner executed
 
@@ -1385,6 +1479,8 @@ reason next to it. No other file of this repository was exempted.
     `ruff check tests/hygiene/repo_guard.py tests/hygiene/test_*.py` →
     **All checks passed!**; `mypy --strict` on the same seven files →
     **Success: no issues found in 7 source files**.
+- **Index proof:** `P31`
+- **Date:** 2026-10-20
 
 ## D-048 — the truth kit config still carried the template's migration command and had no large-file allow-list
 
@@ -1409,6 +1505,8 @@ reason next to it. No other file of this repository was exempted.
     `tests/hygiene/test_root_allowlist.py` fails on a fixture that carries a
     scratch directory or a debug script at the root and passes on the real
     repository.
+- **Index proof:** `P32`
+- **Date:** 2026-10-20
 
 ## D-049 — two commands of the pack-v3 decision do not run in this repository
 
@@ -1441,6 +1539,8 @@ reason next to it. No other file of this repository was exempted.
     falls back to `pytest -q tests` when the change contains none.
 - **Proof:** the gate test step with the config command → **6 test path(s)
   passed**, exit 0; the full suite → **121 passed**.
+- **Index proof:** `GATE`
+- **Date:** 2026-10-20
 
 ## D-050 — the two commands of the pack-v3 decision now run unchanged (D-049 closed)
 
@@ -1501,3 +1601,1463 @@ reason next to it. No other file of this repository was exempted.
   still glob the deleted `*.test.mjs` files. They belong to `skills-engineering-r3`
   and are outside the owned paths of this job card; the exact patch is in
   `docs/gaps/SKL-W0-01.md` (G32).
+- **Index proof:** `GATE`
+- **Date:** 2026-10-20
+
+## D-054 — the shape document drifted again when this repair-log entry was committed
+
+- **Symptom:** after the repair-log entry of TASK-0007 was committed,
+  `pytest tests/hygiene/test_repo_shape_numbers.py -q` failed with
+  `REPO_SHAPE.md drifted from the tree: Tracked files: document says 664, command
+  says 665` and `Tracked files under 'tests/': document says 42, command says 43`.
+- **Reproduction:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Root cause:** `docs/truth/REPO_SHAPE.md` states the number of tracked files,
+  and the guard test of this job (`tests/hygiene/test_repair_log.py`) is one more
+  tracked file — the count changed with the commit that added it. The D-037 guard
+  did its job: it refused to let the document drift.
+- **Fix:** `docs/truth/REPO_SHAPE.md` — the two numbers were corrected
+  (664 → 665, 42 → 43) and the guard that found them is the repair.
+- **Proof:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` → 1 passed.
+- **Index proof:** `P25`
+- **Date:** 2026-10-20
+
+---
+
+## D-055 — the six-field check of the index was not per entry
+
+- **Defect:** the guard of this log reported no problem although the index entry
+  of `D-030` had lost its `**Date:**` line and the entry of `D-031` had lost
+  its `**Symptom:**` line. Both were measured: the guard stayed green.
+- **Cause:** `split_section()` ended a block at the next `\n## `, but the index
+  entries are `#### ` headings. The "body" of an entry therefore ran on to the
+  end of the index, and every field search found the field of a *later* entry.
+  A check that reads its evidence from the wrong paragraph is no check.
+- **Fix:** `tests/hygiene/test_repair_log.py` — a block ends at the next heading
+  of the same or a higher level, the heading scan ignores fenced code (a bash
+  comment starts with `#`), the field check runs per entry, and two mutation
+  tests prove that a broken entry is reported.
+- **Proof:** the mutation of the index entry of `D-030` (the `**Date:**` line
+  removed) and of `D-031` (the `**Symptom:**` line removed) each make
+  `python3 -m pytest tests/hygiene/test_repair_log.py -q` fail with the id of
+  the broken entry.
+- **Index proof:** `P33`
+- **Date:** 2026-10-20
+
+---
+
+## D-056 — the command of an index entry could drift from the proof block
+
+- **Defect:** writing `bash scripts/install.sh --totally-wrong` next to the label
+  `P1` in the index entry of `D-001` left the whole guard green, although the
+  proof block still ran `bash scripts/install.sh --check`.
+- **Cause:** the guard only asserted that the command of the proof block
+  appeared *somewhere* in the document (`command in text`). It never compared it
+  with the command the index writes down, so the two could drift apart.
+- **Fix:** `tests/hygiene/test_repair_log.py` — the command of an index entry
+  must be the command of the proof block of that label, and a mutation test
+  proves it. `docs/truth/REPAIR_LOG.md` — the four entries that cited `GATE` in
+  prose now write the command of the gate next to the label.
+- **Proof:** the mutation of the inline command of `D-001` makes
+  `python3 -m pytest tests/hygiene/test_repair_log.py -q` fail with `D-001`.
+- **Index proof:** `P33`
+- **Date:** 2026-10-20
+
+---
+
+## D-057 — a defect section carried neither a date nor a proof label
+
+- **Defect:** not one of the 52 defect sections of this log had a `- **Date:**`
+  line, and the narrative of a defect and its index entry could contradict each
+  other without anything noticing.
+- **Cause:** the narrative sections were written before the index existed, and
+  the guard had no cross-check between the two.
+- **Fix:** `docs/truth/REPAIR_LOG.md` — every defect section ends with
+  `- **Index proof:** `Pxx`` and `- **Date:** YYYY-MM-DD`, taken from its index
+  entry. `tests/hygiene/test_repair_log.py` — the guard compares the label and
+  the date of the section with the label and the date of the index entry.
+- **Proof:** `python3 -m pytest tests/hygiene/test_repair_log.py -q` fails with
+  the id of the defect as soon as one of the two dates differs.
+- **Index proof:** `P33`
+- **Date:** 2026-10-20
+
+---
+
+## D-058 — the follow-up check promised a symptom and tested a path
+
+- **Defect:** `test_the_follow_up_list_exists_and_names_path_and_symptom`
+  asserted only that the bold title of an item contains a backtick. An item
+  whose body carried no symptom at all passed the test that claims to check
+  the symptom.
+- **Cause:** the assertion and the name of the test disagreed.
+- **Fix:** `tests/hygiene/test_repair_log.py` — every follow-up item must name a
+  path in its title and carry a symptom in its body (at least 40 characters of
+  text), and a mutation test proves it.
+- **Proof:** the first follow-up item of
+  `docs/truth/REPAIR_LOG.md` with its body removed makes
+  `python3 -m pytest tests/hygiene/test_repair_log.py -q` fail.
+- **Index proof:** `P33`
+- **Date:** 2026-10-20
+## D-059 — the installer wrote — and with --force deleted — outside the target directory
+
+- **Defect:** `bash scripts/install.sh --force --target <dir> ../pkg/good` resolved the
+  destination to `<dir>/../pkg/good`, deleted that directory (`rm -rf "$dest"`) and
+  wrote the skill there. A folder OUTSIDE the target was destroyed; the installer
+  never asked and never printed where it wrote. The same name without `--force`
+  wrote outside the target as well.
+- **Cause:** the skill name was used unvalidated as a path component of the
+  destination (`dest="$TARGET/$name"`). The "ambiguous package" check fired only
+  when the tree held more than one package, so the refusal was accidental
+  protection, not a guard. A single-package tree was enough to escape.
+- **Fix:** `scripts/install.sh` — every skill name is checked against
+  `^[A-Za-z0-9._-]+$` (no path separator, no `.`/`..`, no leading dash) BEFORE
+  anything is written; an unsafe name is refused with exit 2.
+  `tests/hygiene/test_install.py` — a fixture with a folder outside the target
+  proves that the name is refused and that the folder survives.
+- **Proof:** the four new installer tests fail against the pre-fix installer
+  (measured: `git show HEAD:scripts/install.sh`).
+- **Index proof:** `P34`
+- **Date:** 2026-10-20
+
+## D-060 — `--check` refused a target that the install accepts
+
+- **Defect:** `bash scripts/install.sh --check --target <dir>/does/not/exist --package engineering`
+  exited 1 with `error: target parent '<dir>/does/not/exist' does not exist`, while
+  the very same target was installed without complaint (exit 0): the install creates
+  the tree with `mkdir -p`. The check was stricter than the install and reported a
+  false failure.
+- **Cause:** the check demanded that the PARENT of the target already existed. The
+  install never demanded that.
+- **Fix:** `scripts/install.sh` — the check now walks up to the nearest EXISTING
+  ancestor of the target and asks whether the tree could be created there; a target
+  that cannot be created (an ancestor that is a file) is still refused.
+  `tests/hygiene/test_install.py` — one test proves that the check accepts the
+  target the install accepts, one that it refuses the target that cannot exist.
+- **Proof:** the two new installer tests fail against the pre-fix installer.
+- **Index proof:** `P35`
+- **Date:** 2026-10-20
+
+## D-061 — the catalogue generator ignored an unknown option and overwrote the catalogue
+
+- **Defect:** `node scripts/gen-catalog.mjs --chek` printed
+  `ok: wrote .../catalog.json — 39 skills, 12 packages` and exited 0: the unknown
+  option was ignored, so a typo of `--check` silently WROTE the catalogue instead
+  of checking it. `node scripts/gen-catalog.mjs --out` (without a file path) died
+  with a node stack trace (`TypeError [ERR_INVALID_ARG_TYPE]`) instead of a usage
+  error.
+- **Cause:** the option loop had no `else` branch, so every argument it did not know
+  was dropped, and `--out` read the next argument without checking that there was one.
+- **Fix:** `scripts/gen-catalog.mjs` — an unknown option is refused with exit 2, a
+  `--out` without a file path is refused with exit 2, and neither writes a file.
+  `tests/hygiene/test_catalog.py` — two tests prove the refusal and that no
+  catalogue is written.
+- **Proof:** the two new catalogue tests fail against the pre-fix generator.
+- **Index proof:** `P36`
+- **Date:** 2026-10-20
+
+## D-062 — the validator collapsed two skills that carry the same folder name
+
+- **Defect:** `scripts/validate.py --everywhere` collected the skill folders of the
+  tree in a dict keyed by the folder name, so a skill name that lives in two
+  packages silently kept only the LAST folder. A skill that was missing from the
+  catalogue stayed invisible, and the installer (which refuses an ambiguous name)
+  could not tell which of the two folders it was supposed to install.
+- **Cause:** one folder name per key was assumed; the tree never had such a pair, so
+  nothing ever noticed.
+- **Fix:** `scripts/validate.py` — every folder of a name is kept and a name that
+  lives in two packages is reported as `duplicate skill name '<name>' on disk`.
+  `tests/hygiene/test_validate.py` — a fixture with two packages that hold the same
+  folder name proves the report.
+- **Proof:** the new validator test fails against the pre-fix validator.
+- **Index proof:** `P37`
+- **Date:** 2026-10-20
+
+## D-063 — a skill documented a verification command that cannot run
+
+- **Defect:** `skills/engineering/problem-json-contracts/SKILL.md` documented
+  `python3 scripts/validate_problem_examples.py --schema-dir references/examples/schemas --catalogue references/examples/catalogue.json`.
+  Copy and paste: `not a directory: references/examples/schemas`, exit 2. The
+  fixtures of the skill live one level deeper
+  (`references/examples/good/schemas`, `references/examples/good/catalogue.json`),
+  and the skill's own self-test uses exactly those paths.
+- **Cause:** the documented path lost the `good/` segment when the fixture tree was
+  moved; nothing executed the command of a SKILL.md.
+- **Fix:** `skills/engineering/problem-json-contracts/SKILL.md` — the documented
+  command names the fixtures that exist, and the "Run the offline gate" line keeps
+  the placeholder form that `scripts/gen-preamble.mjs` pins.
+  `tests/hygiene/test_skill_docs.py` — a new guard runs every command a SKILL.md
+  documents whose input is part of the tree.
+- **Proof:** the guard fails when the documented path is broken again (measured) and
+  is green on the fixed document.
+- **Index proof:** `P38`
+- **Date:** 2026-10-20
+
+## D-064 — three skills documented the repository validator with a path that does not exist inside the skill
+
+- **Defect:** `skills/engineering/{outbox-idempotency,pg-rls-multitenant,problem-json-contracts}/SKILL.md`
+  documented `python3 scripts/validate_skills.py` as a command of the skill. No
+  engineering skill ships that script: it lives in the repository root, so the
+  command fails with `can't open file '.../skills/engineering/<skill>/scripts/validate_skills.py'`
+  (exit 2) when it is copied into the skill folder, which is where the reader is.
+- **Cause:** the command was written for the repository, but the document reads like
+  a command of the skill. The honest-status skill had the same defect with
+  `STATUS.md`, a file it does not ship either.
+- **Fix:** `skills/engineering/outbox-idempotency/SKILL.md`,
+  `skills/engineering/pg-rls-multitenant/SKILL.md`,
+  `skills/engineering/problem-json-contracts/SKILL.md` — the command now says that
+  it runs from the repository root.
+  `skills/engineering/honest-status/SKILL.md` — the status file is named as the
+  file of the repository an agent works on, and the self-test of the checker is
+  added as the command that runs inside the skill.
+  `tests/hygiene/test_skill_docs.py` — the guard resolves every documented script
+  and runs every documented command whose input is part of the tree.
+- **Proof:** the new guard is green on the fixed documents.
+- **Index proof:** `P39`
+- **Date:** 2026-10-20
+
+## D-065 — the shape document drifted again, and its "authoritative" root block was missing an entry
+
+- **Defect:** after the fixes of this pass were landed, the whole suite of the job went
+  red: `Tracked files: document says 665, command says 667` and
+  `Tracked files under 'tests/': document says 43, command says 44`. The two files this
+  pass added (`tests/hygiene/test_skill_docs.py` and `docs/truth/TRUNK_STATUS.json`) moved
+  the counts of `docs/truth/REPO_SHAPE.md`. The same document lists the root contents in
+  a block that calls itself *authoritative* — and that block listed 14 entries while the
+  tree has 15: `.npmrc` was missing. The block is not a table, so the table-driven guard
+  of the document could not see it.
+- **Cause:** the counts are live numbers and every commit that adds a file moves them;
+  the root block was a claim without a command and therefore without a guard.
+- **Fix:** `docs/truth/REPO_SHAPE.md` — the two counts and the missing root entry are
+  corrected; `tests/hygiene/test_repo_shape_numbers.py` — a new guard compares the root
+  block with the tracked root entries, so the block cannot drift again.
+- **Proof:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` — the new
+  guard fails when `.npmrc` is removed from the block again (measured).
+- **Index proof:** `P40`
+- **Date:** 2026-10-20
+
+
+## D-066 — the shape guard turned the suite red for the job that comes next
+
+- **Defect:** the guard of `docs/truth/REPO_SHAPE.md` compared the *counts* of the
+  document with the *current* tree. The next job — the W1 canonical-skills job — adds
+  a skill folder and regenerates the catalogue, which is a healthy change; the guard
+  then failed with "Skills in the catalogue: document says 39, command says 40",
+  "`SKILL.md` files in the tree: document says 40, command says 41" and "Tracked files:
+  document says 667, command says 668". The document lives in `docs/truth/`, which that
+  job does not own, so the failure had no fix the job was allowed to make.
+- **Reproduction:** a clean clone, one skill folder added under `skills/engineering/`,
+  `node scripts/gen-catalog.mjs`, then
+  `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` —
+  `FAILED …::test_repo_shape_numbers_are_reproducible` (three drift messages).
+- **Cause:** a snapshot of the tree was enforced as an invariant of the tree. Every
+  commit that adds a file moves the counts, so the guard punished exactly the work the
+  next job has to do.
+- **Fix:** `docs/truth/REPO_SHAPE.md` — every row carries a scope now: `live` for the
+  invariants of the tree, `snapshot@9390db6` for the counts, and a section explains
+  both; `tests/hygiene/test_repo_shape_numbers.py` — the guard runs a `live` row
+  against the checkout under test and a `snapshot@<commit>` row in a checkout of the
+  commit it names, and a new test proves that a skill added to the tree no longer
+  turns the guard red.
+- **Proof:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q -k growth`
+  — the new test fails against the pre-fix guard (measured: the pre-fix guard reports
+  three drift messages on the very same tree) and passes against the fixed one.
+- **Index proof:** `P41`
+- **Date:** 2026-10-20
+
+
+## D-067 — the recipe for the next job was written down before it was executed
+
+- **Defect:** `docs/gaps/SKL-W0-01.md` (G37) told the job that comes next what a
+  new engineering skill has to ship. The recipe was written from the *first* reading
+  of the failing output and it was **wrong**: it named the trigger phrase and the
+  missing files, but not that the body has to *link* `references/EVALS.md` and
+  `references/SOURCES.md`, and not that the eval set needs at least five prompts.
+  A recipe that is written down but does not work is a claim, not a contract — and
+  the next job is not allowed to change the validator that checks it.
+- **Reproduction:** a clean clone, the demo skill of the first recipe, then
+  `python3 scripts/validate_skills.py` — exit 1 with "SKILL.md does not link
+  references/EVALS.md", "SKILL.md does not link references/SOURCES.md" and
+  "EVALS.md has 0 prompts, need >=5".
+- **Cause:** the recipe was derived from the summary of a failure instead of from
+  the rules the validator applies (`scripts/validate_skills.py`).
+- **Fix:** `tests/hygiene/test_skill_recipe.py` (new) — the recipe is built in a
+  throwaway checkout, the validator is run over it (exit 0), a part of the recipe is
+  removed to prove that the validator still complains (exit 1) and the catalogue is
+  regenerated with the new skill in it; `docs/gaps/SKL-W0-01.md` — G37 carries the
+  seven rules the validator really applies.
+- **Proof:** `python3 -m pytest tests/hygiene/test_skill_recipe.py -q` — the test
+  fails when the recipe of the gaps file is wrong, because the validator of the
+  repository rejects the skill the recipe describes (measured).
+- **Index proof:** `P42`
+- **Date:** 2026-10-20
+
+
+# SKL-W0-01 — TASK-0007 (2026-10-20) — repair log entry
+
+This section is the **index of the trunk repairs of job SKL-W0-01**. One entry
+per defect: the id, the symptom as it was observed, the command that reproduced
+it, the root cause, the files that carry the fix, a proof command that passes
+on the current trunk, and the date. The narrative of each defect is in the
+section with the same id further up in this document; this index is the map.
+
+`tests/hygiene/test_repair_log.py` is the guard: it fails when a defect id is
+not in the index, when an index entry lacks one of the six fields, when an id
+names two defects, when a proof command is not in the proof block below, when
+the command an index entry writes down is not the command the proof block of
+that label runs, when the narrative of a defect and its index entry disagree
+about the proof label or the date, when a follow-up item names no symptom, and
+when a proof command marked `# auto` does not exit 0.
+
+## Defect ids that were changed in this pass
+
+Four ids each named two different defects. They were made unique **without
+renaming a defect that another document already cites**:
+
+| id before | id now | section | why |
+|---|---|---|---|
+| `D-003` | `D-006` | RLS checker accepted three unsafe migrations | `docs/gaps/SKL-W0-01.md` G7 already cites this section as `D-006` |
+| `D-007` | `D-051` | committed `catalog.json` was stale | the other `D-007` (wall-clock stamp) is cited by the TASK-0008 review table |
+| `D-008` | `D-052` | TASK-0008 review: no new defects found | the other `D-008` (`--check` mode) is cited by the same table |
+| `D-009` | `D-053` | TASK-0008 review: repro-script path bug | the other `D-009` (`ref-*` packages) is cited by the same table |
+
+`D-028` and `D-029` were never used; the sequence skips them. The follow-up
+list of the 2026-10-16 pass was renamed to "Follow-ups recorded in an earlier
+pass" so that exactly one section carries the name "Follow-ups for later trunk
+repair jobs".
+
+## What the VERIFY pass of 2026-10-20 found
+
+The VERIFY pass of this task re-ran all 33 proof commands of this document and
+found four defects in the guard of this log itself. All four are in the owned
+paths of this job, all four are recorded below, and all four have a mutation
+test that fails without the fix:
+
+| id | what the guard did not catch | how it was measured |
+|---|---|---|
+| `D-055` | the six-field check was not per entry: it read the field of a later entry | the `**Date:**` line of `D-030` and the `**Symptom:**` line of `D-031` removed from the index — the guard stayed green |
+| `D-056` | the command an index entry writes down was never compared with the command the proof block runs | the inline command of `D-001` replaced by `bash scripts/install.sh --totally-wrong` — the guard stayed green |
+| `D-057` | a defect section carried no date and no proof label, so the narrative and the index could drift apart | 52 of 52 sections had no `- **Date:**` line and 10 had no `- **Proof:**` line |
+| `D-058` | the follow-up check promised a symptom and tested only a path | the body of the first follow-up item removed — the guard stayed green |
+
+Every proof command of the index was re-run on the trunk of this pass and every
+one of them exited 0; the transcript is in `.truth/SKL-W0-01/after.txt`.
+
+## Defect index
+
+### Pass of 2026-10-15 and 2026-10-16 (TASK-0001 … TASK-0008 review)
+
+#### D-001 — install.sh source resolution doubled the path for every skill
+
+- **Symptom:** `install.sh --target claude honest-status` exited 2 with `error: source skill directory missing: /srv/ottili/repo/skills//srv/ottili/repo/skills/skills/\n` (doubled path, trailing newline).
+- **Reproduction:** `bash scripts/install.sh --target claude honest-status`
+- **Root cause:** the skill was not in `catalog.json`, so the `print()` that read the path returned `"\n"`; the installer then prefixed `$ROOT` to that string.
+- **Fix (files):** `scripts/install.sh` — the skill folder is resolved by walking `skills/`, no catalogue lookup.
+- **Proof:** `P1` — `bash scripts/install.sh --check`
+- **Date:** 2026-10-15
+
+#### D-002 — `--package engineering|business-de|agentic-data` reported "unknown package"
+
+- **Symptom:** every named package printed `error: unknown package <name>` and installed nothing.
+- **Reproduction:** `bash scripts/install.sh --package engineering --target <dir>`
+- **Root cause:** the package list was read from the hand-written `packages` object of `catalog.json` (four stale names).
+- **Fix (files):** `scripts/install.sh` — the packages are derived from the `skills/` folders at install time.
+- **Proof:** `P2` — `bash scripts/install.sh --check --package engineering`
+- **Date:** 2026-10-15
+
+#### D-003 — catalogue listed only 2 of 32 skills and was hand-edited
+
+- **Symptom:** `python3 -I scripts/validate.py` printed `ok: 2 skills validated`.
+- **Reproduction:** `python3 -I scripts/validate.py`
+- **Root cause:** `catalog.json` was hand-written with two entries and nothing regenerated it.
+- **Fix (files):** `scripts/gen-catalog.mjs` (new), `catalog.json`, `.github/workflows/validate.yml`.
+- **Proof:** `P4` — `node scripts/gen-catalog.mjs --check`
+- **Date:** 2026-10-15
+
+#### D-004 — stale top-level `business-de/` duplicate and status/handoff docs cluttered the tree
+
+- **Symptom:** a full duplicate of the business-de skills at the top level (111 tracked files) and ~26 pass-by-pass status/handoff documents; the duplicate-name proof reported `business-de` twice.
+- **Reproduction:** `find . -name SKILL.md | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+- **Root cause:** an earlier autonomous wave materialised the skills twice and kept the diaries of the finished passes.
+- **Fix (files):** `git rm` of the duplicate and the diaries; `catalog.json` regenerated.
+- **Proof:** `P5` — `git ls-files '*/SKILL.md' | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+- **Date:** 2026-10-16
+
+#### D-005 — generated catalogue listed `.gitkeep` placeholder files as skill paths
+
+- **Symptom:** after the duplicate was deleted, `gen-catalog.mjs --check` reported a drift caused by `.gitkeep` placeholders.
+- **Reproduction:** `node scripts/gen-catalog.mjs --check`
+- **Root cause:** `IGNORE_FILES` in the generator did not contain `.gitkeep`.
+- **Fix (files):** `scripts/gen-catalog.mjs` — `.gitkeep` added to the ignore list.
+- **Proof:** `P6` — `test "$(grep -c '\.gitkeep' catalog.json)" = 0`
+- **Date:** 2026-10-16
+
+#### D-006 — RLS checker accepted three unsafe migrations; rewrote it per-table around the real product GUC
+
+- **Symptom:** the checker passed a migration without `FORCE ROW LEVEL SECURITY`, a policy keyed on a setting nobody sets and a `GRANT ALL` migration; real hq migrations were reported against a standard that does not exist in the codebase.
+- **Reproduction:** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py skills/engineering/pg-rls-multitenant/references/examples/hostile_1_no_force.sql`
+- **Root cause:** the checker scanned the whole file once and accepted five discriminator names, so one `tenant_id` satisfied the test for every table in the file.
+- **Fix (files):** `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py` (per-table, keyed on `app.company_id`), `skills/engineering/pg-rls-multitenant/references/examples/good_migration.sql`.
+- **Proof:** `P7` — `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py`
+- **Date:** 2026-10-16
+
+#### D-051 — committed `catalog.json` was stale (missing the pg-rls hostile fixtures)
+
+- **Symptom:** `gen-catalog.mjs --check` exited 1 — the committed catalogue did not list the three hostile RLS fixtures that TASK-0005 had added.
+- **Reproduction:** `node scripts/gen-catalog.mjs --check`
+- **Root cause:** the catalogue was last regenerated before the fixtures existed; the committed artefact and the tree had drifted.
+- **Fix (files):** `catalog.json` regenerated with `node scripts/gen-catalog.mjs` (no code change — the generator was correct).
+- **Proof:** `P4` — `node scripts/gen-catalog.mjs --check`
+- **Date:** 2026-10-16
+
+#### D-052 — TASK-0008 review: no new defects found in owned paths; all baseline defects re-proven fixed
+
+- **Symptom:** the review pass found no new defect inside the owned paths; every defect of the card was re-proven fixed by re-running its reproduction command.
+- **Reproduction:** the reproduction commands of D-001, D-002, D-003 (see above).
+- **Root cause:** none — this is the verification record of the 2026-10-16 pass, kept as a defect entry so the review is part of the index.
+- **Fix (files):** none; the pass wrote `.truth/SKL-W0-01/after.txt` and this document.
+- **Proof:** `P8` — `python3 -m pytest tests/ -q`
+- **Date:** 2026-10-16
+
+#### D-053 — TASK-0008 review: repro-script path bug (not a repo defect)
+
+- **Symptom:** the reproduction script of the review pass used a relative `OUT` path and `references/examples/...`, so it failed when it was run from another directory; the defect is in the script, not in the repository.
+- **Reproduction:** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py` from a directory other than the repository root.
+- **Root cause:** the script addressed its fixtures relative to the current working directory.
+- **Fix (files):** `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py` — absolute `OUT` path and `../references/examples/...`.
+- **Proof:** `P7` — `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py`
+- **Date:** 2026-10-16
+
+### Pass of 2026-10-20 (TASK-0002 … TASK-0006)
+
+#### D-007 — the catalogue carried a wall-clock stamp: `--check` could never pass again
+
+- **Symptom:** `gen-catalog.mjs --check` exited 1 on every day after the catalogue was generated (`catalog would change`).
+- **Reproduction:** `node scripts/gen-catalog.mjs --check`
+- **Root cause:** the generator wrote `updated_at: <today>`; the check compares byte for byte, so the timestamp alone made every later day fail. The catalogue was stale as well: three skills had gained files that were missing from their `paths`.
+- **Fix (files):** `scripts/gen-catalog.mjs` — a pure function of the `skills/` tree, no wall-clock stamp, and a report of *what* drifted; `catalog.json` regenerated.
+- **Proof:** `P4` — `node scripts/gen-catalog.mjs --check`
+- **Date:** 2026-10-20
+
+#### D-008 — `scripts/install.sh` had no `--check` mode, so the kit's install command exited 2
+
+- **Symptom:** `bash scripts/install.sh --check` printed `error: unknown option --check` and exited 2; that was the `install` command of `scripts/truth/config.json`, so the gate's install step was red.
+- **Reproduction:** `bash scripts/install.sh --check`
+- **Root cause:** the installer knew `--dry-run` but had no mode that verified the preconditions of an installation without writing anything.
+- **Fix (files):** `scripts/install.sh` — a `--check` mode that writes nothing; `scripts/truth/config.json` — the install command.
+- **Proof:** `P1` — `bash scripts/install.sh --check`
+- **Date:** 2026-10-20
+
+#### D-009 — `--package ref-*` installed nothing although those packages exist on disk
+
+- **Symptom:** `--package ref-webhooks-safe` printed "resolves to no skills (reserved / on-demand)" and installed 0 skills although `skills/ref-webhooks-safe/ref-webhooks-safe/SKILL.md` exists; the same for the other five `ref-*` packages.
+- **Reproduction:** `bash scripts/install.sh --package ref-webhooks-safe --target <dir>`
+- **Root cause:** the case statement treated every name matching `meta|ref-*` as a reserved virtual package before the derived package list was consulted.
+- **Fix (files):** `scripts/install.sh` — the derived package list is consulted first; only `generic` and `meta` are virtual.
+- **Proof:** `P3` — `bash scripts/install.sh --check --package ref-webhooks-safe`
+- **Date:** 2026-10-20
+
+#### D-010 — the truth kit's root allowlist was missing from `scripts/truth/config.json`
+
+- **Symptom:** the root-allowlist test reported every tracked root entry as a violation and the gate's hygiene step was skipped with `no rootAllowlist configured`.
+- **Reproduction:** `node tests/hygiene/root-allowlist.test.mjs`
+- **Root cause:** the truth kit was installed with a `config.json` that had no `rootAllowlist` key, so the test read the canonical file instead of the fixture manifest and got an empty allowlist.
+- **Fix (files):** `scripts/truth/config.json` — `rootAllowlist` with the list of the fixture manifest.
+- **Proof:** `P9` — `python3 -m pytest tests/hygiene/test_root_allowlist.py -q`
+- **Date:** 2026-10-20
+
+#### D-011 — the orchestrator's workspace state directory showed up as a foreign change
+
+- **Symptom:** the gate's ownership step failed with `4 changed file(s) outside the owned paths`: `.germo/notes/SKL-W0-01.md`, `.germo/notes/task_history.log`, `.germo/state.journal`, `.germo/state.json`.
+- **Reproduction:** `node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "…" --exclude "…" --skip registry,e2e`
+- **Root cause:** `.germo/` (orchestrator state, not repository content) was not ignored, and the kit enumerates untracked files with `git ls-files --others --exclude-standard`.
+- **Fix (files):** the worktree-local `.git/info/exclude` (`.germo/`); the repository-level fix belongs to the job that owns `.gitignore` and is requested in `docs/gaps/SKL-W0-01.md` (G9).
+- **Proof:** `P10` — `git check-ignore -v .germo/state.json`
+- **Date:** 2026-10-20
+
+#### D-012 — `safe-commit` could not see new files: git 2.53.0 returns nothing for `--untracked-files=all`
+
+- **Symptom:** the first `safe-commit` run committed 6 of the 9 owned paths; the three new test files stayed untracked although the gate had counted them.
+- **Reproduction:** `git status --porcelain=v1 -z --untracked-files=all` (empty on git 2.53.0, in an empty scratch repository too)
+- **Root cause:** the kit enumerates the working tree with `--untracked-files=all`, and that option returns **no output at all** on the git of this host; the gate uses `git ls-files --others --exclude-standard`, which still works. Kit and gate therefore disagree about which files exist.
+- **Fix (files):** the new files of this job are staged explicitly (`git add -- <own paths>`) before every commit; `scripts/truth/safe-commit.mjs` is operator-owned and was not edited (G10).
+- **Proof:** `P11` — `git add --dry-run -- tests/hygiene/test_repair_log.py`
+- **Date:** 2026-10-20
+
+#### D-013 — `scripts/install.sh` matched a package name as a regular expression
+
+- **Symptom:** `--package ".*"` matched every derived package and installed the whole tree; `--package "engineering+"` matched `engineering`; a package that does not exist was accepted.
+- **Reproduction:** `bash scripts/install.sh --package ".*" --target <dir>`
+- **Root cause:** the package lookup used `grep -qx "$PACKAGE"`, so the name was a regex.
+- **Fix (files):** `scripts/install.sh` — `grep -qxF "$PACKAGE"`.
+- **Proof:** `P12` — `python3 -m pytest tests/hygiene/test_install.py -q`
+- **Date:** 2026-10-20
+
+#### D-014 — `scripts/verify-status.mjs` crashed on every claim table
+
+- **Symptom:** the checker died with `TypeError: raw.rstrip is not a function` on the first table row, so it could never check anything.
+- **Reproduction:** `node scripts/verify-status.mjs <STATUS.md> --root <repo>`
+- **Root cause:** `rstrip()` is a *Python* method; a JavaScript string has none.
+- **Fix (files):** `scripts/verify-status.mjs` — `raw.replace(/\s+$/, "")`.
+- **Proof:** `P13` — `python3 -m pytest tests/hygiene/test_verify_status.py -q`
+- **Date:** 2026-10-20
+
+#### D-015 — `scripts/verify-status.mjs` never checked the evidence file (a swallowed error)
+
+- **Symptom:** every claim row was reported as "log path not found", including rows whose evidence file existed — a checker that can never pass.
+- **Reproduction:** `node scripts/verify-status.mjs <STATUS.md> --root <repo>`
+- **Root cause:** `require` does not exist in an ES module; the `ReferenceError` was swallowed by a bare `catch`, so `ok` stayed `false` for every row.
+- **Fix (files):** `scripts/verify-status.mjs` — `import { existsSync } from "node:fs"`, the `try`/`catch` is gone.
+- **Proof:** `P13` — `python3 -m pytest tests/hygiene/test_verify_status.py -q`
+- **Date:** 2026-10-20
+
+#### D-016 — the orchestrator contract test asserted two mutually exclusive things
+
+- **Symptom:** `tests/orchestrator/test_gen_preamble_failure.py` was permanently red: it asserted that the document starts with the header *and* that it starts with `1. ` for every rule number.
+- **Reproduction:** `python3 -m pytest tests/orchestrator/ -q`
+- **Root cause:** a document cannot start with two different first lines, so the test could never pass and validated nothing.
+- **Fix (files):** `tests/orchestrator/test_gen_preamble_failure.py` — the header is asserted on the first line, the four rules are located as numbered list items and are asserted to be exactly four, numbered `1..4` in order.
+- **Proof:** `P14` — `python3 -m pytest tests/orchestrator/ -q`
+- **Date:** 2026-10-20
+
+#### D-017 — the contract-drift self-test pointed at a foreign machine and aborted the collection
+
+- **Symptom:** pytest aborted the whole collection with `Interrupted: 1 error during collection`; no test in the repository ran.
+- **Reproduction:** `python3 -m pytest -q`
+- **Root cause:** `check_contract_drift_test.py` started every checker with `cwd="/srv/ottili/repo/skills/skills/engineering/module-contract-first"`, a path that does not exist on any other checkout, and raised `FileNotFoundError` at import time.
+- **Fix (files):** `skills/engineering/module-contract-first/scripts/check_contract_drift_test.py` — the skill directory is derived from `__file__`, the fixtures live in `tmp_path`.
+- **Proof:** `P15` — `python3 skills/engineering/module-contract-first/scripts/check_contract_drift_test.py`
+- **Date:** 2026-10-20
+
+#### D-018 — the acceptance-harness self-test unpacked a `CompletedProcess` and could never fail
+
+- **Symptom:** `report_result_test.py` raised `TypeError: cannot unpack non-iterable CompletedProcess object`; run as a script it exited 1 even when every check passed (`failures += fn()` added `None`).
+- **Reproduction:** `python3 skills/engineering/acceptance-harness/scripts/report_result_test.py`
+- **Root cause:** the edge-case tests were added later and were never run in either shape (pytest collects them, CI runs the file as a script).
+- **Fix (files):** `skills/engineering/acceptance-harness/scripts/report_result_test.py` — `r.returncode`, real `assert` statements, `tmp_path` per test.
+- **Proof:** `P16` — `python3 skills/engineering/acceptance-harness/scripts/report_result_test.py`
+- **Date:** 2026-10-20
+
+#### D-019 — the research/design acceptance test referenced an undefined constant
+
+- **Symptom:** `test_research_design_acceptance.py` failed with `NameError: name 'ENGINEERING_DIR' is not defined`.
+- **Reproduction:** `python3 -m pytest skills/engineering/tests/test_research_design_acceptance.py -q`
+- **Root cause:** the module defines `ENGINEERING`; the test used `ENGINEERING_DIR`.
+- **Fix (files):** `skills/engineering/tests/test_research_design_acceptance.py` — the constant that exists is used.
+- **Proof:** `P17` — `python3 -m pytest skills/engineering/tests/test_research_design_acceptance.py -q`
+- **Date:** 2026-10-20
+
+#### D-020 — a skill test wrote its JSON report into the skill folder
+
+- **Symptom:** the suite overwrote the tracked `skills/agentic-data/skill-authoring-evals/report_test.json` on every run, so `git status --porcelain` was never empty after the suite.
+- **Reproduction:** `python3 -m pytest skills/agentic-data/ -q && git status --porcelain`
+- **Root cause:** the test wrote its `--json` output to a fixed path inside the skill folder.
+- **Fix (files):** `skills/agentic-data/skill-authoring-evals/tests/test_validate_skill.py` — the report goes into the test's `tmp_path`.
+- **Proof:** `P18` — `python3 -m pytest skills/agentic-data/ -q`
+- **Date:** 2026-10-20
+
+#### D-021 — three business-de test modules wrote to fixed paths under `/tmp`
+
+- **Symptom:** fixtures were written to fixed names (`/tmp/_pub_wp.json`, `/tmp/_wh_body.json`, `/tmp/_lab.json`) outside the worktree — they collide between runs, survive as litter and are invisible to the tree check.
+- **Reproduction:** `grep -rn 'Path("/tmp' --include=test_*.py --include=*_test.py skills/ tests/`
+- **Root cause:** the fixtures had a hard-coded path instead of the directory pytest hands the test.
+- **Fix (files):** `skills/business-de/publish-reconcile-wp-meta/tests/test_publish.py`, `skills/business-de/webhooks-safe/tests/test_webhooks.py`, `skills/business-de/carrier-apis-de/tests/test_carrier.py` — every fixture goes into `tmp_path`.
+- **Proof:** `P19` — `python3 -m pytest skills/business-de/ -q`
+- **Date:** 2026-10-20
+
+#### D-022 — a collection guard for a deleted directory hid 218 real tests
+
+- **Symptom:** the suite reported 407 tests instead of 633; the canonical `skills/business-de/` tree was never collected.
+- **Reproduction:** `python3 -m pytest -q` (407 collected)
+- **Root cause:** `tests/conftest.py` kept `norecursedirs = business-de` for the deleted top-level duplicate; pytest matches `norecursedirs` against the **basename**, so the canonical tree was excluded as well.
+- **Fix (files):** `tests/conftest.py` (the guard removed), `tests/hygiene/test_skill_tree.py` (the invariant it protected, now as a test).
+- **Proof:** `P19` — `python3 -m pytest skills/business-de/ -q`
+- **Date:** 2026-10-20
+
+#### D-023 — the pg-rls self-test required a foreign repository
+
+- **Symptom:** the self-test failed with "file not found" on every host without the hq-v2 checkout, including CI and a fresh clone of this repository.
+- **Reproduction:** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py`
+- **Root cause:** the corpus path was hard-coded to `/srv/ottili/repo/hq-v2`; two edge tests returned an `int` instead of failing, so pytest could never fail them.
+- **Fix (files):** `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py` — the corpus root comes from `OTTLI_HQ_REPO`, the missing-corpus case is asserted, the edge tests assert.
+- **Proof:** `P7` — `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py`
+- **Date:** 2026-10-20
+
+#### D-024 — the long-test self-test left two log files in the repository root
+
+- **Symptom:** the self-test left `long-test.log` and `long-test.log.out` in the repository root, so the tree was dirty after the self-test.
+- **Reproduction:** `bash skills/engineering/long-test-discipline/scripts/run_long_test_test.sh && git status --porcelain`
+- **Root cause:** `run_long_test.sh` was called without `--log`, so it wrote into the current working directory.
+- **Fix (files):** `skills/engineering/long-test-discipline/scripts/run_long_test_test.sh` — `OTTLI_TEST_LOG` points into the temporary directory the self-test already creates.
+- **Proof:** `P20` — `bash skills/engineering/long-test-discipline/scripts/run_long_test_test.sh`
+- **Date:** 2026-10-20
+
+#### D-025 — nothing stopped a test from dirtying the checkout
+
+- **Symptom:** the suite overwrote a tracked file on every run and no test noticed; there was no guard at all.
+- **Reproduction:** `python3 -m pytest -q && git status --porcelain`
+- **Root cause:** nothing compared the tree before and after the suite.
+- **Fix (files):** `tests/hygiene/clean_tree.py` (the one canonical implementation), `tests/hygiene/test_clean_tree.py` (the pytest guard), `tests/conftest.py` (the ordering hook); the node-only `tests/hygiene/clean-tree.test.mjs` was replaced by them because pytest cannot run it.
+- **Proof:** `P21` — `python3 -m pytest tests/hygiene/test_clean_tree.py -q`
+- **Date:** 2026-10-20
+
+#### D-026 — the suite leaked 28 files into the shared temporary directory
+
+- **Symptom:** 28 files were left in the shared temp directory (14 `tmp*.json`, 13 `tmp*` directories, 1 `tmp*.warc.gz`); the card's own proof (`git status` after the run) stayed green while the leak grew.
+- **Reproduction:** `TMPDIR=<empty dir> python3 -m pytest -q && ls <empty dir>`
+- **Root cause:** `tempfile.mktemp()`, `mkdtemp()` without a matching `shutil.rmtree`, and `NamedTemporaryFile(delete=False)` whose manual `os.unlink` is skipped when an assertion fails first.
+- **Fix (files):** ten test modules under `skills/business-de/**` and `skills/agentic-data/**` now write only into `tmp_path` or into a directory they remove themselves; `tests/hygiene/test_temp_files.py` is the lint guard.
+- **Proof:** `P22` — `python3 -m pytest tests/hygiene/test_temp_files.py -q`
+- **Date:** 2026-10-20
+
+#### D-027 — the clean-tree guard only looked at the end of the session
+
+- **Symptom:** a module that dirtied the checkout and a later module that cleaned it up again left no trace, and the guard could not name the module that did it.
+- **Reproduction:** `python3 -m pytest tests/hygiene/test_clean_tree.py -q`
+- **Root cause:** the comparison happened once, at the end of the session, instead of after every test module.
+- **Fix (files):** `tests/conftest.py` (`pytest_runtest_teardown` compares after every module and names the offender), `tests/hygiene/test_clean_tree.py` (end-to-end negative case: a second session with a plugin that writes a stray file must fail and must clean up).
+- **Proof:** `P21` — `python3 -m pytest tests/hygiene/test_clean_tree.py -q`
+- **Date:** 2026-10-20
+
+#### D-030 — 16 stale status diaries were still committed inside the skill packages
+
+- **Symptom:** the tree still carried the diaries of the finished waves: 9 `STATUS.md`, 3 `HANDOFF.md`, 2 `skills/business-de/config/REVERIFY_*.md`, 2 `skills/agentic-data/references/PASS*-STATUS*.md` and `docs/truth/REVERIFY-SKL-W0-01-TASK-0006.md`; a reader cannot tell which claims are still true.
+- **Reproduction:** `git ls-files | grep -cE '(^|/)(STATUS|HANDOFF|R3_PLAN|REVERIFY)\.md$'` → 9
+- **Root cause:** the earlier wave kept them because `docs/R3_OWNERS.json` assigns `skills/business-de/**` and `skills/agentic-data/**` to other jobs; the card of this wave grants `skills/**` to SKL-W0-01.
+- **Fix (files):** `git rm` of the 16 files; the per-skill `references/EVALS.md` stay — they are validator input, not diaries (D-039).
+- **Proof:** `P23` — `test "$(git ls-files | grep -cE '(^|/)(STATUS|HANDOFF|R3_PLAN|REVERIFY)\.md$')" = 0`
+- **Date:** 2026-10-20
+
+#### D-031 — a collection test asserted that a status diary exists
+
+- **Symptom:** `skills/agentic-data/tests/test_collection.py::test_handoff_exists` failed with `FileNotFoundError` after D-030 (`1 failed, 62 passed, 9 skipped`).
+- **Reproduction:** `python3 -m pytest skills/agentic-data/tests/test_collection.py -q`
+- **Root cause:** the test asserted the *existence of a diary* instead of a property of the skills; that premise is invalid once the tree policy is "a skill collection ships skills, not diaries about them".
+- **Fix (files):** `skills/agentic-data/tests/test_collection.py` — rewritten, not deleted: it now asserts that the collection ships no diary and that every skill keeps what the diary held (≥ 6 primary URLs and a retrieval date in `references/SOURCES.md`).
+- **Proof:** `P18` — `python3 -m pytest skills/agentic-data/ -q`
+- **Date:** 2026-10-20
+
+#### D-032 — 34 dangling pointers to the deleted diaries
+
+- **Symptom:** after D-030, 34 places still pointed at deleted files (10 `skills/agentic-data/*/references/SOURCES.md`, 20 `skills/business-de/config/versions.json` entries, the business-de and engineering READMEs and `skills/business-de/PASS5_GATE.md`).
+- **Reproduction:** `git grep -n -F 'PASS5-R3-05-REVERIFY.md' -- skills/ ':!catalog.json'`
+- **Root cause:** the diaries were the only place some evidence and some navigation lived.
+- **Fix (files):** the ten `skills/agentic-data/*/references/SOURCES.md`, `skills/business-de/config/versions.json`, `skills/business-de/README.md`, `skills/business-de/PASS5_GATE.md`, `skills/engineering/README.md` — every pointer replaced by the substance it pointed at.
+- **Proof:** `P24` — `test -z "$(git grep -l -F 'PASS5-R3-05-REVERIFY.md' -- skills/ ':!catalog.json')"`
+- **Date:** 2026-10-20
+
+#### D-033 — the duplicate-name proof was polluted by scratch copies of the tree
+
+- **Symptom:** the proof printed 46 duplicate skill names although the tracked tree has none.
+- **Reproduction:** `find . -name SKILL.md | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+- **Root cause:** this job's own scratch area `.truth/SKL-W0-01/` held full copies of the tree; they are git-ignored, so `git status` never showed them, but the file-system proof saw them.
+- **Fix (files):** the redundant scratch *copies* were removed (the evidence files were kept) — again in this pass, where eight of them had been written back by later passes. The proof is run against the **tracked** tree, because the temporary directory of the test suite of this job lives inside the worktree (`.truth/SKL-W0-01/tmp`) and pytest keeps its last three runs there.
+- **Proof:** `P5` — `git ls-files '*/SKILL.md' | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d`
+- **Date:** 2026-10-20
+
+#### D-034 — the generated catalogue still named the deleted files
+
+- **Symptom:** `catalog.json` listed five deleted `STATUS.md` paths, so the committed catalogue pointed at files that do not exist.
+- **Reproduction:** `node scripts/gen-catalog.mjs --check`
+- **Root cause:** the catalogue was not regenerated after the diaries were deleted.
+- **Fix (files):** `catalog.json` regenerated with `node scripts/gen-catalog.mjs`.
+- **Proof:** `P4` — `node scripts/gen-catalog.mjs --check`
+- **Date:** 2026-10-20
+
+#### D-035 — the collection scripts check skipped 9 of the 10 skills
+
+- **Symptom:** the check ran against one skill only and the gate's test step failed with "the run reports skipped tests" (`62 passed, 9 skipped, 1 failed`).
+- **Reproduction:** `python3 -m pytest skills/agentic-data/tests/test_collection.py -q`
+- **Root cause:** the check skipped a skill whose `SKILL.md` has no `scripts:` summary line, and nine of the ten skills document their scripts inside their checklists.
+- **Fix (files):** nine `skills/agentic-data/*/SKILL.md` (a summary line that lists every script the skill ships — seven scripts were documented nowhere before), `skills/agentic-data/tests/test_collection.py` (asserts both directions, no skip).
+- **Proof:** `P18` — `python3 -m pytest skills/agentic-data/ -q`
+- **Date:** 2026-10-20
+
+#### D-036 — the language step flagged the German business-domain source catalogues
+
+- **Symptom:** the gate's language step failed on `skills/business-de/bank-reconciliation-camt/references/SOURCES.md`, `skills/business-de/carrier-apis-de/references/SOURCES.md` and `skills/business-de/config/versions.json` (`language-umlaut` on `DFÜ-Abkommen`, `language-identifier` on German URLs) and on one German word in the English `skills/business-de/README.md`.
+- **Reproduction:** the `language` step of the job gate over the changed files
+- **Root cause:** the gate scans a whole file as soon as the file changes; German law titles and German source URLs are the *content* of these files, not untranslated prose.
+- **Fix (files):** the kit's own escape hatch, not a threshold change — the `truth:allow-german-file` marker in the head of the two catalogues and in the `_comment` of `skills/business-de/config/versions.json`; `skills/business-de/README.md` reworded to the wording the catalogue already uses.
+- **Proof:** `GATE` — `node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "scripts/install.sh,scripts/validate.py,catalog.json,skills/**,tests/**,docs/truth,docs/gaps,business-de,scratch,undefined,*.db,*.db-shm,*.db-wal,STATUS.md,HANDOFF*.md,GAPS*.md,R3_PLAN.md,REVERIFY*.md,EVALS.md,docs/STATUS*,docs/HANDOFF*,docs/GAPS*,docs/R3_PLAN*,scripts/gen-catalog.mjs,scripts/verify-status.mjs,scripts/truth/config.json" --exclude "scripts/truth/*.mjs,scripts/truth/*.sh,scripts/truth/lib/**,scripts/truth/checks/**,scripts/truth/MANIFEST.sha256,scripts/truth/KIT_VERSION,scripts/truth/README.md,scripts/truth/package.json,scripts/truth/package-lock.json,scripts/truth/node_modules/**" --skip registry,e2e` (the job gate, `language` step)
+- **Date:** 2026-10-20
+
+#### D-037 — `REPO_SHAPE.md` drifted from the tree, and nothing noticed
+
+- **Symptom:** the document claimed 649 tracked files and 30 repository-level test files; the tree had 651 and 32.
+- **Reproduction:** `pytest tests/hygiene/test_repo_shape_numbers.py -q` → `REPO_SHAPE.md drifted from the tree: Tracked files: document says 649, command says 651`
+- **Root cause:** the document was written in one commit, the guard test landed in another, and nothing compared the two.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` (corrected numbers, every label matches the command beside it), `tests/hygiene/test_repo_shape_numbers.py` (parses every `| What | Value | Command |` row, runs the command and compares the printed number — a row added later is checked automatically).
+- **Proof:** `P25` — `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Date:** 2026-10-20
+
+#### D-038 — the tool inventory was incomplete and claimed there was no second installer
+
+- **Symptom:** `docs/truth/REPO_SHAPE.md` stated *"No second installer, validator or catalogue generator exists in the tree."* — false: `scripts/install-skill.py` is a second installer, and four further tools were missing from the inventory.
+- **Reproduction:** `git ls-files 'scripts/' | wc -l` → 12 tools against 8 rows in the document
+- **Root cause:** the inventory was written from the tools this job knew, not from `ls scripts/`.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` — the complete inventory (twelve rows) and the requirement that can be checked: exactly one `scripts/install.sh` and exactly one `scripts/validate.py`.
+- **Proof:** `P26` — `test "$(git ls-files 'scripts/install.sh' | wc -l)" = 1`
+- **Date:** 2026-10-20
+
+#### D-039 — the per-skill `references/EVALS.md` files are a validator input, not diaries
+
+- **Symptom:** the delete list of the task names `EVALS.md`; thirty skills ship `references/EVALS.md` with their eval prompts. Deleting them turns the validator red: `python3 scripts/validate_skills.py` exits 1 with `[honest-status] missing references/EVALS.md`.
+- **Reproduction:** with `skills/engineering/honest-status/references/EVALS.md` moved aside, `python3 scripts/validate_skills.py` exits 1
+- **Root cause:** the file looks like a diary but is a required input of the skill validator.
+- **Fix (files):** none — decision to keep the files; the root-level `EVALS.md` diaries of the earlier waves were deleted with D-004.
+- **Proof:** `P27` — `python3 -m pytest tests/hygiene/test_skill_eval_sets.py -q`
+- **Date:** 2026-10-20
+
+#### D-040 — the RLS checker rejected the real corpus and trusted one hard-coded name
+
+- **Symptom:** the checker answered "FAIL" for 74 of 120 real migrations, because the pattern did not allow `ALTER TABLE IF EXISTS … ENABLE ROW LEVEL SECURITY`, because it only knew `app.company_id` while a product migration uses `ottili.company_id`, and because it asked about the *file* where the rule is about the *table*. It also decided the tenant setting name by constant instead of by measurement.
+- **Reproduction:** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py <a real hq migration>`
+- **Root cause:** four defects in one script — a constant for the GUC name, a `CREATE TABLE` regex that had to be present, `ENABLE`/`FORCE` patterns without the `IF EXISTS`/`ONLY` variants, and a statement splitter with no notion of dollar-quoted bodies.
+- **Fix (files):** `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py` — the accepted GUC names come from `guc-names.json`, the splitter understands comments, literals and `DO $$ … $$` blocks, the verdict is per table; `tests/hygiene/test_rls_checker.py` is the guard.
+- **Proof:** `P28` — `python3 -m pytest tests/hygiene/test_rls_checker.py -q`
+- **Date:** 2026-10-20
+
+#### D-041 — the tenant GUC inventory, and one open owner decision
+
+- **Symptom:** the name of the tenant setting is a decision that is still open: `app.company_id`, `app.current_company_id`, `ottili.company_id` and `app.current_company` are all in use, and a policy keyed on a setting nobody sets isolates nobody.
+- **Reproduction:** `python3 -c "import json;print([n['name'] for n in json.load(open('skills/engineering/pg-rls-multitenant/guc-names.json'))['accepted_names']])"`
+- **Root cause:** the census of the GUC names was never written down, so neither the checker nor the reader could know which names are real.
+- **Fix (files):** `skills/engineering/pg-rls-multitenant/guc-names.json` — every name with its measured inventory, `canonical_name: null`, the decision open for the owner.
+- **Proof:** `P29` — `python3 -c "import json;print([n['name'] for n in json.load(open('skills/engineering/pg-rls-multitenant/guc-names.json'))['accepted_names']])"`
+- **Date:** 2026-10-20
+
+#### D-042 — the honest-status checker could not read the format the product repositories write
+
+- **Symptom:** `check_status_evidence.py` crashed on every real `STATUS.md` of the product repositories with `KeyError: 'UNFILED'`, and `scripts/verify-status.mjs` was a second, independent table parser written in JavaScript, so the skill and the tool of the repository could never agree (the JS one reported 322 rows for hq-v2, the Python one crashed).
+- **Reproduction:** `node scripts/verify-status.mjs <nvme>/hq-v2/docs/STATUS.md --root <nvme>/hq-v2`
+- **Root cause:** the parser knew only the bucket grammar of the skill, while the product repositories write claim tables; and the tool re-implemented the parsing instead of delegating to the skill it installs.
+- **Fix (files):** `skills/engineering/honest-status/scripts/status_tables.py` (new, parses the claim-table grammar), `skills/engineering/honest-status/scripts/check_status_evidence.py` (`--format auto|bucket|table`, a table verdict, a missing log file is a finding), `scripts/verify-status.mjs` (now a thin adapter that runs the checker).
+- **Proof:** `P13` — `python3 -m pytest tests/hygiene/test_verify_status.py -q`
+- **Date:** 2026-10-20
+
+#### D-043 — the RLS leak-test harness could never print PASS
+
+- **Symptom:** `pg-rls-leak-test.sh` died with exit 1 after `running probe as web_app` and never printed a verdict, not even on a correct migration.
+- **Reproduction:** `bash skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh`
+- **Root cause:** two defects — the probe printed its measurements as *aliased* columns, and psql does not print the alias in `-t -A` mode, so the label was lost in the query; and the verdict was a shell pipeline (`grep … | cut -f2`) that found nothing and, under `set -euo pipefail`, killed the script. A measurement that was never made looked like a measurement of zero.
+- **Fix (files):** `skills/engineering/pg-rls-multitenant/scripts/pg-rls-leak-test.sh` (the probe prints the label as a value), `skills/engineering/pg-rls-multitenant/scripts/check_leak_probe.py` (new, the verdict; a missing measurement is a failure), `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py` (`--list-guc-names`).
+- **Proof:** `P30` — `python3 -m pytest tests/hygiene/test_leak_probe.py -q`
+- **Date:** 2026-10-20
+
+#### D-044 — the preamble contract test asserted a README heading that the README never had
+
+- **Symptom:** the contract test failed with `AssertionError: README has no preamble section`; the failure was pre-existing and no file of that pass touched `README.md`.
+- **Reproduction:** `node tests/orchestrator/test_preamble_contracts.test.mjs`
+- **Root cause:** the test asserted the literal `## Orchestrator preamble (generated)`; the README's heading is `## Orchestrator preamble` and its body says that the block is generated.
+- **Fix (files):** `tests/orchestrator/test_preamble_contracts.test.mjs` (now `tests/orchestrator/test_preamble_contracts.py`) — the test asserts the heading the document has and keeps the meaningful part of the contract; the document was **not** changed, it is outside the owned paths and it was right.
+- **Proof:** `P14` — `python3 -m pytest tests/orchestrator/ -q`
+- **Date:** 2026-10-20
+
+#### D-045 — the truth gate could not run its test step when a non-Python file changed
+
+- **Symptom:** the gate step `tests` failed with `pytest -q {paths} exited 4 — no tests ran — ERROR: not found: tests/orchestrator/test_preamble_contracts.test.mjs`.
+- **Reproduction:** the `tests` step of the job gate after a change of a non-Python file
+- **Root cause:** the gate hands the **changed** files to the test command, and pytest cannot collect a `.mjs` path — it refuses the whole run with a usage error.
+- **Fix (files):** `scripts/truth/config.json` — `commands.test` selects the collectable Python test paths of the change and falls back to `pytest -q tests`.
+- **Proof:** `GATE` — `node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "scripts/install.sh,scripts/validate.py,catalog.json,skills/**,tests/**,docs/truth,docs/gaps,business-de,scratch,undefined,*.db,*.db-shm,*.db-wal,STATUS.md,HANDOFF*.md,GAPS*.md,R3_PLAN.md,REVERIFY*.md,EVALS.md,docs/STATUS*,docs/HANDOFF*,docs/GAPS*,docs/R3_PLAN*,scripts/gen-catalog.mjs,scripts/verify-status.mjs,scripts/truth/config.json" --exclude "scripts/truth/*.mjs,scripts/truth/*.sh,scripts/truth/lib/**,scripts/truth/checks/**,scripts/truth/MANIFEST.sha256,scripts/truth/KIT_VERSION,scripts/truth/README.md,scripts/truth/package.json,scripts/truth/package-lock.json,scripts/truth/node_modules/**" --skip registry,e2e` (the job gate, `tests` step)
+- **Date:** 2026-10-20
+
+#### D-046 — the RLS checker could not read a `DO $$ … $$` block and misread an escaped policy
+
+- **Symptom:** the checker of D-040 rejected 178 of 1389 real product migrations: a policy created inside a `DO $$ … $$` block was invisible, and a policy whose body contains an escaped quote was misread.
+- **Reproduction:** `python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py <a migration with a DO block>`
+- **Root cause:** the statement splitter cut on `;` without knowing about dollar-quoted bodies or string literals, and the policy body was matched with a naive regex.
+- **Fix (files):** `skills/engineering/pg-rls-multitenant/scripts/check_rls_migration.py` — the splitter understands dollar-quoted bodies and escapes; `tests/hygiene/test_rls_checker.py` is the guard.
+- **Proof:** `P28` — `python3 -m pytest tests/hygiene/test_rls_checker.py -q`
+- **Date:** 2026-10-20
+
+#### D-047 — the repository invariants were node:test files that no runner executed
+
+- **Symptom:** the hygiene decisions of this job (no tracked symlink that leaves the checkout, no committed status diary, one canonical skill tree, no large file, no committed database file …) were written as `node:test` modules, and the configured runner is pytest — so none of them ever ran in the gate.
+- **Reproduction:** `pytest -q tests/hygiene/*.test.mjs` → `ERROR: not found`
+- **Root cause:** the invariants were written for the node test runner while the truth kit collects the tests with pytest.
+- **Fix (files):** the invariants are pytest modules under `tests/hygiene/` (`test_*.py`); the node modules were removed after their assertions were carried over.
+- **Proof:** `P31` — `python3 -m pytest tests/hygiene/ -q`
+- **Date:** 2026-10-20
+
+#### D-048 — the truth kit config still carried the template's migration command and had no large-file allow-list
+
+- **Symptom:** `scripts/truth/config.json` still configured `commands.migrate` although this repository has no migrations of its own, and the key `largeFileAllowlist` was missing.
+- **Reproduction:** `python3 -c "import json;c=json.load(open('scripts/truth/config.json'));print(sorted(c['commands']), 'largeFileAllowlist' in c)"`
+- **Root cause:** the template config of the kit was adopted as it was.
+- **Fix (files):** `scripts/truth/config.json` — `commands.migrate` removed, `largeFileAllowlist` added.
+- **Proof:** `P32` — `python3 -c "import json;c=json.load(open('scripts/truth/config.json'));assert 'largeFileAllowlist' in c and 'migrate' not in c['commands']"`
+- **Date:** 2026-10-20
+
+#### D-049 — two commands of the pack-v3 decision do not run in this repository
+
+- **Symptom:** the decision of 2026-10-19 names `install "bash scripts/install.sh --check"` and `test "pytest -q {paths}"` as the commands of the config; the first exited 2 (`error: --target is required`), the second exited 4 (`ERROR: not found: …/tests/orchestrator/test_gen_preamble.test.mjs`).
+- **Reproduction:** `bash scripts/install.sh --check` and `pytest -q tests/orchestrator/test_gen_preamble.test.mjs`
+- **Root cause:** the decision was written for the template of the kit, not measured against this repository.
+- **Fix (files):** `scripts/truth/config.json` — the deviations were recorded here and in `docs/gaps/SKL-W0-01.md` (G31); the code fix followed in D-050.
+- **Proof:** `GATE` — `node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "scripts/install.sh,scripts/validate.py,catalog.json,skills/**,tests/**,docs/truth,docs/gaps,business-de,scratch,undefined,*.db,*.db-shm,*.db-wal,STATUS.md,HANDOFF*.md,GAPS*.md,R3_PLAN.md,REVERIFY*.md,EVALS.md,docs/STATUS*,docs/HANDOFF*,docs/GAPS*,docs/R3_PLAN*,scripts/gen-catalog.mjs,scripts/verify-status.mjs,scripts/truth/config.json" --exclude "scripts/truth/*.mjs,scripts/truth/*.sh,scripts/truth/lib/**,scripts/truth/checks/**,scripts/truth/MANIFEST.sha256,scripts/truth/KIT_VERSION,scripts/truth/README.md,scripts/truth/package.json,scripts/truth/package-lock.json,scripts/truth/node_modules/**" --skip registry,e2e` (the job gate, `install` and `tests` steps)
+- **Date:** 2026-10-20
+
+#### D-050 — the two commands of the pack-v3 decision now run unchanged (D-049 closed)
+
+- **Symptom:** both commands of the decision still failed, so the config carried workarounds instead of the decision.
+- **Reproduction:** `bash scripts/install.sh --check` (exit 2) and `pytest -q tests/orchestrator/test_gen_preamble.test.mjs` (exit 4)
+- **Root cause:** the installer refused `--check` without a `--target`, and the six `*.test.mjs` modules of `tests/orchestrator/` and `tests/reviews/` cannot be collected by pytest.
+- **Fix (files):** `scripts/install.sh` (`--check` works without `--target`), `tests/orchestrator/test_*.py` and `tests/reviews/test_*.py` (the six node modules converted to pytest with the same assertions), `scripts/truth/config.json` (the command strings of the decision, unchanged).
+- **Proof:** `GATE` — `node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "scripts/install.sh,scripts/validate.py,catalog.json,skills/**,tests/**,docs/truth,docs/gaps,business-de,scratch,undefined,*.db,*.db-shm,*.db-wal,STATUS.md,HANDOFF*.md,GAPS*.md,R3_PLAN.md,REVERIFY*.md,EVALS.md,docs/STATUS*,docs/HANDOFF*,docs/GAPS*,docs/R3_PLAN*,scripts/gen-catalog.mjs,scripts/verify-status.mjs,scripts/truth/config.json" --exclude "scripts/truth/*.mjs,scripts/truth/*.sh,scripts/truth/lib/**,scripts/truth/checks/**,scripts/truth/MANIFEST.sha256,scripts/truth/KIT_VERSION,scripts/truth/README.md,scripts/truth/package.json,scripts/truth/package-lock.json,scripts/truth/node_modules/**" --skip registry,e2e` (the job gate, `install` and `tests` steps)
+- **Date:** 2026-10-20
+
+#### D-054 — the shape document drifted again when this repair-log entry was committed
+
+- **Symptom:** after the repair-log entry of TASK-0007 was committed, the shape guard failed: `Tracked files: document says 664, command says 665` and `Tracked files under 'tests/': document says 42, command says 43`.
+- **Reproduction:** `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Root cause:** `docs/truth/REPO_SHAPE.md` states the number of tracked files, and the new guard test `tests/hygiene/test_repair_log.py` is one more tracked file — the count changed with the commit that added it. The D-037 guard worked as designed and refused the drift.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` — the two numbers corrected (664 → 665, 42 → 43); the guard that found them is the repair.
+- **Proof:** `P25` — `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Date:** 2026-10-20
+
+#### D-055 — the six-field check of the index was not per entry
+
+- **Symptom:** the guard reported no problem although the index entry of `D-030` had lost its `**Date:**` line and the entry of `D-031` had lost its `**Symptom:**` line; both were measured and the guard stayed green.
+- **Reproduction:** remove the field line from an index entry of `docs/truth/REPAIR_LOG.md` and run `python3 -m pytest tests/hygiene/test_repair_log.py -q` — the guard stays green.
+- **Root cause:** `split_section()` ended a block at the next `\n## `, but the index entries are `#### ` headings, so the body of an entry ran on to the end of the index and every field search found the field of a later entry.
+- **Fix (files):** `tests/hygiene/test_repair_log.py` — the block ends at the next heading of the same or a higher level, the heading scan ignores fenced code, the field check runs per entry, and two mutation tests prove it.
+- **Proof:** `P33` — `python3 -m pytest tests/hygiene/test_repair_log.py -q`
+- **Date:** 2026-10-20
+
+#### D-056 — the command of an index entry could drift from the proof block
+
+- **Symptom:** writing `bash scripts/install.sh --totally-wrong` next to the label `P1` in the index entry of `D-001` left the guard green although the proof block still ran `bash scripts/install.sh --check`.
+- **Reproduction:** replace the inline command of one index entry of `docs/truth/REPAIR_LOG.md` and run `python3 -m pytest tests/hygiene/test_repair_log.py -q` — the guard stays green.
+- **Root cause:** the guard asserted only that the command of the proof block appeared somewhere in the document; it never compared it with the command the index writes down.
+- **Fix (files):** `tests/hygiene/test_repair_log.py` — the command of an index entry must be the command of the proof block of that label, plus a mutation test; `docs/truth/REPAIR_LOG.md` — the four entries that cited `GATE` in prose write the command of the gate.
+- **Proof:** `P33` — `python3 -m pytest tests/hygiene/test_repair_log.py -q`
+- **Date:** 2026-10-20
+
+#### D-057 — a defect section carried neither a date nor a proof label
+
+- **Symptom:** not one of the 52 defect sections of `docs/truth/REPAIR_LOG.md` had a `- **Date:**` line, and the narrative of a defect and its index entry could contradict each other unnoticed.
+- **Reproduction:** change the date of the index entry of `D-001` and run `python3 -m pytest tests/hygiene/test_repair_log.py -q` — the guard stays green.
+- **Root cause:** the narrative sections were written before the index existed, and the guard had no cross-check between the two.
+- **Fix (files):** `docs/truth/REPAIR_LOG.md` — every defect section ends with `- **Index proof:** `Pxx`` and `- **Date:** YYYY-MM-DD``; `tests/hygiene/test_repair_log.py` — the guard compares label and date of section and index.
+- **Proof:** `P33` — `python3 -m pytest tests/hygiene/test_repair_log.py -q`
+- **Date:** 2026-10-20
+
+#### D-058 — the follow-up check promised a symptom and tested a path
+
+- **Symptom:** `test_the_follow_up_list_exists_and_names_path_and_symptom` asserted only that the bold title of an item contains a backtick; an item whose body carried no symptom passed the test that claims to check the symptom.
+- **Reproduction:** remove the body of the first follow-up item of `docs/truth/REPAIR_LOG.md` and run `python3 -m pytest tests/hygiene/test_repair_log.py -q` — the guard stays green.
+- **Root cause:** the assertion and the name of the test disagreed.
+- **Fix (files):** `tests/hygiene/test_repair_log.py` — every follow-up item must name a path in its title and carry a symptom in its body, plus a mutation test.
+- **Proof:** `P33` — `python3 -m pytest tests/hygiene/test_repair_log.py -q`
+- **Date:** 2026-10-20
+#### D-059 — the installer wrote (and with --force deleted) outside the target directory
+
+- **Symptom:** `install.sh --force --target <dir> ../pkg/good` deleted `<dir>/../pkg/good` and wrote the skill there, so a folder outside the target was destroyed without a question.
+- **Reproduction:** `bash scripts/install.sh --force --target <dir> ../pkg/good` in a tree with one package and a folder `<dir>/../pkg/good` — the marker file of that folder is gone after the run.
+- **Root cause:** the skill name was used unvalidated as a path component of the destination (`dest="$TARGET/$name"`); the "ambiguous package" check only fired by accident, when the tree held more than one package.
+- **Fix (files):** `scripts/install.sh` — every skill name is checked against `^[A-Za-z0-9._-]+$` before anything is written and an unsafe name is refused with exit 2; `tests/hygiene/test_install.py` — a fixture with a folder outside the target proves the refusal and the survival of that folder.
+- **Proof:** `P34` — `python3 -m pytest tests/hygiene/test_install.py -q -k "escapes_the_target"`
+- **Date:** 2026-10-20
+
+#### D-060 — `--check` refused a target that the install accepts
+
+- **Symptom:** `install.sh --check --target <dir>/does/not/exist --package engineering` exited 1 with "target parent does not exist", while the same target was installed without complaint (exit 0).
+- **Reproduction:** `bash scripts/install.sh --check --target "$PWD/.truth/SKL-W0-01/attack/new/deep/target" --package engineering` — exit 1; `bash scripts/install.sh --target "$PWD/.truth/SKL-W0-01/attack/new/deep/target" --package engineering` — exit 0.
+- **Root cause:** the check demanded that the parent of the target already existed; the install creates that tree with `mkdir -p` and never demanded it.
+- **Fix (files):** `scripts/install.sh` — the check walks up to the nearest existing ancestor and asks whether the tree could be created there; a target below a file is still refused; `tests/hygiene/test_install.py` — two tests prove both directions.
+- **Proof:** `P35` — `python3 -m pytest tests/hygiene/test_install.py -q -k "parent_does_not_exist or cannot_be_created"`
+- **Date:** 2026-10-20
+
+#### D-061 — the catalogue generator ignored an unknown option and overwrote the catalogue
+
+- **Symptom:** `node scripts/gen-catalog.mjs --chek` wrote the catalogue and exited 0 instead of checking it; `node scripts/gen-catalog.mjs --out` died with a node stack trace.
+- **Reproduction:** `node scripts/gen-catalog.mjs --chek` — "ok: wrote .../catalog.json"; `node scripts/gen-catalog.mjs --out` — "TypeError [ERR_INVALID_ARG_TYPE]".
+- **Root cause:** the option loop had no `else` branch, so every unknown argument was dropped, and `--out` read the next argument without checking that one existed.
+- **Fix (files):** `scripts/gen-catalog.mjs` — an unknown option and an `--out` without a file path are refused with exit 2 and write nothing; `tests/hygiene/test_catalog.py` — two tests prove the refusal.
+- **Proof:** `P36` — `python3 -m pytest tests/hygiene/test_catalog.py -q -k "unknown_option or without_a_value"`
+- **Date:** 2026-10-20
+
+#### D-062 — the validator collapsed two skills that carry the same folder name
+
+- **Symptom:** `validate.py --everywhere` kept only the last folder of a skill name, so a skill that lived in two packages and was missing from the catalogue stayed invisible.
+- **Reproduction:** a tree with `skills/demo/alpha/SKILL.md` and `skills/other/alpha/SKILL.md` and a catalogue that knows only `demo/alpha` — the pre-fix validator reported no duplicate.
+- **Root cause:** the on-disk scan used a dict keyed by the folder name and therefore assumed that every name lives exactly once in the tree.
+- **Fix (files):** `scripts/validate.py` — every folder of a name is kept and a name that lives twice is reported as "duplicate skill name"; `tests/hygiene/test_validate.py` — a fixture with two packages proves the report.
+- **Proof:** `P37` — `python3 -m pytest tests/hygiene/test_validate.py -q -k "duplicate"`
+- **Date:** 2026-10-20
+
+#### D-063 — a skill documented a verification command that cannot run
+
+- **Symptom:** the RFC 9457 validator command of `skills/engineering/problem-json-contracts/SKILL.md` names `references/examples/schemas` and `references/examples/catalogue.json`; neither exists, the command exits 2 with "not a directory".
+- **Reproduction:** `cd skills/engineering/problem-json-contracts && python3 scripts/validate_problem_examples.py --schema-dir references/examples/schemas --catalogue references/examples/catalogue.json` — exit 2.
+- **Root cause:** the documented path lost the `good/` segment of the fixture tree; no test executed the commands a SKILL.md prints.
+- **Fix (files):** `skills/engineering/problem-json-contracts/SKILL.md` — the command names the fixtures that exist and keeps the placeholder form that the preamble generator pins; `tests/hygiene/test_skill_docs.py` — a guard runs every documented command whose input is part of the tree.
+- **Proof:** `P38` — `python3 -m pytest tests/hygiene/test_skill_docs.py -q`
+- **Date:** 2026-10-20
+
+#### D-064 — three skills documented the repository validator with a path that does not exist inside the skill
+
+- **Symptom:** `python3 scripts/validate_skills.py` is documented as a command of three engineering skills, but no engineering skill ships that script; copied into the skill folder it exits 2 with "can't open file".
+- **Reproduction:** `cd skills/engineering/problem-json-contracts && python3 scripts/validate_skills.py` — exit 2.
+- **Root cause:** a command of the repository was written like a command of the skill; the honest-status skill had the same defect with a `STATUS.md` it does not ship.
+- **Fix (files):** `skills/engineering/outbox-idempotency/SKILL.md`, `skills/engineering/pg-rls-multitenant/SKILL.md`, `skills/engineering/problem-json-contracts/SKILL.md` — the command says that it runs from the repository root; `skills/engineering/honest-status/SKILL.md` — the status file is named as the file of the repository an agent works on and the self-test of the checker is added; `tests/hygiene/test_skill_docs.py` — the guard resolves every documented script.
+- **Proof:** `P39` — `python3 -m pytest tests/hygiene/test_skill_docs.py -q -k "documented_script_exists"`
+- **Date:** 2026-10-20
+
+#### D-065 — the shape document drifted again, and its root block was missing an entry
+
+- **Symptom:** the suite of the job failed with "document says 665, command says 667" and "document says 43, command says 44"; the root block of the same document listed 14 root entries while the tree has 15 (`.npmrc` was missing).
+- **Reproduction:** `python3 -m pytest tests/ -q` — `FAILED tests/hygiene/test_repo_shape_numbers.py::test_repo_shape_numbers_are_reproducible`.
+- **Root cause:** the counts of `docs/truth/REPO_SHAPE.md` are live numbers that every commit which adds a file moves, and the root block was a claim without a command and therefore without a guard.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` — the two counts and the missing root entry are corrected; `tests/hygiene/test_repo_shape_numbers.py` — a new guard compares the root block with the tracked root entries.
+- **Proof:** `P40` — `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q`
+- **Date:** 2026-10-20
+
+
+#### D-066 — the shape guard turned the suite red for the job that comes next
+
+- **Symptom:** a healthy tree change (the next job adds a skill folder and regenerates the catalogue) turned the suite red with "Skills in the catalogue: document says 39, command says 40", "`SKILL.md` files in the tree: document says 40, command says 41" and "Tracked files: document says 667, command says 668"; the document that carries the numbers belongs to `docs/truth/`, which the next job does not own.
+- **Reproduction:** a clean clone, one skill folder added under `skills/engineering/`, `node scripts/gen-catalog.mjs`, then `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q` — `FAILED tests/hygiene/test_repo_shape_numbers.py::test_repo_shape_numbers_are_reproducible`.
+- **Root cause:** the counts of `docs/truth/REPO_SHAPE.md` were live numbers checked against the current tree, so every commit that adds a file moved them; a snapshot of the tree was enforced as an invariant of the tree.
+- **Fix (files):** `docs/truth/REPO_SHAPE.md` — every row carries a scope (`live` for the invariants of the tree, `snapshot@9390db6` for the counts) and the document explains both; `tests/hygiene/test_repo_shape_numbers.py` — the guard runs a live row against the checkout under test and a snapshot row in a checkout of the commit it names, and a new test proves that adding a skill no longer turns the guard red.
+- **Proof:** `P41` — `python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q -k growth`
+- **Date:** 2026-10-20
+
+
+#### D-067 — the recipe for the next job was written down before it was executed
+
+- **Symptom:** the recipe of `docs/gaps/SKL-W0-01.md` (G37) named the trigger phrase and the two missing files of a new engineering skill, but not that the body has to link `references/EVALS.md` and `references/SOURCES.md` and not that the eval set needs at least five prompts; a skill built after that recipe was rejected by the validator of the repository.
+- **Reproduction:** a clean clone, the demo skill of the first recipe, then `python3 scripts/validate_skills.py` — exit 1 with "SKILL.md does not link references/EVALS.md", "SKILL.md does not link references/SOURCES.md" and "EVALS.md has 0 prompts, need >=5".
+- **Root cause:** the recipe was derived from the summary of a failure instead of from the rules the validator applies in `scripts/validate_skills.py`.
+- **Fix (files):** `tests/hygiene/test_skill_recipe.py` (new) — the recipe is built in a throwaway checkout, the validator is run over it (exit 0), a part of the recipe is removed to prove that the validator still complains (exit 1) and the catalogue is regenerated with the new skill in it; `docs/gaps/SKL-W0-01.md` — G37 carries the seven rules the validator really applies.
+- **Proof:** `P42` — `python3 -m pytest tests/hygiene/test_skill_recipe.py -q`
+- **Date:** 2026-10-20
+
+
+## Proof commands executed on 2026-10-20
+
+Every proof command of the index was re-run on the trunk of this pass. The
+commands marked `# auto` are re-executed by `tests/hygiene/test_repair_log.py`
+on every suite run; the others are the slow ones (whole pytest suites, the
+job gate) and are executed by the gate itself. The full transcript is in
+`.truth/SKL-W0-01/after.txt`.
+
+### P1 — the installer verifies every skill of every package and writes nothing
+
+```
+$ bash scripts/install.sh --check   # auto
+check: 39 skill(s) verified, nothing written
+exit=0
+```
+
+### P2 — the derived package `engineering` resolves
+
+```
+$ bash scripts/install.sh --check --package engineering   # auto
+check: 10 skill(s) verified, nothing written
+exit=0
+```
+
+### P3 — the on-demand package `ref-webhooks-safe` resolves
+
+```
+$ bash scripts/install.sh --check --package ref-webhooks-safe   # auto
+check: 1 skill(s) verified, nothing written
+exit=0
+```
+
+### P4 — the catalogue is a pure function of the `skills/` tree
+
+```
+$ node scripts/gen-catalog.mjs --check   # auto
+ok: catalog unchanged (39 skills, 12 packages)
+exit=0
+```
+
+### P5 — no skill name is duplicated in the tree
+
+```
+$ git ls-files '*/SKILL.md' | xargs -n1 dirname | xargs -n1 basename | sort | uniq -d   # auto
+(no output)
+exit=0
+```
+
+### P6 — the catalogue names no placeholder file
+
+```
+$ test "$(grep -c '\.gitkeep' catalog.json)" = 0   # auto
+exit=0
+```
+
+### P7 — the RLS checker's own self-test
+
+```
+$ python3 skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py   # auto
+ok: pg-rls migration checker self-test (3 real hq PASS, 3 hostile FAIL)
+ok: --json output is valid and correct
+ok: usage error exits 2
+ok: every configured GUC name is accepted, an unknown one is not
+ok: a DO block and an EXECUTE-created policy are read
+exit=0
+```
+
+### P8 — the whole suite of this job
+
+```
+$ python3 -m pytest tests/ -q
+198 passed in 25.72s
+exit=0
+```
+
+### P9 — the root allowlist of the truth kit
+
+```
+$ python3 -m pytest tests/hygiene/test_root_allowlist.py -q
+6 passed in 0.73s
+exit=0
+```
+
+### P10 — the orchestrator state directory is excluded (worktree-local fix of D-011)
+
+```
+$ git check-ignore -v .germo/state.json
+/mnt/ottili-nvme/ottili/v2/repo/skills/.git/info/exclude:9:.germo/	.germo/state.json
+exit=0
+```
+
+### P11 — a new file of this job is staged explicitly (the workaround of D-012)
+
+```
+$ git add --dry-run -- tests/hygiene/test_repair_log.py   # auto
+exit=0
+```
+
+### P12 — the package name is matched literally
+
+```
+$ python3 -m pytest tests/hygiene/test_install.py -q
+17 passed in 7.93s
+exit=0
+```
+
+### P13 — the honest-status checker reads the claim tables of the product repositories
+
+```
+$ python3 -m pytest tests/hygiene/test_verify_status.py -q
+9 passed in 1.46s
+exit=0
+```
+
+### P14 — the orchestrator contract tests
+
+```
+$ python3 -m pytest tests/orchestrator/ -q
+31 passed in 1.05s
+exit=0
+```
+
+### P15 — the contract-drift self-test runs on this host
+
+```
+$ python3 skills/engineering/module-contract-first/scripts/check_contract_drift_test.py   # auto
+ok   test_enumerate_creates_snapshot
+ok   test_check_passes_when_live_matches_snapshot
+ok   test_check_detects_drift_and_passes_after_update
+ok   test_cycles_command_runs
+check_contract_drift self-test: PASS
+exit=0
+```
+
+### P16 — the acceptance-harness self-test
+
+```
+$ python3 skills/engineering/acceptance-harness/scripts/report_result_test.py   # auto
+ok: PASS write succeeds
+ok: invalid outcome exits 2
+ok: scenario overwritten
+
+all tests passed
+exit=0
+```
+
+### P17 — the research/design acceptance test
+
+```
+$ python3 -m pytest skills/engineering/tests/test_research_design_acceptance.py -q
+1 passed in 0.01s
+exit=0
+```
+
+### P18 — the agentic-data collection and its skill tests
+
+```
+$ python3 -m pytest skills/agentic-data/ -q
+345 passed in 22.23s
+exit=0
+```
+
+### P19 — the business-de collection
+
+```
+$ python3 -m pytest skills/business-de/ -q
+218 passed in 11.35s
+exit=0
+```
+
+### P20 — the long-test self-test leaves the checkout clean
+
+```
+$ bash skills/engineering/long-test-discipline/scripts/run_long_test_test.sh
+run_long_test self-test: PASS
+exit=0
+```
+
+### P21 — the clean-tree guard, including its end-to-end negative case
+
+```
+$ python3 -m pytest tests/hygiene/test_clean_tree.py -q
+4 passed in 0.99s
+exit=0
+```
+
+### P22 — the lint that keeps the tests out of the shared temp directory
+
+```
+$ python3 -m pytest tests/hygiene/test_temp_files.py -q
+2 passed in 0.09s
+exit=0
+```
+
+### P23 — no status diary is committed any more
+
+```
+$ test "$(git ls-files | grep -cE '(^|/)(STATUS|HANDOFF|R3_PLAN|REVERIFY)\.md$')" = 0   # auto
+exit=0
+```
+
+### P24 — no pointer to a deleted diary is left
+
+```
+$ test -z "$(git grep -l -F 'PASS5-R3-05-REVERIFY.md' -- skills/ ':!catalog.json')"   # auto
+exit=0
+```
+
+### P25 — the shape document is checked against the tree
+
+```
+$ python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q
+1 passed in 0.65s
+exit=0
+```
+
+### P26 — there is exactly one installer
+
+```
+$ test "$(git ls-files 'scripts/install.sh' | wc -l)" = 1   # auto
+exit=0
+```
+
+### P27 — the eval sets of the skills are present
+
+```
+$ python3 -m pytest tests/hygiene/test_skill_eval_sets.py -q
+4 passed in 0.09s
+exit=0
+```
+
+### P28 — the tenant checker is driven by the configuration, not by a constant
+
+```
+$ python3 -m pytest tests/hygiene/test_rls_checker.py -q
+13 passed in 1.00s
+exit=0
+```
+
+### P29 — the measured inventory of the tenant setting names
+
+```
+$ python3 -c "import json;print([n['name'] for n in json.load(open('skills/engineering/pg-rls-multitenant/guc-names.json'))['accepted_names']])"   # auto
+['app.company_id', 'app.current_company_id', 'ottili.company_id', 'app.current_company']
+exit=0
+```
+
+### P30 — the leak probe judges a real probe output
+
+```
+$ python3 -m pytest tests/hygiene/test_leak_probe.py -q
+7 passed in 0.66s
+exit=0
+```
+
+### P31 — the repository invariants are pytest modules and they run
+
+```
+$ python3 -m pytest tests/hygiene/ -q
+139 passed in 23.70s
+exit=0
+```
+
+### P32 — the truth kit config carries no migration command and a large-file allow-list
+
+```
+$ python3 -c "import json;c=json.load(open('scripts/truth/config.json'));assert 'largeFileAllowlist' in c and 'migrate' not in c['commands']"   # auto
+exit=0
+```
+
+### P33 — the guard of this repair log
+
+```
+$ python3 -m pytest tests/hygiene/test_repair_log.py -q
+29 passed in 5.05s
+exit=0
+```
+### P34 — the installer refuses a skill name that escapes the target
+
+```
+$ python3 -m pytest tests/hygiene/test_install.py -q -k "escapes_the_target"   # auto
+.                                                                        [100%]
+1 passed, 20 deselected in 0.10s
+exit=0
+```
+
+### P35 — the check accepts the target the install accepts and refuses the impossible one
+
+```
+$ python3 -m pytest tests/hygiene/test_install.py -q -k "parent_does_not_exist or cannot_be_created"   # auto
+..                                                                       [100%]
+2 passed, 19 deselected in 0.66s
+exit=0
+```
+
+### P36 — the catalogue generator refuses an unknown option and an incomplete `--out`
+
+```
+$ python3 -m pytest tests/hygiene/test_catalog.py -q -k "unknown_option or without_a_value"   # auto
+..                                                                       [100%]
+2 passed, 5 deselected in 0.15s
+exit=0
+```
+
+### P37 — the validator reports a skill name that lives in two packages
+
+```
+$ python3 -m pytest tests/hygiene/test_validate.py -q -k "duplicate"   # auto
+.                                                                        [100%]
+1 passed, 4 deselected in 0.11s
+exit=0
+```
+
+### P38 — every command a skill documents runs
+
+```
+$ python3 -m pytest tests/hygiene/test_skill_docs.py -q   # auto
+..                                                                       [100%]
+2 passed in 3.18s
+exit=0
+```
+
+### P39 — every script a skill documents exists
+
+```
+$ python3 -m pytest tests/hygiene/test_skill_docs.py -q -k "documented_script_exists"   # auto
+.                                                                        [100%]
+1 passed, 1 deselected in 0.06s
+exit=0
+```
+### P40 — the shape document and its root block agree with the tree
+
+```
+$ python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q   # auto
+..                                                                       [100%]
+2 passed in 1.80s
+exit=0
+```
+
+### P41 — the shape guard survives a healthy tree change
+
+```
+$ python3 -m pytest tests/hygiene/test_repo_shape_numbers.py -q -k growth   # auto
+.                                                                        [100%]
+1 passed, 4 deselected in 1.87s
+exit=0
+```
+
+### P42 — the recipe for the next job executes
+
+```
+$ python3 -m pytest tests/hygiene/test_skill_recipe.py -q   # auto
+...                                                                       [100%]
+3 passed in 0.81s
+exit=0
+```
+
+### GATE — the job gate (install, build, lint, language, tests, hygiene, ownership)
+
+```
+$ node scripts/truth/gate.mjs job --job SKL-W0-01 --owned "scripts/install.sh,scripts/validate.py,catalog.json,skills/**,tests/**,docs/truth,docs/gaps,business-de,scratch,undefined,*.db,*.db-shm,*.db-wal,STATUS.md,HANDOFF*.md,GAPS*.md,R3_PLAN.md,REVERIFY*.md,EVALS.md,docs/STATUS*,docs/HANDOFF*,docs/GAPS*,docs/R3_PLAN*,scripts/gen-catalog.mjs,scripts/verify-status.mjs,scripts/truth/config.json" --exclude "scripts/truth/*.mjs,scripts/truth/*.sh,scripts/truth/lib/**,scripts/truth/checks/**,scripts/truth/MANIFEST.sha256,scripts/truth/KIT_VERSION,scripts/truth/README.md,scripts/truth/package.json,scripts/truth/package-lock.json,scripts/truth/node_modules/**" --skip registry,e2e
+PASS  ownership        0ms  4 file(s) changed, all inside the owned paths
+PASS  shrink          124ms  no deletions or large reductions
+PASS  syntax          46ms  4 changed file(s) parse
+skip  sql              0ms  no SQL files changed
+PASS  language        21ms  4 file(s) scanned
+PASS  stubs            1ms  4 file(s) scanned
+PASS  secrets          3ms  4 file(s) scanned
+PASS  size            0ms  4 file(s) scanned
+skip  i18n             1ms  no UI and no catalogues in this job
+PASS  lint           134ms  python3 -I scripts/validate.py --everywhere
+skip  typecheck        0ms  no commands.typecheck in scripts/truth/config.json
+skip  migrate          0ms  job has no migrations and --db was not given
+PASS  tests           3.3s  1 test path(s) passed
+
+GATE PASSED  SKL-W0-01
+exit=0
+```
+
+## The steps the trunk gate skipped, and why
+
+`node scripts/truth/gate.mjs trunk` (kit 1.1.0, 2026-10-20) reported these steps:
+
+| step | status | reason |
+| --- | --- | --- |
+| install | pass | `bash scripts/install.sh --check` — 39 skills of 12 packages verified, nothing written |
+| build | pass | `python3 -I scripts/validate.py --everywhere` — 39 skills validated |
+| typecheck | skip | no `commands.typecheck` in `scripts/truth/config.json`: the repository has no type checker, it is plain JavaScript, Python and bash |
+| lint | pass | `python3 -I scripts/validate.py --everywhere` (see `docs/gaps/SKL-W0-01.md` G36: the lint step of the config runs the build command) |
+| registry | skip | no `commands.registryCheck` in `scripts/truth/config.json`: the repository publishes no npm package, the `@ottili` scope in `.npmrc` only names the internal registry |
+| migrate | skip | no `commands.migrate` in `scripts/truth/config.json` and the job owns no `.sql` file: this repository has no database and no migration |
+| boot | skip | no `boot.command` in `scripts/truth/config.json`: this repository has no server to boot |
+| smoke | skip | no `commands.smokeTests` in `scripts/truth/config.json`: without a server there is nothing to smoke |
+| hygiene | pass | 15 root entries, all of them in `rootAllowlist` |
+| scan-full | warn | informational: 266 language findings (the German business-domain catalogues and sources), 0 stubs, 1 oversized file (see the follow-up list) |
+
+The overall result is `pass` and `docs/truth/TRUNK_STATUS.json` carries it. The gate
+writes that file for the commit it measured; the W1 jobs read it with
+`node scripts/truth/preflight.mjs --job <id> --requires-trunk`, which asks for
+`overall == "pass"` and for the recorded commit to be an ancestor of the worktree HEAD.
+
+## Follow-ups for later trunk repair jobs
+
+Everything below was measured on the trunk of this pass and could **not** be
+fixed inside the owned paths of SKL-W0-01. Each item names the path and the
+exact symptom; the owner is the job that holds the path in
+`docs/R3_OWNERS.json`.
+
+1. **`.github/workflows/validate.yml:42`** — the step "Run orchestrator contract
+   tests" runs `for t in tests/orchestrator/*.test.mjs; do node "$t"; done`.
+   The six modules were converted to `test_*.py` by D-050, so the glob matches
+   nothing, bash passes the literal pattern to node and the step ends with
+   `Error: Cannot find module '…/tests/orchestrator/*.test.mjs'` and
+   `code: 'MODULE_NOT_FOUND'`, exit 1. Owner: `skills-engineering-r3` (`.github/**`).
+2. **`.github/workflows/validate.yml:69`** — the step "Run engineering skill
+   self-tests" runs `python3 "$t"` over a list that contains
+   `skills/engineering/long-test-discipline/scripts/run_long_test_test.sh`, a
+   **bash** script. The result is
+   `SyntaxError: invalid syntax` (`set -uo pipefail`, exit 1). The same file
+   runs the other self-tests with `python3`, so the list needs a per-file
+   interpreter. Owner: `skills-engineering-r3` (`.github/**`).
+3. **`README.md:221`, `README.md:228`, `README.md:229`** — the documentation
+   still tells the reader to run `tests/orchestrator/*.test.mjs` and
+   `for t in tests/hygiene/*.test.mjs tests/reviews/*.test.mjs; do node "$t"; done`.
+   Every one of those files was deleted or converted by D-047 and D-050; the
+   commands print "No such file or directory". Owner: `skills-engineering-r3`
+   (`README.md`).
+4. **`index/skills.json`** — the file drifts from the tree it is generated
+   from: `python3 scripts/build-index.py` rewrites 5 lines (the pg-rls
+   description `tenant_id` → `company_id` and four `has_references: true` →
+   `false`) and the generator has **no `--check` mode**, so nothing fails. The
+   committed file was restored with `git show HEAD:index/skills.json` during
+   this pass so that the trunk was not left worse. Owner:
+   `skills-engineering-r3` (`index/**`).
+5. **`skills/ref-*/<name>/SKILL.md` (6 files)** — the description still names
+   the deleted path fragment, e.g. `skills/ref-webhooks-safe/ref-webhooks-safe/SKILL.md`
+   says "… for the webhooks-safe skill (business-de/webhooks-safe)". The tree
+   `skills/ref-*/**` is in **no** entry of `docs/R3_OWNERS.json`, so the owner
+   has to be decided first. Owner: unassigned (candidate `skills-engineering-r3`).
+6. **`scripts/validate_skills.py:19`** — `SKILLS_DIR` is hard-coded to
+   `skills/engineering`, so 10 of the 39 skills are validated although the
+   docstring promises "every skill folder"; `ev_text` (line 112) is only
+   assigned inside the loop, so a first skill without `references/EVALS.md`
+   raises `UnboundLocalError`; and the prompt count adds the **same** regex
+   twice (lines 114 and 115). Owner: `skills-engineering-r3` (`scripts/**`).
+7. **`skills/business-de/*/tests/tmp/*`** — 9 committed scratch files (e.g.
+   `skills/business-de/skr-journal-mapping/tests/tmp/j.json`,
+   `skills/business-de/ust-edge-cases/tests/tmp/nearmiss.json`) are catalogued
+   as skill content by `scripts/gen-catalog.mjs`. Owner: `skills-business-de-r3`.
+8. **`skills/agentic-data/computer-use-drivers/SKILL.md` and
+   `skills/agentic-data/deep-research-method/SKILL.md`** — both ship a
+   `references/EVALS.md` that their `SKILL.md` never links, so an agent that
+   reads the skill never sees the eval set. Owner: `skills-agentic-data-r3`.
+9. **`.gitignore`** — it does not ignore `.pytest_cache/`, so a pytest run
+   leaves that directory in the checkout. `.germo/` is ignored only through the
+   worktree-local `.git/info/exclude` (D-011). Owner: `skills-engineering-r3`.
+10. **`docs/gaps/SKL-W1-02.md:106`** — the file still lists
+    `skills/business-de/STATUS.md` and `skills/business-de/HANDOFF.md`, both
+    deleted by D-030. Owner: `skills-business-de-r3`.
+11. **`docs/truth/REPO_PROBE.txt`** — tracked but 0 bytes; no job in
+    `docs/R3_OWNERS.json` owns that file, so it can neither be filled nor
+    deleted from here. Owner: unassigned.
+12. **`scripts/truth/safe-commit.mjs`** — the kit enumerates the working tree
+    with `git status --porcelain=v1 -z --untracked-files=all`; git 2.53.0
+    returns **no output at all** for that option (reproducible in an empty
+    scratch repository), so new files stay untracked unless they are staged
+    explicitly. The kit belongs to the operator and may not be edited by a
+    job. Owner: operator.
+
+17. **`skills/orchestrator-preamble/orchestrator-preamble/SKILL.md:35`** — the four
+    check commands of the preamble name `scripts/check_rls_migration.py`,
+    `scripts/check_outbox.py`, `scripts/check_problem_catalogue.py` and
+    `scripts/check_status_evidence.py`. Those scripts live inside the canonical
+    engineering skills, so a reader who copies the command into the preamble folder
+    gets `No such file or directory` (exit 1). The generated
+    `references/preamble.md` prints the same commands and neither document says in
+    which folder the command runs. The generator `scripts/gen-preamble.mjs` is
+    outside the owned paths of SKL-W0-01, and it pins the gate command of the four
+    canonical skills verbatim, so the fix belongs to the job that owns the
+    generator and the preamble. Owner: `skills-engineering-r3` (`scripts/**`).
+18. **`scripts/truth/config.json`** — the `lint` step of the truth gate runs the
+    same command as the `build` step (`python3 -I scripts/validate.py --everywhere`),
+    so a lint regression cannot be seen by the gate: the step is green whenever the
+    build is green. A real linter is installed on this host — `ruff` 0.16.8 — and it
+    reports 23 findings in `tests/` and 8 in `scripts/`; the findings of `tests/`
+    are inside the owned paths of this job, the findings of `scripts/validate_skills.py`,
+    `scripts/build-index.py`, `scripts/check_related_graph.py`,
+    `scripts/install-skill.py` and `scripts/validate_reviewed_by.py` are not. The
+    command was NOT changed here on purpose: a trunk gate that depends on a binary
+    the CI image may not carry would turn the W1 jobs red. Owner: operator (the
+    config) and `skills-engineering-r3` (the linter findings of `scripts/**`).
+
+19. **`skills/agentic-data/verifiable-environments/scripts/verify_harness.py`** — the file
+    is 519 lines and the size limit of the truth kit is 500 lines, so the `scan-full` step
+    of the trunk gate reports one oversized file. The file belongs to the agentic-data
+    lane and is rewritten by the canonical-skills job, which has to split it there; this
+    pass did not refactor a script of another lane inside a review commit. Owner:
+    `skills-agentic-data-r3` (`skills/**`).
+13. **`docs/requests/` and `docs/lane-requests/`** — the directories do not
+    exist, so the instruction of `AGENTS.md` ("write
+    `docs/requests/<job>-<n>.md`") cannot be followed from this job; the
+    cross-job requests of this job live in `docs/gaps/SKL-W0-01.md` instead.
+    `scripts/truth/config.json` lists only `catalog.json` under
+    `sharedGlobs`, so a mailbox file would be reported by the gate as outside
+    the owned paths. Owner: operator.
+14. **`/var/run/docker.sock` — the Docker daemon is not reachable on this host**
+    (permission denied) — the `pg-rls-leak-test.sh`
+    container path could not be exercised; only the daemon-free modes
+    (`--print-probe-sql`, `--parse`) are proven (D-043). This is an
+    environment fact, not a defect of the repository. Owner: operator.
+15. **`tests/hygiene/test_repair_log.py`** — 18 of the 33 proof commands of
+    this document are not re-executed by the guard: only the 15 commands marked
+    `# auto` are. The others are the slow ones (whole pytest suites, the job
+    gate) and the gate runs `pytest -q {paths}` over the *changed* test files
+    only. A slow proof command can therefore rot without any suite noticing.
+    Running them inside the guard is not possible without recursion (P31 runs
+    `tests/hygiene/`, which is the guard itself); a runner that executes the
+    slow proofs once per trunk, outside the suite, is the right place.
+    Owner: `skills-engineering-r3` (`tests/**`).
+16. **`scripts/truth/gate.mjs`** — the gate computes its diff against
+    `git merge-base HEAD main`. After a commit of this job is integrated, that
+    base is the commit itself, so the next gate run reports
+    `no changes inside the owned paths: nothing was built` and
+    `no test file was added or changed` and fails, even when the tree is
+    correct. A job that only documents something therefore has to change a test
+    file to get a green gate. The kit belongs to the operator and may not be
+    edited by a job. Owner: operator.

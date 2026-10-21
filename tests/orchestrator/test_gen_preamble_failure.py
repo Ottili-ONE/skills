@@ -21,20 +21,20 @@ NODE = shutil.which("node") or sys.executable
 RULE_RE = re.compile(r"^(\d+)\. ")
 
 
-def run(args, check=True):
+def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run([NODE, str(GEN), *args], cwd=REPO, capture_output=True, text=True, check=check)
 
 
-def test_golden_file_matches_committed_body_byte_for_byte():
+def test_golden_file_matches_committed_body_byte_for_byte() -> None:
     assert OUT.read_text() == GOLDEN.read_text()
 
 
-def test_golden_file_is_not_a_symlink_and_is_regular():
+def test_golden_file_is_not_a_symlink_and_is_regular() -> None:
     assert GOLDEN.is_file()
     assert not GOLDEN.is_symlink()
 
 
-def test_golden_file_has_a_fixed_header_and_four_rules():
+def test_golden_file_has_a_fixed_header_and_four_rules() -> None:
     """The body has a fixed header line and lists exactly the four rules 1..4.
 
     The old assertion applied ``startswith`` to the WHOLE document for every
@@ -55,7 +55,7 @@ def test_golden_file_has_a_fixed_header_and_four_rules():
         assert number == str(i), f"rule {i} missing"
 
 
-def test_generator_refuses_when_a_canonical_skill_is_missing():
+def test_generator_refuses_when_a_canonical_skill_is_missing() -> None:
     """If a canonical skill is deleted the generator must fail (exit 1), not emit."""
     target = REPO / "skills" / "engineering" / "honest-status"
     backup_dir = REPO / ".truth" / "SKL-W1-02" / "honest-status-backup"
@@ -71,7 +71,7 @@ def test_generator_refuses_when_a_canonical_skill_is_missing():
             os.replace(backup_dir, target)
 
 
-def test_generator_refuses_when_a_canonical_skill_loses_its_gate_command():
+def test_generator_refuses_when_a_canonical_skill_loses_its_gate_command() -> None:
     """If a canonical skill's SKILL.md no longer contains the gate command the
     generator must fail (exit 1), keeping the committed body stale-safe."""
     target = REPO / "skills" / "engineering" / "honest-status" / "SKILL.md"
@@ -84,7 +84,7 @@ def test_generator_refuses_when_a_canonical_skill_loses_its_gate_command():
         target.write_text(backup)
 
 
-def test_check_passes_after_a_fresh_generation():
+def test_check_passes_after_a_fresh_generation() -> None:
     """Regenerate, then --check must pass (round-trip property)."""
     run([])
     r = run(["--check"])

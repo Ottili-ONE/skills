@@ -114,3 +114,43 @@ def test_catalogue_lists_every_skill_folder(tmp_path: Path) -> None:
         f"missing={sorted(skill_folders_on_disk() - set(listed))} "
         f"unknown={sorted(set(listed) - skill_folders_on_disk())}"
     )
+
+
+def test_generator_refuses_an_unknown_option(tmp_path: Path) -> None:
+    """An unknown option is an error, never a silent fallback.
+
+    The generator used to ignore every option it did not know, so a typo
+    (``--chek`` instead of ``--check``) silently WROTE the catalogue instead
+    of checking it.
+    """
+    out_file = tmp_path / "catalog.json"
+    result = subprocess.run(
+        ["node", str(GENERATOR), "--chek", "--out", str(out_file)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2, (
+        f"an unknown option must be refused (rc={result.returncode})\n"
+        f"{result.stdout}{result.stderr}"
+    )
+    assert "unknown option" in result.stderr
+    assert not out_file.exists(), "a refused invocation must not write the catalogue"
+
+
+def test_generator_refuses_an_out_option_without_a_value(tmp_path: Path) -> None:
+    """``--out`` without a file path is a usage error, not a crash."""
+    result = subprocess.run(
+        ["node", str(GENERATOR), "--out"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2, (
+        f"--out without a value must be refused (rc={result.returncode})\n"
+        f"{result.stdout}{result.stderr}"
+    )
+    assert "--out needs a file path" in result.stderr
+    assert "TypeError" not in result.stderr, "the usage error must not be a stack trace"

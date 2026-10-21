@@ -208,6 +208,11 @@ def main() -> int:
     except (FileNotFoundError, IsADirectoryError) as exc:
         sys.stderr.write(f"malformed input: {exc}\n")
         return 2
+    except yaml.YAMLError as exc:
+        # A catalogue or a specification that is not valid YAML is malformed
+        # input, not a crash: the gate has to be able to report it.
+        sys.stderr.write(f"malformed input: {exc}\n")
+        return 2
 
     problems = []
     for code, entry in cat.items():

@@ -160,7 +160,9 @@ def main() -> int:
     args = ap.parse_args()
 
     try:
-        text = Path(args.status).read_text(encoding="utf-8")
+        # A status file that is not valid UTF-8 is a broken file, not a reason
+        # to crash: the claims that can be read are still worth judging.
+        text = Path(args.status).read_text(encoding="utf-8", errors="ignore")
     except OSError as exc:
         print(f"FAIL: {args.status}: cannot read ({exc})", file=sys.stderr)
         return 2

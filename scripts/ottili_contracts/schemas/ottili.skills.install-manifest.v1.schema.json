@@ -1,0 +1,123 @@
+{
+  "$defs": {
+    "InstallEntry": {
+      "additionalProperties": false,
+      "description": "One skill of an install manifest.\n\nInputs:\n    name: the skill folder name.\n    package: the package the skill was resolved from.\n    source: the absolute path of the skill folder in the repository.\n    destination: the absolute path the skill was written to (or would be\n    written to).\n    action: what happened to that skill.\n    error: the reason of a failed resolution, ``None`` otherwise.\nOutputs:\n    the mapping that is printed as one entry of the manifest.\nFailure modes:\n    ValidationError when the action is not one of the documented values or\n    when an unknown key is present.",
+      "properties": {
+        "action": {
+          "enum": [
+            "copied",
+            "linked",
+            "skipped",
+            "would-copy",
+            "would-link",
+            "verified",
+            "would-skip",
+            "would-overwrite",
+            "error"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "destination": {
+          "title": "Destination",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "package": {
+          "title": "Package",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "package",
+        "source",
+        "destination",
+        "action"
+      ],
+      "title": "InstallEntry",
+      "type": "object"
+    }
+  },
+  "$id": "https://contracts.ottili.one/skills/install-manifest/v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The manifest ``scripts/install.sh --json`` publishes.\n\nInputs:\n    contract: the contract id, always ``ottili.skills.install-manifest/v1``.\n    mode: ``install``, ``check`` or ``dry-run``.\n    target: the directory the run was about.\n    link: true when the run links instead of copies.\n    ok: true when every requested skill was resolved.\n    skills: one entry per requested skill, in the order of the request.\n    error: the reason the run could not start, ``None`` otherwise.\nOutputs:\n    the mapping that is printed as the JSON manifest.\nFailure modes:\n    ValidationError when a value does not match the contract.",
+  "properties": {
+    "contract": {
+      "const": "ottili.skills.install-manifest/v1",
+      "title": "Contract",
+      "type": "string"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "link": {
+      "title": "Link",
+      "type": "boolean"
+    },
+    "mode": {
+      "enum": [
+        "install",
+        "check",
+        "dry-run"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "skills": {
+      "items": {
+        "$ref": "#/$defs/InstallEntry"
+      },
+      "title": "Skills",
+      "type": "array"
+    },
+    "target": {
+      "title": "Target",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract",
+    "mode",
+    "target",
+    "link",
+    "ok",
+    "skills"
+  ],
+  "title": "ottili.skills.install-manifest/v1",
+  "type": "object"
+}

@@ -37,6 +37,27 @@ CREATE POLICY name ON table
 | Deny override (e.g. soft-deleted rows) | `RESTRICTIVE FOR SELECT` | `USING (deleted_at IS NULL)` |
 | Write must stay in tenant scope | `PERMISSIVE FOR INSERT WITH CHECK` | `WITH CHECK (company_id = current_setting('app.company_id', true))` |
 
+**The two guards are two different clauses.**
+`USING` says which existing rows the policy applies to; `WITH CHECK` says which
+new row may be written. A policy that names the tenant column in `USING` but
+not in `WITH CHECK` closes the read path and leaves the write path open: the
+company sees no foreign row, and can still write a row that claims a foreign
+company. The read probe of this skill cannot see that leak - it measures what
+is read, and nothing that should not be read is readable. The offline checker
+sees it: a policy that applies to a write command (`INSERT`, `UPDATE` or
+`ALL`) must name the tenant column in the guard that accepts the new row, and
+that guard is the `WITH CHECK` clause when there is one and the `USING` clause
+otherwise, because PostgreSQL falls back to `USING` when `WITH CHECK` is
+omitted. A policy that applies to a read command (`SELECT`, `DELETE` or
+`ALL`) must name the tenant column in its `USING` clause.
+
+**The migration has to be re-runnable.** The product migrations create their
+policy inside a `DO` block that asks `pg_policies` first, so a retry after a
+failed deployment does not abort with "policy already exists" and leave the
+schema half migrated. The example of this skill
+(`references/examples/good_migration.sql`) does the same and is applied twice
+by the test suite on a real PostgreSQL.
+
 ## 2. FORCE ROW LEVEL SECURITY
 - `ENABLE ROW LEVEL SECURITY` enables RLS; `FORCE ROW LEVEL SECURITY` forces evaluation even
   for table owners and superusers.
@@ -66,17 +87,42 @@ Contract (drop the old column after N weeks):
 date in the migration comment.
 
 ## 4. Leak test harness
-`scripts/check_rls_migration.py` is the **offline gate** that runs before the Docker harness.
-It decides per table and reads the accepted tenant setting names from `guc-names.json`
-(configuration, not a constant of the script).
+`scripts/check_rls_migration.py` is the **offline gate** that runs before the leak probe.
+It decides per table and reads the tenant convention from `guc-names.json`
+(configuration, not a constant of the script): one tenant GUC (`app.company_id`), one tenant
+column (`company_id`), and the legacy names that are findings (`app.current_company_id`,
+`ottili.company_id`, `app.current_company`, `app.current_tenant`).
 
-The Docker harness (`scripts/pg-rls-leak-test.sh`) spins up `postgres:18-alpine`, applies
-schema + policies, seeds two tenants as the superuser and then probes the table **as the
-application role**: tenant A must see exactly its own row and zero rows of tenant B. The
-probe prints its measurements as `LABEL<tab>VALUE` lines (`a_sees_own 1`, `a_sees_b 0`);
-the verdict is taken by `scripts/check_leak_probe.py`, which fails when a measurement is
-missing — a probe that did not run proves nothing. `--print-probe-sql` and `--parse FILE`
-run the same logic without a Docker daemon.
+The leak harness (`scripts/pg-rls-leak-test.sh`) applies the migration to a real PostgreSQL,
+seeds two companies as the superuser and then probes the table **as the application role**:
+a non-superuser that is not the owner of the table, so row level security really decides
+what it sees. Three measurements decide the verdict:
+
+| Measurement | Expected | What a wrong value means |
+|-------------|----------|-------------------------|
+| `a_sees_own` | 1 | the own-company read is wrong: the policy does not match the seed |
+| `a_sees_b` | 0 | cross-company leak: the policy is missing, wrong, or not forced |
+| `unset_sees_rows` | 0 | rows are visible without a company: the table is not isolated by default |
+| `write_leaks` | 0 | a row of another company was written: the `WITH CHECK` clause does not constrain the tenant column |
+
+The first three measurements read, the fourth writes. The write probe gives
+the session of the second company a row that claims the first one and expects
+the database to refuse it; the transaction is rolled back, so a leak leaves no
+row behind and the exit code of `psql` is the measurement. Both paths have to
+be measured, because they are guarded by two different clauses of a policy: a
+policy whose `USING` clause is the product standard and whose `WITH CHECK`
+clause is wide open hides every foreign row and still accepts a foreign row.
+
+The probe prints its measurements as `LABEL<tab>VALUE` lines; the verdict is taken by
+`scripts/check_leak_probe.py`, which fails when a measurement is missing — a probe that did
+not run proves nothing. `--print-probe-sql` and `--parse FILE` run the same logic without a
+server.
+
+Two servers are supported. `--server` uses a PostgreSQL that already runs and takes its URLs
+from `--admin-url`/`--app-url` or from the truth kit with `--job <JOB>`; this is the mode
+the committed tests use, because it needs no container runtime. The default mode spins up
+`postgres:18-alpine` with Docker. The harness refuses to run against a table that already
+exists, because the probe would measure a stale table; `--reset` drops it first.
 
 **Test cases (all must PASS, any FAIL blocks merge):**
 | Case | Assertion |
@@ -105,6 +151,14 @@ Bad (owner bypass — table created by migration role, no FORCE):
 ```sql
 CREATE TABLE notes (id uuid, company_id uuid, body text);
 -- migration role can read every tenant's notes until FORCE is added
+```
+Bad (write path open — the read path is closed, the write path is not):
+```sql
+CREATE POLICY notes_tenant ON notes
+  FOR ALL TO web_app
+  USING (company_id = current_setting('app.company_id', true))
+  WITH CHECK (true);
+-- no foreign row is readable, and a foreign row can still be written
 ```
 Bad (view bypass):
 ```sql

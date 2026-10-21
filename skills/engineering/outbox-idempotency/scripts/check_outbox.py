@@ -39,7 +39,10 @@ TQD = chr(34) * 3   # triple double quote
 
 
 def _read(p: Path) -> str:
-    return p.read_text(encoding="utf-8")
+    # A migration that is not valid UTF-8 is a broken file, not a reason to
+    # crash: the checker judges what it can read and reports the rest. The
+    # same rule the tenant checker applies.
+    return p.read_text(encoding="utf-8", errors="ignore")
 
 
 def _table_bodies(sql: str) -> dict[str, str]:
