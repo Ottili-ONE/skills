@@ -30,3 +30,13 @@ This job (`skills-engineering-r3`) owns:
 
 Mailbox globs (`docs/lane-requests/*`, `docs/requests/*`, `docs/issues/*`) may be created
 by any job. Never edit paths you do not own, and never touch secrets or `.env` files.
+
+## Architecture blueprints (read before you design)
+
+The architecture source of truth is in `docs/blueprints/` (read-only, do not edit):
+- `docs/blueprints/OTTILI_PLATFORM_ARCHITECTURE_BLUEPRINT_V2.md`
+
+Before you write plans, schemas or code, read the blueprint section that matches your task.
+The files are large (250-330 KB each): read only the sections your task names, not the whole file.
+When a task text and a blueprint disagree, follow the blueprint and record the difference in `docs/gaps/<JOB-ID>.md`.
+Cite the blueprint section in commit messages when a decision comes from it.
