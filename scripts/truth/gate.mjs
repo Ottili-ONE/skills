@@ -370,7 +370,11 @@ async function trunkGate() {
     });
   await commandStep('install', cfg.install);
   await commandStep('build', cfg.commands?.build);
-  await commandStep('typecheck', cfg.commands?.typecheck);
+  // The trunk gate checks the whole trunk, so the template variables are
+  // expanded with '.' (the repository root), exactly like the lint step below.
+  // Without expand() the typecheck command kept its literal "{paths}" and
+  // failed with ENOENT on a directory named "{paths}".
+  await commandStep('typecheck', cfg.commands?.typecheck ? expand(cfg.commands.typecheck, { paths: '.', job: jobId, root }) : null);
   await commandStep('lint', cfg.commands?.lint ? expand(cfg.commands.lint, { paths: '.', job: jobId, root }) : null);
   await commandStep('registry', cfg.commands?.registryCheck);
 
