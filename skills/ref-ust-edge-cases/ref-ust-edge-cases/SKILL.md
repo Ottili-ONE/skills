@@ -1,4 +1,5 @@
 ---
+# truth:allow-german-file: this wrapper quotes German statute titles and headings verbatim
 name: ref-ust-edge-cases
 description: "UNVERIFIED reference wrapper for the German VAT edge-case skill (business-de/ust-edge-cases). Summarises the corrected reverse-charge scope (UStG §13b covers goods AND services, not services only) and the corrected intra-community-delivery citation (igL = UStG §4 Nr. 1b / §6a). reviewed_by: UNVERIFIED pending Steuerberater/DPO sign-off in docs/reviews/ref-ust-edge-cases.md. Not legal advice."
 license: MIT-compat
@@ -12,7 +13,7 @@ allowed-tools: []
 
 > **Status: UNVERIFIED.** This reference is a sign-off placeholder. It must NOT be
 > quoted as certified tax advice until a Steuerberater/DPO signs
-> `docs/reviews/ref-ust-edge-cases.md` (signature + date). The canonical, runnable
+> `docs/reviews/ref-ust-edge-cases.md` (reviewer name, date and signature). The canonical, runnable
 > implementation lives in `skills/business-de/ust-edge-cases/` (owned by
 > skills-business-de-r3); this wrapper only records the two corrections that the
 > canonical skill still carries wrong.
@@ -57,9 +58,11 @@ The canonical skill cites the intra-community delivery as §4a UStG. **That is w
 
 ## Sign-off gate
 
-This skill's validator refuses to load it as certified until
-`docs/reviews/ref-ust-edge-cases.md` exists with a signature and a date. Until then every
-consumer must treat this skill as UNVERIFIED.
+`python3 scripts/validate_reviewed_by.py` audits this skill. While the frontmatter
+carries the `UNVERIFIED` sentinel the audit reports the skill as unverified and exits 0;
+as soon as the frontmatter names a reviewer, the audit fails unless
+`docs/reviews/ref-ust-edge-cases.md` carries a filled `Reviewed by:`, `Date:` and
+`Signature:` line. Until then every consumer must treat this skill as UNVERIFIED.
 
 ## Related
 

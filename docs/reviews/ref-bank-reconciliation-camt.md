@@ -13,6 +13,10 @@
 
 ## Sign-off block (Steuerberater / DPO to complete)
 
+Fill every line of the block below. `python3 scripts/validate_reviewed_by.py` reads the
+`Reviewed by:`, `Date:` and `Signature:` lines of that block; a blank value keeps the
+skill UNVERIFIED, and the audit fails as soon as the skill's frontmatter names a reviewer.
+
 ```
 Reviewed by: ___________________________________
 Steuerberater / DPO registration no.: ___________________________________

@@ -17,7 +17,7 @@ lane depends on.
 | `skills/business-de/carrier-apis-de/scripts/label_create.py` | 62 (`--execute`), 63 (`--token`), 64 (`--url`), 85 (guard) |
 | `skills/business-de/carrier-apis-de/scripts/track.py` | 86 (`--execute`), 87 (`--token`), 88 (`--url`), 109 (dry-run note), 112 (guard) |
 | `skills/business-de/publish-reconcile-wp-meta/scripts/meta_publish.py` | 53 (`--execute`), 55 (`--token`), 68 (guard) |
-| `skills/business-de/publish-reconcile-wp-meta/scripts/wp_publish.py` | SKILL.md reference + `--execute`/`--url`/`--user`/`--pass` send path |
+| `skills/business-de/publish-reconcile-wp-meta/scripts/wp_publish.py` | 50 (`--execute`), SKILL.md reference + `--url`/`--user`/`--pass` send path |
 
 ## Guidance to keep (moves to platform integrations docs)
 

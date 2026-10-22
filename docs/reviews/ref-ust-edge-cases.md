@@ -1,3 +1,4 @@
+<!-- truth:allow-german-file: this review quotes the German statute titles it corrects verbatim -->
 # Sign-off placeholder — ref-ust-edge-cases (UNVERIFIED)
 
 **Status: UNVERIFIED.** A Steuerberater / DPO must complete this file before the
@@ -9,7 +10,7 @@
 | Canonical implementation | `skills/business-de/ust-edge-cases/` |
 | Reviewed by | **UNVERIFIED — pending signature** |
 | Date | **pending** |
-| Scope | the two corrections recorded in `skills/ref-ust-edge-cases/SKILL.md` |
+| Scope | the two corrections recorded in `skills/ref-ust-edge-cases/ref-ust-edge-cases/SKILL.md` |
 
 ## Corrections under sign-off
 
@@ -24,6 +25,10 @@
    UStG is "Steuervergütung" (tax refund) and is not the igL citation.
 
 ## Sign-off block (Steuerberater / DPO to complete)
+
+Fill every line of the block below. `python3 scripts/validate_reviewed_by.py` reads the
+`Reviewed by:`, `Date:` and `Signature:` lines of that block; a blank value keeps the
+skill UNVERIFIED, and the audit fails as soon as the skill's frontmatter names a reviewer.
 
 ```
 Reviewed by: ___________________________________

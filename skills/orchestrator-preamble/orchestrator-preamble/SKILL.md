@@ -17,27 +17,33 @@ by changing the canonical skill and re-running the generator.
 
 ## The four rules (generated)
 
+The shipped wording of the four rules is `references/preamble.md` — generated, never
+hand-edited. Each rule comes from one canonical engineering skill; the gate command
+below is copied verbatim from that skill's `SKILL.md`, so a consumer can copy it as is.
+
 1. **company_id / RLS** — every tenant table carries `company_id` (or the repo's tenant
    discriminator), `FORCE ROW LEVEL SECURITY` is set, a `USING`/`WITH CHECK` policy exists,
-   and the grant is scoped. Check:
-   `python3 scripts/check_rls_migration.py <migration.sql>` — exit 0 means the migration
-   is RLS-clean; any finding is a merge blocker.
+   and the grant is scoped. Source: `skills/engineering/pg-rls-multitenant/SKILL.md`.
+   Gate: `python3 scripts/check_rls_migration.py <migration.sql>` — exit 0 means the
+   check passes; any finding is a merge blocker.
 2. **outbox** — any write that outlives the request goes through an outbox table with a
    UNIQUE `idempotency_key`, the business write and the outbox INSERT are in ONE
    transaction, the poller uses `ORDER BY created_at ... FOR UPDATE SKIP LOCKED`, and
-   poison messages are moved to `poison_outbox` (never deleted). Check:
-   `python3 scripts/check_outbox.py <outbox-sql-file> [--poller <poller-source-file>]` —
-   exit 0 means all invariants hold.
+   poison messages are moved to `poison_outbox` (never deleted). Source:
+   `skills/engineering/outbox-idempotency/SKILL.md`. Gate:
+   `python3 scripts/check_outbox.py <sql-file>` — exit 0 means the check passes; any
+   finding is a merge blocker.
 3. **problem+json** — every HTTP >=400 response is RFC 9457 `application/problem+json`
    with an absolute `type` URI, a `status` equal to the HTTP code, a catalogue code that
    matches the JSON Schema `enum` exactly, and `retry_after` as integer seconds for
-   retriable errors. Check:
+   retriable errors. Source: `skills/engineering/problem-json-contracts/SKILL.md`. Gate:
    `python3 scripts/check_problem_catalogue.py --catalogue <cat> --openapi <spec> --schema-dir <dir>` —
-   exit 0 means the catalogue, the OpenAPI spec and the schemas agree.
+   exit 0 means the check passes; any finding is a merge blocker.
 4. **honest status** — "done" means a command ran, you saw its exit code, and the log path
    is recorded. A claim without a runnable evidence pointer is FALSE_DONE, never DONE.
-   Check: `python3 scripts/check_status_evidence.py STATUS.md --root .` — exit 0 means
-   every DONE/VERIFIED entry names a command + exit code + log path.
+   Source: `skills/engineering/honest-status/SKILL.md`. Gate:
+   `python3 scripts/check_status_evidence.py STATUS.md --root .` — exit 0 means the check
+   passes; any finding is a merge blocker.
 
 ## Reproducibility
 
