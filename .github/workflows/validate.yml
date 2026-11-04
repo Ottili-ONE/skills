@@ -44,6 +44,7 @@ jobs:
       - name: Run orchestrator contract tests
         run: |
           set -euo pipefail
+          pip install pytest
           pytest -q tests/orchestrator/test_*.py
 
       - name: Run engineering skill self-tests
