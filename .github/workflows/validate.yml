@@ -44,10 +44,7 @@ jobs:
       - name: Run orchestrator contract tests
         run: |
           set -euo pipefail
-          for t in tests/orchestrator/*.test.mjs; do
-            echo "=== $t ==="
-            node "$t"
-          done
+          pytest -q tests/orchestrator/test_*.py
 
       - name: Run engineering skill self-tests
         shell: bash
