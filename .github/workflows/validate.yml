@@ -8,7 +8,12 @@ on:
 
 jobs:
   validate:
-    runs-on: [self-hosted, Linux, X64]
+    # This repository is PUBLIC. The organization's runner group does not allow
+    # public repositories, so a self-hosted runner is never assigned here and
+    # the job sits in the queue forever ("Waiting for a runner to pick up").
+    # GitHub-hosted runners are free for public repositories and they also
+    # keep pull requests from forks away from our own infrastructure.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
