@@ -50,6 +50,7 @@ jobs:
       - name: Run engineering skill self-tests
         shell: bash
         run: |
+          pip install pydantic
           set -euo pipefail
           for t in \
             skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py \
