@@ -51,6 +51,7 @@ jobs:
         shell: bash
         run: |
           pip install pydantic
+          pip install pyyaml
           set -euo pipefail
           for t in \
             skills/engineering/pg-rls-multitenant/scripts/check_rls_migration_test.py \
@@ -68,5 +69,8 @@ jobs:
             skills/engineering/tests/test_collection_acceptance.py \
             skills/engineering/tests/test_research_design_acceptance.py ; do
             echo "=== $t ==="
-            python3 "$t"
+            case "$t" in
+              *.sh) bash "$t" ;;
+              *)    python3 "$t" ;;
+            esac
           done
