@@ -338,7 +338,3 @@ committing, run `python3 scripts/validate.py` and `python3 scripts/validate_skil
 ## License
 
 MIT, see [`LICENSE`](LICENSE).
-
-## Testing
-
-How this repository is tested, what each command costs and what "green" means for the beta: [test conventions](https://github.com/Ottili-ONE/ottili-platform/blob/main/docs/test-conventions.md) (`docs/test-conventions.md` in the Platform repository).
